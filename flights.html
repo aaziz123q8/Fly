@@ -35,10 +35,12 @@
     .fc-airline .al-name { font-size: .78rem; font-weight: 600; color: #1a2e5a; text-align: center; line-height: 1.2; }
     .fc-airline .al-code { font-size: .7rem; color: #9ca3af; }
 
-    /* Route section */
-    .fc-route { padding: 18px 20px; display: flex; align-items: center; gap: 12px; flex: 1; }
+    /* Route section — supports stacked slices for round-trips */
+    .fc-routes { flex: 1; display: flex; flex-direction: column; }
+    .fc-route { padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
+    .fc-route + .fc-route { border-top: 1px dashed #e5e7eb; }
     .fc-point { text-align: center; min-width: 64px; }
-    .fc-point .time { font-size: 1.45rem; font-weight: 800; color: #111827; line-height: 1; }
+    .fc-point .time { font-size: 1.35rem; font-weight: 800; color: #111827; line-height: 1; }
     .fc-point .iata { font-size: .8rem; font-weight: 700; color: var(--primary); margin-top: 2px; }
     .fc-point .apt-name { font-size: .68rem; color: #9ca3af; margin-top: 2px; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .fc-point .date-lbl { font-size: .68rem; color: #6b7280; margin-top: 3px; }
@@ -49,6 +51,7 @@
     .fc-plane { color: var(--primary); font-size: .9rem; }
     .fc-stops-lbl { font-size: .7rem; color: #6b7280; }
     .next-day-badge { background: #fef3c7; color: #92400e; border-radius: 4px; font-size: .65rem; font-weight: 700; padding: 1px 5px; }
+    .fc-return-label { font-size: .68rem; color: #7c3aed; font-weight: 700; background: #ede9fe; border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
 
     /* Price column */
     .fc-price { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 20px; border-right: 1px solid #f0f2f5; gap: 6px; min-width: 140px; }
@@ -314,29 +317,66 @@ function getDestName(o){
 function getAirline(o){
   var seg = getFirstSeg(o);
   var mc  = seg.marketing_carrier||seg.operating_carrier||{};
+  var code = mc.iata_code || o.airline_code || '';
+  // Logo priority: symbol_url > lockup_url > airhex CDN > ''
+  var logo = mc.logo_symbol_url || mc.logo_lockup_url || '';
+  if (!logo && code) logo = 'https://content.airhex.com/content/logos/airlines_'+code+'_64_64_f.png';
   return {
-    name:     mc.name     || o.airline      || 'غير محدد',
-    code:     mc.iata_code|| o.airline_code || '',
-    logo:     mc.logo_symbol_url || mc.logo_lockup_url || '',
+    name: mc.name     || o.airline  || 'غير محدد',
+    code: code,
+    logo: logo,
   };
 }
 
-function hasBaggage(o){
-  // Check conditions or passengers
-  if (o.baggage_included) return true;
+/* ── Baggage: Duffel stores baggages on offer.passengers[].baggages ── */
+function _offerBaggages(o) {
+  // offer-level passengers array (from formatOffer)
+  var paxArr = o.passengers || [];
+  for (var i = 0; i < paxArr.length; i++) {
+    var bags = paxArr[i].baggages || [];
+    if (bags.length) return bags;
+  }
+  // fall back to segment-level passengers (legacy shape)
   var segs = getSegs(o);
-  for (var i=0;i<segs.length;i++){
-    var bags = (segs[i].passengers||[]);
-    for (var j=0;j<bags.length;j++){
-      if ((bags[j].checked_bags||0)>0||(bags[j].cabin_bags||0)>0) return true;
+  for (var si = 0; si < segs.length; si++) {
+    var sp = segs[si].passengers || [];
+    for (var pi = 0; pi < sp.length; pi++) {
+      var sb = sp[pi].baggages || [];
+      if (sb.length) return sb;
     }
   }
-  // Check baggages array if exists
-  if (o.available_services) return false;
+  return [];
+}
+
+function hasBaggage(o){
+  if (o.baggage_included) return true;
+  var bags = _offerBaggages(o);
+  for (var i = 0; i < bags.length; i++) {
+    if ((bags[i].quantity || 0) > 0) return true;
+  }
+  // legacy segment passengers shape
+  var segs = getSegs(o);
+  for (var i = 0; i < segs.length; i++){
+    var sp = segs[i].passengers || [];
+    for (var j = 0; j < sp.length; j++){
+      if ((sp[j].checked_bags||0)>0||(sp[j].cabin_bags||0)>0) return true;
+    }
+  }
   return false;
 }
 
 function getBaggageText(o){
+  var bags = _offerBaggages(o);
+  var checked = 0, carry = 0;
+  for (var i = 0; i < bags.length; i++) {
+    var q = bags[i].quantity || 0;
+    if (bags[i].type === 'checked') checked += q;
+    if (bags[i].type === 'carry_on') carry += q;
+  }
+  if (checked > 0 && carry > 0) return checked+'×أمتعة + '+carry+'×مقصورة';
+  if (checked > 0) return checked+'×أمتعة مسجلة';
+  if (carry  > 0) return carry+'×حقيبة مقصورة';
+  // legacy shape fallback
   var segs = getSegs(o);
   for(var i=0;i<segs.length;i++){
     var pax = (segs[i].passengers||[]);
@@ -365,6 +405,133 @@ function isChangeable(o){
   var c = o.conditions||{};
   var cbc = c.change_before_departure;
   return cbc && (cbc.allowed===true || cbc.allowed==='true');
+}
+
+function getRefundText(o){
+  var c = o.conditions||{};
+  var rbf = c.refund_before_departure;
+  if (!rbf) return null;
+  if (rbf.allowed===true || rbf.allowed==='true') {
+    if (rbf.penalty_amount && parseFloat(rbf.penalty_amount)>0)
+      return 'استرداد (غرامة '+formatPrice(parseFloat(rbf.penalty_amount))+')';
+    return 'قابل للاسترداد';
+  }
+  return null;
+}
+
+function getChangeText(o){
+  var c = o.conditions||{};
+  var cbc = c.change_before_departure;
+  if (!cbc) return null;
+  if (cbc.allowed===true || cbc.allowed==='true') {
+    if (cbc.penalty_amount && parseFloat(cbc.penalty_amount)>0)
+      return 'تغيير (غرامة '+formatPrice(parseFloat(cbc.penalty_amount))+')';
+    return 'قابل للتغيير';
+  }
+  return null;
+}
+
+// ─── Per-slice helpers ──────────────────────────────────────────
+function getSliceStops(o, sliceIdx) {
+  var segs = getSegs(o, sliceIdx);
+  return Math.max(0, segs.length - 1);
+}
+
+function getSliceDepDt(o, sliceIdx) {
+  var segs = getSegs(o, sliceIdx);
+  return segs.length ? (segs[0].departing_at || '') : '';
+}
+
+function getSliceArrDt(o, sliceIdx) {
+  var segs = getSegs(o, sliceIdx);
+  return segs.length ? (segs[segs.length-1].arriving_at || '') : '';
+}
+
+function getSliceDuration(o, sliceIdx) {
+  var sl = getSlice(o, sliceIdx);
+  if (sl.duration) return parseDuration(sl.duration);
+  var dep = getSliceDepDt(o, sliceIdx);
+  var arr = getSliceArrDt(o, sliceIdx);
+  if (dep && arr) return Math.round((new Date(arr)-new Date(dep))/60000);
+  return 0;
+}
+
+function getSliceOriginCode(o, sliceIdx) {
+  var sl = getSlice(o, sliceIdx);
+  return (sl.origin && (sl.origin.iata_code || sl.origin)) ||
+    (getSegs(o, sliceIdx)[0] || {}).departing_airport?.iata_code || '—';
+}
+
+function getSliceDestCode(o, sliceIdx) {
+  var sl = getSlice(o, sliceIdx);
+  var segs = getSegs(o, sliceIdx);
+  return (sl.destination && (sl.destination.iata_code || sl.destination)) ||
+    (segs[segs.length-1] || {}).arriving_airport?.iata_code || '—';
+}
+
+function getSliceOriginName(o, sliceIdx) {
+  var sl = getSlice(o, sliceIdx);
+  var segs = getSegs(o, sliceIdx);
+  return (sl.origin && sl.origin.name) || ((segs[0] || {}).departing_airport && segs[0].departing_airport.name) || '';
+}
+
+function getSliceDestName(o, sliceIdx) {
+  var sl = getSlice(o, sliceIdx);
+  var segs = getSegs(o, sliceIdx);
+  var last = segs[segs.length-1] || {};
+  return (sl.destination && sl.destination.name) || (last.arriving_airport && last.arriving_airport.name) || '';
+}
+
+/**
+ * Returns HTML for one slice row (outbound or return).
+ * @param {object} o        - full offer object
+ * @param {number} sliceIdx - 0 for outbound, 1 for return
+ * @param {boolean} isReturn - true → show ↩ عودة label
+ */
+function getSliceRow(o, sliceIdx, isReturn) {
+  var depDt    = getSliceDepDt(o, sliceIdx);
+  var arrDt    = getSliceArrDt(o, sliceIdx);
+  var durMins  = getSliceDuration(o, sliceIdx);
+  var origCode = getSliceOriginCode(o, sliceIdx);
+  var destCode = getSliceDestCode(o, sliceIdx);
+  var origName = getSliceOriginName(o, sliceIdx);
+  var destName = getSliceDestName(o, sliceIdx);
+  var stops    = getSliceStops(o, sliceIdx);
+  var nextDay  = isNextDay(depDt, arrDt);
+
+  // Transit airports for this slice
+  var segs = getSegs(o, sliceIdx);
+  var transitCodes = [];
+  for (var i = 0; i < segs.length - 1; i++) {
+    var ar = segs[i].arriving_airport;
+    if (ar && ar.iata_code) transitCodes.push(ar.iata_code);
+  }
+  var transitHint = transitCodes.length ? ' عبر '+transitCodes.join('،') : '';
+
+  var returnLabel = isReturn
+    ? '<span class="fc-return-label">↩ عودة</span>'
+    : '';
+
+  return '<div class="fc-route">'
+    + returnLabel
+    + '<div class="fc-point">'
+      + '<div class="time">'+fmtTime(depDt)+'</div>'
+      + '<div class="iata">'+origCode+'</div>'
+      + (origName ? '<div class="apt-name" title="'+origName+'">'+origName+'</div>' : '')
+      + '<div class="date-lbl">'+fmtDate(depDt)+'</div>'
+    + '</div>'
+    + '<div class="fc-mid">'
+      + '<div class="fc-duration">'+fmtDuration(durMins)+'</div>'
+      + '<div class="fc-line"><div class="fc-line-bar"></div><span class="fc-plane">✈</span><div class="fc-line-bar"></div></div>'
+      + '<div class="fc-stops-lbl">'+(stops===0?'مباشر':stops+' توقف'+transitHint)+'</div>'
+    + '</div>'
+    + '<div class="fc-point">'
+      + '<div class="time">'+fmtTime(arrDt)+(nextDay?'<sup class="next-day-badge">+1</sup>':'')+'</div>'
+      + '<div class="iata">'+destCode+'</div>'
+      + (destName ? '<div class="apt-name" title="'+destName+'">'+destName+'</div>' : '')
+      + '<div class="date-lbl">'+fmtDate(arrDt)+'</div>'
+    + '</div>'
+  + '</div>';
 }
 
 // ─── Init ───────────────────────────────────────────────────────
@@ -401,7 +568,10 @@ function initPage() {
     ? '<a href="dashboard.html" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">حسابي</a>'
     : '<a href="login.html" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">دخول</a>';
 
-  // Currency buttons init
+  // Currency buttons init — default to KWD if no stored preference
+  if (!localStorage.getItem('flymasar_currency')) {
+    localStorage.setItem('flymasar_currency', 'KWD');
+  }
   initCurrency();
 
   if (searchParams.origin && searchParams.destination && searchParams.departure) {
@@ -459,12 +629,20 @@ function showError(title, msg) {
 
 // ─── Filters ────────────────────────────────────────────────────
 function updatePriceRange(offers) {
-  var max = 0;
-  offers.forEach(function(o){ var p=parseFloat(o.total_amount||0); if(p>max) max=p; });
-  max = Math.ceil(max/100)*100 || 5000;
-  document.getElementById('priceRange').max   = max;
-  document.getElementById('priceRange').value = max;
-  document.getElementById('priceMax').textContent = max.toLocaleString();
+  var minGBP = Infinity, maxGBP = 0;
+  offers.forEach(function(o){
+    var p = parseFloat(o.total_amount || 0);
+    if (p < minGBP) minGBP = p;
+    if (p > maxGBP) maxGBP = p;
+  });
+  if (!isFinite(minGBP)) minGBP = 0;
+  maxGBP = Math.ceil(maxGBP / 100) * 100 || 5000;
+  // Store GBP range on slider for filter logic (filter compares total_amount which is GBP)
+  document.getElementById('priceRange').min   = 0;
+  document.getElementById('priceRange').max   = maxGBP;
+  document.getElementById('priceRange').value = maxGBP;
+  document.getElementById('priceMin').textContent = formatPrice(minGBP);
+  document.getElementById('priceMax').textContent = formatPrice(maxGBP);
 }
 
 function buildAirlineFilters(offers) {
@@ -495,8 +673,8 @@ function applyFilters() {
   var selectedAL = [];
   document.querySelectorAll('.airline-cb:checked').forEach(function(cb){ selectedAL.push(cb.value); });
 
-  document.getElementById('priceMin').textContent = '0';
-  document.getElementById('priceMax').textContent = maxPrice.toLocaleString();
+  document.getElementById('priceMin').textContent = formatPrice(0);
+  document.getElementById('priceMax').textContent = formatPrice(maxPrice);
 
   filteredOffers = allOffers.filter(function(o){
     var price = parseFloat(o.total_amount||0);

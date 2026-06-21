@@ -165,12 +165,14 @@ class FlightSearchService
     private function formatOffer(array $offer): array
     {
         return [
-            'offer_id'            => $offer['id']             ?? '',
-            'total_amount'        => $offer['total_amount']   ?? '0.00',
-            'currency'            => strtoupper($offer['total_currency'] ?? 'GBP'),
-            'expires_at'          => $offer['expires_at']     ?? null,
-            'slices'              => $offer['slices']          ?? [],
-            'passengers_included' => $offer['passengers']      ?? [],
+            'offer_id'               => $offer['id']                      ?? '',
+            'total_amount'           => $offer['total_amount']             ?? '0.00',
+            'currency'               => strtoupper($offer['total_currency'] ?? 'GBP'),
+            'expires_at'             => $offer['expires_at']               ?? null,
+            'slices'                 => $offer['slices']                   ?? [],
+            'passengers'             => $offer['passengers']               ?? [],  // contains baggages per passenger
+            'conditions'             => $offer['conditions']               ?? [],  // refund_before_departure / change_before_departure
+            'partial_offer_requests' => $offer['partial_offer_requests']   ?? [],
         ];
     }
 
