@@ -23,7 +23,7 @@
     .nav-brand span{color:#E8A020}
     .nav-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
     .pill-btn{padding:5px 12px;border-radius:20px;border:1.5px solid #e5e7eb;background:none;font-size:.82rem;font-weight:600;color:#6B7280;transition:.2s}
-    .pill-btn:hover,.pill-btn.active{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .pill-btn:hover,.pill-btn.active,.pill-btn.on{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
     .sep{color:#e5e7eb;font-size:1.2rem}
     .btn-login{padding:6px 16px;border-radius:8px;border:1.5px solid #1B4F8E;color:#1B4F8E;background:none;font-size:.88rem;font-weight:700;transition:.2s}
     .btn-login:hover{background:#1B4F8E;color:#fff}
@@ -93,6 +93,7 @@
 
     /* DatePicker */
     .dp-popup{display:none;position:fixed;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:2000;padding:16px;user-select:none}
+    @media(max-width:600px){.dp-popup{left:8px!important;right:8px!important;width:calc(100vw - 16px)!important;top:auto!important;bottom:80px!important;border-radius:20px 20px 0 0}}
     .dp-wrap{display:flex;gap:16px;flex-wrap:wrap}
     .dp-month-block{min-width:260px}
     .dp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
@@ -244,11 +245,11 @@
         <div id="datesRow" class="row3">
           <div class="fg">
             <label>تاريخ الذهاب</label>
-            <input class="fi" id="fDep" readonly placeholder="اختر التاريخ">
+            <input class="fi" id="fDep" readonly placeholder="اختر التاريخ" dir="ltr" style="text-align:right">
           </div>
           <div class="fg" id="retWrap" style="display:none">
             <label>تاريخ العودة</label>
-            <input class="fi" id="fRet" readonly placeholder="اختر التاريخ">
+            <input class="fi" id="fRet" readonly placeholder="اختر التاريخ" dir="ltr" style="text-align:right">
           </div>
           <div class="fg pop-wrap">
             <label>المسافرون</label>
@@ -308,11 +309,11 @@
         <div class="row3">
           <div class="fg">
             <label>تاريخ الوصول</label>
-            <input class="fi" id="hIn" readonly placeholder="اختر التاريخ">
+            <input class="fi" id="hIn" readonly placeholder="اختر التاريخ" dir="ltr" style="text-align:right">
           </div>
           <div class="fg">
             <label>تاريخ المغادرة</label>
-            <input class="fi" id="hOut" readonly placeholder="اختر التاريخ">
+            <input class="fi" id="hOut" readonly placeholder="اختر التاريخ" dir="ltr" style="text-align:right">
           </div>
           <div class="fg pop-wrap">
             <label>الغرف والضيوف</label>
