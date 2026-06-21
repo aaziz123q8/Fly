@@ -244,11 +244,11 @@
         <div id="datesRow" class="row3">
           <div class="fg">
             <label>تاريخ الذهاب</label>
-            <input class="fi" id="fDep" readonly placeholder="اختر التاريخ" onclick="openDp('dep')">
+            <input class="fi" id="fDep" readonly placeholder="اختر التاريخ">
           </div>
           <div class="fg" id="retWrap" style="display:none">
             <label>تاريخ العودة</label>
-            <input class="fi" id="fRet" readonly placeholder="اختر التاريخ" onclick="openDp('ret')">
+            <input class="fi" id="fRet" readonly placeholder="اختر التاريخ">
           </div>
           <div class="fg pop-wrap">
             <label>المسافرون</label>
@@ -308,11 +308,11 @@
         <div class="row3">
           <div class="fg">
             <label>تاريخ الوصول</label>
-            <input class="fi" id="hIn" readonly placeholder="اختر التاريخ" onclick="openDp('hotel')">
+            <input class="fi" id="hIn" readonly placeholder="اختر التاريخ">
           </div>
           <div class="fg">
             <label>تاريخ المغادرة</label>
-            <input class="fi" id="hOut" readonly placeholder="اختر التاريخ" onclick="openDp('hotel')">
+            <input class="fi" id="hOut" readonly placeholder="اختر التاريخ">
           </div>
           <div class="fg pop-wrap">
             <label>الغرف والضيوف</label>
@@ -605,7 +605,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e) { document.getElementById('hOut').value = dp._fmt(e); document.getElementById('hOut').classList.add('ok'); }
     }
   });
-  document.getElementById('hOut').addEventListener('click', () => dpHotel.toggle());
+  document.getElementById('hOut').addEventListener('click', (e) => { e.stopPropagation(); dpHotel.show(); });
 });
 
 /* ── SEARCH ── */
