@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الدفع — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+    .pay-page { background:var(--bg); min-height:100vh; padding:32px 0 80px; }
+    .pay-grid { display:grid; grid-template-columns:1fr 380px; gap:24px; }
+    @media(max-width:900px) { .pay-grid { grid-template-columns:1fr; } }
+    .pay-card { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:28px; margin-bottom:20px; }
+    .pay-card h2 { font-size:1.1rem; font-weight:700; color:var(--primary); margin:0 0 20px; display:flex; align-items:center; gap:8px; }
+    #stripe-element {
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      background: #fff;
+      transition: border-color .2s;
+    }
+    #stripe-element.StripeElement--focus { border-color: var(--primary); }
+    #stripe-element.StripeElement--invalid { border-color: var(--error, #ef4444); }
+    .payment-method-tabs { display:flex; gap:8px; margin-bottom:20px; }
+    .pm-tab { flex:1; padding:12px; border:2px solid #e5e7eb; border-radius:12px; background:none; cursor:pointer; font-family:inherit; font-size:0.9rem; font-weight:600; color:var(--text-muted); text-align:center; transition:all .2s; }
+    .pm-tab.active { border-color:var(--primary); color:var(--primary); background:#f0f5ff; }
+    .secure-badges { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:20px; padding-top:16px; border-top:1px solid #f0f2f5; }
+    .secure-badge { display:flex; align-items:center; gap:6px; font-size:0.78rem; color:var(--text-muted); }
+    .price-summary { position:sticky; top:20px; }
+    .price-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f0f2f5; font-size:0.92rem; }
+    .price-row:last-child { border-bottom:none; }
+    .price-total { display:flex; justify-content:space-between; padding:16px 0 0; font-size:1.15rem; font-weight:800; color:var(--primary); border-top:2px solid var(--primary); margin-top:8px; }
+    .price-currency-note { font-size:0.75rem; color:var(--text-muted); margin-top:6px; text-align:center; }
+    #payError { color:var(--error,#ef4444); font-size:0.88rem; margin-top:12px; display:none; }
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
+    .bnav-icon { font-size:1.4rem; }
+    .step-done { background:var(--primary)!important; color:#fff!important; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
+    <div style="display:flex;gap:8px">
+      <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
+      <button onclick="Auth.logout()" class="btn btn-outline btn-sm">خروج</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Steps -->
+<div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:16px 0">
+  <div class="container">
+    <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="step-done" style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700">✓</div>
+        <span style="font-size:0.85rem;color:var(--text-muted)">بيانات المسافرين</span>
+      </div>
+      <div style="width:40px;height:2px;background:var(--primary)"></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:28px;height:28px;background:var(--primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700">٢</div>
+        <span style="font-size:0.85rem;font-weight:600;color:var(--primary)">الدفع</span>
+      </div>
+      <div style="width:40px;height:2px;background:#e5e7eb"></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:28px;height:28px;background:#e5e7eb;color:#9ca3af;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700">٣</div>
+        <span style="font-size:0.85rem;color:var(--text-muted)">التأكيد</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="pay-page">
+  <div class="container">
+    <div class="pay-grid">
+
+      <!-- Left: Payment Form -->
+      <div>
+        <div class="pay-card">
+          <h2>🔒 الدفع الآمن</h2>
+
+          <div class="payment-method-tabs">
+            <button class="pm-tab active" id="tabCard" onclick="switchTab('card')">💳 بطاقة ائتمان / خصم</button>
+            <button class="pm-tab" id="tabLink" onclick="switchTab('link')" style="display:none">🔗 Stripe Link</button>
+          </div>
+
+          <div id="cardSection">
+            <div class="form-group">
+              <label class="form-label">اسم حامل البطاقة</label>
+              <input type="text" class="form-control" id="cardName" placeholder="الاسم كما هو على البطاقة" autocomplete="cc-name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">بيانات البطاقة</label>
+              <div id="stripe-element"></div>
+            </div>
+            <div id="payError"></div>
+          </div>
+
+          <div class="secure-badges">
+            <div class="secure-badge">🔒 تشفير SSL 256-bit</div>
+            <div class="secure-badge">🛡️ PCI-DSS Level 1</div>
+            <div class="secure-badge">✅ مدعوم بـ Stripe</div>
+          </div>
+
+          <button class="btn btn-primary btn-lg btn-block" onclick="submitPayment()" id="payBtn" style="margin-top:20px">
+            <span id="payBtnTxt">ادفع الآن 🔒</span>
+            <div class="spinner spinner-sm hidden" id="paySpinner" style="border-top-color:white"></div>
+          </button>
+          <p style="font-size:0.78rem;color:var(--text-muted);text-align:center;margin-top:10px">
+            بالضغط على "ادفع الآن" أنت توافق على شروط الخدمة. المبلغ سيُحصَّل بالجنيه الإسترليني (GBP).
+          </p>
+        </div>
+      </div>
+
+      <!-- Right: Order Summary -->
+      <div class="price-summary">
+        <div class="pay-card">
+          <h2>ملخص الطلب</h2>
+          <div id="orderSummary" style="color:var(--text-muted);text-align:center;padding:10px">
+            <div class="spinner"></div>
+          </div>
+          <div class="price-total" id="totalRow" style="display:none">
+            <span>الإجمالي (GBP)</span>
+            <span id="totalDisplay">—</span>
+          </div>
+          <p class="price-currency-note">يُحصَّل المبلغ بالجنيه الإسترليني · العملات الأخرى للعرض فقط</p>
+        </div>
+
+        <div class="pay-card" style="background:#f0f5ff;border:2px solid #c5d5e8">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="font-size:1.5rem">🛡️</span>
+            <div>
+              <div style="font-weight:700;color:var(--primary);margin-bottom:4px">ضمان استرداد الأموال</div>
+              <div style="font-size:0.82rem;color:var(--text-muted)">لا نخزن بيانات بطاقتك. معالجة الدفع عبر Stripe المعتمدة.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
+  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
+  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
+</nav>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/currency.js"></script>
+<script>
+  if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+
+  const params = new URLSearchParams(window.location.search);
+  const sessionKey = params.get('session') || '';
+  const piId       = params.get('pi') || '';
+  const clientSecret = params.get('secret') || '';
+  const amountGBP  = parseFloat(params.get('amount') || '0');
+
+  let stripe = null;
+  let cardElement = null;
+  let stripePublicKey = '';
+
+  async function initStripe() {
+    try {
+      const cfg = await Api.get('/api/config/stripe-key');
+      stripePublicKey = cfg.publishable_key || cfg.key || '';
+      if (!stripePublicKey) throw new Error('no key');
+    } catch {
+      showError('تعذر تحميل إعدادات الدفع. يرجى المحاولة مجدداً.');
+      return;
+    }
+
+    stripe = Stripe(stripePublicKey);
+    const elements = stripe.elements({ locale: 'ar' });
+    cardElement = elements.create('card', {
+      style: {
+        base: {
+          fontFamily: 'inherit',
+          fontSize: '16px',
+          color: '#1a2744',
+          '::placeholder': { color: '#9ca3af' },
+        },
+        invalid: { color: '#ef4444' },
+      },
+      hidePostalCode: true,
+    });
+    cardElement.mount('#stripe-element');
+    cardElement.on('change', e => {
+      const err = document.getElementById('payError');
+      if (e.error) { err.textContent = e.error.message; err.style.display='block'; }
+      else { err.style.display='none'; }
+    });
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('payError');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function switchTab(tab) {
+    document.getElementById('tabCard').classList.toggle('active', tab==='card');
+    document.getElementById('tabLink').classList.toggle('active', tab==='link');
+  }
+
+  function loadOrderSummary() {
+    const el = document.getElementById('orderSummary');
+    if (!amountGBP) {
+      el.innerHTML = '<p style="color:var(--error)">تعذر تحميل ملخص الطلب</p>';
+      return;
+    }
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:0.92rem">
+        <span>سعر الرحلة</span>
+        <span>£ ${(amountGBP * 0.9).toFixed(2)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.92rem">
+        <span>الضرائب والرسوم</span>
+        <span>£ ${(amountGBP * 0.1).toFixed(2)}</span>
+      </div>`;
+    document.getElementById('totalRow').style.display = 'flex';
+    document.getElementById('totalDisplay').textContent = '£ ' + amountGBP.toFixed(2);
+  }
+
+  async function submitPayment() {
+    if (!stripe || !cardElement) { showError('جاري تحميل نظام الدفع...'); return; }
+    if (!clientSecret) { showError('بيانات الدفع غير متوفرة. يرجى العودة وإعادة المحاولة.'); return; }
+
+    const cardName = document.getElementById('cardName').value.trim();
+    if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة'); return; }
+
+    const btn = document.getElementById('payBtn');
+    const sp  = document.getElementById('paySpinner');
+    const tx  = document.getElementById('payBtnTxt');
+    btn.disabled=true; sp.classList.remove('hidden'); tx.classList.add('hidden');
+    document.getElementById('payError').style.display = 'none';
+
+    try {
+      const result = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+          card: cardElement,
+          billing_details: { name: cardName },
+        },
+      });
+
+      if (result.error) {
+        showError(result.error.message || 'فشل الدفع. يرجى التحقق من بيانات البطاقة.');
+        btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+        return;
+      }
+
+      if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+        // Poll backend for booking confirmation (webhook may arrive slightly after)
+        let bookingRef = '';
+        for (let attempt = 0; attempt < 6; attempt++) {
+          try {
+            const confirmRes = await Api.post('/api/flights/checkout/confirm', {
+              session_key: sessionKey,
+              payment_intent_id: piId,
+            }, true);
+            if (confirmRes.status === 'confirmed') {
+              bookingRef = confirmRes.booking_reference || '';
+              break;
+            }
+          } catch (e) { /* ignore, redirect anyway */ break; }
+          await new Promise(r => setTimeout(r, 2000));
+        }
+        window.location.href = 'confirmation.html?session=' + encodeURIComponent(sessionKey)
+          + '&pi=' + encodeURIComponent(piId)
+          + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '');
+      } else {
+        showError('حالة الدفع غير معروفة. يرجى التواصل مع الدعم.');
+        btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+      }
+    } catch (err) {
+      showError(err.message || 'حدث خطأ أثناء الدفع');
+      btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+    }
+  }
+
+  // Init
+  initCurrency();
+  loadOrderSummary();
+  initStripe();
+</script>
+</body>
+</html>

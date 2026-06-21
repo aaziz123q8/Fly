@@ -209,6 +209,26 @@ class FlightController
     }
 
     // =========================================================================
+    // Confirm checkout after Stripe payment
+    // =========================================================================
+
+    public function confirmCheckout(Request $request): void
+    {
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
+
+        $sessionKey = (string) ($request->input('session_key') ?? '');
+        $piId       = (string) ($request->input('payment_intent_id') ?? '');
+
+        try {
+            $result = $this->bookingService->confirmCheckout($sessionKey, $piId, (int) $user['id']);
+            Response::json($result);
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        }
+    }
+
+    // =========================================================================
     // User bookings
     // =========================================================================
 

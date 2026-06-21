@@ -328,6 +328,29 @@ $router->get('api/flights/:id', function (Request $req): void {
 }, [AuthMiddleware::handle()]);
 
 // ---------------------------------------------------------------------------
+// Routes — Stripe public key (no auth — only exposes publishable key)
+// ---------------------------------------------------------------------------
+
+$router->get('api/config/stripe-key', function (Request $req): void {
+    $cfgFile = BASE_PATH . '/config/apis.php';
+    $key = '';
+    if (file_exists($cfgFile)) {
+        $cfg = require $cfgFile;
+        $key = $cfg['stripe']['publishable_key'] ?? $cfg['stripe']['public_key'] ?? '';
+    }
+    if (!$key) $key = getenv('STRIPE_PUBLISHABLE_KEY') ?: '';
+    Response::json(['publishable_key' => $key]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Checkout confirm (polls booking status after payment)
+// ---------------------------------------------------------------------------
+
+$router->post('api/flights/checkout/confirm', function (Request $req): void {
+    (new FlightController())->confirmCheckout($req);
+}, [AuthMiddleware::handle()]);
+
+// ---------------------------------------------------------------------------
 // Routes — Public Coupon Validation (traveler auth)
 // ---------------------------------------------------------------------------
 

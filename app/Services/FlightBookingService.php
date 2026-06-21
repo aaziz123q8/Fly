@@ -478,6 +478,43 @@ class FlightBookingService
     }
 
     // =========================================================================
+    // confirmCheckout — called by payment.html after Stripe confirms
+    // =========================================================================
+
+    public function confirmCheckout(string $sessionKey, string $paymentIntentId, int $userId): array
+    {
+        // Look up session
+        $stmt = $this->db->prepare(
+            'SELECT * FROM booking_sessions WHERE session_key = :sk AND user_id = :uid LIMIT 1'
+        );
+        $stmt->execute([':sk' => $sessionKey, ':uid' => $userId]);
+        $session = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$session) {
+            throw new \RuntimeException('جلسة الحجز غير موجودة', 404);
+        }
+
+        // If already complete, return booking reference
+        if (($session['current_step'] ?? '') === 'complete') {
+            $booking = $this->db->prepare(
+                'SELECT booking_reference, status FROM flight_bookings WHERE user_id = :uid ORDER BY id DESC LIMIT 1'
+            );
+            $booking->execute([':uid' => $userId]);
+            $row = $booking->fetch(\PDO::FETCH_ASSOC);
+            return [
+                'status'            => 'confirmed',
+                'booking_reference' => $row['booking_reference'] ?? '',
+            ];
+        }
+
+        // Payment may still be processing via webhook — return pending
+        return [
+            'status'  => 'pending',
+            'message' => 'جارٍ تأكيد الحجز…',
+        ];
+    }
+
+    // =========================================================================
     // getUserBookings
     // =========================================================================
 
