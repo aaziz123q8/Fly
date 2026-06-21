@@ -12,11 +12,12 @@
   <div class="container">
     <a href="index.html" class="navbar-brand">
       <span class="brand-icon">✈️</span>
-      <div><span>FlyMasar</span><span class="brand-sub">فلاي مسار</span></div>
+      <div><span style="color:#1B4F8E">فلاي <span style="color:#E8A020">مسار</span></span></div>
     </a>
     <nav class="navbar-nav">
-      <a href="index.html">الرحلات</a>
-      <a href="hotels.html">الفنادق</a>
+      <a href="index.html">الرئيسية</a>
+      <a href="flights.html">رحلات</a>
+      <a href="hotels.html">فنادق</a>
       <a href="dashboard.html" class="active">حجوزاتي</a>
     </nav>
     <div class="navbar-actions">
@@ -26,14 +27,30 @@
         <button onclick="Auth.logout()" class="btn btn-ghost btn-sm">خروج</button>
       </div>
     </div>
-    <button class="hamburger" onclick="document.getElementById('mobileMenu').classList.toggle('open')"><span></span><span></span><span></span></button>
+    <button class="hamburger" onclick="openAppDrawer()" aria-label="القائمة"><span></span><span></span><span></span></button>
   </div>
 </nav>
-<div class="mobile-menu" id="mobileMenu">
-  <a href="index.html">✈️ الرحلات</a>
-  <a href="hotels.html">🏨 الفنادق</a>
-  <a href="dashboard.html">📋 حجوزاتي</a>
-  <a href="#" onclick="Auth.logout()">🚪 تسجيل الخروج</a>
+
+<!-- App Drawer -->
+<div class="app-overlay" id="appOverlay" onclick="closeAppDrawer()"></div>
+<div class="app-drawer" id="appDrawer">
+  <div class="app-drawer-head">
+    <div class="app-drawer-brand">✈️ فلاي <em>مسار</em></div>
+    <button class="app-drawer-close" onclick="closeAppDrawer()">✕</button>
+  </div>
+  <div class="app-drawer-body">
+    <div id="drawerAuthSection" class="app-drawer-sec"></div>
+    <div class="app-drawer-sec">
+      <div class="app-drawer-sec-title">روابط مهمة</div>
+      <div class="app-drawer-links">
+        <a href="about.html" class="app-drawer-link"><span class="dl-ico">ℹ️</span> من نحن</a>
+        <a href="contact.html" class="app-drawer-link"><span class="dl-ico">📞</span> اتصل بنا</a>
+        <a href="privacy.html" class="app-drawer-link"><span class="dl-ico">🔒</span> سياسة الخصوصية</a>
+        <a href="terms.html" class="app-drawer-link"><span class="dl-ico">📄</span> الشروط والأحكام</a>
+      </div>
+    </div>
+  </div>
+  <div class="app-drawer-footer-copy">© ٢٠٢٦ فلاي مسار — جميع الحقوق محفوظة</div>
 </div>
 
 <!-- Dashboard Header -->
@@ -163,6 +180,35 @@
     const initial = (user.first_name || user.email || '?')[0].toUpperCase();
     document.getElementById('userInitial').textContent = initial;
   }
+
+  // App Drawer
+  function openAppDrawer() {
+    document.getElementById('appDrawer').classList.add('open');
+    document.getElementById('appOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+    const sec = document.getElementById('drawerAuthSection');
+    if (user) {
+      const name = user.first_name || user.email || 'مستخدم';
+      sec.innerHTML = `<div class="app-drawer-auth">
+        <div class="app-drawer-avatar">${name[0].toUpperCase()}</div>
+        <div><div style="font-weight:700;font-size:.88rem">${name}</div><div style="font-size:.74rem;color:#6b7280">${user.email||''}</div></div>
+      </div>
+      <div class="app-drawer-links">
+        <a href="#" class="app-drawer-link" onclick="Auth.logout()"><span class="dl-ico">🚪</span> تسجيل الخروج</a>
+      </div>`;
+    } else {
+      sec.innerHTML = `<div style="display:flex;gap:8px;margin-bottom:8px">
+        <a href="login.html" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:.88rem;font-weight:700;border:1.5px solid #1B4F8E;color:#1B4F8E;background:none;text-decoration:none">دخول</a>
+        <a href="register.html" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:.88rem;font-weight:700;background:#1B4F8E;color:#fff;text-decoration:none">تسجيل</a>
+      </div>`;
+    }
+  }
+  function closeAppDrawer() {
+    document.getElementById('appDrawer').classList.remove('open');
+    document.getElementById('appOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAppDrawer(); });
 
   function switchTab(name, btn) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));

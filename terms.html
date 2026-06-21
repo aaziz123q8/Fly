@@ -23,11 +23,35 @@
 </head>
 <body>
 <nav class="navbar">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+  <div class="container">
     <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
-    <a href="index.html" class="btn btn-ghost btn-sm">الرئيسية</a>
+    <div class="navbar-actions" id="navAuthArea" style="display:flex;gap:8px">
+      <a href="login.html" class="btn btn-ghost btn-sm">دخول</a>
+      <a href="register.html" class="btn btn-primary btn-sm">تسجيل</a>
+    </div>
+    <button class="hamburger" onclick="openAppDrawer()" aria-label="القائمة"><span></span><span></span><span></span></button>
   </div>
 </nav>
+<div class="app-overlay" id="appOverlay" onclick="closeAppDrawer()"></div>
+<div class="app-drawer" id="appDrawer">
+  <div class="app-drawer-head">
+    <div class="app-drawer-brand">✈️ فلاي <em>مسار</em></div>
+    <button class="app-drawer-close" onclick="closeAppDrawer()">✕</button>
+  </div>
+  <div class="app-drawer-body">
+    <div id="drawerAuthSection" class="app-drawer-sec"></div>
+    <div class="app-drawer-sec">
+      <div class="app-drawer-sec-title">روابط مهمة</div>
+      <div class="app-drawer-links">
+        <a href="about.html" class="app-drawer-link"><span class="dl-ico">ℹ️</span> من نحن</a>
+        <a href="contact.html" class="app-drawer-link"><span class="dl-ico">📞</span> اتصل بنا</a>
+        <a href="privacy.html" class="app-drawer-link"><span class="dl-ico">🔒</span> سياسة الخصوصية</a>
+        <a href="terms.html" class="app-drawer-link"><span class="dl-ico">📄</span> الشروط والأحكام</a>
+      </div>
+    </div>
+  </div>
+  <div class="app-drawer-footer-copy">© ٢٠٢٦ فلاي مسار — جميع الحقوق محفوظة</div>
+</div>
 
 <section class="page-hero">
   <div class="container">
