@@ -231,7 +231,7 @@
             <input class="fi" id="fFrom" placeholder="مدينة أو رمز المطار" autocomplete="off" oninput="showDrop('fFrom','dFrom')">
             <div class="adrop" id="dFrom"></div>
           </div>
-          <div class="swap-wrap" style="display:flex;align-items:flex-end;padding-bottom:2px">
+          <div class="swap-wrap" style="align-items:flex-end;padding-bottom:2px">
             <button class="swap" onclick="swapAirports()">⇄</button>
           </div>
           <div class="fg">
@@ -244,11 +244,11 @@
         <div id="datesRow" class="row3">
           <div class="fg">
             <label>تاريخ الذهاب</label>
-            <input class="fi" id="fDep" readonly placeholder="اختر التاريخ" onclick="dpDep.toggle()">
+            <input class="fi" id="fDep" readonly placeholder="اختر التاريخ" onclick="openDp('dep')">
           </div>
           <div class="fg" id="retWrap" style="display:none">
             <label>تاريخ العودة</label>
-            <input class="fi" id="fRet" readonly placeholder="اختر التاريخ" onclick="dpRet.toggle()">
+            <input class="fi" id="fRet" readonly placeholder="اختر التاريخ" onclick="openDp('ret')">
           </div>
           <div class="fg pop-wrap">
             <label>المسافرون</label>
@@ -308,11 +308,11 @@
         <div class="row3">
           <div class="fg">
             <label>تاريخ الوصول</label>
-            <input class="fi" id="hIn" readonly placeholder="اختر التاريخ" onclick="dpHotel.toggle()">
+            <input class="fi" id="hIn" readonly placeholder="اختر التاريخ" onclick="openDp('hotel')">
           </div>
           <div class="fg">
             <label>تاريخ المغادرة</label>
-            <input class="fi" id="hOut" readonly placeholder="اختر التاريخ" onclick="dpHotel.toggle()">
+            <input class="fi" id="hOut" readonly placeholder="اختر التاريخ" onclick="openDp('hotel')">
           </div>
           <div class="fg pop-wrap">
             <label>الغرف والضيوف</label>
@@ -570,7 +570,12 @@ function pickAirport(inputId, dropId, code, label) {
 }
 
 /* ── DATEPICKERS ── */
-let dpDep, dpRet, dpHotel;
+var dpDep, dpRet, dpHotel;
+function openDp(which) {
+  if (which==='dep'   && dpDep)   dpDep.toggle();
+  if (which==='ret'   && dpRet)   dpRet.toggle();
+  if (which==='hotel' && dpHotel) dpHotel.toggle();
+}
 document.addEventListener('DOMContentLoaded', () => {
   // Auth nav
   const nav = document.getElementById('navAuth');
