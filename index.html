@@ -723,37 +723,23 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 /* ── SEARCH ── */
-async function searchFlights() {
-  const from = document.getElementById('fFrom').dataset.code || document.getElementById('fFrom').value.trim();
-  const to   = document.getElementById('fTo').dataset.code   || document.getElementById('fTo').value.trim();
-  const dep  = document.getElementById('fDep').value;
+function searchFlights() {
+  const from  = document.getElementById('fFrom').dataset.code || document.getElementById('fFrom').value.trim();
+  const to    = document.getElementById('fTo').dataset.code   || document.getElementById('fTo').value.trim();
+  const dep   = document.getElementById('fDep').value;
+  const ret   = typeof dpRet !== 'undefined' && dpRet ? (dpRet.getSelected ? (dpRet.getSelected()[0] ? dpRet.getSelected()[0].toISOString().substring(0,10) : '') : '') : '';
+  const cabin = document.getElementById('fClass') ? document.getElementById('fClass').value : 'economy';
   if (!from||!to||!dep) { toast(t('fill_fields'), 'err'); return; }
-  const btn = document.querySelector('#flP .btn-search');
-  const txt = document.getElementById('fTxt');
-  const sp  = document.getElementById('fSpin');
-  btn.disabled=true; txt.classList.add('hidden'); sp.classList.remove('hidden');
-  localStorage.setItem('bk_adults', pax.adult);
+  localStorage.setItem('bk_adults',   pax.adult);
   localStorage.setItem('bk_children', pax.child);
-  localStorage.setItem('bk_infants', pax.infant);
-  try {
-    const res = await Api.post('/api/flights/search', {
-      origin:from, destination:to, departure_date:dep,
-      adults:pax.adult, children:pax.child, infants:pax.infant,
-      cabin_class:document.getElementById('fClass').value
-    }, false);
-    const list = res.data||res.flights||res||[];
-    const sec = document.getElementById('flResults');
-    sec.classList.add('open');
-    sec.scrollIntoView({behavior:'smooth'});
-    document.getElementById('flCount').textContent = list.length + (curLang==='en' ? ' flights found' : ' رحلة متاحة');
-    document.getElementById('flList').innerHTML = list.length
-      ? list.map(fl => flightCard(fl)).join('')
-      : `<p style="text-align:center;padding:40px;color:#6B7280">${t('no_flights')}</p>`;
-  } catch(e) {
-    toast(e.message||'حدث خطأ أثناء البحث', 'err');
-  } finally {
-    btn.disabled=false; txt.classList.remove('hidden'); sp.classList.add('hidden');
-  }
+  localStorage.setItem('bk_infants',  pax.infant);
+  const params = new URLSearchParams({
+    from: from, to: to, dep: dep,
+    ret: ret, pax: pax.adult, cabin: cabin,
+    children: pax.child, infants: pax.infant,
+    type: ret ? 'round_trip' : 'one_way'
+  });
+  window.location.href = 'flights.html?' + params.toString();
 }
 
 function flightCard(fl) {
