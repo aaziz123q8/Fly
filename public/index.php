@@ -12,6 +12,20 @@ define('APP_START', microtime(true));
 // Load Composer autoloader.
 require BASE_PATH . '/vendor/autoload.php';
 
+// Global exception handler — catches any unhandled Throwable and returns JSON.
+set_exception_handler(function (Throwable $e): void {
+    if (!headers_sent()) {
+        http_response_code(500);
+        header('Content-Type: application/json; charset=UTF-8');
+    }
+    $isDev = (getenv('APP_ENV') ?: 'production') === 'development';
+    echo json_encode([
+        'error'   => 'server_error',
+        'message' => $isDev ? $e->getMessage() : 'An internal server error occurred.',
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit(1);
+});
+
 // Load environment variables from .env if phpdotenv is available
 // and no env vars are set yet (Hostinger hPanel env vars take precedence).
 if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {

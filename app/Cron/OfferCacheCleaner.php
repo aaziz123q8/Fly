@@ -7,7 +7,12 @@ require BASE_PATH . '/vendor/autoload.php';
 
 use App\Helpers\Database;
 
-$db = Database::getInstance();
+try {
+    $db = Database::getInstance();
+} catch (\Throwable $e) {
+    fwrite(STDERR, '[OfferCacheCleaner] Fatal: ' . $e->getMessage() . PHP_EOL);
+    exit(1);
+}
 
 // Delete expired offer_cache rows (LIMIT 1000 to avoid table lock)
 $stmt1 = $db->query(

@@ -12,4 +12,9 @@ if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
     $dotenv->safeLoad();
 }
 
-(new \App\Workers\JobWorker())->run();
+try {
+    (new \App\Workers\JobWorker())->run();
+} catch (\Throwable $e) {
+    fwrite(STDERR, '[JobQueueRunner] Fatal: ' . $e->getMessage() . PHP_EOL);
+    exit(1);
+}

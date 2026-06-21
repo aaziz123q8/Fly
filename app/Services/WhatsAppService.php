@@ -68,15 +68,15 @@ class WhatsAppService
 
         // First segment: origin → destination + departure date
         $segStmt = $this->db->prepare(
-            'SELECT origin_iata, destination_iata, departure_at
+            'SELECT origin_airport, destination_airport, departure_at
              FROM flight_booking_segments
-             WHERE booking_id = :id ORDER BY slice_index, departure_at LIMIT 1'
+             WHERE booking_id = :id ORDER BY slice_index, segment_order LIMIT 1'
         );
         $segStmt->execute([':id' => $bookingId]);
         $seg = $segStmt->fetch(PDO::FETCH_ASSOC);
 
         $route = $seg
-            ? $seg['origin_iata'] . ' → ' . $seg['destination_iata']
+            ? $seg['origin_airport'] . ' → ' . $seg['destination_airport']
             : 'N/A';
         $date = $seg
             ? date('d M Y', strtotime($seg['departure_at']))

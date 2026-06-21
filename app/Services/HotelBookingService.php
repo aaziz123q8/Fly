@@ -452,7 +452,7 @@ class HotelBookingService
                 ':room_type'        => $room['room_type'] ?? $room['type'] ?? 'Standard Room',
                 ':meal_plan'        => $room['meal_plan'] ?? $room['board_type'] ?? null,
                 ':provider_room_id' => $room['id'] ?? $room['room_id'] ?? null,
-                ':amount'           => $room['amount'] ?? $room['price'] ?? null,
+                ':amount'           => $room['amount'] ?? $room['price'] ?? 0.00,
                 ':currency'         => $currency,
             ]);
         }

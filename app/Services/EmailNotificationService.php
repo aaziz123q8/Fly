@@ -92,7 +92,7 @@ class EmailNotificationService
         }
 
         $segments = $this->db->prepare(
-            'SELECT * FROM flight_booking_segments WHERE booking_id = :id ORDER BY slice_index, departure_at'
+            'SELECT * FROM flight_booking_segments WHERE booking_id = :id ORDER BY slice_index, segment_order'
         );
         $segments->execute([':id' => $bookingId]);
         $segRows = $segments->fetchAll(PDO::FETCH_ASSOC);
@@ -269,13 +269,12 @@ HTML;
                    <td style="padding:10px;border-bottom:1px solid #eee;">%s → %s</td>
                    <td style="padding:10px;border-bottom:1px solid #eee;">%s</td>
                    <td style="padding:10px;border-bottom:1px solid #eee;">%s</td>
-                   <td style="padding:10px;border-bottom:1px solid #eee;">%s%s</td>
+                   <td style="padding:10px;border-bottom:1px solid #eee;">%s</td>
                  </tr>',
-                htmlspecialchars($s['origin_iata'], ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars($s['destination_iata'], ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($s['origin_airport'], ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($s['destination_airport'], ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars($dep, ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars($arr, ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars($s['airline_iata'], ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars($s['flight_number'], ENT_QUOTES, 'UTF-8')
             );
         }
@@ -285,13 +284,12 @@ HTML;
         foreach ($passengers as $p) {
             $pasHtml .= sprintf(
                 '<tr>
-                   <td style="padding:8px;border-bottom:1px solid #eee;">%s %s %s</td>
+                   <td style="padding:8px;border-bottom:1px solid #eee;">%s %s</td>
                    <td style="padding:8px;border-bottom:1px solid #eee;">%s</td>
                  </tr>',
-                htmlspecialchars($p['title'], ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars($p['first_name'], ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars($p['last_name'], ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars(ucfirst($p['type']), ENT_QUOTES, 'UTF-8')
+                htmlspecialchars(ucfirst($p['passenger_type'] ?? 'adult'), ENT_QUOTES, 'UTF-8')
             );
         }
 

@@ -27,9 +27,8 @@ class AuthMiddleware
      */
     public static function handle(?AuthService $authService = null): callable
     {
-        $svc = $authService ?? new AuthService();
-
-        return function (Request $request, callable $next) use ($svc): void {
+        return function (Request $request, callable $next) use ($authService): void {
+            $svc = $authService ?? new AuthService();
             $token = $request->bearerToken();
 
             if ($token === null || $token === '') {
