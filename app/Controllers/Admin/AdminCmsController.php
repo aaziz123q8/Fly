@@ -125,8 +125,9 @@ class AdminCmsController
             Response::error('A page with this slug already exists.', 409, 'slug_conflict');
         }
 
-        $isPublished = isset($request->input('is_published'))
-            ? (int)(bool)$request->input('is_published')
+        $isPublishedInput = $request->input('is_published');
+        $isPublished = $isPublishedInput !== null
+            ? (int)(bool)$isPublishedInput
             : (int)$page['is_published'];
 
         $stmt = $db->prepare(

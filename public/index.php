@@ -33,12 +33,17 @@ if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
     $dotenv->safeLoad();
 }
 
+use App\Controllers\Admin\AdminAnalyticsController;
 use App\Controllers\Admin\AdminAuthController;
 use App\Controllers\Admin\AdminBookingsController;
+use App\Controllers\Admin\AdminCmsController;
 use App\Controllers\Admin\AdminCouponsController;
 use App\Controllers\Admin\AdminDashboardController;
+use App\Controllers\Admin\AdminInvoicesController;
+use App\Controllers\Admin\AdminNotificationsController;
 use App\Controllers\Admin\AdminPricingController;
 use App\Controllers\Admin\AdminTravelersController;
+use App\Controllers\Api\PushController;
 use App\Controllers\Auth\AuthController;
 use App\Controllers\Flight\FlightController;
 use App\Controllers\Hotel\HotelController;
@@ -203,6 +208,14 @@ $router->group('api/hotels', function (Router $r): void {
 });
 
 // ---------------------------------------------------------------------------
+// Routes — Public Coupon Validation (traveler auth)
+// ---------------------------------------------------------------------------
+
+$router->post('api/coupons/validate', function (Request $req): void {
+    (new AdminCouponsController())->validate($req);
+}, [AuthMiddleware::handle()]);
+
+// ---------------------------------------------------------------------------
 // Routes — Admin Panel
 // ---------------------------------------------------------------------------
 
@@ -283,6 +296,72 @@ $router->group('api/admin', function (Router $r): void {
         (new AdminPricingController())->destroy($req);
     }, [AdminMiddleware::handle()]);
 });
+
+// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Routes — Notifications (traveler-facing)
+// ---------------------------------------------------------------------------
+
+$router->group('api/notifications', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new AdminNotificationsController())->userNotifications($req), [AuthMiddleware::handle()]);
+    $r->put('/:id/read', fn(Request $req) => (new AdminNotificationsController())->markRead($req), [AuthMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: Notifications
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/notifications', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new AdminNotificationsController())->index($req), [AdminMiddleware::handle()]);
+    $r->post('/broadcast', fn(Request $req) => (new AdminNotificationsController())->broadcast($req), [AdminMiddleware::handle()]);
+    $r->get('/:id', fn(Request $req) => (new AdminNotificationsController())->show($req), [AdminMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: Analytics
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/analytics', function (Router $r): void {
+    $r->get('/overview', fn(Request $req) => (new AdminAnalyticsController())->overview($req), [AdminMiddleware::handle()]);
+    $r->get('/searches', fn(Request $req) => (new AdminAnalyticsController())->searches($req), [AdminMiddleware::handle()]);
+    $r->get('/revenue', fn(Request $req) => (new AdminAnalyticsController())->revenue($req), [AdminMiddleware::handle()]);
+    $r->get('/popular-routes', fn(Request $req) => (new AdminAnalyticsController())->popularRoutes($req), [AdminMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: Invoices
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/invoices', function (Router $r): void {
+    $r->get('/:type/:id', fn(Request $req) => (new AdminInvoicesController())->show($req), [AdminMiddleware::handle()]);
+    $r->post('/:type/:id/regenerate', fn(Request $req) => (new AdminInvoicesController())->regenerate($req), [AdminMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — CMS (public)
+// ---------------------------------------------------------------------------
+
+$router->get('api/cms/pages', fn(Request $req) => (new AdminCmsController())->publicList($req));
+$router->get('api/cms/pages/:slug', fn(Request $req) => (new AdminCmsController())->publicShow($req));
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: CMS
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/cms/pages', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new AdminCmsController())->index($req), [AdminMiddleware::handle()]);
+    $r->post('/', fn(Request $req) => (new AdminCmsController())->store($req), [AdminMiddleware::handle()]);
+    $r->get('/:id', fn(Request $req) => (new AdminCmsController())->show($req), [AdminMiddleware::handle()]);
+    $r->put('/:id', fn(Request $req) => (new AdminCmsController())->update($req), [AdminMiddleware::handle()]);
+    $r->delete('/:id', fn(Request $req) => (new AdminCmsController())->destroy($req), [AdminMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — PWA Push Subscriptions
+// ---------------------------------------------------------------------------
+
+$router->post('api/push/subscribe', fn(Request $req) => (new PushController())->subscribe($req), [AuthMiddleware::handle()]);
+$router->delete('api/push/unsubscribe', fn(Request $req) => (new PushController())->unsubscribe($req), [AuthMiddleware::handle()]);
 
 // ---------------------------------------------------------------------------
 // 404 / 405 handlers
