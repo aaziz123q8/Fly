@@ -3,7 +3,7 @@ const Flights = {
 
     async search(params) {
         Flights.searchParams = params;
-        return await Api.get(`/api/flights/search?${new URLSearchParams(params)}`);
+        return await Api.post('/api/flights/search', params);
     },
 
     async getDetails(flightId) {

@@ -34,6 +34,7 @@ if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
 }
 
 use App\Controllers\Admin\AdminAnalyticsController;
+use App\Controllers\Traveler\TravelerController;
 use App\Controllers\Admin\AdminAuthController;
 use App\Controllers\Admin\AdminBookingsController;
 use App\Controllers\Admin\AdminCmsController;
@@ -206,6 +207,83 @@ $router->group('api/hotels', function (Router $r): void {
         (new HotelController())->detail($req);
     });
 });
+
+// ---------------------------------------------------------------------------
+// Routes — Travelers (traveler-facing)
+// ---------------------------------------------------------------------------
+
+$router->group('api/travelers', function (Router $r): void {
+    $r->get('/', function (Request $req): void {
+        (new TravelerController())->index($req);
+    }, [AuthMiddleware::handle()]);
+    $r->post('/', function (Request $req): void {
+        (new TravelerController())->store($req);
+    }, [AuthMiddleware::handle()]);
+    $r->put('/:id', function (Request $req): void {
+        (new TravelerController())->update($req);
+    }, [AuthMiddleware::handle()]);
+    $r->delete('/:id', function (Request $req): void {
+        (new TravelerController())->destroy($req);
+    }, [AuthMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Bookings (traveler-facing aliases)
+// ---------------------------------------------------------------------------
+
+$router->group('api/bookings', function (Router $r): void {
+    $r->get('/flights', function (Request $req): void {
+        (new FlightController())->listBookings($req);
+    }, [AuthMiddleware::handle()]);
+    $r->post('/flights', function (Request $req): void {
+        (new FlightController())->startCheckout($req);
+    }, [AuthMiddleware::handle()]);
+    $r->get('/hotels', function (Request $req): void {
+        (new HotelController())->listBookings($req);
+    }, [AuthMiddleware::handle()]);
+    $r->post('/hotels', function (Request $req): void {
+        (new HotelController())->prebook($req);
+    }, [AuthMiddleware::handle()]);
+    $r->post('/lookup', function (Request $req): void {
+        (new TravelerController())->lookupBooking($req);
+    });
+    $r->get('/my-flights', function (Request $req): void {
+        (new FlightController())->listBookings($req);
+    }, [AuthMiddleware::handle()]);
+    $r->get('/my-hotels', function (Request $req): void {
+        (new HotelController())->listBookings($req);
+    }, [AuthMiddleware::handle()]);
+    $r->get('/:id', function (Request $req): void {
+        (new FlightController())->getBooking($req);
+    }, [AuthMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Contact
+// ---------------------------------------------------------------------------
+
+$router->post('api/contact', function (Request $req): void {
+    // Basic contact form handler — log and acknowledge
+    $body = $req->json();
+    error_log('[Contact] ' . json_encode($body));
+    Response::json(['success' => true, 'message' => 'تم استلام رسالتك، سنتواصل معك قريباً.']);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Auth extra endpoints
+// ---------------------------------------------------------------------------
+
+$router->post('api/auth/change-password', function (Request $req): void {
+    (new TravelerController())->changePassword($req);
+}, [AuthMiddleware::handle()]);
+
+// ---------------------------------------------------------------------------
+// Routes — Flight detail by ID (for booking page)
+// ---------------------------------------------------------------------------
+
+$router->get('api/flights/:id', function (Request $req): void {
+    (new FlightController())->getBooking($req);
+}, [AuthMiddleware::handle()]);
 
 // ---------------------------------------------------------------------------
 // Routes — Public Coupon Validation (traveler auth)

@@ -1,4 +1,4 @@
-const API_BASE = 'https://beige-hare-390642.hostingersite.com';
+const API_BASE = '';
 
 const Api = {
     async request(method, endpoint, data = null, requiresAuth = false) {

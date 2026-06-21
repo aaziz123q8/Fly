@@ -9,7 +9,7 @@
 /* ============================================================
    AIRPORT DATA
    ============================================================ */
-const airports = [
+const airports = window.airports = [
   { code: 'LHR', name: 'لندن هيثرو', nameEn: 'London Heathrow', city: 'لندن', cityEn: 'London', country: 'المملكة المتحدة', countryEn: 'United Kingdom' },
   { code: 'LGW', name: 'لندن غاتويك', nameEn: 'London Gatwick', city: 'لندن', cityEn: 'London', country: 'المملكة المتحدة', countryEn: 'United Kingdom' },
   { code: 'DXB', name: 'دبي الدولي', nameEn: 'Dubai International', city: 'دبي', cityEn: 'Dubai', country: 'الإمارات', countryEn: 'UAE' },
@@ -681,7 +681,7 @@ function initFlightSearch() {
     }
 
     setTimeout(() => {
-      window.location.href = `/flight-results.php?${params.toString()}`;
+      window.location.href = `flights.html?${params.toString()}`;
     }, 600);
   });
 }
@@ -719,7 +719,7 @@ function initHotelSearch() {
       children: state.hotelChildren,
     });
 
-    window.location.href = `/hotel-results.php?${params.toString()}`;
+    window.location.href = `hotels.html?${params.toString()}`;
   });
 }
 
@@ -785,7 +785,7 @@ function initContactForm() {
     };
 
     try {
-      const res = await fetch('/api/contact.php', {
+      const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

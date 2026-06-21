@@ -5,7 +5,7 @@ const Hotels = {
 
     async search(params) {
         Hotels.searchParams = params;
-        return await Api.get(`/api/hotels/search?${new URLSearchParams(params)}`);
+        return await Api.post('/api/hotels/search', params);
     },
 
     async getDetails(hotelId) {
@@ -62,7 +62,7 @@ const Hotels = {
     openBookingModal(hotelId) {
         if (!Auth.isLoggedIn()) {
             showToast('يجب تسجيل الدخول أولاً للحجز', 'warning');
-            setTimeout(() => window.location.href = '/login.html', 1500);
+            setTimeout(() => window.location.href = 'login.html', 1500);
             return;
         }
         localStorage.setItem('booking_hotel_id', hotelId);

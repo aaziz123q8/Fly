@@ -182,9 +182,9 @@
 
 <script src="js/i18n.js"></script>
 <script src="js/currency.js"></script>
-<script src="js/datepicker.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/datepicker.js"></script>
 <script>
   const guestState = { rooms:1, adults:2, children:0 };
   let checkinDate = null, checkoutDate = null;
@@ -262,7 +262,7 @@
         adults: guestState.adults,
         children: guestState.children,
       };
-      const res = await Api.get('/api/hotels/search?' + new URLSearchParams(params));
+      const res = await Api.post('/api/hotels/search', params);
       const hotels = res.data || res.hotels || (Array.isArray(res)?res:[]);
       document.getElementById('hotelsSection').classList.remove('hidden');
       document.getElementById('hotelsCount').textContent = hotels.length + ' فندق متاح';
