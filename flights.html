@@ -119,7 +119,8 @@
       </div>
       <div>
         <div class="form-label">المسافرون</div>
-        <input type="number" class="form-control" id="sPax" min="1" max="9" style="width:66px">
+        <input type="text" class="form-control" id="sPaxDisplay" readonly style="min-width:100px;cursor:default">
+        <input type="hidden" id="sPax">
       </div>
       <div>
         <div class="form-label">الدرجة</div>
@@ -552,15 +553,26 @@ function initPage() {
   document.getElementById('sFrom').value    = searchParams.origin;
   document.getElementById('sTo').value      = searchParams.destination;
   document.getElementById('sDepDate').value = searchParams.departure;
-  document.getElementById('sRetDate').value = searchParams.return;
+  document.getElementById('sRetDate').value = searchParams.return || '';
   document.getElementById('sPax').value     = searchParams.passengers;
   document.getElementById('sCabin').value   = searchParams.cabin;
 
+  // Passenger display summary
+  var paxParts = [searchParams.passengers + ' بالغ'];
+  if (searchParams.children > 0) paxParts.push(searchParams.children + ' طفل');
+  if (searchParams.infants  > 0) paxParts.push(searchParams.infants  + ' رضيع');
+  document.getElementById('sPaxDisplay').value = paxParts.join('، ');
+
   if (searchParams.departure) {
+    var paxSummary = searchParams.passengers + ' بالغ';
+    if (searchParams.children > 0) paxSummary += '، ' + searchParams.children + ' طفل';
+    if (searchParams.infants  > 0) paxSummary += '، ' + searchParams.infants  + ' رضيع';
+    var tripType = searchParams.return ? 'ذهاب وعودة' : 'ذهاب فقط';
     document.getElementById('searchSummary').textContent =
+      tripType + ' | ' +
       searchParams.origin + ' ← → ' + searchParams.destination + ' | ' +
-      searchParams.departure + (searchParams.return?' – '+searchParams.return:'') + ' | ' +
-      searchParams.passengers + ' مسافر | ' + cabinLabel(searchParams.cabin);
+      searchParams.departure + (searchParams.return ? ' – ' + searchParams.return : '') + ' | ' +
+      paxSummary + ' | ' + cabinLabel(searchParams.cabin);
   }
 
   // Nav
@@ -870,11 +882,15 @@ function doSearch() {
   var to    = document.getElementById('sTo').value.trim().toUpperCase();
   var dep   = toISODate(document.getElementById('sDepDate').value);
   var ret   = toISODate(document.getElementById('sRetDate').value);
-  var pax   = parseInt(document.getElementById('sPax').value)||1;
+  var pax   = parseInt(document.getElementById('sPax').value) || searchParams.passengers || 1;
   var cabin = document.getElementById('sCabin').value;
+  var children = searchParams.children || 0;
+  var infants  = searchParams.infants  || 0;
   if (!from||!to||!dep) { alert('الرجاء تعبئة جميع الحقول المطلوبة'); return; }
   var params = new URLSearchParams({from:from,to:to,dep:dep,pax:pax,cabin:cabin,type:ret?'round_trip':'one_way'});
-  if (ret) params.set('ret', ret);
+  if (ret)      params.set('ret',      ret);
+  if (children) params.set('children', children);
+  if (infants)  params.set('infants',  infants);
   window.location.href = 'flights.html?'+params.toString();
 }
 

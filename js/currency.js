@@ -1,15 +1,19 @@
 const CURRENCY = {
-  GBP: { symbol: '£', name: 'GBP', rate: 1 },
-  KWD: { symbol: 'د.ك', name: 'KWD', rate: 0.40 },
-  SAR: { symbol: 'ر.س', name: 'SAR', rate: 4.75 },
-  USD: { symbol: '$', name: 'USD', rate: 1.27 },
+  GBP: { symbol: '£',    name: 'GBP', rate: 1    },
+  KWD: { symbol: 'د.ك', name: 'KWD', rate: 0.40  },
+  SAR: { symbol: 'ر.س', name: 'SAR', rate: 4.75  },
+  USD: { symbol: '$',    name: 'USD', rate: 1.27  },
 };
 
-let currentCurrency = localStorage.getItem('flymasar_currency') || 'GBP';
+// Unified key — read from either key for backwards compat, write to both
+let currentCurrency = localStorage.getItem('fly_cur')
+  || localStorage.getItem('flymasar_currency')
+  || 'KWD';
 
 function setCurrency(code) {
   if (!CURRENCY[code]) return;
   currentCurrency = code;
+  localStorage.setItem('fly_cur', code);
   localStorage.setItem('flymasar_currency', code);
   document.querySelectorAll('.currency-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.currency === code);

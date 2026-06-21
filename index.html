@@ -453,10 +453,11 @@ const AIRPORTS = [
 /* ── CURRENCY ── */
 const RATES = {GBP:1, KWD:0.38, SAR:4.78, USD:1.27};
 const SYMS  = {GBP:'£', KWD:'د.ك', SAR:'ر.س', USD:'$'};
-let curCur = localStorage.getItem('fly_cur') || 'GBP';
+let curCur = localStorage.getItem('fly_cur') || localStorage.getItem('flymasar_currency') || 'KWD';
 function setCur(c) {
   curCur = c;
   localStorage.setItem('fly_cur', c);
+  localStorage.setItem('flymasar_currency', c);
   document.querySelectorAll('[data-cur]').forEach(b => b.classList.toggle('on', b.dataset.cur === c));
 }
 function fmtPrice(gbp) {
