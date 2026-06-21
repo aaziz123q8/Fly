@@ -112,7 +112,11 @@ class DatePicker {
           this.startDate = d;
           this.trigger.value = this._fmt(d);
           // Store ISO date for programmatic reading
-          this.trigger.dataset.isoDate = d.toISOString().substring(0, 10);
+          // Use local date parts to avoid UTC timezone shift (e.g. UTC+3 → midnight = prev day in UTC)
+          const _y = d.getFullYear();
+          const _m = String(d.getMonth() + 1).padStart(2, '0');
+          const _d = String(d.getDate()).padStart(2, '0');
+          this.trigger.dataset.isoDate = `${_y}-${_m}-${_d}`;
           this.trigger.classList.add('filled');
           this.onSelect(d, null, this);
           this._render();

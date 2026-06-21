@@ -83,8 +83,9 @@ class FlightSearchService
             $childAge = max(2, min(11, (int) $age));
             $passengers[] = ['age' => $childAge];   // age-only, no type
         }
+        // Duffel v2: infants (age 0-1) must use age-only, same as children
         for ($i = 0; $i < $infantCount; $i++) {
-            $passengers[] = ['type' => 'infant_without_seat'];  // type-only, no age
+            $passengers[] = ['age' => 0];
         }
 
         // ── 3. Call Duffel ───────────────────────────────────────────────────
