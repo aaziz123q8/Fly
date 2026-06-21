@@ -435,24 +435,50 @@
       priceGBP = baseAmount;
       taxGBP   = taxAmount;
 
-      // Build display from slices
+      // Build display from ALL slices (outbound + return)
       const slices = flightData.slices || [];
-      const firstSlice = slices[0] || {};
-      const firstSeg   = (firstSlice.segments||[])[0] || {};
-      const origin      = firstSeg.departing_airport?.iata_code || firstSlice.origin?.iata_code || '---';
-      const destination = (slices[slices.length-1]?.segments||[]).slice(-1)[0]?.arriving_airport?.iata_code
-                        || firstSlice.destination?.iata_code || '---';
-      const airline     = firstSeg.operating_carrier?.name || firstSeg.marketing_carrier?.name || '';
-      const depTime     = firstSeg.departing_at?.substring(0,16).replace('T',' ') || '';
+
+      function airportLabel(ap) {
+        if (!ap) return '---';
+        const code = ap.iata_code || ap;
+        const name = ap.name || ap.city_name || '';
+        return name ? `${code} — ${name}` : code;
+      }
+      function fmtDt(dt) {
+        if (!dt) return '';
+        try {
+          return new Date(dt).toLocaleString('ar-KW', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:false});
+        } catch(e) { return dt.substring(0,16).replace('T',' '); }
+      }
+
+      let sliceHtml = '';
+      slices.forEach((sl, idx) => {
+        const segs   = sl.segments || [];
+        const first  = segs[0] || {};
+        const last   = segs[segs.length-1] || {};
+        const orig   = airportLabel(first.departing_airport  || sl.origin);
+        const dest   = airportLabel(last.arriving_airport    || sl.destination);
+        const dep    = fmtDt(first.departing_at);
+        const arr    = fmtDt(last.arriving_at);
+        const al     = first.marketing_carrier?.name || first.operating_carrier?.name || '';
+        const stops  = Math.max(0, segs.length - 1);
+        const label  = idx === 0 ? '✈ ذهاب' : '↩ عودة';
+        const labelColor = idx === 0 ? '#1B4F8E' : '#7c3aed';
+        sliceHtml += `
+          <div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:10px">
+            <div style="font-size:.72rem;font-weight:700;color:${labelColor};margin-bottom:6px">${label}</div>
+            <div style="font-size:.95rem;font-weight:700;margin-bottom:4px">${orig} → ${dest}</div>
+            <div style="font-size:.8rem;color:#6b7280">${al}${stops ? ' · ' + stops + ' توقف' : ' · مباشر'}</div>
+            <div style="font-size:.8rem;color:#6b7280;margin-top:2px">${dep}${arr ? ' – ' + arr : ''}</div>
+          </div>`;
+      });
 
       el.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
-          <div>
-            <div style="font-size:1.1rem;font-weight:700">${origin} → ${destination}</div>
-            <div style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">${airline} · ${depTime}</div>
-          </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+          <div style="font-size:.85rem;color:#6b7280">${slices.length > 1 ? 'ذهاب وعودة' : 'ذهاب فقط'}</div>
           <div style="font-size:1.4rem;font-weight:800;color:var(--primary)">${formatPrice(totalAmount)}</div>
-        </div>`;
+        </div>
+        ${sliceHtml}`;
       document.getElementById('priceBase').textContent = formatPrice(priceGBP);
       document.getElementById('priceTax').textContent  = formatPrice(taxGBP);
       updateTotal();

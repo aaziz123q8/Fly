@@ -234,12 +234,17 @@ async function loadAll() {
 
     // Process offer
     if (offerRes.status === 'fulfilled') {
-      const offer = offerRes.value.data || offerRes.value;
+      // Duffel API wraps in { data: {...} }
+      const raw   = offerRes.value;
+      const offer = raw.data || raw;
       basePriceGBP = parseFloat(offer.total_amount || 0);
+
+      // Store base price in summary
+      document.getElementById('sumBase').textContent = fmt(basePriceGBP);
 
       // Extract passenger names from passengers array
       passengerNames = (offer.passengers || []).map((p, i) => {
-        const type = p.type === 'adult' ? 'بالغ' : (p.age <= 1 ? 'رضيع' : 'طفل');
+        const type = p.type === 'adult' ? 'بالغ' : (parseInt(p.age||99) <= 1 ? 'رضيع' : 'طفل');
         return 'مسافر ' + (i+1) + ' (' + type + ')';
       });
 
@@ -251,13 +256,14 @@ async function loadAll() {
 
     // Process seat maps
     if (seatRes.status === 'fulfilled') {
-      const maps = seatRes.value.data || [];
+      const rawSeat = seatRes.value;
+      const maps = Array.isArray(rawSeat) ? rawSeat : (rawSeat.data || []);
       if (maps.length > 0) {
         seatMaps = maps;
-        // Build segment labels from seat map cabin names
+        // Build segment labels from seat map segment info
         segmentLabels = maps.map((m, i) => {
-          const seg = m.slices && m.slices[0] && m.slices[0].segments && m.slices[0].segments[0];
-          if (seg) return (seg.origin?.iata_code || '?') + ' → ' + (seg.destination?.iata_code || '?');
+          const seg = m.segment || (m.slices && m.slices[0]?.segments?.[0]);
+          if (seg) return (seg.origin?.iata_code || seg.departing_airport?.iata_code || '?') + ' → ' + (seg.destination?.iata_code || seg.arriving_airport?.iata_code || '?');
           return 'رحلة ' + (i+1);
         });
         document.getElementById('seatCard').style.display = 'block';
@@ -281,7 +287,7 @@ function renderBaggage(services, passengers) {
   const bagServices = services.filter(s => s.type === 'baggage');
   const el = document.getElementById('baggageContent');
   if (!bagServices.length) {
-    el.innerHTML = '<div class="empty-msg">لا توجد أمتعة إضافية متاحة لهذه الرحلة.</div>';
+    el.innerHTML = '<div class="empty-msg">✅ الأمتعة مشمولة أو لا توجد أمتعة إضافية متاحة لهذه الرحلة عبر هذه الشركة.</div>';
     return;
   }
 
@@ -403,23 +409,28 @@ function renderSeatMap() {
 
   let html = '';
   cabins.forEach(cabin => {
-    html += `<div style="font-size:.8rem;font-weight:700;color:#6b7280;margin-bottom:8px">${cabin.cabin_class_marketing_name || cabin.cabin_class || 'الدرجة'}</div>`;
+    html += `<div style="font-size:.8rem;font-weight:700;color:#6b7280;margin:12px 0 8px">${cabin.cabin_class_marketing_name || cabin.cabin_class || 'الدرجة'}</div>`;
     const rows = cabin.rows || [];
     rows.forEach(row => {
+      // Duffel structure: row.sections[] → each section has elements[]
+      // elements can be type:'seat' or type:'empty' or type:'bassinet'
       const sections = row.sections || [];
-      html += `<div class="seat-row"><div class="seat-row-num">${row.number||''}</div>`;
+      html += `<div class="seat-row"><div class="seat-row-num" style="font-size:.65rem;color:#9ca3af;min-width:20px;text-align:center">${row.number||''}</div>`;
       sections.forEach((section, si) => {
         if (si > 0) html += `<div class="aisle"></div>`;
         const elements = section.elements || [];
-        elements.forEach(el2 => {
-          if (el2.type === 'empty') { html += `<div style="width:34px;flex-shrink:0"></div>`; return; }
-          // It's a seat
-          const seat = el2;
-          const key = `${currentPaxIdx}_${currentSegIdx}_${seat.designator}`;
+        elements.forEach(elem => {
+          if (!elem || elem.type === 'empty') {
+            html += `<div style="width:34px;height:34px;flex-shrink:0"></div>`;
+            return;
+          }
+          const seat = elem;
+          const designator = seat.designator || '';
+          if (!designator) { html += `<div style="width:34px;height:34px;flex-shrink:0"></div>`; return; }
+          const key = `${currentPaxIdx}_${currentSegIdx}_${designator}`;
           const isSelected = !!selectedSeats[key];
           const isAvailable = seat.available_services && seat.available_services.length > 0;
-          const isFree = isAvailable && parseFloat((seat.available_services[0]?.total_amount)||'0') === 0;
-          const isExtraLeg = (seat.disclosures||[]).some(d => /leg/i.test(d.description||''));
+          const isExtraLeg = (seat.disclosures||[]).some(d => /extra.*leg|leg.*room/i.test(d.description||d.title||''));
           let cls = 'seat';
           if (!isAvailable) cls += ' occupied';
           else if (isSelected) cls += ' selected';
@@ -428,10 +439,11 @@ function renderSeatMap() {
 
           const seatSvc = isAvailable ? (seat.available_services[0] || null) : null;
           const price = seatSvc ? parseFloat(seatSvc.total_amount||0) : 0;
-          const priceLabel = !isAvailable ? '' : (price === 0 ? '✓' : '+'+price.toFixed(0));
+          const label = designator.replace(/^\d+/, ''); // just the letter
+          const svcJson = seatSvc ? encodeURIComponent(JSON.stringify(seatSvc)) : '';
 
-          html += `<div class="${cls}" title="${seat.designator}${isExtraLeg?' (مساحة أرجل إضافية)':''}"
-            onclick="selectSeat('${seat.designator}', ${isAvailable?'true':'false'}, '${seatSvc?JSON.stringify(seatSvc).replace(/'/g,'&#39;'):'null'}')">${seat.designator}</div>`;
+          html += `<div class="${cls}" title="${designator}${isExtraLeg?' · مساحة أرجل':''} ${isAvailable?(price===0?'· مجاني':'· +'+price.toFixed(0)):' · محجوز'}"
+            onclick="selectSeat('${designator}', ${isAvailable}, '${svcJson}')">${label||designator}</div>`;
         });
       });
       html += `</div>`;
@@ -449,7 +461,10 @@ function selectSeat(designator, isAvailable, svcJson) {
     if (k.startsWith(`${currentPaxIdx}_${currentSegIdx}_`)) delete selectedSeats[k];
   });
   let svc = null;
-  try { svc = typeof svcJson === 'string' ? JSON.parse(svcJson) : svcJson; } catch(e) {}
+  try {
+    const decoded = svcJson ? decodeURIComponent(svcJson) : 'null';
+    svc = JSON.parse(decoded);
+  } catch(e) {}
   if (svc) {
     selectedSeats[key] = { svc, designator };
   }
