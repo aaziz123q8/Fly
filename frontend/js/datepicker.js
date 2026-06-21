@@ -104,8 +104,9 @@ class DatePicker {
         const d = new Date(ts);
         if (this.mode === 'single') {
           this.startDate = d;
-          this.onSelect(d, null);
           this.trigger.value = this._fmt(d);
+          this.trigger.classList.add('filled');
+          this.onSelect(d, null, this);
           this._render();
           this.hide();
         } else {
@@ -113,7 +114,7 @@ class DatePicker {
             this.startDate = d; this.endDate = null; this.selecting = true;
           } else {
             this.endDate = d; this.selecting = false;
-            this.onSelect(this.startDate, this.endDate);
+            this.onSelect(this.startDate, this.endDate, this);
           }
           this._render();
         }

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>استعلام عن حجز — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .page-hero { background:linear-gradient(135deg,#0f2444,#1B4F8E); padding:60px 0; text-align:center; color:#fff; }
+    .page-hero h1 { font-size:2rem; font-weight:800; margin:0 0 12px; }
+    .page-hero p { color:rgba(255,255,255,0.8); }
+    .lookup-section { padding:60px 0; background:var(--bg); min-height:60vh; }
+    .lookup-card { background:#fff; border-radius:20px; padding:40px; box-shadow:var(--shadow); max-width:500px; margin:0 auto; }
+    .lookup-card h2 { color:var(--primary); font-size:1.3rem; margin:0 0 8px; }
+    .lookup-card p { color:var(--text-muted); font-size:0.9rem; margin:0 0 28px; }
+    .result-card { background:#f8fafc; border:2px solid var(--primary); border-radius:16px; padding:24px; margin-top:24px; }
+    .result-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #e5e7eb; }
+    .result-row:last-child { border-bottom:none; }
+    .result-label { color:var(--text-muted); font-size:0.9rem; }
+    .result-value { font-weight:600; color:var(--text); }
+    .status-badge { display:inline-block; padding:4px 12px; border-radius:50px; font-size:0.82rem; font-weight:600; }
+    .status-confirmed { background:#d1fae5; color:#065f46; }
+    .status-pending { background:#fef3c7; color:#92400e; }
+    .status-cancelled { background:#fee2e2; color:#991b1b; }
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
+    .bnav-icon { font-size:1.4rem; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
+    <div style="display:flex;gap:8px">
+      <a href="login.html" class="btn btn-ghost btn-sm">دخول</a>
+      <a href="register.html" class="btn btn-primary btn-sm">تسجيل</a>
+    </div>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="container">
+    <h1>🔍 استعلام عن حجز</h1>
+    <p>أدخل رقم الحجز واسم المسافر للاستعلام عن حالة حجزك</p>
+  </div>
+</section>
+
+<section class="lookup-section">
+  <div class="container">
+    <div class="lookup-card">
+      <h2>الاستعلام عن حجز</h2>
+      <p>يمكنك تتبع حجزك بدون تسجيل دخول</p>
+      <form onsubmit="doLookup(event)">
+        <div class="form-group">
+          <label class="form-label">رقم الحجز (PNR)</label>
+          <input type="text" class="form-control" id="pnrInput" placeholder="مثال: FM00000001 أو HM00000001" style="text-transform:uppercase" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">اسم العائلة للمسافر الرئيسي</label>
+          <input type="text" class="form-control" id="lastNameInput" placeholder="اسم العائلة بالإنجليزي" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-block" id="lookupBtn">
+          <span id="lookupTxt">🔍 بحث</span>
+          <div class="spinner spinner-sm hidden" id="lookupSpinner" style="border-top-color:white"></div>
+        </button>
+      </form>
+      <div id="lookupResult"></div>
+    </div>
+  </div>
+</section>
+
+<footer style="background:#0f2444;color:#fff;padding:32px 0;text-align:center">
+  <div class="container">
+    <p style="color:rgba(255,255,255,0.5);font-size:0.85rem">© ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.</p>
+  </div>
+</footer>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
+  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
+  <a href="login.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
+</nav>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+async function doLookup(e) {
+  e.preventDefault();
+  const pnr = document.getElementById('pnrInput').value.trim().toUpperCase();
+  const lastName = document.getElementById('lastNameInput').value.trim();
+  const btn = document.getElementById('lookupBtn');
+  const sp = document.getElementById('lookupSpinner');
+  const tx = document.getElementById('lookupTxt');
+  btn.disabled = true; sp.classList.remove('hidden'); tx.classList.add('hidden');
+  document.getElementById('lookupResult').innerHTML = '';
+  try {
+    const res = await Api.post('/api/bookings/lookup', { pnr, last_name: lastName });
+    const b = res.booking || res;
+    const statusClass = { confirmed:'status-confirmed', pending:'status-pending', cancelled:'status-cancelled' }[b.status] || 'status-pending';
+    const statusLabel = { confirmed:'مؤكد ✅', pending:'قيد المعالجة ⏳', cancelled:'ملغي ❌' }[b.status] || b.status;
+    document.getElementById('lookupResult').innerHTML = `
+      <div class="result-card">
+        <div style="text-align:center;margin-bottom:20px">
+          <div style="font-size:2rem;margin-bottom:8px">🎫</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--primary)">${b.booking_number || pnr}</div>
+        </div>
+        <div class="result-row"><span class="result-label">المسافر</span><span class="result-value">${b.passenger_name || b.traveler_name || lastName}</span></div>
+        <div class="result-row"><span class="result-label">الحالة</span><span class="status-badge ${statusClass}">${statusLabel}</span></div>
+        <div class="result-row"><span class="result-label">الوجهة</span><span class="result-value">${b.origin || ''} → ${b.destination || ''}</span></div>
+        <div class="result-row"><span class="result-label">تاريخ السفر</span><span class="result-value">${b.departure_date || b.travel_date || '--'}</span></div>
+        <div class="result-row"><span class="result-label">نوع الحجز</span><span class="result-value">${b.type === 'flight' || b.booking_number?.startsWith('FM') ? '✈️ رحلة' : '🏨 فندق'}</span></div>
+      </div>`;
+  } catch(err) {
+    document.getElementById('lookupResult').innerHTML = `
+      <div class="alert alert-error" style="margin-top:20px">⚠️ ${err.message || 'لم يتم العثور على حجز بهذه البيانات. يرجى التحقق من رقم الحجز والاسم.'}</div>`;
+  } finally {
+    btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+  }
+}
+</script>
+</body>
+</html>

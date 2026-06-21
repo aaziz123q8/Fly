@@ -1,5 +1,3 @@
-// Flight search and booking logic
-
 const Flights = {
     searchParams: {},
 
@@ -21,64 +19,10 @@ const Flights = {
     },
 
     formatDuration(minutes) {
+        if (!minutes) return '--';
         const h = Math.floor(minutes / 60);
         const m = minutes % 60;
-        return `${h}س ${m}د`;
-    },
-
-    formatPrice(amount, currency = 'SAR') {
-        return new Intl.NumberFormat('ar-SA', { style: 'currency', currency }).format(amount);
-    },
-
-    renderFlightCard(flight) {
-        return `
-        <div class="flight-card card" data-id="${flight.id}">
-            <div class="flight-card__header">
-                <div class="flight-airline">
-                    <span class="airline-logo">${flight.airline_code || '✈'}</span>
-                    <span class="airline-name">${flight.airline_name || flight.airline}</span>
-                </div>
-                <div class="flight-price">
-                    <span class="price-amount">${Flights.formatPrice(flight.price)}</span>
-                    <span class="price-label">للمسافر الواحد</span>
-                </div>
-            </div>
-            <div class="flight-card__body">
-                <div class="flight-route">
-                    <div class="flight-point">
-                        <div class="flight-time">${flight.departure_time || flight.departureTime}</div>
-                        <div class="flight-city">${flight.origin || flight.from}</div>
-                    </div>
-                    <div class="flight-duration">
-                        <div class="duration-line">
-                            <span class="duration-dot"></span>
-                            <span class="duration-bar"></span>
-                            <span class="duration-plane">✈</span>
-                            <span class="duration-bar"></span>
-                            <span class="duration-dot"></span>
-                        </div>
-                        <div class="duration-text">${flight.duration ? Flights.formatDuration(flight.duration) : flight.flight_duration || '--'}</div>
-                        <div class="stops-text">${flight.stops === 0 ? 'مباشر' : flight.stops + ' توقف'}</div>
-                    </div>
-                    <div class="flight-point">
-                        <div class="flight-time">${flight.arrival_time || flight.arrivalTime}</div>
-                        <div class="flight-city">${flight.destination || flight.to}</div>
-                    </div>
-                </div>
-                <div class="flight-meta">
-                    <span class="flight-class">${Flights.getClassLabel(flight.cabin_class || flight.class)}</span>
-                    <span class="flight-seats">${flight.available_seats || ''} ${flight.available_seats ? 'مقعد متاح' : ''}</span>
-                </div>
-            </div>
-            <div class="flight-card__footer">
-                <button class="btn btn-primary" onclick="Flights.openBookingModal('${flight.id}')">
-                    احجز الآن ←
-                </button>
-                <button class="btn btn-ghost" onclick="Flights.viewDetails('${flight.id}')">
-                    التفاصيل
-                </button>
-            </div>
-        </div>`;
+        return h + 'س ' + (m ? m + 'د' : '');
     },
 
     getClassLabel(cls) {
@@ -86,35 +30,73 @@ const Flights = {
         return labels[cls] || cls || 'اقتصادية';
     },
 
-    openBookingModal(flightId) {
-        if (!Auth.isLoggedIn()) {
-            showToast('يجب تسجيل الدخول أولاً للحجز', 'warning');
-            setTimeout(() => window.location.href = '/login.html', 1500);
-            return;
-        }
-        // Store flight ID and open modal
-        localStorage.setItem('booking_flight_id', flightId);
-        const modal = document.getElementById('bookingModal');
-        if (modal) {
-            modal.classList.add('active');
-            document.getElementById('bookingFlightId').value = flightId;
-        }
+    renderFlightCard(flight) {
+        const stops = flight.stops === 0 || flight.stops === '0' ? 0 : (parseInt(flight.stops) || 0);
+        const stopsLabel = stops === 0 ? '<span style="color:#16a34a;font-weight:600;font-size:0.78rem">مباشر</span>'
+            : '<span style="color:var(--text-muted);font-size:0.78rem">' + stops + ' توقف</span>';
+        const priceGBP = parseFloat(flight.price) || 0;
+        const priceDisplay = typeof formatPrice === 'function' ? formatPrice(priceGBP) : '£ ' + priceGBP.toFixed(0);
+        const dep = flight.departure_time || flight.departureTime || '--:--';
+        const arr = flight.arrival_time || flight.arrivalTime || '--:--';
+        const from = flight.origin || flight.from || flight.origin_code || '---';
+        const to = flight.destination || flight.to || flight.destination_code || '---';
+        const airline = flight.airline_name || flight.airline || 'شركة طيران';
+        const airlineCode = flight.airline_code || flight.iata_code || '';
+        const duration = Flights.formatDuration(flight.duration || flight.flight_duration);
+
+        return `<div class="flight-card" data-id="${flight.id || ''}">
+  <div class="fc-airline">
+    ${airlineCode
+        ? `<img class="airline-logo" src="https://pics.avs.io/80/80/${airlineCode}.png" alt="${airline}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        : ''}
+    <div style="width:48px;height:48px;background:var(--primary);color:#fff;border-radius:8px;display:${airlineCode?'none':'flex'};align-items:center;justify-content:center;font-size:1.2rem;font-weight:800">${airlineCode || '✈'}</div>
+    <div class="airline-name">${airline}</div>
+  </div>
+  <div class="fc-route">
+    <div class="route-point">
+      <div class="route-time">${dep}</div>
+      <div class="route-code">${from}</div>
+    </div>
+    <div class="route-mid">
+      <div class="route-duration">${duration}</div>
+      <div class="route-bar"></div>
+      ${stopsLabel}
+    </div>
+    <div class="route-point">
+      <div class="route-time">${arr}</div>
+      <div class="route-code">${to}</div>
+    </div>
+  </div>
+  <div class="fc-price">
+    <div class="price-amount" data-price-gbp="${priceGBP}">${priceDisplay}</div>
+    <div class="price-per">للمسافر الواحد</div>
+    <button class="btn btn-primary btn-sm" onclick="Flights.openBooking('${flight.id || ''}')">احجز الآن</button>
+  </div>
+</div>`;
     },
 
-    viewDetails(flightId) {
-        // Could open a details modal or navigate
-        showToast('جاري تحميل التفاصيل...', 'info');
+    openBooking(flightId) {
+        if (!Auth.isLoggedIn()) {
+            if (typeof showToast === 'function') showToast('يجب تسجيل الدخول أولاً للحجز', 'warning');
+            setTimeout(() => window.location.href = 'login.html', 1500);
+            return;
+        }
+        localStorage.setItem('booking_flight_id', flightId);
+        window.location.href = 'booking.html?flight=' + flightId;
+    },
+
+    openBookingModal(flightId) {
+        Flights.openBooking(flightId);
     },
 
     renderSearchResults(results, container) {
         if (!container) return;
         if (!results || results.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-icon">✈️</div>
-                    <h3>لا توجد رحلات متاحة</h3>
-                    <p>جرب تغيير تواريخ البحث أو الوجهة</p>
-                </div>`;
+            container.innerHTML = `<div style="text-align:center;padding:60px 20px">
+  <div style="font-size:3rem;margin-bottom:16px">✈️</div>
+  <h3 style="color:var(--primary);margin-bottom:8px">لا توجد رحلات متاحة</h3>
+  <p style="color:var(--text-muted)">جرب تغيير تواريخ البحث أو الوجهة</p>
+</div>`;
             return;
         }
         container.innerHTML = results.map(f => Flights.renderFlightCard(f)).join('');

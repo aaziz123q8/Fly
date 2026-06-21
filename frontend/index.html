@@ -469,15 +469,14 @@
       navAuth.innerHTML = `<a href="login.html" class="btn btn-ghost btn-sm" style="margin-left:8px" data-i18n="nav_login">دخول</a><a href="register.html" class="btn btn-primary btn-sm" data-i18n="nav_register">تسجيل</a>`;
     }
 
-    // Date pickers
-    new DatePicker(document.getElementById('fDepDate'), { mode:'single', minDate:new Date(), onSelect:(d,_,dp)=>{ document.getElementById('fDepDate').value = dp._fmt(d); document.getElementById('fDepDate').classList.add('filled'); } });
-    new DatePicker(document.getElementById('fRetDate'), { mode:'single', minDate:new Date(), onSelect:(d,_,dp)=>{ document.getElementById('fRetDate').value = dp._fmt(d); document.getElementById('fRetDate').classList.add('filled'); } });
+    // Date pickers (onSelect receives: startDate, endDate, pickerInstance)
+    new DatePicker(document.getElementById('fDepDate'), { mode:'single', minDate:new Date(), onSelect:(d)=>{ document.getElementById('fDepDate').classList.add('filled'); } });
+    new DatePicker(document.getElementById('fRetDate'), { mode:'single', minDate:new Date(), onSelect:(d)=>{ document.getElementById('fRetDate').classList.add('filled'); } });
 
     const ci = document.getElementById('hCheckin'), co = document.getElementById('hCheckout');
     const hotelDp = new DatePicker(ci, {
       mode:'range', minDate:new Date(),
       onSelect:(s,e,dp)=>{
-        ci.value = dp._fmt(s); ci.classList.add('filled');
         if(e){ co.value = dp._fmt(e); co.classList.add('filled'); }
       }
     });

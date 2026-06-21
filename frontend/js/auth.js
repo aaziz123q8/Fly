@@ -12,14 +12,14 @@ const Auth = {
     isLoggedIn: () => !!localStorage.getItem('flymasar_token'),
     requireAuth: () => {
         if (!Auth.isLoggedIn()) {
-            window.location.href = '/login.html';
+            window.location.href = 'login.html';
             return false;
         }
         return true;
     },
     requireGuest: () => {
         if (Auth.isLoggedIn()) {
-            window.location.href = '/dashboard.html';
+            window.location.href = 'dashboard.html';
             return false;
         }
         return true;
@@ -27,28 +27,13 @@ const Auth = {
     requireAdmin: () => {
         const user = Auth.getUser();
         if (!Auth.isLoggedIn() || !user || user.role !== 'admin') {
-            window.location.href = '/admin/login.html';
+            window.location.href = 'admin/login.html';
             return false;
         }
         return true;
     },
-    updateNavbar: () => {
-        const authButtons = document.getElementById('authButtons');
-        const userMenu = document.getElementById('userMenu');
-        const userNameEl = document.getElementById('userName');
-
-        if (Auth.isLoggedIn()) {
-            const user = Auth.getUser();
-            if (authButtons) authButtons.style.display = 'none';
-            if (userMenu) userMenu.style.display = 'flex';
-            if (userNameEl && user) userNameEl.textContent = user.first_name || user.email;
-        } else {
-            if (authButtons) authButtons.style.display = 'flex';
-            if (userMenu) userMenu.style.display = 'none';
-        }
-    },
     logout: () => {
         Auth.clear();
-        window.location.href = '/index.html';
+        window.location.href = 'index.html';
     }
 };
