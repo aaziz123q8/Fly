@@ -17,18 +17,32 @@
     input,select{font-family:inherit}
 
     /* ── NAVBAR ── */
-    .nav{position:sticky;top:0;z-index:100;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:0 20px}
-    .nav-inner{max-width:1200px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .nav-brand{font-size:1.4rem;font-weight:800;color:#1B4F8E;display:flex;align-items:center;gap:6px}
+    .nav{position:sticky;top:0;z-index:100;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08)}
+    .nav-inner{max-width:1200px;margin:0 auto;height:60px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 16px}
+    .nav-brand{font-size:1.35rem;font-weight:800;color:#1B4F8E;display:flex;align-items:center;gap:5px;white-space:nowrap}
     .nav-brand span{color:#E8A020}
-    .nav-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-    .pill-btn{padding:5px 12px;border-radius:20px;border:1.5px solid #e5e7eb;background:none;font-size:.82rem;font-weight:600;color:#6B7280;transition:.2s}
+    /* Desktop controls — single row */
+    .nav-controls{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
+    .pill-btn{padding:5px 11px;border-radius:20px;border:1.5px solid #e5e7eb;background:none;font-size:.8rem;font-weight:600;color:#6B7280;transition:.2s;white-space:nowrap}
     .pill-btn:hover,.pill-btn.active,.pill-btn.on{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
-    .sep{color:#e5e7eb;font-size:1.2rem}
-    .btn-login{padding:6px 16px;border-radius:8px;border:1.5px solid #1B4F8E;color:#1B4F8E;background:none;font-size:.88rem;font-weight:700;transition:.2s}
+    .sep{color:#e5e7eb;font-size:1.1rem}
+    .btn-login{padding:6px 14px;border-radius:8px;border:1.5px solid #1B4F8E;color:#1B4F8E;background:none;font-size:.85rem;font-weight:700;transition:.2s;white-space:nowrap}
     .btn-login:hover{background:#1B4F8E;color:#fff}
-    .btn-reg{padding:6px 16px;border-radius:8px;border:none;background:#1B4F8E;color:#fff;font-size:.88rem;font-weight:700;transition:.2s}
+    .btn-reg{padding:6px 14px;border-radius:8px;border:none;background:#1B4F8E;color:#fff;font-size:.85rem;font-weight:700;transition:.2s;white-space:nowrap}
     .btn-reg:hover{background:#13396B}
+    /* Mobile secondary bar */
+    .nav-mobile-bar{display:none;background:#f8fafc;border-top:1px solid #f0f2f5;padding:6px 16px;gap:6px;align-items:center;justify-content:space-between}
+    .nav-mobile-bar .pill-group{display:flex;gap:4px}
+    @media(max-width:640px){
+      .nav-inner{height:52px;padding:0 14px}
+      .nav-brand{font-size:1.2rem}
+      /* Hide lang + currency pills from top bar on mobile */
+      .nav-controls .pill-btn[data-lang],.nav-controls .pill-btn[data-cur],.nav-controls .sep{display:none}
+      /* Show mobile secondary bar */
+      .nav-mobile-bar{display:flex}
+      .btn-login{padding:5px 12px;font-size:.8rem}
+      .btn-reg{padding:5px 12px;font-size:.8rem}
+    }
 
     /* ── HERO ── */
     .hero{background:linear-gradient(135deg,#0f2444 0%,#1B4F8E 60%,#2563ab 100%);padding:60px 20px 100px;text-align:center;position:relative;overflow:hidden}
@@ -197,6 +211,19 @@
       <button class="pill-btn" data-cur="USD" onclick="setCur('USD')">$</button>
       <span class="sep">|</span>
       <span id="navAuth"></span>
+    </div>
+  </div>
+  <!-- Mobile secondary bar: lang + currency -->
+  <div class="nav-mobile-bar" id="navMobileBar">
+    <div class="pill-group">
+      <button class="pill-btn on" data-lang="ar" onclick="setLang('ar')">ع</button>
+      <button class="pill-btn" data-lang="en" onclick="setLang('en')">EN</button>
+    </div>
+    <div class="pill-group">
+      <button class="pill-btn on" data-cur="GBP" onclick="setCur('GBP')">£</button>
+      <button class="pill-btn" data-cur="KWD" onclick="setCur('KWD')">د.ك</button>
+      <button class="pill-btn" data-cur="SAR" onclick="setCur('SAR')">ر.س</button>
+      <button class="pill-btn" data-cur="USD" onclick="setCur('USD')">$</button>
     </div>
   </div>
 </nav>
