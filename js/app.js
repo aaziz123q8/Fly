@@ -499,7 +499,7 @@ function initDatePickers() {
   // Re-render pickers when lang changes
   document.addEventListener('langChanged', () => {
     [window._departurePicker, window._returnPicker, window._hotelPicker, window._checkoutPicker].forEach(p => {
-      if (p) p.render();
+      if (p) p._render();
     });
   });
 }

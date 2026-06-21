@@ -126,7 +126,7 @@ async function sendMsg(e) {
   const btn = document.getElementById('cBtn');
   btn.disabled = true; btn.textContent = 'جاري الإرسال...';
   try {
-    await API.post('/contact', {
+    await Api.post('/api/contact', {
       name: document.getElementById('cName').value,
       email: document.getElementById('cEmail').value,
       subject: document.getElementById('cSubject').value,

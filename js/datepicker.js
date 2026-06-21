@@ -46,6 +46,12 @@ class DatePicker {
     this._render();
   }
 
+  setMinDate(date) {
+    this.minDate = new Date(date);
+    this.minDate.setHours(0, 0, 0, 0);
+    this._render();
+  }
+
   _months() { return (window.I18N && window.I18N[this.lang] && window.I18N[this.lang].months) || ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']; }
   _days() { return (window.I18N && window.I18N[this.lang] && window.I18N[this.lang].days) || ['Su','Mo','Tu','We','Th','Fr','Sa']; }
 
