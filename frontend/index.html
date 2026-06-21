@@ -314,11 +314,11 @@
 </section>
 
 <!-- Booking Modal -->
-<div class="modal-overlay" id="bookingModal">
+<div class="modal-overlay" id="bookingModal" onclick="if(event.target===this)closeModal('bookingModal')">
   <div class="modal">
     <div class="modal-header">
       <h2 class="modal-title">✈️ إتمام الحجز</h2>
-      <button class="modal-close" onclick="closeModal('bookingModal')">✕</button>
+      <button class="modal-close" onclick="closeModal('bookingModal')" style="font-size:1.5rem;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#f0f2f5;border-radius:50%;border:none;cursor:pointer;color:#333">✕</button>
     </div>
     <form id="bookingForm" onsubmit="submitBooking(event)">
       <input type="hidden" id="bookingFlightId">
