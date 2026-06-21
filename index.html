@@ -4,186 +4,197 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>فلاي مسار — سافر بأفضل الأسعار</title>
-  <meta name="description" content="ابحث عن أرخص الرحلات والفنادق في مكان واحد. فلاي مسار — منصة السفر الأولى.">
+  <meta name="description" content="ابحث عن أرخص الرحلات والفنادق. فلاي مسار — منصة السفر الأولى.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
-  <link rel="stylesheet" href="css/app.css">
   <link rel="manifest" href="manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
   <style>
-    .hero {
-      background: linear-gradient(135deg, #0f2444 0%, #1B4F8E 60%, #2563ab 100%);
-      padding: 80px 0 120px;
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-    .hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
-    }
-    .hero-content { position: relative; z-index: 1; }
-    .hero-badge {
-      display: inline-block;
-      background: rgba(232,160,32,0.2);
-      color: #E8A020;
-      border: 1px solid rgba(232,160,32,0.4);
-      padding: 6px 18px;
-      border-radius: 50px;
-      font-size: 0.85rem;
-      margin-bottom: 20px;
-    }
-    .hero h1 { font-size: clamp(2rem,5vw,3.5rem); color:#fff; font-weight:800; margin:0 0 16px; line-height:1.2; }
-    .hero h1 .highlight { color:#E8A020; }
-    .hero p { color:rgba(255,255,255,0.8); font-size:1.1rem; margin:0; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Tajawal',Arial,sans-serif;background:#F5F7FA;color:#1A1A2E;line-height:1.6;direction:rtl;min-height:100vh}
+    a{text-decoration:none;color:inherit}
+    button{font-family:inherit;cursor:pointer}
+    input,select{font-family:inherit}
 
-    .search-box {
-      background:#fff;
-      border-radius:20px;
-      box-shadow:0 20px 60px rgba(0,0,0,0.18);
-      padding:28px;
-      margin-top:-60px;
-      position:relative;
-      z-index:10;
-    }
-    .search-tabs { display:flex; gap:8px; margin-bottom:24px; border-bottom:2px solid #f0f2f5; }
-    .search-tab { padding:10px 24px; border:none; background:none; cursor:pointer; font-size:1rem; font-weight:600; color:var(--text-muted); border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .2s; font-family:inherit; }
-    .search-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
-    .search-panel { display:none; }
-    .search-panel.active { display:block; }
+    /* ── NAVBAR ── */
+    .nav{position:sticky;top:0;z-index:100;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:0 20px}
+    .nav-inner{max-width:1200px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .nav-brand{font-size:1.4rem;font-weight:800;color:#1B4F8E;display:flex;align-items:center;gap:6px}
+    .nav-brand span{color:#E8A020}
+    .nav-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .pill-btn{padding:5px 12px;border-radius:20px;border:1.5px solid #e5e7eb;background:none;font-size:.82rem;font-weight:600;color:#6B7280;transition:.2s}
+    .pill-btn:hover,.pill-btn.active{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .sep{color:#e5e7eb;font-size:1.2rem}
+    .btn-login{padding:6px 16px;border-radius:8px;border:1.5px solid #1B4F8E;color:#1B4F8E;background:none;font-size:.88rem;font-weight:700;transition:.2s}
+    .btn-login:hover{background:#1B4F8E;color:#fff}
+    .btn-reg{padding:6px 16px;border-radius:8px;border:none;background:#1B4F8E;color:#fff;font-size:.88rem;font-weight:700;transition:.2s}
+    .btn-reg:hover{background:#13396B}
 
-    .trip-type { display:flex; gap:8px; margin-bottom:20px; }
-    .trip-pill { padding:7px 18px; border-radius:50px; border:2px solid #e5e7eb; background:none; cursor:pointer; font-size:0.9rem; font-weight:600; color:var(--text-muted); transition:all .2s; font-family:inherit; }
-    .trip-pill.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    /* ── HERO ── */
+    .hero{background:linear-gradient(135deg,#0f2444 0%,#1B4F8E 60%,#2563ab 100%);padding:60px 20px 100px;text-align:center;position:relative;overflow:hidden}
+    .hero::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E")}
+    .hero-badge{display:inline-block;background:rgba(232,160,32,.2);color:#E8A020;border:1px solid rgba(232,160,32,.4);padding:6px 18px;border-radius:50px;font-size:.85rem;margin-bottom:20px}
+    .hero h1{font-size:clamp(1.8rem,5vw,3rem);color:#fff;font-weight:800;margin-bottom:12px;line-height:1.2}
+    .hero h1 .hl{color:#E8A020}
+    .hero p{color:rgba(255,255,255,.8);font-size:1rem}
 
-    .search-fields { display:grid; gap:12px; }
-    .srow-2 { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:end; }
-    .srow-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
-    .srow-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; }
-    @media(max-width:768px) {
-      .srow-2,.srow-3,.srow-4 { grid-template-columns:1fr; }
-      .swap-btn { display:none!important; }
-      .srow-2 { grid-template-columns:1fr; }
-    }
-    .field-group { display:flex; flex-direction:column; gap:6px; }
-    .field-group label { font-size:0.8rem; font-weight:600; color:var(--text-muted); }
-    .field-input { width:100%; padding:12px 16px; border:2px solid #e5e7eb; border-radius:12px; font-size:0.95rem; background:#f8fafc; cursor:pointer; transition:border-color .2s; box-sizing:border-box; text-align:right; font-family:inherit; }
-    [dir=ltr] .field-input { text-align:left; }
-    .field-input:focus { outline:none; border-color:var(--primary); background:#fff; }
-    .field-input.filled { background:#fff; border-color:#c5d5e8; }
-    .field-select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:left 12px center; }
-    [dir=ltr] .field-select { background-position:right 12px center; }
+    /* ── SEARCH BOX ── */
+    .search-wrap{max-width:960px;margin:-56px auto 0;padding:0 16px;position:relative;z-index:10}
+    .search-box{background:#fff;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.18);padding:24px}
+    .tabs{display:flex;gap:6px;margin-bottom:20px}
+    .tab{flex:1;padding:10px;border:none;border-radius:10px;background:#F5F7FA;font-size:.95rem;font-weight:700;color:#6B7280;transition:.2s}
+    .tab.on{background:#1B4F8E;color:#fff}
+    .panel{display:none}
+    .panel.on{display:block}
+    .trip-pills{display:flex;gap:8px;margin-bottom:16px}
+    .tp{padding:6px 18px;border-radius:50px;border:2px solid #e5e7eb;background:none;font-size:.88rem;font-weight:600;color:#6B7280;transition:.2s}
+    .tp.on{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .fg{display:flex;flex-direction:column;gap:5px;position:relative}
+    .fg label{font-size:.78rem;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.04em}
+    .fi{width:100%;padding:11px 14px;border:2px solid #e5e7eb;border-radius:12px;font-size:.93rem;background:#f8fafc;transition:.2s;text-align:right;color:#1A1A2E}
+    [dir=ltr] .fi{text-align:left}
+    .fi:focus{outline:none;border-color:#1B4F8E;background:#fff}
+    .fi.ok{background:#fff;border-color:#c5d5e8}
+    .fi[readonly]{cursor:pointer}
+    .row2{display:grid;grid-template-columns:1fr 42px 1fr;gap:10px;align-items:end}
+    .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}
+    @media(max-width:700px){.row2,.row3,.row4{grid-template-columns:1fr}.swap-wrap{display:none}}
+    .swap{width:42px;height:44px;border-radius:50%;border:2px solid #e5e7eb;background:#fff;font-size:1.1rem;display:flex;align-items:center;justify-content:center;align-self:flex-end;transition:.2s}
+    .swap:hover{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .btn-search{display:block;width:100%;max-width:280px;margin:16px auto 0;padding:13px 28px;background:#1B4F8E;color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;transition:.2s}
+    .btn-search:hover{background:#13396B}
 
-    .swap-btn { width:40px; height:40px; border-radius:50%; border:2px solid #e5e7eb; background:#fff; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; align-self:flex-end; margin-bottom:2px; transition:all .2s; flex-shrink:0; }
-    .swap-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+    /* Passengers popup */
+    .pop-wrap{position:relative}
+    .pop{display:none;position:absolute;top:calc(100% + 4px);right:0;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.15);padding:16px;z-index:200;min-width:260px}
+    [dir=ltr] .pop{right:auto;left:0}
+    .pop.open{display:block}
+    .prow{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f0f2f5}
+    .prow:last-of-type{border:none}
+    .pinfo strong{display:block;font-size:.9rem}
+    .pinfo small{color:#6B7280;font-size:.78rem}
+    .pctr{display:flex;align-items:center;gap:10px}
+    .pbtn{width:30px;height:30px;border-radius:50%;border:2px solid #e5e7eb;background:#fff;font-size:1rem;font-weight:700;display:flex;align-items:center;justify-content:center;line-height:1;transition:.2s}
+    .pbtn:hover:not(:disabled){background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .pbtn:disabled{opacity:.3;cursor:not-allowed}
+    .pval{min-width:22px;text-align:center;font-weight:700}
+    .pop-done{width:100%;margin-top:10px;padding:9px;background:#1B4F8E;color:#fff;border:none;border-radius:8px;font-size:.9rem;font-weight:700}
 
-    .pax-popup,.rooms-popup { display:none; position:absolute; background:#fff; border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.15); padding:20px; z-index:500; min-width:280px; top:100%; right:0; margin-top:4px; }
-    [dir=ltr] .pax-popup,[dir=ltr] .rooms-popup { right:auto; left:0; }
-    .pax-popup.open,.rooms-popup.open { display:block; }
-    .pax-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f2f5; }
-    .pax-row:last-of-type { border-bottom:none; }
-    .pax-info strong { display:block; font-size:0.95rem; }
-    .pax-info small { color:var(--text-muted); font-size:0.8rem; }
-    .pax-counter { display:flex; align-items:center; gap:12px; }
-    .pax-btn { width:32px; height:32px; border-radius:50%; border:2px solid #e5e7eb; background:#fff; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; font-weight:700; transition:all .2s; font-family:inherit; }
-    .pax-btn:hover:not(:disabled) { background:var(--primary); color:#fff; border-color:var(--primary); }
-    .pax-btn:disabled { opacity:0.3; cursor:not-allowed; }
-    .pax-count { font-size:1.1rem; font-weight:700; min-width:24px; text-align:center; }
-    .pax-done { width:100%; margin-top:12px; padding:10px; background:var(--primary); color:#fff; border:none; border-radius:10px; font-size:0.95rem; font-weight:600; cursor:pointer; font-family:inherit; }
+    /* Airport dropdown */
+    .adrop{display:none;position:absolute;top:100%;right:0;left:0;background:#fff;border:2px solid #e5e7eb;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:300;max-height:220px;overflow-y:auto;margin-top:3px}
+    .adrop.open{display:block}
+    .aitem{padding:10px 14px;cursor:pointer;border-bottom:1px solid #f0f2f5;display:flex;align-items:center;gap:10px}
+    .aitem:last-child{border:none}
+    .aitem:hover{background:#f0f5ff}
+    .acode{background:#1B4F8E;color:#fff;border-radius:5px;padding:2px 7px;font-size:.75rem;font-weight:700;flex-shrink:0}
+    .aname{font-size:.86rem;font-weight:600}
+    .acountry{font-size:.75rem;color:#6B7280}
 
-    /* Lang / Currency */
-    .lang-currency { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-    .lang-btn,.currency-btn { padding:4px 10px; border-radius:6px; border:1px solid #e5e7eb; background:none; cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--text-muted); transition:all .2s; font-family:inherit; }
-    .lang-btn.active,.currency-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
-    .currency-sep { color:#e5e7eb; }
+    /* DatePicker */
+    .dp-popup{display:none;position:fixed;background:#fff;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.18);z-index:2000;padding:16px;user-select:none}
+    .dp-wrap{display:flex;gap:16px;flex-wrap:wrap}
+    .dp-month-block{min-width:260px}
+    .dp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .dp-title{font-weight:700;font-size:.93rem}
+    .dp-nav{background:none;border:1px solid #e5e7eb;border-radius:7px;width:28px;height:28px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center}
+    .dp-nav:hover{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+    .dp-dname{text-align:center;font-size:.7rem;font-weight:600;color:#6B7280;padding:4px 0}
+    .dp-day{text-align:center;padding:7px 2px;border-radius:7px;cursor:pointer;font-size:.86rem;transition:.15s}
+    .dp-day:hover:not(.dp-dis){background:#e8f0fb}
+    .dp-dis{color:#d1d5db;cursor:not-allowed}
+    .dp-today{font-weight:700;color:#1B4F8E}
+    .dp-sel{background:#1B4F8E!important;color:#fff!important;font-weight:700}
+    .dp-range{background:#dbeafe;border-radius:0}
+    .dp-start{border-radius:7px 0 0 7px}
+    .dp-end{border-radius:0 7px 7px 0}
+    .dp-nights{text-align:center;margin-top:8px;font-weight:700;color:#1B4F8E}
 
-    /* Date Picker */
-    .dp-popup { display:none; position:fixed; background:#fff; border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.18); z-index:2000; padding:16px; user-select:none; }
-    .dp-wrap { display:flex; gap:16px; flex-wrap:wrap; }
-    .dp-month-block { min-width:260px; }
-    .dp-month-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
-    .dp-month-title { font-weight:700; font-size:0.95rem; }
-    .dp-nav { background:none; border:1px solid #e5e7eb; border-radius:8px; width:30px; height:30px; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; font-family:inherit; }
-    .dp-nav:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
-    .dp-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
-    .dp-day-name { text-align:center; font-size:0.72rem; font-weight:600; color:var(--text-muted); padding:4px 0; }
-    .dp-day { text-align:center; padding:8px 4px; border-radius:8px; cursor:pointer; font-size:0.88rem; transition:all .15s; }
-    .dp-day:hover:not(.dp-disabled) { background:#e8f0fb; }
-    .dp-disabled { color:#d1d5db; cursor:not-allowed; }
-    .dp-today { font-weight:700; color:var(--primary); }
-    .dp-selected { background:var(--primary)!important; color:#fff!important; font-weight:700; }
-    .dp-in-range { background:#dbeafe; border-radius:0; }
-    .dp-start { border-radius:8px 0 0 8px; }
-    .dp-end { border-radius:0 8px 8px 0; }
-    [dir=ltr] .dp-start { border-radius:0 8px 8px 0; }
-    [dir=ltr] .dp-end { border-radius:8px 0 0 8px; }
-    .dp-nights { text-align:center; margin-top:10px; font-weight:700; color:var(--primary); }
+    /* RESULTS */
+    .results{padding:32px 16px;max-width:1200px;margin:0 auto;display:none}
+    .results.open{display:block}
+    .fc{background:#fff;border-radius:14px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:18px 20px;margin-bottom:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+    .fc:hover{box-shadow:0 8px 28px rgba(27,79,142,.14)}
+    .fc-logo{width:44px;height:44px;object-fit:contain;border-radius:8px;background:#f0f2f5;padding:4px;flex-shrink:0}
+    .fc-route{flex:1;display:flex;align-items:center;gap:10px;min-width:200px}
+    .rpt{text-align:center}
+    .rtime{font-size:1.4rem;font-weight:800}
+    .rcode{font-size:.75rem;color:#6B7280}
+    .rmid{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+    .rdur{font-size:.75rem;color:#6B7280}
+    .rbar{width:100%;height:2px;background:linear-gradient(to left,#1B4F8E,#E8A020);position:relative}
+    .rbar::after{content:'✈';position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:.82rem}
+    .rstops{font-size:.73rem;color:#6B7280}
+    .rstops.direct{color:#16a34a;font-weight:600}
+    .fc-price{display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-right:auto}
+    [dir=ltr] .fc-price{margin-right:0;margin-left:auto;align-items:flex-start}
+    .fp{font-size:1.5rem;font-weight:800;color:#1B4F8E}
+    .fpp{font-size:.75rem;color:#6B7280}
 
-    /* Features */
-    .features { padding:80px 0; background:var(--bg); }
-    .features-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:24px; }
-    .feature-card { background:#fff; border-radius:16px; padding:28px 24px; text-align:center; box-shadow:var(--shadow); transition:transform .2s; }
-    .feature-card:hover { transform:translateY(-4px); }
-    .feature-icon { font-size:2.5rem; margin-bottom:16px; }
-    .feature-card h3 { font-size:1.05rem; font-weight:700; margin:0 0 8px; color:var(--primary); }
-    .feature-card p { font-size:0.9rem; color:var(--text-muted); margin:0; }
+    /* FEATURES */
+    .feats{padding:64px 16px;background:#F5F7FA}
+    .feats-inner{max-width:1100px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px}
+    .feat{background:#fff;border-radius:14px;padding:24px;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.07)}
+    .feat i{font-size:2.4rem;margin-bottom:14px;display:block}
+    .feat h3{font-size:1rem;font-weight:700;color:#1B4F8E;margin-bottom:6px}
+    .feat p{font-size:.88rem;color:#6B7280}
 
-    /* Steps */
-    .steps { padding:80px 0; background:#fff; }
-    .steps-title { text-align:center; font-size:1.8rem; font-weight:800; margin-bottom:48px; color:var(--primary); }
-    .steps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:40px; text-align:center; }
-    .step-num { width:56px; height:56px; background:var(--primary); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.4rem; font-weight:800; margin:0 auto 16px; }
-    .step h3 { font-size:1.1rem; font-weight:700; margin-bottom:8px; }
-    .step p { color:var(--text-muted); font-size:0.9rem; }
+    /* STEPS */
+    .steps{padding:64px 16px;background:#fff}
+    .steps-inner{max-width:900px;margin:0 auto}
+    .steps-title{text-align:center;font-size:1.6rem;font-weight:800;color:#1B4F8E;margin-bottom:40px}
+    .steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:32px;text-align:center}
+    .snum{width:52px;height:52px;background:#1B4F8E;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800;margin:0 auto 14px}
+    .steps h3{font-size:1rem;font-weight:700;margin-bottom:6px}
+    .steps p{font-size:.88rem;color:#6B7280}
 
-    /* Bottom Nav */
-    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
-    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
-    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; transition:color .2s; border:none; background:none; cursor:pointer; }
-    .bnav-item.active,.bnav-item:hover { color:var(--primary); }
-    .bnav-icon { font-size:1.4rem; }
+    /* FOOTER */
+    .footer{background:#0f2444;color:#fff;padding:48px 16px 24px}
+    .footer-inner{max-width:1100px;margin:0 auto}
+    .footer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:28px;margin-bottom:28px}
+    .footer-brand{font-size:1.3rem;font-weight:800;margin-bottom:10px}
+    .footer-desc{color:rgba(255,255,255,.6);font-size:.88rem;line-height:1.7}
+    .footer h4{color:#E8A020;margin-bottom:12px;font-size:.95rem}
+    .footer ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+    .footer a{color:rgba(255,255,255,.7);font-size:.88rem}
+    .footer a:hover{color:#E8A020}
+    .footer-copy{border-top:1px solid rgba(255,255,255,.1);padding-top:20px;text-align:center;color:rgba(255,255,255,.5);font-size:.82rem}
 
-    /* Results */
-    .results-section { padding:40px 0; background:var(--bg); }
-    .results-section.hidden { display:none; }
-    .flight-card { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:20px 24px; margin-bottom:16px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; transition:box-shadow .2s; }
-    .flight-card:hover { box-shadow:0 8px 30px rgba(27,79,142,.15); }
-    .fc-airline { display:flex; flex-direction:column; align-items:center; gap:4px; min-width:72px; }
-    .airline-logo { width:48px; height:48px; object-fit:contain; border-radius:8px; background:#f0f2f5; padding:4px; }
-    .airline-name { font-size:0.75rem; color:var(--text-muted); text-align:center; }
-    .fc-route { flex:1; display:flex; align-items:center; gap:12px; }
-    .route-point { text-align:center; }
-    .route-time { font-size:1.5rem; font-weight:800; }
-    .route-code { font-size:0.78rem; color:var(--text-muted); }
-    .route-mid { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
-    .route-duration { font-size:0.78rem; color:var(--text-muted); }
-    .route-bar { width:100%; height:2px; background:linear-gradient(to left,var(--primary),#E8A020); position:relative; }
-    .route-bar::after { content:'✈'; position:absolute; top:-9px; left:50%; transform:translateX(-50%); font-size:0.85rem; }
-    .route-stops { font-size:0.75rem; color:var(--text-muted); }
-    .route-stops.direct { color:#16a34a; font-weight:600; }
-    .fc-price { display:flex; flex-direction:column; align-items:flex-end; gap:8px; margin-right:auto; }
-    [dir=ltr] .fc-price { margin-right:0; margin-left:auto; align-items:flex-start; }
-    .price-amount { font-size:1.6rem; font-weight:800; color:var(--primary); }
-    .price-per { font-size:0.78rem; color:var(--text-muted); }
-    .result-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-    .result-count { color:var(--text-muted); font-size:0.9rem; }
+    /* TOAST */
+    .toast{position:fixed;bottom:90px;right:20px;background:#1B4F8E;color:#fff;padding:12px 20px;border-radius:10px;font-size:.9rem;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.2);animation:tin .3s ease}
+    .toast.err{background:#E74C3C}
+    .toast.ok{background:#27AE60}
+    @keyframes tin{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+    /* BOTTOM NAV */
+    .bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;z-index:1000;padding:6px 0 env(safe-area-inset-bottom,6px);justify-content:space-around}
+    @media(max-width:768px){.bnav{display:flex}body{padding-bottom:68px}}
+    .bni{display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 16px;color:#6B7280;font-size:.7rem;text-decoration:none;border:none;background:none}
+    .bni.on,.bni:hover{color:#1B4F8E}
+    .bni-icon{font-size:1.3rem}
+
+    /* SPINNER */
+    .spin{display:inline-block;width:18px;height:18px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite}
+    @keyframes sp{to{transform:rotate(360deg)}}
+    .hidden{display:none!important}
   </style>
 </head>
 <body>
 
 <!-- NAVBAR -->
-<nav class="navbar">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
-    <div class="lang-currency">
-      <button class="lang-btn active" data-lang="ar" onclick="setLang('ar')">ع</button>
-      <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
-      <span class="currency-sep">|</span>
-      <button class="currency-btn active" data-currency="GBP" onclick="setCurrency('GBP')">£</button>
-      <button class="currency-btn" data-currency="KWD" onclick="setCurrency('KWD')">د.ك</button>
-      <button class="currency-btn" data-currency="SAR" onclick="setCurrency('SAR')">ر.س</button>
-      <button class="currency-btn" data-currency="USD" onclick="setCurrency('USD')">$</button>
-      <span class="currency-sep">|</span>
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">✈️ <span>فلاي</span> مسار</a>
+    <div class="nav-controls" id="navCtrl">
+      <button class="pill-btn on" data-lang="ar" onclick="setLang('ar')">ع</button>
+      <button class="pill-btn" data-lang="en" onclick="setLang('en')">EN</button>
+      <span class="sep">|</span>
+      <button class="pill-btn on" data-cur="GBP" onclick="setCur('GBP')">£</button>
+      <button class="pill-btn" data-cur="KWD" onclick="setCur('KWD')">د.ك</button>
+      <button class="pill-btn" data-cur="SAR" onclick="setCur('SAR')">ر.س</button>
+      <button class="pill-btn" data-cur="USD" onclick="setCur('USD')">$</button>
+      <span class="sep">|</span>
       <span id="navAuth"></span>
     </div>
   </div>
@@ -191,476 +202,481 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="container hero-content">
-    <div class="hero-badge">🌟 منصة السفر الأولى في المنطقة</div>
-    <h1 data-i18n="hero_title">سافر بـ<span class="highlight">أفضل الأسعار</span></h1>
-    <p data-i18n="hero_sub">أكثر من ٥٠٠ شركة طيران وآلاف الفنادق حول العالم</p>
-  </div>
+  <div class="hero-badge">🌟 منصة السفر الأولى في المنطقة</div>
+  <h1>سافر بـ<span class="hl">أفضل الأسعار</span></h1>
+  <p>أكثر من ٥٠٠ شركة طيران وآلاف الفنادق حول العالم</p>
 </section>
 
 <!-- SEARCH BOX -->
-<section style="background:var(--bg);padding-bottom:0">
-  <div class="container">
-    <div class="search-box">
-      <div class="search-tabs">
-        <button class="search-tab active" onclick="switchTab('flights',this)" data-i18n="tab_flights">✈️ رحلات</button>
-        <button class="search-tab" onclick="switchTab('hotels',this)" data-i18n="tab_hotels">🏨 فنادق</button>
+<div class="search-wrap">
+  <div class="search-box">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab on" onclick="switchTab('flights',this)">✈️ رحلات</button>
+      <button class="tab" onclick="switchTab('hotels',this)">🏨 فنادق</button>
+    </div>
+
+    <!-- FLIGHTS PANEL -->
+    <div id="flP" class="panel on">
+      <div class="trip-pills">
+        <button class="tp on" id="tp1" onclick="setTrip('oneway')">ذهاب فقط</button>
+        <button class="tp" id="tp2" onclick="setTrip('round')">ذهاب وعودة</button>
       </div>
 
-      <!-- FLIGHTS -->
-      <div id="flightsPanel" class="search-panel active">
-        <div class="trip-type">
-          <button class="trip-pill active" id="pill_oneway" onclick="setTripType('oneway')" data-i18n="one_way">ذهاب فقط</button>
-          <button class="trip-pill" id="pill_round" onclick="setTripType('round')" data-i18n="round_trip">ذهاب وعودة</button>
-        </div>
-        <div class="search-fields">
-          <div class="srow-2">
-            <div class="field-group">
-              <label data-i18n="from">من</label>
-              <input type="text" class="field-input" id="fFrom" placeholder="مدينة المغادرة أو رمز المطار" autocomplete="off" oninput="showAirports('fFrom','fromDrop')">
-              <div class="airport-dropdown" id="fromDrop"></div>
-            </div>
-            <div style="display:flex;align-items:flex-end;padding-bottom:2px">
-              <button class="swap-btn" onclick="swapCities()" title="تبديل">⇄</button>
-            </div>
-            <div class="field-group">
-              <label data-i18n="to">إلى</label>
-              <input type="text" class="field-input" id="fTo" placeholder="مدينة الوصول أو رمز المطار" autocomplete="off" oninput="showAirports('fTo','toDrop')">
-              <div class="airport-dropdown" id="toDrop"></div>
-            </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="row2">
+          <div class="fg">
+            <label>من</label>
+            <input class="fi" id="fFrom" placeholder="مدينة أو رمز المطار" autocomplete="off" oninput="showDrop('fFrom','dFrom')">
+            <div class="adrop" id="dFrom"></div>
           </div>
-          <div class="srow-4" id="flightDatesRow">
-            <div class="field-group">
-              <label data-i18n="departure">تاريخ الذهاب</label>
-              <input type="text" class="field-input" id="fDepDate" readonly placeholder="اختر التاريخ">
-            </div>
-            <div class="field-group" id="retDateWrap" style="display:none">
-              <label data-i18n="return">تاريخ العودة</label>
-              <input type="text" class="field-input" id="fRetDate" readonly placeholder="اختر التاريخ">
-            </div>
-            <div class="field-group" style="position:relative">
-              <label data-i18n="passengers">المسافرون</label>
-              <input type="text" class="field-input" id="fPax" readonly value="١ بالغ" onclick="togglePop('paxPop')">
-              <div class="pax-popup" id="paxPop">
-                <div class="pax-row">
-                  <div class="pax-info"><strong data-i18n="adult">بالغ</strong><small data-i18n="adult_desc">١٢ سنة فأكثر</small></div>
-                  <div class="pax-counter">
-                    <button class="pax-btn" onclick="chPax('adult',-1)">−</button>
-                    <span class="pax-count" id="cAdult">1</span>
-                    <button class="pax-btn" onclick="chPax('adult',1)">+</button>
-                  </div>
-                </div>
-                <div class="pax-row">
-                  <div class="pax-info"><strong data-i18n="child">طفل</strong><small data-i18n="child_desc">٢–١١ سنة</small></div>
-                  <div class="pax-counter">
-                    <button class="pax-btn" onclick="chPax('child',-1)">−</button>
-                    <span class="pax-count" id="cChild">0</span>
-                    <button class="pax-btn" onclick="chPax('child',1)">+</button>
-                  </div>
-                </div>
-                <div class="pax-row">
-                  <div class="pax-info"><strong data-i18n="infant">رضيع</strong><small data-i18n="infant_desc">أقل من سنتين</small></div>
-                  <div class="pax-counter">
-                    <button class="pax-btn" onclick="chPax('infant',-1)">−</button>
-                    <span class="pax-count" id="cInfant">0</span>
-                    <button class="pax-btn" onclick="chPax('infant',1)">+</button>
-                  </div>
-                </div>
-                <button class="pax-done" onclick="closePop('paxPop')" data-i18n="done">تم</button>
-              </div>
-            </div>
-            <div class="field-group">
-              <label data-i18n="cabin_class">الدرجة</label>
-              <select class="field-input field-select" id="fClass">
-                <option value="economy">اقتصادية</option>
-                <option value="business">أعمال</option>
-                <option value="first">أولى</option>
-              </select>
-            </div>
+          <div class="swap-wrap" style="display:flex;align-items:flex-end;padding-bottom:2px">
+            <button class="swap" onclick="swapAirports()">⇄</button>
           </div>
-          <div style="display:flex;justify-content:center;margin-top:8px">
-            <button class="btn btn-primary btn-lg" onclick="doFlightSearch()" style="min-width:220px;font-size:1.05rem">
-              <span id="fSearchTxt" data-i18n="search_flights">🔍 بحث عن رحلات</span>
-              <div class="spinner spinner-sm hidden" id="fSpinner" style="border-top-color:white"></div>
-            </button>
+          <div class="fg">
+            <label>إلى</label>
+            <input class="fi" id="fTo" placeholder="مدينة أو رمز المطار" autocomplete="off" oninput="showDrop('fTo','dTo')">
+            <div class="adrop" id="dTo"></div>
           </div>
         </div>
-      </div>
 
-      <!-- HOTELS -->
-      <div id="hotelsPanel" class="search-panel">
-        <div class="search-fields">
-          <div class="field-group">
-            <label data-i18n="destination">الوجهة</label>
-            <input type="text" class="field-input" id="hDest" placeholder="المدينة أو الفندق">
+        <div id="datesRow" class="row3">
+          <div class="fg">
+            <label>تاريخ الذهاب</label>
+            <input class="fi" id="fDep" readonly placeholder="اختر التاريخ" onclick="dpDep.toggle()">
           </div>
-          <div class="srow-3">
-            <div class="field-group">
-              <label data-i18n="checkin">تاريخ الوصول</label>
-              <input type="text" class="field-input" id="hCheckin" readonly placeholder="اختر التاريخ">
-            </div>
-            <div class="field-group">
-              <label data-i18n="checkout">تاريخ المغادرة</label>
-              <input type="text" class="field-input" id="hCheckout" readonly placeholder="اختر التاريخ">
-            </div>
-            <div class="field-group" style="position:relative">
-              <label data-i18n="rooms_guests">الغرف والضيوف</label>
-              <input type="text" class="field-input" id="hRooms" readonly value="١ غرفة، ٢ ضيوف" onclick="togglePop('roomsPop')">
-              <div class="rooms-popup" id="roomsPop">
-                <div class="pax-row">
-                  <div class="pax-info"><strong>الغرف</strong></div>
-                  <div class="pax-counter">
-                    <button class="pax-btn" onclick="chRooms('rooms',-1)">−</button>
-                    <span class="pax-count" id="cRooms">1</span>
-                    <button class="pax-btn" onclick="chRooms('rooms',1)">+</button>
-                  </div>
+          <div class="fg" id="retWrap" style="display:none">
+            <label>تاريخ العودة</label>
+            <input class="fi" id="fRet" readonly placeholder="اختر التاريخ" onclick="dpRet.toggle()">
+          </div>
+          <div class="fg pop-wrap">
+            <label>المسافرون</label>
+            <input class="fi" id="fPax" readonly value="١ بالغ" onclick="togglePop('paxPop')">
+            <div class="pop" id="paxPop">
+              <div class="prow">
+                <div class="pinfo"><strong>بالغ</strong><small>١٢ سنة فأكثر</small></div>
+                <div class="pctr">
+                  <button class="pbtn" onclick="chPax('adult',-1)">−</button>
+                  <span class="pval" id="cA">1</span>
+                  <button class="pbtn" onclick="chPax('adult',1)">+</button>
                 </div>
-                <div class="pax-row">
-                  <div class="pax-info"><strong>الضيوف</strong></div>
-                  <div class="pax-counter">
-                    <button class="pax-btn" onclick="chRooms('guests',-1)">−</button>
-                    <span class="pax-count" id="cGuests">2</span>
-                    <button class="pax-btn" onclick="chRooms('guests',1)">+</button>
-                  </div>
-                </div>
-                <button class="pax-done" onclick="closePop('roomsPop')" data-i18n="done">تم</button>
               </div>
+              <div class="prow">
+                <div class="pinfo"><strong>طفل</strong><small>٢–١١ سنة</small></div>
+                <div class="pctr">
+                  <button class="pbtn" onclick="chPax('child',-1)">−</button>
+                  <span class="pval" id="cC">0</span>
+                  <button class="pbtn" onclick="chPax('child',1)">+</button>
+                </div>
+              </div>
+              <div class="prow">
+                <div class="pinfo"><strong>رضيع</strong><small>أقل من سنتين</small></div>
+                <div class="pctr">
+                  <button class="pbtn" onclick="chPax('infant',-1)">−</button>
+                  <span class="pval" id="cI">0</span>
+                  <button class="pbtn" onclick="chPax('infant',1)">+</button>
+                </div>
+              </div>
+              <button class="pop-done" onclick="closePop('paxPop')">تم</button>
             </div>
           </div>
-          <div style="display:flex;justify-content:center;margin-top:8px">
-            <button class="btn btn-primary btn-lg" onclick="doHotelSearch()" style="min-width:220px;font-size:1.05rem" data-i18n="search_hotels">🔍 بحث عن فنادق</button>
+          <div class="fg">
+            <label>الدرجة</label>
+            <select class="fi" id="fClass">
+              <option value="economy">اقتصادية</option>
+              <option value="business">أعمال</option>
+              <option value="first">أولى</option>
+            </select>
           </div>
         </div>
+
+        <button class="btn-search" onclick="searchFlights()">
+          <span id="fTxt">🔍 بحث عن رحلات</span>
+          <span id="fSpin" class="spin hidden"></span>
+        </button>
       </div>
     </div>
+
+    <!-- HOTELS PANEL -->
+    <div id="htP" class="panel">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div class="fg">
+          <label>الوجهة</label>
+          <input class="fi" id="hDest" placeholder="المدينة أو الفندق">
+        </div>
+        <div class="row3">
+          <div class="fg">
+            <label>تاريخ الوصول</label>
+            <input class="fi" id="hIn" readonly placeholder="اختر التاريخ" onclick="dpHotel.toggle()">
+          </div>
+          <div class="fg">
+            <label>تاريخ المغادرة</label>
+            <input class="fi" id="hOut" readonly placeholder="اختر التاريخ" onclick="dpHotel.toggle()">
+          </div>
+          <div class="fg pop-wrap">
+            <label>الغرف والضيوف</label>
+            <input class="fi" id="hRooms" readonly value="١ غرفة، ٢ ضيوف" onclick="togglePop('rmPop')">
+            <div class="pop" id="rmPop">
+              <div class="prow">
+                <div class="pinfo"><strong>الغرف</strong></div>
+                <div class="pctr">
+                  <button class="pbtn" onclick="chRm('rooms',-1)">−</button>
+                  <span class="pval" id="cRm">1</span>
+                  <button class="pbtn" onclick="chRm('rooms',1)">+</button>
+                </div>
+              </div>
+              <div class="prow">
+                <div class="pinfo"><strong>الضيوف</strong></div>
+                <div class="pctr">
+                  <button class="pbtn" onclick="chRm('guests',-1)">−</button>
+                  <span class="pval" id="cGs">2</span>
+                  <button class="pbtn" onclick="chRm('guests',1)">+</button>
+                </div>
+              </div>
+              <button class="pop-done" onclick="closePop('rmPop')">تم</button>
+            </div>
+          </div>
+        </div>
+        <button class="btn-search" onclick="searchHotels()">🔍 بحث عن فنادق</button>
+      </div>
+    </div>
+
   </div>
-</section>
+</div>
 
 <!-- FLIGHT RESULTS -->
-<section id="flightResults" class="results-section hidden">
-  <div class="container">
-    <div class="result-header">
-      <div>
-        <h2 style="font-size:1.3rem;font-weight:700;margin:0 0 4px">نتائج البحث</h2>
-        <p class="result-count" id="flightResultsCount"></p>
-      </div>
+<div class="results" id="flResults">
+  <div style="max-width:900px;margin:0 auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="font-size:1.2rem;font-weight:700;color:#1B4F8E">نتائج الرحلات</h2>
+      <span id="flCount" style="color:#6B7280;font-size:.9rem"></span>
     </div>
-    <div id="flightResultsList"></div>
+    <div id="flList"></div>
   </div>
-</section>
+</div>
 
 <!-- FEATURES -->
-<section class="features">
-  <div class="container">
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">💰</div>
-        <h3 data-i18n="feat1_title">أسعار مضمونة</h3>
-        <p data-i18n="feat1_desc">نضمن لك أفضل سعر أو نرد الفرق</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔒</div>
-        <h3 data-i18n="feat2_title">حجز آمن</h3>
-        <p data-i18n="feat2_desc">تشفير كامل وحماية لبياناتك</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🎧</div>
-        <h3 data-i18n="feat3_title">دعم ٢٤/٧</h3>
-        <p data-i18n="feat3_desc">فريق متخصص لمساعدتك في أي وقت</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <h3 data-i18n="feat4_title">تأكيد فوري</h3>
-        <p data-i18n="feat4_desc">تذكرتك تصلك خلال دقائق</p>
-      </div>
-    </div>
+<section class="feats">
+  <div class="feats-inner">
+    <div class="feat"><i>💰</i><h3>أسعار مضمونة</h3><p>نضمن لك أفضل سعر أو نرد الفرق</p></div>
+    <div class="feat"><i>🔒</i><h3>حجز آمن</h3><p>تشفير كامل وحماية لبياناتك</p></div>
+    <div class="feat"><i>🎧</i><h3>دعم ٢٤/٧</h3><p>فريق متخصص لمساعدتك في أي وقت</p></div>
+    <div class="feat"><i>⚡</i><h3>تأكيد فوري</h3><p>تذكرتك تصلك خلال دقائق</p></div>
   </div>
 </section>
 
-<!-- HOW IT WORKS -->
+<!-- STEPS -->
 <section class="steps">
-  <div class="container">
-    <h2 class="steps-title" data-i18n="steps_title">كيف يعمل فلاي مسار؟</h2>
+  <div class="steps-inner">
+    <h2 class="steps-title">كيف يعمل فلاي مسار؟</h2>
     <div class="steps-grid">
-      <div class="step">
-        <div class="step-num">١</div>
-        <h3 data-i18n="step1_title">ابحث</h3>
-        <p data-i18n="step1_desc">أدخل وجهتك والتواريخ وعدد المسافرين</p>
-      </div>
-      <div class="step">
-        <div class="step-num">٢</div>
-        <h3 data-i18n="step2_title">اختر</h3>
-        <p data-i18n="step2_desc">قارن الأسعار واختر العرض المناسب</p>
-      </div>
-      <div class="step">
-        <div class="step-num">٣</div>
-        <h3 data-i18n="step3_title">احجز</h3>
-        <p data-i18n="step3_desc">أكمل الدفع واستلم تذكرتك فوراً</p>
-      </div>
+      <div><div class="snum">١</div><h3>ابحث</h3><p>أدخل وجهتك والتواريخ وعدد المسافرين</p></div>
+      <div><div class="snum">٢</div><h3>اختر</h3><p>قارن الأسعار واختر العرض المناسب</p></div>
+      <div><div class="snum">٣</div><h3>احجز</h3><p>أكمل الدفع واستلم تذكرتك فوراً</p></div>
     </div>
   </div>
 </section>
 
 <!-- FOOTER -->
-<footer style="background:#0f2444;color:#fff;padding:48px 0 24px">
-  <div class="container">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:32px;margin-bottom:32px">
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
       <div>
-        <div style="font-size:1.4rem;font-weight:800;margin-bottom:12px">✈️ فلاي مسار</div>
-        <p style="color:rgba(255,255,255,0.6);font-size:0.9rem;line-height:1.7" data-i18n="footer_desc">منصة السفر الأولى للعالم العربي. أفضل الأسعار، أسرع الحجوزات.</p>
+        <div class="footer-brand">✈️ فلاي مسار</div>
+        <p class="footer-desc">منصة السفر الأولى للعالم العربي. أفضل الأسعار، أسرع الحجوزات.</p>
       </div>
       <div>
-        <h4 style="margin:0 0 16px;color:#E8A020" data-i18n="footer_company">الشركة</h4>
-        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px">
-          <li><a href="about.html" style="color:rgba(255,255,255,0.7);text-decoration:none" data-i18n="footer_about">من نحن</a></li>
-          <li><a href="contact.html" style="color:rgba(255,255,255,0.7);text-decoration:none" data-i18n="footer_contact">اتصل بنا</a></li>
+        <h4>الشركة</h4>
+        <ul>
+          <li><a href="about.html">من نحن</a></li>
+          <li><a href="contact.html">اتصل بنا</a></li>
         </ul>
       </div>
       <div>
-        <h4 style="margin:0 0 16px;color:#E8A020" data-i18n="footer_legal">قانوني</h4>
-        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px">
-          <li><a href="privacy.html" style="color:rgba(255,255,255,0.7);text-decoration:none" data-i18n="footer_privacy">سياسة الخصوصية</a></li>
-          <li><a href="terms.html" style="color:rgba(255,255,255,0.7);text-decoration:none" data-i18n="footer_terms">الشروط والأحكام</a></li>
+        <h4>قانوني</h4>
+        <ul>
+          <li><a href="privacy.html">سياسة الخصوصية</a></li>
+          <li><a href="terms.html">الشروط والأحكام</a></li>
         </ul>
       </div>
     </div>
-    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:24px;text-align:center;color:rgba(255,255,255,0.5);font-size:0.85rem" data-i18n="footer_rights">© ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.</div>
+    <div class="footer-copy">© ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.</div>
   </div>
 </footer>
 
-<!-- BOTTOM NAV (mobile only) -->
-<nav class="bottom-nav">
-  <a href="index.html" class="bnav-item active">
-    <span class="bnav-icon">🏠</span>
-    <span data-i18n="nav_home">الرئيسية</span>
-  </a>
-  <button class="bnav-item" onclick="switchTab('flights',null);document.querySelector('.search-box').scrollIntoView({behavior:'smooth'})">
-    <span class="bnav-icon">✈️</span>
-    <span data-i18n="nav_flights">رحلات</span>
+<!-- BOTTOM NAV -->
+<nav class="bnav">
+  <a href="index.html" class="bni on"><span class="bni-icon">🏠</span><span>الرئيسية</span></a>
+  <button class="bni" onclick="switchTab('flights',null);document.querySelector('.search-wrap').scrollIntoView({behavior:'smooth'})">
+    <span class="bni-icon">✈️</span><span>رحلات</span>
   </button>
-  <a href="hotels.html" class="bnav-item">
-    <span class="bnav-icon">🏨</span>
-    <span data-i18n="nav_hotels">فنادق</span>
-  </a>
-  <a href="dashboard.html" class="bnav-item" id="bnavAccount">
-    <span class="bnav-icon">👤</span>
-    <span data-i18n="nav_account">حسابي</span>
-  </a>
+  <a href="hotels.html" class="bni"><span class="bni-icon">🏨</span><span>فنادق</span></a>
+  <a href="dashboard.html" class="bni"><span class="bni-icon">👤</span><span>حسابي</span></a>
 </nav>
 
-<script src="js/i18n.js"></script>
-<script src="js/currency.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/datepicker.js"></script>
-<script src="js/flights.js"></script>
-<style>
-.airport-dropdown { display:none; position:absolute; background:#fff; border:2px solid #e5e7eb; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:300; width:100%; max-height:240px; overflow-y:auto; top:100%; margin-top:4px; }
-.airport-dropdown.open { display:block; }
-.airport-item { padding:10px 14px; cursor:pointer; border-bottom:1px solid #f0f2f5; display:flex; align-items:center; gap:10px; }
-.airport-item:last-child { border-bottom:none; }
-.airport-item:hover { background:#f0f5ff; }
-.airport-code { background:var(--primary); color:#fff; border-radius:6px; padding:2px 8px; font-size:0.78rem; font-weight:700; flex-shrink:0; }
-.airport-info { flex:1; }
-.airport-name { font-size:0.88rem; font-weight:600; }
-.airport-country { font-size:0.75rem; color:var(--text-muted); }
-.field-group { position:relative; }
-</style>
 <script>
-  window.airports = [
-    { code:'LHR', name:'لندن هيثرو', nameEn:'London Heathrow', city:'لندن', cityEn:'London', country:'المملكة المتحدة', countryEn:'United Kingdom' },
-    { code:'LGW', name:'لندن غاتويك', nameEn:'London Gatwick', city:'لندن', cityEn:'London', country:'المملكة المتحدة', countryEn:'United Kingdom' },
-    { code:'DXB', name:'دبي الدولي', nameEn:'Dubai International', city:'دبي', cityEn:'Dubai', country:'الإمارات', countryEn:'UAE' },
-    { code:'KWI', name:'الكويت الدولي', nameEn:'Kuwait International', city:'الكويت', cityEn:'Kuwait City', country:'الكويت', countryEn:'Kuwait' },
-    { code:'RUH', name:'الرياض الملك خالد', nameEn:'King Khalid International', city:'الرياض', cityEn:'Riyadh', country:'السعودية', countryEn:'Saudi Arabia' },
-    { code:'JED', name:'جدة الملك عبدالعزيز', nameEn:'King Abdulaziz International', city:'جدة', cityEn:'Jeddah', country:'السعودية', countryEn:'Saudi Arabia' },
-    { code:'CAI', name:'القاهرة الدولي', nameEn:'Cairo International', city:'القاهرة', cityEn:'Cairo', country:'مصر', countryEn:'Egypt' },
-    { code:'AMM', name:'عمّان الملكة علياء', nameEn:'Queen Alia International', city:'عمّان', cityEn:'Amman', country:'الأردن', countryEn:'Jordan' },
-    { code:'BEY', name:'بيروت رفيق الحريري', nameEn:'Beirut Rafic Hariri', city:'بيروت', cityEn:'Beirut', country:'لبنان', countryEn:'Lebanon' },
-    { code:'IST', name:'إسطنبول', nameEn:'Istanbul Airport', city:'إسطنبول', cityEn:'Istanbul', country:'تركيا', countryEn:'Turkey' },
-    { code:'DOH', name:'الدوحة حمد الدولي', nameEn:'Hamad International', city:'الدوحة', cityEn:'Doha', country:'قطر', countryEn:'Qatar' },
-    { code:'AUH', name:'أبوظبي الدولي', nameEn:'Abu Dhabi International', city:'أبوظبي', cityEn:'Abu Dhabi', country:'الإمارات', countryEn:'UAE' },
-    { code:'BAH', name:'البحرين الدولي', nameEn:'Bahrain International', city:'المنامة', cityEn:'Manama', country:'البحرين', countryEn:'Bahrain' },
-    { code:'MCT', name:'مسقط الدولي', nameEn:'Muscat International', city:'مسقط', cityEn:'Muscat', country:'عُمان', countryEn:'Oman' },
-    { code:'CDG', name:'باريس شارل ديغول', nameEn:'Paris Charles de Gaulle', city:'باريس', cityEn:'Paris', country:'فرنسا', countryEn:'France' },
-    { code:'FRA', name:'فرانكفورت الدولي', nameEn:'Frankfurt Airport', city:'فرانكفورت', cityEn:'Frankfurt', country:'ألمانيا', countryEn:'Germany' },
-    { code:'JFK', name:'نيويورك جون كيندي', nameEn:'John F. Kennedy', city:'نيويورك', cityEn:'New York', country:'الولايات المتحدة', countryEn:'United States' },
-    { code:'LAX', name:'لوس أنجلوس الدولي', nameEn:'Los Angeles International', city:'لوس أنجلوس', cityEn:'Los Angeles', country:'الولايات المتحدة', countryEn:'United States' },
-    { code:'SIN', name:'سنغافورة تشانغي', nameEn:'Singapore Changi', city:'سنغافورة', cityEn:'Singapore', country:'سنغافورة', countryEn:'Singapore' },
-    { code:'BKK', name:'بانكوك سوفارنابومي', nameEn:'Bangkok Suvarnabhumi', city:'بانكوك', cityEn:'Bangkok', country:'تايلاند', countryEn:'Thailand' },
-    { code:'MAN', name:'مانشستر الدولي', nameEn:'Manchester Airport', city:'مانشستر', cityEn:'Manchester', country:'المملكة المتحدة', countryEn:'United Kingdom' },
-    { code:'TUN', name:'تونس قرطاج الدولي', nameEn:'Tunis Carthage', city:'تونس', cityEn:'Tunis', country:'تونس', countryEn:'Tunisia' },
-    { code:'CMN', name:'الدار البيضاء محمد الخامس', nameEn:'Mohammed V International', city:'الدار البيضاء', cityEn:'Casablanca', country:'المغرب', countryEn:'Morocco' },
-    { code:'ALG', name:'الجزائر هواري بومدين', nameEn:'Houari Boumediene', city:'الجزائر', cityEn:'Algiers', country:'الجزائر', countryEn:'Algeria' },
-    { code:'AMS', name:'أمستردام سخيبول', nameEn:'Amsterdam Schiphol', city:'أمستردام', cityEn:'Amsterdam', country:'هولندا', countryEn:'Netherlands' },
-    { code:'MED', name:'المدينة المنورة', nameEn:'Prince Mohammad bin Abdulaziz', city:'المدينة المنورة', cityEn:'Medina', country:'السعودية', countryEn:'Saudi Arabia' },
-  ];
+/* ── AIRPORTS ── */
+const AIRPORTS = [
+  {code:'KWI',name:'الكويت الدولي',nameEn:'Kuwait International',city:'الكويت',cityEn:'Kuwait City',country:'الكويت',countryEn:'Kuwait'},
+  {code:'DXB',name:'دبي الدولي',nameEn:'Dubai International',city:'دبي',cityEn:'Dubai',country:'الإمارات',countryEn:'UAE'},
+  {code:'RUH',name:'الرياض الملك خالد',nameEn:'King Khalid International',city:'الرياض',cityEn:'Riyadh',country:'السعودية',countryEn:'Saudi Arabia'},
+  {code:'JED',name:'جدة الملك عبدالعزيز',nameEn:'King Abdulaziz International',city:'جدة',cityEn:'Jeddah',country:'السعودية',countryEn:'Saudi Arabia'},
+  {code:'DOH',name:'الدوحة حمد الدولي',nameEn:'Hamad International',city:'الدوحة',cityEn:'Doha',country:'قطر',countryEn:'Qatar'},
+  {code:'AUH',name:'أبوظبي الدولي',nameEn:'Abu Dhabi International',city:'أبوظبي',cityEn:'Abu Dhabi',country:'الإمارات',countryEn:'UAE'},
+  {code:'BAH',name:'البحرين الدولي',nameEn:'Bahrain International',city:'المنامة',cityEn:'Manama',country:'البحرين',countryEn:'Bahrain'},
+  {code:'MCT',name:'مسقط الدولي',nameEn:'Muscat International',city:'مسقط',cityEn:'Muscat',country:'عُمان',countryEn:'Oman'},
+  {code:'CAI',name:'القاهرة الدولي',nameEn:'Cairo International',city:'القاهرة',cityEn:'Cairo',country:'مصر',countryEn:'Egypt'},
+  {code:'AMM',name:'عمّان الملكة علياء',nameEn:'Queen Alia International',city:'عمّان',cityEn:'Amman',country:'الأردن',countryEn:'Jordan'},
+  {code:'BEY',name:'بيروت رفيق الحريري',nameEn:'Beirut Rafic Hariri',city:'بيروت',cityEn:'Beirut',country:'لبنان',countryEn:'Lebanon'},
+  {code:'IST',name:'إسطنبول',nameEn:'Istanbul Airport',city:'إسطنبول',cityEn:'Istanbul',country:'تركيا',countryEn:'Turkey'},
+  {code:'LHR',name:'لندن هيثرو',nameEn:'London Heathrow',city:'لندن',cityEn:'London',country:'المملكة المتحدة',countryEn:'United Kingdom'},
+  {code:'CDG',name:'باريس شارل ديغول',nameEn:'Paris Charles de Gaulle',city:'باريس',cityEn:'Paris',country:'فرنسا',countryEn:'France'},
+  {code:'FRA',name:'فرانكفورت',nameEn:'Frankfurt Airport',city:'فرانكفورت',cityEn:'Frankfurt',country:'ألمانيا',countryEn:'Germany'},
+  {code:'JFK',name:'نيويورك جون كيندي',nameEn:'John F. Kennedy',city:'نيويورك',cityEn:'New York',country:'الولايات المتحدة',countryEn:'United States'},
+  {code:'LAX',name:'لوس أنجلوس',nameEn:'Los Angeles International',city:'لوس أنجلوس',cityEn:'Los Angeles',country:'الولايات المتحدة',countryEn:'United States'},
+  {code:'SIN',name:'سنغافورة تشانغي',nameEn:'Singapore Changi',city:'سنغافورة',cityEn:'Singapore',country:'سنغافورة',countryEn:'Singapore'},
+  {code:'BKK',name:'بانكوك سوفارنابومي',nameEn:'Bangkok Suvarnabhumi',city:'بانكوك',cityEn:'Bangkok',country:'تايلاند',countryEn:'Thailand'},
+  {code:'MAN',name:'مانشستر',nameEn:'Manchester Airport',city:'مانشستر',cityEn:'Manchester',country:'المملكة المتحدة',countryEn:'United Kingdom'},
+  {code:'MED',name:'المدينة المنورة',nameEn:'Prince Mohammad bin Abdulaziz',city:'المدينة المنورة',cityEn:'Medina',country:'السعودية',countryEn:'Saudi Arabia'},
+  {code:'LGW',name:'لندن غاتويك',nameEn:'London Gatwick',city:'لندن',cityEn:'London',country:'المملكة المتحدة',countryEn:'United Kingdom'},
+  {code:'TUN',name:'تونس قرطاج',nameEn:'Tunis Carthage',city:'تونس',cityEn:'Tunis',country:'تونس',countryEn:'Tunisia'},
+  {code:'CMN',name:'الدار البيضاء',nameEn:'Mohammed V International',city:'الدار البيضاء',cityEn:'Casablanca',country:'المغرب',countryEn:'Morocco'},
+  {code:'AMS',name:'أمستردام سخيبول',nameEn:'Amsterdam Schiphol',city:'أمستردام',cityEn:'Amsterdam',country:'هولندا',countryEn:'Netherlands'},
+  {code:'ALG',name:'الجزائر',nameEn:'Houari Boumediene',city:'الجزائر',cityEn:'Algiers',country:'الجزائر',countryEn:'Algeria'},
+];
 
-  const pax = { adult:1, child:0, infant:0 };
-  const rm  = { rooms:1, guests:2 };
-  let tripType = 'oneway';
+/* ── CURRENCY ── */
+const RATES = {GBP:1, KWD:0.38, SAR:4.78, USD:1.27};
+const SYMS  = {GBP:'£', KWD:'د.ك', SAR:'ر.س', USD:'$'};
+let curCur = localStorage.getItem('fly_cur') || 'GBP';
+function setCur(c) {
+  curCur = c;
+  localStorage.setItem('fly_cur', c);
+  document.querySelectorAll('[data-cur]').forEach(b => b.classList.toggle('on', b.dataset.cur === c));
+}
+function fmtPrice(gbp) {
+  const v = (gbp * RATES[curCur]).toFixed(0);
+  return SYMS[curCur] + ' ' + Number(v).toLocaleString();
+}
 
-  document.addEventListener('DOMContentLoaded', () => {
-    initLang();
-    initCurrency();
+/* ── LANG ── */
+let curLang = localStorage.getItem('fly_lang') || 'ar';
+function setLang(l) {
+  curLang = l;
+  localStorage.setItem('fly_lang', l);
+  document.documentElement.lang = l;
+  document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+  document.querySelectorAll('[data-lang]').forEach(b => b.classList.toggle('on', b.dataset.lang === l));
+  if (window.DatePickerInstances) window.DatePickerInstances.forEach(dp => { dp.lang = l; dp._render(); });
+}
 
-    // Auth nav
-    const navAuth = document.getElementById('navAuth');
-    if (Auth.isLoggedIn()) {
-      navAuth.innerHTML = `<a href="dashboard.html" class="btn btn-ghost btn-sm" style="margin-left:8px" data-i18n="nav_dashboard">حجوزاتي</a><button class="btn btn-outline btn-sm" onclick="Auth.logout()" data-i18n="nav_logout">خروج</button>`;
-    } else {
-      navAuth.innerHTML = `<a href="login.html" class="btn btn-ghost btn-sm" style="margin-left:8px" data-i18n="nav_login">دخول</a><a href="register.html" class="btn btn-primary btn-sm" data-i18n="nav_register">تسجيل</a>`;
-    }
+/* ── STATE ── */
+const pax = {adult:1, child:0, infant:0};
+const rm  = {rooms:1, guests:2};
+let tripType = 'oneway';
 
-    // Date pickers (onSelect receives: startDate, endDate, pickerInstance)
-    new DatePicker(document.getElementById('fDepDate'), { mode:'single', minDate:new Date(), onSelect:(d)=>{ document.getElementById('fDepDate').classList.add('filled'); } });
-    new DatePicker(document.getElementById('fRetDate'), { mode:'single', minDate:new Date(), onSelect:(d)=>{ document.getElementById('fRetDate').classList.add('filled'); } });
-
-    const ci = document.getElementById('hCheckin'), co = document.getElementById('hCheckout');
-    const hotelDp = new DatePicker(ci, {
-      mode:'range', minDate:new Date(),
-      onSelect:(s,e,dp)=>{
-        if(e){ co.value = dp._fmt(e); co.classList.add('filled'); }
-      }
+/* ── TABS ── */
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+  else {
+    document.querySelectorAll('.tab').forEach(t => {
+      if (id==='flights' && t.textContent.includes('رحلات')) t.classList.add('on');
+      if (id==='hotels'  && t.textContent.includes('فنادق'))  t.classList.add('on');
     });
-    co.addEventListener('click', ()=>hotelDp.show());
+  }
+  document.getElementById(id==='flights' ? 'flP' : 'htP').classList.add('on');
+}
 
-    // Close popups on outside click
-    document.addEventListener('click', e=>{
-      if(!e.target.closest('#paxPop') && !e.target.closest('#fPax')) closePop('paxPop');
-      if(!e.target.closest('#roomsPop') && !e.target.closest('#hRooms')) closePop('roomsPop');
-      if(!e.target.closest('#fromDrop') && !e.target.closest('#fFrom')) document.getElementById('fromDrop')?.classList.remove('open');
-      if(!e.target.closest('#toDrop') && !e.target.closest('#fTo')) document.getElementById('toDrop')?.classList.remove('open');
-    });
+/* ── TRIP TYPE ── */
+function setTrip(t) {
+  tripType = t;
+  document.getElementById('tp1').classList.toggle('on', t==='oneway');
+  document.getElementById('tp2').classList.toggle('on', t==='round');
+  const ret = document.getElementById('retWrap');
+  const row = document.getElementById('datesRow');
+  ret.style.display = t==='round' ? '' : 'none';
+  row.className = t==='round' ? 'row4' : 'row3';
+}
+
+/* ── SWAP ── */
+function swapAirports() {
+  const f = document.getElementById('fFrom'), t = document.getElementById('fTo');
+  [f.value, t.value] = [t.value, f.value];
+  [f.dataset.code, t.dataset.code] = [t.dataset.code||'', f.dataset.code||''];
+}
+
+/* ── PASSENGERS ── */
+function chPax(type, d) {
+  pax[type] = Math.max(type==='adult'?1:0, pax[type]+d);
+  if (pax.adult+pax.child+pax.infant > 9) { pax[type]-=d; return; }
+  document.getElementById('cA').textContent = pax.adult;
+  document.getElementById('cC').textContent = pax.child;
+  document.getElementById('cI').textContent = pax.infant;
+  let lbl = pax.adult + ' بالغ';
+  if (pax.child)  lbl += '، ' + pax.child  + ' طفل';
+  if (pax.infant) lbl += '، ' + pax.infant + ' رضيع';
+  document.getElementById('fPax').value = lbl;
+}
+function chRm(k, d) {
+  const max = k==='rooms'?8:20;
+  rm[k] = Math.max(1, Math.min(rm[k]+d, max));
+  document.getElementById('cRm').textContent = rm.rooms;
+  document.getElementById('cGs').textContent = rm.guests;
+  document.getElementById('hRooms').value = rm.rooms + ' غرفة، ' + rm.guests + ' ضيوف';
+}
+
+/* ── POPUP ── */
+function togglePop(id) { document.getElementById(id).classList.toggle('open'); }
+function closePop(id)  { document.getElementById(id).classList.remove('open'); }
+document.addEventListener('click', e => {
+  if (!e.target.closest('#paxPop') && !e.target.closest('[onclick*="paxPop"]')) closePop('paxPop');
+  if (!e.target.closest('#rmPop')  && !e.target.closest('[onclick*="rmPop"]'))  closePop('rmPop');
+  if (!e.target.closest('.adrop')  && !e.target.closest('#fFrom')) document.getElementById('dFrom').classList.remove('open');
+  if (!e.target.closest('.adrop')  && !e.target.closest('#fTo'))   document.getElementById('dTo').classList.remove('open');
+});
+
+/* ── AIRPORT AUTOCOMPLETE ── */
+function showDrop(inputId, dropId) {
+  const q = document.getElementById(inputId).value.toLowerCase().trim();
+  const drop = document.getElementById(dropId);
+  if (!q) { drop.classList.remove('open'); return; }
+  const matches = AIRPORTS.filter(a =>
+    a.code.toLowerCase().includes(q) ||
+    a.name.toLowerCase().includes(q) ||
+    a.nameEn.toLowerCase().includes(q) ||
+    a.city.toLowerCase().includes(q) ||
+    a.cityEn.toLowerCase().includes(q)
+  ).slice(0,8);
+  if (!matches.length) { drop.classList.remove('open'); return; }
+  drop.innerHTML = matches.map(a => `
+    <div class="aitem" onclick="pickAirport('${inputId}','${dropId}','${a.code}','${a.name} (${a.code})')">
+      <span class="acode">${a.code}</span>
+      <div><div class="aname">${a.name}</div><div class="acountry">${a.country}</div></div>
+    </div>`).join('');
+  drop.classList.add('open');
+}
+function pickAirport(inputId, dropId, code, label) {
+  const el = document.getElementById(inputId);
+  el.value = label;
+  el.dataset.code = code;
+  el.classList.add('ok');
+  document.getElementById(dropId).classList.remove('open');
+}
+
+/* ── DATEPICKERS ── */
+let dpDep, dpRet, dpHotel;
+document.addEventListener('DOMContentLoaded', () => {
+  // Auth nav
+  const nav = document.getElementById('navAuth');
+  if (Auth && Auth.isLoggedIn()) {
+    nav.innerHTML = `<a href="dashboard.html" class="btn-login" style="margin-left:6px">حجوزاتي</a><button class="btn-reg" onclick="Auth.logout()">خروج</button>`;
+  } else {
+    nav.innerHTML = `<a href="login.html" class="btn-login" style="margin-left:6px">دخول</a><a href="register.html" class="btn-reg">تسجيل</a>`;
+  }
+
+  // Apply saved lang/currency
+  setLang(curLang);
+  setCur(curCur);
+
+  const today = new Date();
+  dpDep = new DatePicker(document.getElementById('fDep'), {
+    mode:'single', minDate:today,
+    onSelect(d) { document.getElementById('fDep').classList.add('ok'); }
   });
-
-  function switchTab(tab, btn) {
-    document.querySelectorAll('.search-tab').forEach(t=>t.classList.remove('active'));
-    document.querySelectorAll('.search-panel').forEach(p=>p.classList.remove('active'));
-    if(btn) btn.classList.add('active');
-    else {
-      document.querySelectorAll('.search-tab').forEach(t=>{
-        if(t.textContent.includes('رحلات')&&tab==='flights') t.classList.add('active');
-        if(t.textContent.includes('فنادق')&&tab==='hotels') t.classList.add('active');
-      });
+  dpRet = new DatePicker(document.getElementById('fRet'), {
+    mode:'single', minDate:today,
+    onSelect(d) { document.getElementById('fRet').classList.add('ok'); }
+  });
+  dpHotel = new DatePicker(document.getElementById('hIn'), {
+    mode:'range', minDate:today,
+    onSelect(s, e, dp) {
+      if (s) { document.getElementById('hIn').value = dp._fmt(s); document.getElementById('hIn').classList.add('ok'); }
+      if (e) { document.getElementById('hOut').value = dp._fmt(e); document.getElementById('hOut').classList.add('ok'); }
     }
-    const panel = tab==='flights' ? document.getElementById('flightsPanel') : document.getElementById('hotelsPanel');
-    if(panel) panel.classList.add('active');
-  }
+  });
+  document.getElementById('hOut').addEventListener('click', () => dpHotel.toggle());
+});
 
-  function setTripType(type) {
-    tripType = type;
-    document.getElementById('pill_oneway').classList.toggle('active', type==='oneway');
-    document.getElementById('pill_round').classList.toggle('active', type==='round');
-    document.getElementById('retDateWrap').style.display = type==='round' ? '' : 'none';
-    document.getElementById('flightDatesRow').style.gridTemplateColumns = type==='round' ? '1fr 1fr 1fr 1fr' : '1fr 1fr 1fr';
+/* ── SEARCH ── */
+async function searchFlights() {
+  const from = document.getElementById('fFrom').dataset.code || document.getElementById('fFrom').value.trim();
+  const to   = document.getElementById('fTo').dataset.code   || document.getElementById('fTo').value.trim();
+  const dep  = document.getElementById('fDep').value;
+  if (!from||!to||!dep) { toast('يرجى ملء جميع الحقول', 'err'); return; }
+  const btn = document.querySelector('#flP .btn-search');
+  const txt = document.getElementById('fTxt');
+  const sp  = document.getElementById('fSpin');
+  btn.disabled=true; txt.classList.add('hidden'); sp.classList.remove('hidden');
+  localStorage.setItem('bk_adults', pax.adult);
+  localStorage.setItem('bk_children', pax.child);
+  localStorage.setItem('bk_infants', pax.infant);
+  try {
+    const res = await Api.post('/api/flights/search', {
+      origin:from, destination:to, departure_date:dep,
+      adults:pax.adult, children:pax.child, infants:pax.infant,
+      cabin_class:document.getElementById('fClass').value
+    }, false);
+    const list = res.data||res.flights||res||[];
+    const sec = document.getElementById('flResults');
+    sec.classList.add('open');
+    sec.scrollIntoView({behavior:'smooth'});
+    document.getElementById('flCount').textContent = list.length + ' رحلة متاحة';
+    document.getElementById('flList').innerHTML = list.length
+      ? list.map(fl => flightCard(fl)).join('')
+      : '<p style="text-align:center;padding:40px;color:#6B7280">لا توجد رحلات متاحة لهذا المسار</p>';
+  } catch(e) {
+    toast(e.message||'حدث خطأ أثناء البحث', 'err');
+  } finally {
+    btn.disabled=false; txt.classList.remove('hidden'); sp.classList.add('hidden');
   }
+}
 
-  function swapCities() {
-    const f=document.getElementById('fFrom'), t=document.getElementById('fTo');
-    [f.value,t.value]=[t.value,f.value];
-  }
+function flightCard(fl) {
+  const logo = `https://pics.avs.io/50/50/${fl.airline_code||'XX'}.png`;
+  const dep = fl.departure_time||'--:--';
+  const arr = fl.arrival_time||'--:--';
+  const dur = fl.duration||'';
+  const stops = fl.stops===0 ? '<span class="rstops direct">مباشر</span>' : `<span class="rstops">${fl.stops} توقف</span>`;
+  const price = fmtPrice(fl.price||fl.base_price||0);
+  return `<div class="fc">
+    <img class="fc-logo" src="${logo}" onerror="this.style.display='none'" alt="${fl.airline||''}">
+    <div class="fc-route">
+      <div class="rpt"><div class="rtime">${dep}</div><div class="rcode">${fl.origin||''}</div></div>
+      <div class="rmid">
+        <span class="rdur">${dur}</span>
+        <div class="rbar"></div>
+        ${stops}
+      </div>
+      <div class="rpt"><div class="rtime">${arr}</div><div class="rcode">${fl.destination||''}</div></div>
+    </div>
+    <div class="fc-price">
+      <div class="fp">${price}</div>
+      <div class="fpp">للمسافر</div>
+      <button class="btn-reg" onclick="window.location.href='booking.html?flight=${fl.id||''}'">احجز الآن</button>
+    </div>
+  </div>`;
+}
 
-  function togglePop(id) { document.getElementById(id).classList.toggle('open'); }
-  function closePop(id)  { document.getElementById(id).classList.remove('open'); }
+function searchHotels() {
+  const dest = document.getElementById('hDest').value.trim();
+  if (!dest) { toast('يرجى إدخال الوجهة', 'err'); return; }
+  window.location.href = `hotels.html?dest=${encodeURIComponent(dest)}&rooms=${rm.rooms}&guests=${rm.guests}`;
+}
 
-  function chPax(type, d) {
-    pax[type] = Math.max(type==='adult'?1:0, pax[type]+d);
-    if(pax.adult+pax.child+pax.infant>9) { pax[type]-=d; return; }
-    document.getElementById('cAdult').textContent  = pax.adult;
-    document.getElementById('cChild').textContent  = pax.child;
-    document.getElementById('cInfant').textContent = pax.infant;
-    const lang = window.currentLang||'ar';
-    let lbl = lang==='ar' ? pax.adult+' بالغ' : pax.adult+' Adult';
-    if(pax.child)  lbl += lang==='ar' ? '، '+pax.child+' طفل' : ', '+pax.child+' Child';
-    if(pax.infant) lbl += lang==='ar' ? '، '+pax.infant+' رضيع' : ', '+pax.infant+' Infant';
-    document.getElementById('fPax').value = lbl;
-  }
-
-  function chRooms(type, d) {
-    rm[type] = Math.max(1, Math.min(rm[type]+d, type==='rooms'?8:20));
-    document.getElementById('cRooms').textContent  = rm.rooms;
-    document.getElementById('cGuests').textContent = rm.guests;
-    const lang = window.currentLang||'ar';
-    document.getElementById('hRooms').value = lang==='ar'
-      ? rm.rooms+' غرفة، '+rm.guests+' ضيف'
-      : rm.rooms+' Room, '+rm.guests+' Guests';
-  }
-
-  async function doFlightSearch() {
-    const fromEl = document.getElementById('fFrom');
-    const toEl   = document.getElementById('fTo');
-    const from   = fromEl.dataset.code || fromEl.value.trim();
-    const to     = toEl.dataset.code   || toEl.value.trim();
-    const dep    = document.getElementById('fDepDate').value;
-    if(!from||!to||!dep) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
-    const btn = document.querySelector('#flightsPanel .btn-primary');
-    const sp  = document.getElementById('fSpinner');
-    const tx  = document.getElementById('fSearchTxt');
-    btn.disabled=true; sp.classList.remove('hidden'); tx.classList.add('hidden');
-    // Save for booking page
-    localStorage.setItem('bk_adults', pax.adult);
-    localStorage.setItem('bk_children', pax.child);
-    localStorage.setItem('bk_infants', pax.infant);
-    try {
-      const res = await Flights.search({ origin:from, destination:to, departure_date:dep, adults:pax.adult, children:pax.child, infants:pax.infant, cabin_class:document.getElementById('fClass').value });
-      const list = Array.isArray(res.data)?res.data:Array.isArray(res.flights)?res.flights:[];
-      const sec  = document.getElementById('flightResults');
-      sec.classList.remove('hidden');
-      sec.scrollIntoView({behavior:'smooth'});
-      document.getElementById('flightResultsCount').textContent = list.length+' رحلة متاحة';
-      Flights.renderSearchResults(list, document.getElementById('flightResultsList'));
-    } catch(err) {
-      showToast(err.message||'حدث خطأ أثناء البحث', 'error');
-    } finally {
-      btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
-    }
-  }
-
-  function doHotelSearch() {
-    const dest = document.getElementById('hDest').value.trim();
-    if(!dest) { showToast('يرجى إدخال الوجهة', 'error'); return; }
-    window.location.href = `hotels.html?dest=${encodeURIComponent(dest)}&rooms=${rm.rooms}&guests=${rm.guests}`;
-  }
-
-  function showToast(msg, type='info') {
-    const t = document.createElement('div');
-    t.className = 'toast toast-'+type;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(()=>t.remove(), 3500);
-  }
-
-  function showAirports(inputId, dropId) {
-    const q = document.getElementById(inputId).value.trim().toLowerCase();
-    const drop = document.getElementById(dropId);
-    if (!q || !window.airports) { drop.classList.remove('open'); return; }
-    const lang = window.currentLang || 'ar';
-    const matches = window.airports.filter(a =>
-      a.code.toLowerCase().includes(q) ||
-      a.name.toLowerCase().includes(q) ||
-      a.nameEn.toLowerCase().includes(q) ||
-      a.city.toLowerCase().includes(q) ||
-      a.cityEn.toLowerCase().includes(q)
-    ).slice(0, 8);
-    if (!matches.length) { drop.classList.remove('open'); return; }
-    drop.innerHTML = matches.map(a => `
-      <div class="airport-item" onclick="selectAirport('${inputId}','${dropId}','${a.code}','${lang==='ar'?a.city:a.cityEn} (${a.code})')">
-        <span class="airport-code">${a.code}</span>
-        <div class="airport-info">
-          <div class="airport-name">${lang==='ar' ? a.name : a.nameEn}</div>
-          <div class="airport-country">${lang==='ar' ? a.country : a.countryEn}</div>
-        </div>
-      </div>`).join('');
-    drop.classList.add('open');
-  }
-
-  function selectAirport(inputId, dropId, code, label) {
-    document.getElementById(inputId).value = label;
-    document.getElementById(inputId).dataset.code = code;
-    document.getElementById(inputId).classList.add('filled');
-    document.getElementById(dropId).classList.remove('open');
-  }
+/* ── TOAST ── */
+function toast(msg, type='ok') {
+  const t = document.createElement('div');
+  t.className = 'toast' + (type==='err'?' err':type==='ok'?' ok':'');
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
 </script>
 </body>
 </html>
