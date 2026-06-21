@@ -15,19 +15,35 @@ use Stripe\Exception\ApiErrorException;
  */
 class StripeAdapter
 {
-    private StripeClient $client;
+    private ?StripeClient $client = null;
     private string $currency;
 
     public function __construct(array $config = [])
     {
-        $secretKey = $config['secret_key'] ?? (getenv('STRIPE_SECRET_KEY') ?: '');
-
-        if (empty($secretKey)) {
-            throw new \RuntimeException('Stripe secret key is not configured.');
+        // Auto-load from config/apis.php if no config passed
+        if (empty($config) && defined('BASE_PATH')) {
+            $cfgFile = BASE_PATH . '/config/apis.php';
+            if (file_exists($cfgFile)) {
+                $loaded = require $cfgFile;
+                $config = $loaded['stripe'] ?? [];
+            }
         }
 
-        $this->client   = new StripeClient($secretKey);
+        $secretKey = $config['secret_key'] ?? (getenv('STRIPE_SECRET_KEY') ?: '');
         $this->currency = strtolower($config['currency'] ?? (getenv('STRIPE_CURRENCY') ?: 'gbp'));
+
+        // Defer throwing until an actual payment operation is attempted
+        if (!empty($secretKey)) {
+            $this->client = new StripeClient($secretKey);
+        }
+    }
+
+    private function requireClient(): StripeClient
+    {
+        if ($this->client === null) {
+            throw new \RuntimeException('خدمة الدفع غير متاحة حالياً. الرجاء التواصل مع الدعم.');
+        }
+        return $this->client;
     }
 
     // =========================================================================
@@ -54,7 +70,7 @@ class StripeAdapter
         $currency = $currency ?: $this->currency;
 
         try {
-            $intent = $this->client->paymentIntents->create(
+            $intent = $this->requireClient()->paymentIntents->create(
                 [
                     'amount'               => $amountInMinorUnits,
                     'currency'             => $currency,
@@ -83,7 +99,7 @@ class StripeAdapter
     public function getPaymentIntent(string $paymentIntentId): array
     {
         try {
-            $intent = $this->client->paymentIntents->retrieve($paymentIntentId);
+            $intent = $this->requireClient()->paymentIntents->retrieve($paymentIntentId);
             return $intent->toArray();
         } catch (ApiErrorException $e) {
             throw new \RuntimeException('Stripe PaymentIntent retrieval failed: ' . $e->getMessage(), $e->getHttpStatus(), $e);
@@ -96,7 +112,7 @@ class StripeAdapter
     public function cancelPaymentIntent(string $paymentIntentId, string $reason = 'abandoned'): array
     {
         try {
-            $intent = $this->client->paymentIntents->cancel(
+            $intent = $this->requireClient()->paymentIntents->cancel(
                 $paymentIntentId,
                 ['cancellation_reason' => $reason]
             );
@@ -139,7 +155,7 @@ class StripeAdapter
         }
 
         try {
-            $refund = $this->client->refunds->create($params, $options ?: null);
+            $refund = $this->requireClient()->refunds->create($params, $options ?: null);
             return $refund->toArray();
         } catch (ApiErrorException $e) {
             throw new \RuntimeException('Stripe refund failed: ' . $e->getMessage(), $e->getHttpStatus(), $e);
@@ -156,7 +172,7 @@ class StripeAdapter
     public function createCustomer(string $email, string $name, array $metadata = []): array
     {
         try {
-            $customer = $this->client->customers->create([
+            $customer = $this->requireClient()->customers->create([
                 'email'    => $email,
                 'name'     => $name,
                 'metadata' => $metadata,
