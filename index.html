@@ -246,10 +246,12 @@
           <div class="fg">
             <label data-i18n="lbl_dep">تاريخ الذهاب</label>
             <input class="fi" id="fDep" readonly placeholder="اختر التاريخ" data-i18n-ph="ph_date" dir="ltr" style="text-align:right">
+            <input type="hidden" id="fDepISO">
           </div>
           <div class="fg" id="retWrap" style="display:none">
             <label data-i18n="lbl_ret">تاريخ العودة</label>
             <input class="fi" id="fRet" readonly placeholder="اختر التاريخ" data-i18n-ph="ph_date" dir="ltr" style="text-align:right">
+            <input type="hidden" id="fRetISO">
           </div>
           <div class="fg pop-wrap">
             <label data-i18n="lbl_pax">المسافرون</label>
@@ -416,9 +418,9 @@
   <a href="dashboard.html" class="bni"><span class="bni-icon">👤</span><span data-i18n="bnav_account">حسابي</span></a>
 </nav>
 
-<script src="js/api.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/datepicker.js"></script>
+<script src="js/api.js?v=2026062101"></script>
+<script src="js/auth.js?v=2026062101"></script>
+<script src="js/datepicker.js?v=2026062101"></script>
 <script>
 /* ── AIRPORTS ── */
 const AIRPORTS = [
@@ -707,11 +709,21 @@ document.addEventListener('DOMContentLoaded', () => {
   const today = new Date();
   dpDep = new DatePicker(document.getElementById('fDep'), {
     mode:'single', minDate:today,
-    onSelect(d) { document.getElementById('fDep').classList.add('ok'); }
+    onSelect(d) {
+      document.getElementById('fDep').classList.add('ok');
+      const y = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0');
+      document.getElementById('fDepISO').value = `${y}-${mo}-${dy}`;
+      // Update return datepicker min date to departure date
+      if (dpRet) dpRet.setMinDate(new Date(d));
+    }
   });
   dpRet = new DatePicker(document.getElementById('fRet'), {
     mode:'single', minDate:today,
-    onSelect(d) { document.getElementById('fRet').classList.add('ok'); }
+    onSelect(d) {
+      document.getElementById('fRet').classList.add('ok');
+      const y = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0');
+      document.getElementById('fRetISO').value = `${y}-${mo}-${dy}`;
+    }
   });
   dpHotel = new DatePicker(document.getElementById('hIn'), {
     mode:'range', minDate:today,
@@ -727,10 +739,8 @@ document.addEventListener('DOMContentLoaded', () => {
 function searchFlights() {
   const from  = document.getElementById('fFrom').dataset.code || document.getElementById('fFrom').value.trim();
   const to    = document.getElementById('fTo').dataset.code   || document.getElementById('fTo').value.trim();
-  const depEl = document.getElementById('fDep');
-  const dep   = depEl?.dataset?.isoDate || depEl?.value || '';
-  const retEl = document.getElementById('fRet');
-  const ret = retEl?.dataset?.isoDate || '';
+  const dep = document.getElementById('fDepISO').value || document.getElementById('fDep').dataset.isoDate || '';
+  const ret = document.getElementById('fRetISO').value || document.getElementById('fRet').dataset.isoDate || '';
   const cabin = document.getElementById('fClass') ? document.getElementById('fClass').value : 'economy';
   if (!from||!to||!dep) { toast(t('fill_fields'), 'err'); return; }
   localStorage.setItem('bk_adults',   pax.adult);

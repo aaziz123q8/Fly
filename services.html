@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الخدمات الإضافية — فلاي مسار</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Tajawal',Arial,sans-serif;background:#F5F7FA;color:#1A1A2E;direction:rtl;min-height:100vh}
+    a{text-decoration:none;color:inherit}
+    button{font-family:inherit;cursor:pointer}
+
+    .nav{background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.08);padding:0 20px}
+    .nav-inner{max-width:1100px;margin:0 auto;height:60px;display:flex;align-items:center;gap:12px}
+    .nav-brand{font-size:1.3rem;font-weight:800;color:#1B4F8E}
+    .nav-brand span{color:#E8A020}
+
+    .steps{display:flex;justify-content:center;gap:0;padding:20px 16px 8px;max-width:700px;margin:0 auto}
+    .step{flex:1;text-align:center;position:relative}
+    .step:not(:last-child)::after{content:'';position:absolute;top:18px;left:-50%;width:100%;height:2px;background:#e5e7eb;z-index:0}
+    .step.done::after{background:#1B4F8E}
+    .step-circle{width:36px;height:36px;border-radius:50%;border:2px solid #e5e7eb;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;position:relative;z-index:1;color:#9ca3af}
+    .step.done .step-circle{background:#1B4F8E;border-color:#1B4F8E;color:#fff}
+    .step.active .step-circle{background:#fff;border-color:#1B4F8E;color:#1B4F8E}
+    .step-label{font-size:.72rem;color:#9ca3af;margin-top:4px}
+    .step.done .step-label,.step.active .step-label{color:#1B4F8E;font-weight:600}
+
+    .container{max-width:860px;margin:0 auto;padding:16px}
+    .card{background:#fff;border-radius:16px;box-shadow:0 2px 16px rgba(0,0,0,.07);padding:24px;margin-bottom:20px}
+    .card-title{font-size:1.1rem;font-weight:800;color:#1B4F8E;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+    /* Baggage cards */
+    .service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+    .service-card{border:2px solid #e5e7eb;border-radius:12px;padding:14px 16px;cursor:pointer;transition:.2s;position:relative}
+    .service-card:hover{border-color:#1B4F8E;background:#f0f5ff}
+    .service-card.selected{border-color:#1B4F8E;background:#eff6ff}
+    .service-card .svc-icon{font-size:1.6rem;margin-bottom:6px}
+    .service-card .svc-name{font-weight:700;font-size:.92rem;margin-bottom:2px}
+    .service-card .svc-desc{font-size:.78rem;color:#6b7280;margin-bottom:8px}
+    .service-card .svc-price{font-size:1rem;font-weight:800;color:#1B4F8E}
+    .service-card .svc-per{font-size:.72rem;color:#9ca3af}
+    .svc-check{position:absolute;top:10px;left:10px;width:22px;height:22px;border-radius:50%;background:#1B4F8E;color:#fff;display:none;align-items:center;justify-content:center;font-size:.8rem}
+    .service-card.selected .svc-check{display:flex}
+    .svc-qty{display:flex;align-items:center;gap:8px;margin-top:10px}
+    .svc-qty button{width:28px;height:28px;border-radius:50%;border:1.5px solid #e5e7eb;background:#fff;font-size:.95rem;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.2s}
+    .svc-qty button:hover{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .svc-qty span{min-width:24px;text-align:center;font-weight:700}
+
+    /* Seat map */
+    .seat-map-wrap{overflow-x:auto}
+    .seat-legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;font-size:.8rem}
+    .legend-item{display:flex;align-items:center;gap:5px}
+    .legend-box{width:18px;height:18px;border-radius:4px;border:1px solid #ccc}
+    .seat-row{display:flex;align-items:center;gap:4px;margin-bottom:4px;justify-content:center}
+    .seat-row-num{width:28px;text-align:center;font-size:.72rem;color:#9ca3af;flex-shrink:0}
+    .aisle{width:20px;flex-shrink:0}
+    .seat{width:34px;height:34px;border-radius:6px;border:1.5px solid #d1d5db;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;cursor:pointer;transition:.15s;flex-shrink:0}
+    .seat.available{background:#fff;color:#374151;border-color:#d1d5db}
+    .seat.available:hover{background:#dbeafe;border-color:#1B4F8E}
+    .seat.selected{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .seat.occupied{background:#f3f4f6;color:#d1d5db;border-color:#e5e7eb;cursor:not-allowed}
+    .seat.extra-legroom{background:#ecfdf5;border-color:#10b981}
+    .seat.extra-legroom:hover{background:#d1fae5}
+
+    .pax-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+    .pax-tab{padding:6px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:#fff;font-size:.84rem;font-weight:600;color:#6b7280;transition:.2s}
+    .pax-tab.on{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .seg-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+    .seg-tab{padding:5px 12px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-size:.8rem;font-weight:600;color:#6b7280;transition:.2s}
+    .seg-tab.on{background:#7c3aed;color:#fff;border-color:#7c3aed}
+
+    /* Summary sidebar */
+    .layout{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
+    @media(max-width:768px){.layout{grid-template-columns:1fr}}
+    .sticky-sidebar{position:sticky;top:80px}
+    .summary-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5;font-size:.88rem}
+    .summary-row:last-of-type{border:none;font-weight:800;font-size:.95rem;color:#1B4F8E;padding-top:10px}
+    .btn-proceed{display:block;width:100%;padding:13px;background:#1B4F8E;color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;margin-top:14px;transition:.2s}
+    .btn-proceed:hover{background:#13396B}
+    .btn-skip{display:block;width:100%;padding:10px;background:none;color:#6b7280;border:1.5px solid #e5e7eb;border-radius:12px;font-size:.88rem;font-weight:600;margin-top:8px;transition:.2s}
+    .btn-skip:hover{background:#f9fafb}
+
+    .spin{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .hidden{display:none!important}
+    .empty-msg{text-align:center;padding:30px;color:#9ca3af;font-size:.9rem}
+    .loading-msg{text-align:center;padding:30px;color:#6b7280}
+    .err-msg{background:#fef2f2;color:#dc2626;border-radius:10px;padding:14px;margin-bottom:16px;font-size:.9rem}
+    .section-divider{border:none;border-top:1px solid #f0f2f5;margin:20px 0}
+    .badge-pax{display:inline-block;background:#e0e7ff;color:#4338ca;border-radius:20px;padding:2px 8px;font-size:.73rem;font-weight:700;margin-right:4px}
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-brand">فلاي<span>مسار</span></a>
+    <span style="color:#9ca3af;font-size:.85rem;margin-right:auto">الخدمات الإضافية</span>
+  </div>
+</nav>
+
+<!-- Progress Steps -->
+<div class="steps">
+  <div class="step done">
+    <div class="step-circle">✓</div>
+    <div class="step-label">المسافرون</div>
+  </div>
+  <div class="step active">
+    <div class="step-circle">2</div>
+    <div class="step-label">الخدمات</div>
+  </div>
+  <div class="step">
+    <div class="step-circle">3</div>
+    <div class="step-label">الدفع</div>
+  </div>
+  <div class="step">
+    <div class="step-circle">4</div>
+    <div class="step-label">التأكيد</div>
+  </div>
+</div>
+
+<div class="container">
+  <div id="errBanner" class="err-msg hidden"></div>
+  <div class="layout">
+    <div>
+      <!-- Baggage Section -->
+      <div class="card" id="baggageCard">
+        <div class="card-title">🧳 الأمتعة الإضافية</div>
+        <div id="baggageContent"><div class="loading-msg">جاري تحميل الخدمات المتاحة…</div></div>
+      </div>
+
+      <!-- Seat Selection Section -->
+      <div class="card" id="seatCard" style="display:none">
+        <div class="card-title">💺 اختيار المقعد</div>
+        <div class="pax-tabs" id="paxTabs"></div>
+        <div class="seg-tabs" id="segTabs"></div>
+        <div class="seat-legend">
+          <div class="legend-item"><div class="legend-box" style="background:#fff;border-color:#d1d5db"></div> متاح</div>
+          <div class="legend-item"><div class="legend-box" style="background:#1B4F8E;border-color:#1B4F8E"></div> محجوز لك</div>
+          <div class="legend-item"><div class="legend-box" style="background:#f3f4f6;border-color:#e5e7eb"></div> محجوز</div>
+          <div class="legend-item"><div class="legend-box" style="background:#ecfdf5;border-color:#10b981"></div> مساحة أرجل إضافية</div>
+        </div>
+        <div class="seat-map-wrap" id="seatMapContent"><div class="loading-msg">جاري تحميل خريطة المقاعد…</div></div>
+      </div>
+    </div>
+
+    <!-- Sidebar Summary -->
+    <div class="sticky-sidebar">
+      <div class="card">
+        <div class="card-title">ملخص الحجز</div>
+        <div class="summary-row"><span>سعر التذكرة</span><span id="sumBase">—</span></div>
+        <div class="summary-row" id="sumBagRow" style="display:none"><span>أمتعة إضافية</span><span id="sumBag">—</span></div>
+        <div class="summary-row" id="sumSeatRow" style="display:none"><span>اختيار المقعد</span><span id="sumSeat">—</span></div>
+        <div class="summary-row" id="sumDiscRow" style="display:none"><span>خصم</span><span id="sumDisc" style="color:#16a34a">—</span></div>
+        <div class="summary-row"><span>الإجمالي</span><span id="sumTotal">—</span></div>
+        <button class="btn-proceed" id="btnProceed" onclick="proceedToPayment()">
+          <span id="proceedTxt">متابعة للدفع</span>
+          <span id="proceedSpin" class="spin hidden"></span>
+        </button>
+        <button class="btn-skip" onclick="skipServices()">تخطي — بدون خدمات إضافية</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js?v=2026062101"></script>
+<script src="js/auth.js?v=2026062101"></script>
+<script src="js/currency.js?v=2026062101"></script>
+<script>
+if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+
+const urlP       = new URLSearchParams(window.location.search);
+const sessionKey = urlP.get('session') || '';
+const offerId    = urlP.get('offer_id') || '';
+const couponCode = urlP.get('coupon') || '';
+
+if (!sessionKey) window.location.href = 'index.html';
+
+// State
+let basePriceGBP   = 0;
+let selectedBagSvcs = {}; // { service_id: { svc, qty } }
+let selectedSeats   = {}; // { `${paxIdx}_${segIdx}`: { svc } }
+let seatMaps        = [];
+let availableServices = [];
+let currentPaxIdx   = 0;
+let currentSegIdx   = 0;
+let passengerNames  = [];
+let segmentLabels   = [];
+
+function fmt(amount) {
+  if (typeof formatPrice === 'function') return formatPrice(amount);
+  return '£' + parseFloat(amount).toFixed(2);
+}
+
+function showErr(msg) {
+  const el = document.getElementById('errBanner');
+  el.textContent = msg;
+  el.classList.remove('hidden');
+}
+
+function updateSummary() {
+  let bagTotal  = 0;
+  let seatTotal = 0;
+  Object.values(selectedBagSvcs).forEach(({svc, qty}) => {
+    bagTotal += parseFloat(svc.total_amount || svc.unit_amount || 0) * qty;
+  });
+  Object.values(selectedSeats).forEach(({svc}) => {
+    seatTotal += parseFloat(svc.total_amount || svc.unit_amount || 0);
+  });
+
+  const total = basePriceGBP + bagTotal + seatTotal;
+  document.getElementById('sumBase').textContent  = fmt(basePriceGBP);
+  document.getElementById('sumTotal').textContent = fmt(total);
+
+  const bagRow  = document.getElementById('sumBagRow');
+  const seatRow = document.getElementById('sumSeatRow');
+  if (bagTotal > 0) { bagRow.style.display='flex'; document.getElementById('sumBag').textContent=fmt(bagTotal); }
+  else bagRow.style.display='none';
+  if (seatTotal > 0) { seatRow.style.display='flex'; document.getElementById('sumSeat').textContent=fmt(seatTotal); }
+  else seatRow.style.display='none';
+}
+
+// ── Load data ──────────────────────────────────────────────────────────────────
+
+async function loadAll() {
+  try {
+    // Fetch offer with services
+    const [offerRes, seatRes] = await Promise.allSettled([
+      Api.get('/api/flights/offers/' + encodeURIComponent(offerId), true),
+      Api.get('/api/flights/seat-maps?offer_id=' + encodeURIComponent(offerId), true),
+    ]);
+
+    // Process offer
+    if (offerRes.status === 'fulfilled') {
+      const offer = offerRes.value.data || offerRes.value;
+      basePriceGBP = parseFloat(offer.total_amount || 0);
+
+      // Extract passenger names from passengers array
+      passengerNames = (offer.passengers || []).map((p, i) => {
+        const type = p.type === 'adult' ? 'بالغ' : (p.age <= 1 ? 'رضيع' : 'طفل');
+        return 'مسافر ' + (i+1) + ' (' + type + ')';
+      });
+
+      availableServices = offer.available_services || [];
+      renderBaggage(availableServices, offer.passengers || []);
+    } else {
+      document.getElementById('baggageContent').innerHTML = '<div class="empty-msg">تعذر تحميل الخدمات المتاحة.</div>';
+    }
+
+    // Process seat maps
+    if (seatRes.status === 'fulfilled') {
+      const maps = seatRes.value.data || [];
+      if (maps.length > 0) {
+        seatMaps = maps;
+        // Build segment labels from seat map cabin names
+        segmentLabels = maps.map((m, i) => {
+          const seg = m.slices && m.slices[0] && m.slices[0].segments && m.slices[0].segments[0];
+          if (seg) return (seg.origin?.iata_code || '?') + ' → ' + (seg.destination?.iata_code || '?');
+          return 'رحلة ' + (i+1);
+        });
+        document.getElementById('seatCard').style.display = 'block';
+        buildPaxTabs();
+        buildSegTabs();
+        renderSeatMap();
+      } else {
+        document.getElementById('seatCard').style.display = 'none';
+      }
+    }
+
+    updateSummary();
+  } catch(e) {
+    showErr('حدث خطأ أثناء تحميل البيانات: ' + (e.message || ''));
+  }
+}
+
+// ── Baggage ──────────────────────────────────────────────────────────────────
+
+function renderBaggage(services, passengers) {
+  const bagServices = services.filter(s => s.type === 'baggage');
+  const el = document.getElementById('baggageContent');
+  if (!bagServices.length) {
+    el.innerHTML = '<div class="empty-msg">لا توجد أمتعة إضافية متاحة لهذه الرحلة.</div>';
+    return;
+  }
+
+  // Group by passenger
+  const byPax = {};
+  bagServices.forEach(svc => {
+    const paxId = svc.passenger_id || 'all';
+    if (!byPax[paxId]) byPax[paxId] = [];
+    byPax[paxId].push(svc);
+  });
+
+  let html = '';
+  Object.entries(byPax).forEach(([paxId, svcs], paxGroupIdx) => {
+    // Find passenger label
+    const paxObj = passengers.find(p => p.id === paxId);
+    const paxLabel = paxObj
+      ? (paxObj.type === 'adult' ? 'بالغ' : (parseInt(paxObj.age||99) <= 1 ? 'رضيع' : 'طفل'))
+      : '';
+    if (paxLabel) html += `<div style="font-weight:700;font-size:.85rem;color:#6b7280;margin:12px 0 8px"><span class="badge-pax">${paxLabel}</span></div>`;
+    html += '<div class="service-grid">';
+    svcs.forEach(svc => {
+      const meta       = svc.metadata || {};
+      const maxKg      = meta.maximum_weight_kg || '';
+      const maxLengthCm= meta.maximum_length_cm || '';
+      const bagType    = svc.metadata?.type === 'carry_on' ? 'مقصورة' : 'مسجلة';
+      const icon       = svc.metadata?.type === 'carry_on' ? '🎒' : '🧳';
+      const priceStr   = parseFloat(svc.total_amount || 0).toFixed(2) + ' ' + (svc.total_currency || 'GBP');
+      const desc       = [maxKg ? 'حتى ' + maxKg + 'كغ' : '', maxLengthCm ? maxLengthCm + 'سم' : ''].filter(Boolean).join(' — ');
+      html += `
+        <div class="service-card" id="svc_${svc.id}" onclick="toggleBag('${svc.id}')">
+          <div class="svc-check">✓</div>
+          <div class="svc-icon">${icon}</div>
+          <div class="svc-name">${bagType}</div>
+          <div class="svc-desc">${desc || 'حقيبة إضافية'}</div>
+          <div class="svc-price">${priceStr}</div>
+          <div class="svc-per">لكل حقيبة</div>
+          <div class="svc-qty" onclick="event.stopPropagation()">
+            <button onclick="changeBagQty('${svc.id}', -1)">−</button>
+            <span id="qty_${svc.id}">0</span>
+            <button onclick="changeBagQty('${svc.id}', 1)">+</button>
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function toggleBag(svcId) {
+  const svc = availableServices.find(s => s.id === svcId);
+  if (!svc) return;
+  if (selectedBagSvcs[svcId]) {
+    delete selectedBagSvcs[svcId];
+    document.getElementById('qty_' + svcId).textContent = '0';
+  } else {
+    selectedBagSvcs[svcId] = { svc, qty: 1 };
+    document.getElementById('qty_' + svcId).textContent = '1';
+  }
+  document.getElementById('svc_' + svcId).classList.toggle('selected', !!selectedBagSvcs[svcId]);
+  updateSummary();
+}
+
+function changeBagQty(svcId, delta) {
+  const svc = availableServices.find(s => s.id === svcId);
+  if (!svc) return;
+  const current = (selectedBagSvcs[svcId]?.qty || 0) + delta;
+  if (current <= 0) {
+    delete selectedBagSvcs[svcId];
+    document.getElementById('svc_' + svcId).classList.remove('selected');
+    document.getElementById('qty_' + svcId).textContent = '0';
+  } else {
+    selectedBagSvcs[svcId] = { svc, qty: current };
+    document.getElementById('svc_' + svcId).classList.add('selected');
+    document.getElementById('qty_' + svcId).textContent = String(current);
+  }
+  updateSummary();
+}
+
+// ── Seat Maps ─────────────────────────────────────────────────────────────────
+
+function buildPaxTabs() {
+  const el = document.getElementById('paxTabs');
+  if (!passengerNames.length) { el.innerHTML = ''; return; }
+  el.innerHTML = passengerNames.map((n, i) =>
+    `<button class="pax-tab ${i===currentPaxIdx?'on':''}" onclick="selectPax(${i})">${n}</button>`
+  ).join('');
+}
+
+function buildSegTabs() {
+  const el = document.getElementById('segTabs');
+  if (segmentLabels.length <= 1) { el.innerHTML = ''; return; }
+  el.innerHTML = segmentLabels.map((lbl, i) =>
+    `<button class="seg-tab ${i===currentSegIdx?'on':''}" onclick="selectSeg(${i})">${lbl}</button>`
+  ).join('');
+}
+
+function selectPax(i) { currentPaxIdx = i; buildPaxTabs(); renderSeatMap(); }
+function selectSeg(i) { currentSegIdx = i; buildSegTabs(); renderSeatMap(); }
+
+function renderSeatMap() {
+  const el = document.getElementById('seatMapContent');
+  // Find the right seat map for this segment index
+  const map = seatMaps[currentSegIdx];
+  if (!map) { el.innerHTML = '<div class="empty-msg">لا تتوفر خريطة مقاعد لهذه الرحلة.</div>'; return; }
+
+  // Find available seat services for current passenger from available_services
+  // Seat services have type === 'seat'
+  const seatSvcs = availableServices.filter(s => {
+    if (s.type !== 'seat') return false;
+    // Match segment and passenger if available
+    const segOk = !s.segment_id || (map.segment_id && s.segment_id === map.segment_id);
+    const paxOk = !s.passenger_id; // or match passenger
+    return segOk;
+  });
+
+  // Render using cabin data from seat map
+  const cabins = map.cabins || [];
+  if (!cabins.length) { el.innerHTML = '<div class="empty-msg">لا تتوفر خريطة مقاعد.</div>'; return; }
+
+  let html = '';
+  cabins.forEach(cabin => {
+    html += `<div style="font-size:.8rem;font-weight:700;color:#6b7280;margin-bottom:8px">${cabin.cabin_class_marketing_name || cabin.cabin_class || 'الدرجة'}</div>`;
+    const rows = cabin.rows || [];
+    rows.forEach(row => {
+      const sections = row.sections || [];
+      html += `<div class="seat-row"><div class="seat-row-num">${row.number||''}</div>`;
+      sections.forEach((section, si) => {
+        if (si > 0) html += `<div class="aisle"></div>`;
+        const elements = section.elements || [];
+        elements.forEach(el2 => {
+          if (el2.type === 'empty') { html += `<div style="width:34px;flex-shrink:0"></div>`; return; }
+          // It's a seat
+          const seat = el2;
+          const key = `${currentPaxIdx}_${currentSegIdx}_${seat.designator}`;
+          const isSelected = !!selectedSeats[key];
+          const isAvailable = seat.available_services && seat.available_services.length > 0;
+          const isFree = isAvailable && parseFloat((seat.available_services[0]?.total_amount)||'0') === 0;
+          const isExtraLeg = (seat.disclosures||[]).some(d => /leg/i.test(d.description||''));
+          let cls = 'seat';
+          if (!isAvailable) cls += ' occupied';
+          else if (isSelected) cls += ' selected';
+          else if (isExtraLeg) cls += ' extra-legroom available';
+          else cls += ' available';
+
+          const seatSvc = isAvailable ? (seat.available_services[0] || null) : null;
+          const price = seatSvc ? parseFloat(seatSvc.total_amount||0) : 0;
+          const priceLabel = !isAvailable ? '' : (price === 0 ? '✓' : '+'+price.toFixed(0));
+
+          html += `<div class="${cls}" title="${seat.designator}${isExtraLeg?' (مساحة أرجل إضافية)':''}"
+            onclick="selectSeat('${seat.designator}', ${isAvailable?'true':'false'}, '${seatSvc?JSON.stringify(seatSvc).replace(/'/g,'&#39;'):'null'}')">${seat.designator}</div>`;
+        });
+      });
+      html += `</div>`;
+    });
+  });
+
+  el.innerHTML = html;
+}
+
+function selectSeat(designator, isAvailable, svcJson) {
+  if (!isAvailable) return;
+  const key = `${currentPaxIdx}_${currentSegIdx}_${designator}`;
+  // Deselect any previously selected seat for this pax+seg
+  Object.keys(selectedSeats).forEach(k => {
+    if (k.startsWith(`${currentPaxIdx}_${currentSegIdx}_`)) delete selectedSeats[k];
+  });
+  let svc = null;
+  try { svc = typeof svcJson === 'string' ? JSON.parse(svcJson) : svcJson; } catch(e) {}
+  if (svc) {
+    selectedSeats[key] = { svc, designator };
+  }
+  renderSeatMap();
+  updateSummary();
+}
+
+// ── Proceed ───────────────────────────────────────────────────────────────────
+
+function buildServicesPayload() {
+  const services = [];
+  Object.entries(selectedBagSvcs).forEach(([id, {svc, qty}]) => {
+    services.push({ id, quantity: qty });
+  });
+  Object.values(selectedSeats).forEach(({svc}) => {
+    if (svc && svc.id) services.push({ id: svc.id, quantity: 1 });
+  });
+  return services;
+}
+
+async function proceedToPayment() {
+  const btn  = document.getElementById('btnProceed');
+  const txt  = document.getElementById('proceedTxt');
+  const spin = document.getElementById('proceedSpin');
+  btn.disabled=true; txt.classList.add('hidden'); spin.classList.remove('hidden');
+  try {
+    const services = buildServicesPayload();
+    // Save services (even if empty — moves session to review step)
+    await Api.post('/api/flights/checkout/services', { session_key: sessionKey, services }, true);
+
+    // Create payment intent
+    const piRes = await Api.post('/api/flights/checkout/payment-intent', {
+      session_key: sessionKey,
+      coupon_code: couponCode || null,
+    }, true);
+
+    window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey)
+      + '&pi='     + encodeURIComponent(piRes.payment_intent_id || '')
+      + '&secret=' + encodeURIComponent(piRes.client_secret     || '')
+      + '&amount=' + encodeURIComponent(piRes.amount            || '');
+  } catch(e) {
+    btn.disabled=false; txt.classList.remove('hidden'); spin.classList.add('hidden');
+    showErr('حدث خطأ: ' + (e.message || 'يرجى المحاولة مجدداً'));
+  }
+}
+
+async function skipServices() {
+  const btn = document.getElementById('btnProceed');
+  btn.disabled=true;
+  try {
+    await Api.post('/api/flights/checkout/services', { session_key: sessionKey, services: [] }, true);
+    const piRes = await Api.post('/api/flights/checkout/payment-intent', {
+      session_key: sessionKey,
+      coupon_code: couponCode || null,
+    }, true);
+    window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey)
+      + '&pi='     + encodeURIComponent(piRes.payment_intent_id || '')
+      + '&secret=' + encodeURIComponent(piRes.client_secret     || '')
+      + '&amount=' + encodeURIComponent(piRes.amount            || '');
+  } catch(e) {
+    btn.disabled=false;
+    showErr('حدث خطأ: ' + (e.message || ''));
+  }
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  if (!offerId) {
+    document.getElementById('baggageContent').innerHTML = '<div class="empty-msg">لم يتم تحديد الرحلة.</div>';
+    updateSummary();
+    return;
+  }
+  loadAll();
+});
+</script>
+</body>
+</html>

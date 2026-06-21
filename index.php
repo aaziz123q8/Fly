@@ -82,6 +82,12 @@ $router->get('/health', fn(Request $req) => Response::json([
     'time'   => date('c'),
 ]));
 
+$router->get('/api/config/stripe-key', function (Request $req): void {
+    $cfg = require BASE_PATH . '/config/apis.php';
+    $key = $cfg['stripe']['publishable_key'] ?? '';
+    Response::json(['publishable_key' => $key]);
+});
+
 $router->get('/admin/clear-cache', function (Request $req): void {
     $token     = $_GET['token'] ?? '';
     $masterKey = getenv('APP_MASTER_KEY') ?: '';
@@ -195,6 +201,11 @@ $router->group('api/flights', function (Router $r): void {
     // Single booking detail (auth required).
     $r->get('/bookings/:id', function (Request $req): void {
         (new FlightController())->getBooking($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Checkout: confirm after Stripe payment (auth required).
+    $r->post('/checkout/confirm', function (Request $req): void {
+        (new FlightController())->confirmCheckout($req);
     }, [AuthMiddleware::handle()]);
 
     // Cancellation: Step 1 — get refund quote (auth required).

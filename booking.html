@@ -616,18 +616,12 @@
         passengers,
       }, true);
 
-      // Step 2: no extra services, skip to payment intent
-      const piRes = await Api.post('/api/flights/checkout/payment-intent', {
-        session_key: sessionKey,
-        coupon_code: document.getElementById('couponInput').value.trim() || null,
-      }, true);
-
+      // Step 2: redirect to services/ancillaries selection
       localStorage.removeItem('booking_flight_id');
-      // Redirect to payment page with client_secret and session
-      window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey)
-        + '&pi=' + encodeURIComponent(piRes.payment_intent_id || '')
-        + '&secret=' + encodeURIComponent(piRes.client_secret || '')
-        + '&amount=' + encodeURIComponent(piRes.amount || '');
+      const coupon = document.getElementById('couponInput').value.trim();
+      window.location.href = 'services.html?session=' + encodeURIComponent(sessionKey)
+        + '&offer_id=' + encodeURIComponent(flightId || '')
+        + (coupon ? '&coupon=' + encodeURIComponent(coupon) : '');
     } catch(err) {
       btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
       alert('⚠️ ' + (err.message || 'حدث خطأ أثناء الحجز، يرجى المحاولة مجدداً'));
