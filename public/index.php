@@ -119,7 +119,7 @@ $router->group('api/flights', function (Router $r): void {
 
     // Checkout: review (auth required).
     $r->get('/checkout/review', function (Request $req): void {
-        (new FlightController())->getReview($req);
+        (new FlightController())->review($req);
     }, [AuthMiddleware::handle()]);
 
     // Checkout: payment intent (auth required).

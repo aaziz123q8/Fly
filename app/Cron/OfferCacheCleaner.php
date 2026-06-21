@@ -2,88 +2,37 @@
 
 declare(strict_types=1);
 
-/**
- * OfferCacheCleaner — standalone cron script.
- *
- * Deletes expired offer_cache and booking_sessions rows.
- * Schedule via Hostinger hPanel Cron Jobs: every 5 minutes.
- *   Command: php /path/to/app/Cron/OfferCacheCleaner.php
- */
-
-// ---------------------------------------------------------------------------
-// Bootstrap
-// ---------------------------------------------------------------------------
-
 define('BASE_PATH', dirname(__DIR__, 2));
-
 require BASE_PATH . '/vendor/autoload.php';
-
-if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
-    $dotenv = \Dotenv\Dotenv::createImmutable(BASE_PATH);
-    $dotenv->safeLoad();
-}
 
 use App\Helpers\Database;
 
 $db = Database::getInstance();
 
-$startedAt = date('Y-m-d H:i:s');
-$results   = [];
+// Delete expired offer_cache rows (LIMIT 1000 to avoid table lock)
+$stmt1 = $db->query(
+    'DELETE FROM offer_cache WHERE expires_at < NOW() ORDER BY expires_at LIMIT 1000'
+);
+$deleted1 = $stmt1 ? $stmt1->rowCount() : 0;
 
-// ---------------------------------------------------------------------------
-// 1. Clean expired offer_cache rows (batch of 1 000)
-// ---------------------------------------------------------------------------
+// Delete expired booking_sessions (not completed)
+$stmt2 = $db->query(
+    "DELETE FROM booking_sessions WHERE expires_at <= NOW() AND current_step != 'complete'"
+);
+$deleted2 = $stmt2 ? $stmt2->rowCount() : 0;
 
-try {
-    $stmt = $db->prepare(
-        'DELETE FROM offer_cache
-         WHERE expires_at < NOW()
-         ORDER BY expires_at ASC
-         LIMIT 1000'
-    );
-    $stmt->execute();
-    $deletedOffers = $stmt->rowCount();
-    $results[]     = "offer_cache: deleted {$deletedOffers} expired rows.";
-} catch (\Throwable $e) {
-    $results[] = 'offer_cache cleanup error: ' . $e->getMessage();
-}
-
-// ---------------------------------------------------------------------------
-// 2. Clean expired booking_sessions (exclude completed sessions)
-// ---------------------------------------------------------------------------
-
-try {
-    $stmt = $db->prepare(
-        "DELETE FROM booking_sessions
-         WHERE expires_at <= NOW()
-           AND current_step != 'complete'"
-    );
-    $stmt->execute();
-    $deletedSessions = $stmt->rowCount();
-    $results[]       = "booking_sessions: deleted {$deletedSessions} expired rows.";
-} catch (\Throwable $e) {
-    $results[] = 'booking_sessions cleanup error: ' . $e->getMessage();
-}
-
-// ---------------------------------------------------------------------------
-// 3. Log results to error_logs table
-// ---------------------------------------------------------------------------
-
-$message = implode(' | ', $results);
-
-try {
-    $logStmt = $db->prepare(
-        "INSERT INTO error_logs (level, message, context, created_at)
-         VALUES ('info', :msg, :ctx, NOW())"
-    );
-    $logStmt->execute([
-        ':msg' => '[OfferCacheCleaner] ' . $message,
-        ':ctx' => json_encode(['started_at' => $startedAt, 'results' => $results]),
+// Log result
+if ($deleted1 > 0 || $deleted2 > 0) {
+    $db->prepare(
+        "INSERT INTO error_logs (level, message, context) VALUES ('info', :msg, :ctx)"
+    )->execute([
+        ':msg' => 'Cron: offer_cache and booking_sessions cleanup',
+        ':ctx' => json_encode([
+            'offer_cache_deleted'     => $deleted1,
+            'booking_sessions_deleted'=> $deleted2,
+            'ran_at'                  => date('c'),
+        ]),
     ]);
-} catch (\Throwable) {
-    // Fallback: write to stderr if DB log fails.
-    fwrite(STDERR, '[OfferCacheCleaner] ' . $message . PHP_EOL);
 }
 
-echo '[OfferCacheCleaner] ' . $message . PHP_EOL;
-exit(0);
+echo "Done. Deleted: offer_cache={$deleted1}, booking_sessions={$deleted2}\n";
