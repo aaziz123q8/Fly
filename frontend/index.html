@@ -217,14 +217,16 @@
           <div class="srow-2">
             <div class="field-group">
               <label data-i18n="from">من</label>
-              <input type="text" class="field-input" id="fFrom" placeholder="مدينة المغادرة" autocomplete="off">
+              <input type="text" class="field-input" id="fFrom" placeholder="مدينة المغادرة أو رمز المطار" autocomplete="off" oninput="showAirports('fFrom','fromDrop')">
+              <div class="airport-dropdown" id="fromDrop"></div>
             </div>
             <div style="display:flex;align-items:flex-end;padding-bottom:2px">
               <button class="swap-btn" onclick="swapCities()" title="تبديل">⇄</button>
             </div>
             <div class="field-group">
               <label data-i18n="to">إلى</label>
-              <input type="text" class="field-input" id="fTo" placeholder="مدينة الوصول" autocomplete="off">
+              <input type="text" class="field-input" id="fTo" placeholder="مدينة الوصول أو رمز المطار" autocomplete="off" oninput="showAirports('fTo','toDrop')">
+              <div class="airport-dropdown" id="toDrop"></div>
             </div>
           </div>
           <div class="srow-4" id="flightDatesRow">
@@ -449,9 +451,22 @@
 <script src="js/i18n.js"></script>
 <script src="js/currency.js"></script>
 <script src="js/datepicker.js"></script>
+<script src="js/app.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/flights.js"></script>
+<style>
+.airport-dropdown { display:none; position:absolute; background:#fff; border:2px solid #e5e7eb; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.12); z-index:300; width:100%; max-height:240px; overflow-y:auto; top:100%; margin-top:4px; }
+.airport-dropdown.open { display:block; }
+.airport-item { padding:10px 14px; cursor:pointer; border-bottom:1px solid #f0f2f5; display:flex; align-items:center; gap:10px; }
+.airport-item:last-child { border-bottom:none; }
+.airport-item:hover { background:#f0f5ff; }
+.airport-code { background:var(--primary); color:#fff; border-radius:6px; padding:2px 8px; font-size:0.78rem; font-weight:700; flex-shrink:0; }
+.airport-info { flex:1; }
+.airport-name { font-size:0.88rem; font-weight:600; }
+.airport-country { font-size:0.75rem; color:var(--text-muted); }
+.field-group { position:relative; }
+</style>
 <script>
   const pax = { adult:1, child:0, infant:0 };
   const rm  = { rooms:1, guests:2 };
@@ -486,6 +501,8 @@
     document.addEventListener('click', e=>{
       if(!e.target.closest('#paxPop') && !e.target.closest('#fPax')) closePop('paxPop');
       if(!e.target.closest('#roomsPop') && !e.target.closest('#hRooms')) closePop('roomsPop');
+      if(!e.target.closest('#fromDrop') && !e.target.closest('#fFrom')) document.getElementById('fromDrop')?.classList.remove('open');
+      if(!e.target.closest('#toDrop') && !e.target.closest('#fTo')) document.getElementById('toDrop')?.classList.remove('open');
     });
   });
 
@@ -537,14 +554,20 @@
   }
 
   async function doFlightSearch() {
-    const from = document.getElementById('fFrom').value.trim();
-    const to   = document.getElementById('fTo').value.trim();
-    const dep  = document.getElementById('fDepDate').value;
+    const fromEl = document.getElementById('fFrom');
+    const toEl   = document.getElementById('fTo');
+    const from   = fromEl.dataset.code || fromEl.value.trim();
+    const to     = toEl.dataset.code   || toEl.value.trim();
+    const dep    = document.getElementById('fDepDate').value;
     if(!from||!to||!dep) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
     const btn = document.querySelector('#flightsPanel .btn-primary');
     const sp  = document.getElementById('fSpinner');
     const tx  = document.getElementById('fSearchTxt');
     btn.disabled=true; sp.classList.remove('hidden'); tx.classList.add('hidden');
+    // Save for booking page
+    localStorage.setItem('bk_adults', pax.adult);
+    localStorage.setItem('bk_children', pax.child);
+    localStorage.setItem('bk_infants', pax.infant);
     try {
       const res = await Flights.search({ origin:from, destination:to, departure_date:dep, adults:pax.adult, children:pax.child, infants:pax.infant, cabin_class:document.getElementById('fClass').value });
       const list = Array.isArray(res.data)?res.data:Array.isArray(res.flights)?res.flights:[];
@@ -572,6 +595,37 @@
     t.textContent = msg;
     document.body.appendChild(t);
     setTimeout(()=>t.remove(), 3500);
+  }
+
+  function showAirports(inputId, dropId) {
+    const q = document.getElementById(inputId).value.trim().toLowerCase();
+    const drop = document.getElementById(dropId);
+    if (!q || !window.airports) { drop.classList.remove('open'); return; }
+    const lang = window.currentLang || 'ar';
+    const matches = window.airports.filter(a =>
+      a.code.toLowerCase().includes(q) ||
+      a.name.toLowerCase().includes(q) ||
+      a.nameEn.toLowerCase().includes(q) ||
+      a.city.toLowerCase().includes(q) ||
+      a.cityEn.toLowerCase().includes(q)
+    ).slice(0, 8);
+    if (!matches.length) { drop.classList.remove('open'); return; }
+    drop.innerHTML = matches.map(a => `
+      <div class="airport-item" onclick="selectAirport('${inputId}','${dropId}','${a.code}','${lang==='ar'?a.city:a.cityEn} (${a.code})')">
+        <span class="airport-code">${a.code}</span>
+        <div class="airport-info">
+          <div class="airport-name">${lang==='ar' ? a.name : a.nameEn}</div>
+          <div class="airport-country">${lang==='ar' ? a.country : a.countryEn}</div>
+        </div>
+      </div>`).join('');
+    drop.classList.add('open');
+  }
+
+  function selectAirport(inputId, dropId, code, label) {
+    document.getElementById(inputId).value = label;
+    document.getElementById(inputId).dataset.code = code;
+    document.getElementById(inputId).classList.add('filled');
+    document.getElementById(dropId).classList.remove('open');
   }
 </script>
 </body>
