@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة الإدارة — تسجيل الدخول</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body style="background:linear-gradient(135deg,#0d2d5e,#1B4F8E)">
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div style="font-size:2.5rem">⚙️</div>
+      <div class="brand-name" style="margin-top:4px">لوحة الإدارة</div>
+      <div style="color:var(--text-muted);font-size:.82rem;margin-top:4px">FlyMasar Admin Panel</div>
+    </div>
+    <h1 class="auth-title">دخول المشرف</h1>
+    <p class="auth-subtitle">هذه الصفحة مخصصة لمشرفي النظام فقط</p>
+    <div id="errorAlert" class="alert alert-error" style="display:none"></div>
+    <form id="adminLoginForm" onsubmit="adminLogin(event)">
+      <div class="form-group">
+        <label class="form-label">البريد الإلكتروني</label>
+        <input type="email" class="form-control" id="email" placeholder="admin@flymasar.com" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">كلمة المرور</label>
+        <div style="position:relative">
+          <input type="password" class="form-control" id="password" placeholder="كلمة مرور المشرف" required>
+          <button type="button" onclick="togglePwd()" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text-muted)" id="eyeBtn">👁</button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block" id="loginBtn">
+        <span id="loginBtnTxt">دخول</span>
+        <div class="spinner spinner-sm" id="loginSpinner" style="display:none;border-top-color:white"></div>
+      </button>
+    </form>
+    <div style="text-align:center;margin-top:20px">
+      <a href="../index.html" style="color:var(--text-muted);font-size:.85rem">← العودة للموقع</a>
+    </div>
+  </div>
+</div>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script>
+  // Redirect if already admin
+  const user = Auth.getUser();
+  if (Auth.isLoggedIn() && user && (user.role === 'admin' || user.role === 'super_admin')) {
+    window.location.href = 'index.html';
+  }
+
+  function togglePwd() {
+    const p = document.getElementById('password');
+    const b = document.getElementById('eyeBtn');
+    p.type = p.type === 'password' ? 'text' : 'password';
+    b.textContent = p.type === 'text' ? '🙈' : '👁';
+  }
+
+  async function adminLogin(e) {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const txt = document.getElementById('loginBtnTxt');
+    const sp = document.getElementById('loginSpinner');
+    const err = document.getElementById('errorAlert');
+    btn.disabled = true; txt.style.display = 'none'; sp.style.display = 'inline-block';
+    err.style.display = 'none';
+    try {
+      const res = await Api.post('/api/admin/auth/login', {
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+      });
+      const token = res.session_token || res.token || res.access_token;
+      const u = res.user || res.admin || res;
+      if (!token) throw { message: 'لم يُستلم رمز الجلسة' };
+      if (u.role !== 'admin' && u.role !== 'super_admin') throw { message: 'ليس لديك صلاحيات الدخول لهذه اللوحة' };
+      Auth.setSession(token, u);
+      window.location.href = 'index.html';
+    } catch (ex) {
+      err.textContent = '⚠️ ' + (ex.message || 'بيانات دخول غير صحيحة');
+      err.style.display = 'flex';
+    } finally {
+      btn.disabled = false; txt.style.display = 'inline'; sp.style.display = 'none';
+    }
+  }
+</script>
+</body>
+</html>

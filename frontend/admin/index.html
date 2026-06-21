@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم — فلاي مسار</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body class="admin-body">
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">⚙️ FlyMasar Admin</div>
+    <nav class="sidebar-nav">
+      <a href="index.html" class="active">📊 لوحة التحكم</a>
+      <a href="travelers.html">👥 المسافرون</a>
+      <a href="bookings.html">📋 الحجوزات</a>
+      <a href="coupons.html">🎟️ الكوبونات</a>
+      <a href="#" onclick="adminLogout()">🚪 تسجيل الخروج</a>
+    </nav>
+    <div class="sidebar-user" id="sidebar-user"></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>لوحة التحكم</h1>
+      <span id="current-date"></span>
+    </div>
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card loading-card"><div class="spinner-lg"></div></div>
+      <div class="stat-card loading-card"><div class="spinner-lg"></div></div>
+      <div class="stat-card loading-card"><div class="spinner-lg"></div></div>
+      <div class="stat-card loading-card"><div class="spinner-lg"></div></div>
+    </div>
+
+    <div class="admin-grid-2">
+      <div class="admin-panel">
+        <h2 class="panel-title">📋 آخر الحجوزات</h2>
+        <div id="recent-bookings"><div class="spinner-lg"></div></div>
+      </div>
+      <div class="admin-panel">
+        <h2 class="panel-title">👥 آخر المستخدمين</h2>
+        <div id="recent-users"><div class="spinner-lg"></div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script>
+  const ADMIN_BASE = 'https://beige-hare-390642.hostingersite.com';
+  const token = localStorage.getItem('admin_token');
+  if (!token) window.location.href = 'login.html';
+
+  const adminUser = JSON.parse(localStorage.getItem('admin_user') || '{}');
+  document.getElementById('sidebar-user').innerHTML = `<span>👤 ${adminUser.first_name || 'مشرف'}</span>`;
+  document.getElementById('current-date').textContent = new Date().toLocaleDateString('ar-SA', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+
+  function adminLogout() {
+    localStorage.removeItem('admin_token');
+    localStorage.removeItem('admin_user');
+    window.location.href = 'login.html';
+  }
+
+  async function adminFetch(endpoint) {
+    const res = await fetch(ADMIN_BASE + endpoint, { headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' } });
+    if (res.status === 401) { adminLogout(); return null; }
+    return res.json();
+  }
+
+  async function loadDashboard() {
+    const data = await adminFetch('/api/admin/dashboard');
+    if (!data) return;
+    const s = data.stats || {};
+    document.getElementById('stats-grid').innerHTML = `
+      <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">${s.total_users || 0}</div><div class="stat-label">إجمالي المستخدمين</div></div>
+      <div class="stat-card"><div class="stat-icon">✈️</div><div class="stat-value">${s.total_flight_bookings || 0}</div><div class="stat-label">حجوزات رحلات</div></div>
+      <div class="stat-card"><div class="stat-icon">🏨</div><div class="stat-value">${s.total_hotel_bookings || 0}</div><div class="stat-label">حجوزات فنادق</div></div>
+      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">${s.total_revenue || '0.00'} ${s.revenue_currency || 'GBP'}</div><div class="stat-label">إجمالي الإيرادات</div></div>`;
+
+    const bookings = data.recent_bookings || [];
+    document.getElementById('recent-bookings').innerHTML = bookings.length
+      ? `<table class="admin-table"><thead><tr><th>المرجع</th><th>النوع</th><th>الحالة</th><th>المبلغ</th></tr></thead><tbody>${
+        bookings.map(b => `<tr><td>${b.booking_reference}</td><td>${b.type === 'flight' ? '✈️' : '🏨'}</td><td>${b.status}</td><td>${b.total_amount}</td></tr>`).join('')
+      }</tbody></table>`
+      : '<p class="text-muted">لا توجد حجوزات بعد</p>';
+
+    const users = data.recent_users || [];
+    document.getElementById('recent-users').innerHTML = users.length
+      ? `<table class="admin-table"><thead><tr><th>الاسم</th><th>البريد</th><th>التاريخ</th></tr></thead><tbody>${
+        users.map(u => `<tr><td>${u.first_name} ${u.last_name}</td><td>${u.email}</td><td>${new Date(u.created_at).toLocaleDateString('ar')}</td></tr>`).join('')
+      }</tbody></table>`
+      : '<p class="text-muted">لا يوجد مستخدمون بعد</p>';
+  }
+
+  loadDashboard();
+</script>
+</body>
+</html>

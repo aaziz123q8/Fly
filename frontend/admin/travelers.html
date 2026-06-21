@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المسافرون — فلاي مسار</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body class="admin-body">
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">⚙️ FlyMasar Admin</div>
+    <nav class="sidebar-nav">
+      <a href="index.html">📊 لوحة التحكم</a>
+      <a href="travelers.html" class="active">👥 المسافرون</a>
+      <a href="bookings.html">📋 الحجوزات</a>
+      <a href="coupons.html">🎟️ الكوبونات</a>
+      <a href="#" onclick="adminLogout()">🚪 تسجيل الخروج</a>
+    </nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>👥 المسافرون</h1>
+      <div class="topbar-actions">
+        <input type="text" id="search-input" class="form-control form-control-sm" placeholder="بحث بالاسم أو البريد..." oninput="searchTravelers()">
+      </div>
+    </div>
+    <div class="admin-panel">
+      <div id="travelers-loading" class="loading-state"><div class="spinner-lg"></div><p>جاري التحميل...</p></div>
+      <div id="travelers-table" style="display:none">
+        <table class="admin-table">
+          <thead><tr><th>#</th><th>الاسم</th><th>البريد</th><th>الهاتف</th><th>الحالة</th><th>التسجيل</th><th>إجراءات</th></tr></thead>
+          <tbody id="travelers-tbody"></tbody>
+        </table>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="../js/api.js"></script>
+<script>
+  const ADMIN_BASE = 'https://beige-hare-390642.hostingersite.com';
+  const token = localStorage.getItem('admin_token');
+  if (!token) window.location.href = 'login.html';
+  let currentPage = 1, searchTimeout;
+
+  function adminLogout() { localStorage.removeItem('admin_token'); window.location.href = 'login.html'; }
+
+  async function adminFetch(endpoint) {
+    const res = await fetch(ADMIN_BASE + endpoint, { headers: { 'Authorization': 'Bearer ' + token } });
+    if (res.status === 401) { adminLogout(); return null; }
+    return res.json();
+  }
+
+  async function loadTravelers(page = 1, search = '') {
+    document.getElementById('travelers-loading').style.display = 'flex';
+    document.getElementById('travelers-table').style.display = 'none';
+    const q = search ? `&search=${encodeURIComponent(search)}` : '';
+    const data = await adminFetch(`/api/admin/travelers?page=${page}&per_page=20${q}`);
+    if (!data) return;
+    document.getElementById('travelers-loading').style.display = 'none';
+    document.getElementById('travelers-table').style.display = 'block';
+    const travelers = data.data || [];
+    document.getElementById('travelers-tbody').innerHTML = travelers.map(t => `
+      <tr>
+        <td>${t.id}</td>
+        <td>${t.first_name} ${t.last_name}</td>
+        <td>${t.email}</td>
+        <td>${t.phone_country_code}${t.phone_number}</td>
+        <td><span class="badge badge-${t.is_active ? 'success' : 'error'}">${t.is_active ? 'نشط' : 'معطل'}</span></td>
+        <td>${new Date(t.created_at).toLocaleDateString('ar')}</td>
+        <td>
+          <button class="btn btn-sm btn-outline" onclick="toggleUser(${t.id}, ${t.is_active})">${t.is_active ? 'تعطيل' : 'تفعيل'}</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="7" class="text-center">لا يوجد مستخدمون</td></tr>';
+    const meta = data.meta || {};
+    if (meta.last_page > 1) {
+      document.getElementById('pagination').innerHTML = Array.from({length: meta.last_page}, (_, i) => i + 1)
+        .map(p => `<button class="btn btn-sm ${p === page ? 'btn-primary' : 'btn-outline'}" onclick="loadTravelers(${p})">${p}</button>`).join('');
+    }
+  }
+
+  async function toggleUser(id, isActive) {
+    await fetch(ADMIN_BASE + `/api/admin/travelers/${id}`, { method: 'PUT', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify({ is_active: isActive ? 0 : 1 }) });
+    loadTravelers(currentPage);
+  }
+
+  function searchTravelers() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => loadTravelers(1, document.getElementById('search-input').value), 400);
+  }
+
+  loadTravelers();
+</script>
+</body>
+</html>

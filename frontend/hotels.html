@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>بحث الفنادق — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<nav class="navbar">
+  <div class="container">
+    <a href="index.html" class="navbar-brand">
+      <span class="brand-icon">✈️</span>
+      <div><span>FlyMasar</span><span class="brand-sub">فلاي مسار</span></div>
+    </a>
+    <nav class="navbar-nav">
+      <a href="index.html">الرحلات</a>
+      <a href="hotels.html" class="active">الفنادق</a>
+      <a href="dashboard.html">حجوزاتي</a>
+    </nav>
+    <div class="navbar-actions" id="nav-actions"></div>
+    <button class="mobile-menu-btn" onclick="document.querySelector('.navbar-nav').classList.toggle('open')">☰</button>
+  </div>
+</nav>
+
+<section class="hero hero-hotels">
+  <div class="container">
+    <h1 class="hero-title">🏨 ابحث عن فندقك المثالي</h1>
+    <p class="hero-sub">أفضل الأسعار في آلاف الفنادق حول العالم</p>
+    <div class="search-card">
+      <form id="hotel-search-form">
+        <div class="search-grid search-grid-hotels">
+          <div class="form-group">
+            <label>المدينة أو الوجهة</label>
+            <input type="text" id="city" class="form-control" placeholder="دبي، لندن، باريس..." required>
+          </div>
+          <div class="form-group">
+            <label>تاريخ الوصول</label>
+            <input type="date" id="check_in" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>تاريخ المغادرة</label>
+            <input type="date" id="check_out" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label>الغرف</label>
+            <select id="rooms" class="form-control">
+              <option value="1">غرفة واحدة</option>
+              <option value="2">غرفتان</option>
+              <option value="3">3 غرف</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>البالغون</label>
+            <select id="adults" class="form-control">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+          <div class="form-group search-btn-group">
+            <button type="submit" class="btn btn-primary btn-block btn-search">
+              <span id="btn-text">🔍 بحث عن فنادق</span>
+              <span id="btn-spinner" class="spinner" style="display:none"></span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<section class="results-section container" id="results-section" style="display:none">
+  <div id="results-header" class="results-header"></div>
+  <div id="results-grid" class="hotels-grid"></div>
+</section>
+
+<section class="features-section container" id="features">
+  <div class="features-grid">
+    <div class="feature-card"><div class="feature-icon">💰</div><h3>أفضل الأسعار</h3><p>نضمن لك أفضل سعر أو نعيد الفرق</p></div>
+    <div class="feature-card"><div class="feature-icon">🔒</div><h3>حجز آمن</h3><p>معاملاتك محمية بتشفير SSL</p></div>
+    <div class="feature-card"><div class="feature-icon">🌟</div><h3>فنادق مختارة</h3><p>آلاف الفنادق المقيّمة من مسافرين حقيقيين</p></div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="footer-brand"><span>✈️</span> FlyMasar — فلاي مسار</div>
+    <p class="footer-copy">© 2026 FlyMasar. جميع الحقوق محفوظة.</p>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  document.getElementById('check_in').value = tomorrow;
+  document.getElementById('check_out').value = nextWeek;
+  document.getElementById('check_in').min = today;
+  document.getElementById('check_out').min = tomorrow;
+
+  const user = Auth.getUser();
+  document.getElementById('nav-actions').innerHTML = user
+    ? `<a href="dashboard.html" class="user-badge">${user.first_name}</a>`
+    : `<a href="login.html" class="btn btn-outline btn-sm">دخول</a><a href="register.html" class="btn btn-primary btn-sm">حساب جديد</a>`;
+
+  function starsHtml(n) { return '⭐'.repeat(Math.min(n || 0, 5)); }
+
+  document.getElementById('hotel-search-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btnText = document.getElementById('btn-text');
+    const spinner = document.getElementById('btn-spinner');
+    btnText.style.display = 'none'; spinner.style.display = 'inline-block';
+    document.getElementById('features').style.display = 'none';
+
+    try {
+      const res = await Api.post('/api/hotels/search', {
+        city_id: 1,
+        check_in: document.getElementById('check_in').value,
+        check_out: document.getElementById('check_out').value,
+        rooms: parseInt(document.getElementById('rooms').value),
+        adults: parseInt(document.getElementById('adults').value),
+      });
+      const hotels = res.hotels || res.data || [];
+      document.getElementById('results-section').style.display = 'block';
+      document.getElementById('results-header').innerHTML = `<h2>وجدنا <strong>${hotels.length}</strong> فندقاً</h2>`;
+      document.getElementById('results-grid').innerHTML = hotels.length ? hotels.map(h => `
+        <div class="hotel-card">
+          <div class="hotel-img-placeholder">🏨</div>
+          <div class="hotel-info">
+            <h3>${h.name || h.hotel_name || 'فندق'}</h3>
+            <div class="hotel-stars">${starsHtml(h.stars)}</div>
+            <div class="hotel-price"><span class="price-amount">${h.min_price || h.total_amount || '---'}</span> <span class="price-currency">${h.currency || 'GBP'}</span> <span class="price-per">/ ليلة</span></div>
+            <button class="btn btn-primary btn-sm" onclick="alert('الحجز يتطلب ربط RateHawk API')">احجز الآن</button>
+          </div>
+        </div>`).join('') : '<div class="empty-state"><p>لم يتم العثور على نتائج</p></div>';
+    } catch(err) {
+      document.getElementById('results-section').style.display = 'block';
+      document.getElementById('results-grid').innerHTML = `<div class="alert alert-error">${err.message || 'حدث خطأ في البحث'}</div>`;
+    }
+    btnText.style.display = 'inline'; spinner.style.display = 'none';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الكوبونات — فلاي مسار</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body class="admin-body">
+<div class="admin-layout">
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand">⚙️ FlyMasar Admin</div>
+    <nav class="sidebar-nav">
+      <a href="index.html">📊 لوحة التحكم</a>
+      <a href="travelers.html">👥 المسافرون</a>
+      <a href="bookings.html">📋 الحجوزات</a>
+      <a href="coupons.html" class="active">🎟️ الكوبونات</a>
+      <a href="#" onclick="adminLogout()">🚪 تسجيل الخروج</a>
+    </nav>
+  </aside>
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>🎟️ الكوبونات</h1>
+      <button class="btn btn-primary" onclick="document.getElementById('create-modal').style.display='flex'">+ إضافة كوبون</button>
+    </div>
+
+    <div class="admin-panel">
+      <div id="coupons-loading" class="loading-state"><div class="spinner-lg"></div></div>
+      <table class="admin-table" id="coupons-table" style="display:none">
+        <thead><tr><th>الكود</th><th>النوع</th><th>القيمة</th><th>الاستخدامات</th><th>الصلاحية</th><th>الحالة</th><th>إجراءات</th></tr></thead>
+        <tbody id="coupons-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Create Modal -->
+    <div class="modal-overlay" id="create-modal" style="display:none">
+      <div class="modal">
+        <div class="modal-header"><h2>إضافة كوبون جديد</h2><button onclick="document.getElementById('create-modal').style.display='none'">✕</button></div>
+        <form id="create-coupon-form">
+          <div class="form-row">
+            <div class="form-group"><label>كود الكوبون</label><input type="text" id="c-code" class="form-control" placeholder="SUMMER20" required></div>
+            <div class="form-group"><label>نوع الخصم</label><select id="c-type" class="form-control"><option value="percentage">نسبة مئوية %</option><option value="fixed">مبلغ ثابت</option></select></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>القيمة</label><input type="number" id="c-value" class="form-control" min="0" step="0.01" required></div>
+            <div class="form-group"><label>الحد الأقصى للاستخدام</label><input type="number" id="c-max" class="form-control" min="1" value="100"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>يطبق على</label><select id="c-applies" class="form-control"><option value="all">الكل</option><option value="flights">رحلات</option><option value="hotels">فنادق</option></select></div>
+            <div class="form-group"><label>تاريخ الانتهاء</label><input type="date" id="c-expires" class="form-control"></div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('create-modal').style.display='none'">إلغاء</button>
+            <button type="submit" class="btn btn-primary">إنشاء الكوبون</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="../js/api.js"></script>
+<script>
+  const ADMIN_BASE = 'https://beige-hare-390642.hostingersite.com';
+  const token = localStorage.getItem('admin_token');
+  if (!token) window.location.href = 'login.html';
+  function adminLogout() { localStorage.removeItem('admin_token'); window.location.href = 'login.html'; }
+
+  async function loadCoupons() {
+    const res = await fetch(ADMIN_BASE + '/api/admin/coupons', { headers: { 'Authorization': 'Bearer ' + token } });
+    if (res.status === 401) { adminLogout(); return; }
+    const data = await res.json();
+    document.getElementById('coupons-loading').style.display = 'none';
+    document.getElementById('coupons-table').style.display = 'table';
+    const coupons = data.data || [];
+    document.getElementById('coupons-tbody').innerHTML = coupons.map(c => `
+      <tr>
+        <td><strong>${c.code}</strong></td>
+        <td>${c.discount_type === 'percentage' ? 'نسبة %' : 'مبلغ ثابت'}</td>
+        <td>${c.discount_value}${c.discount_type === 'percentage' ? '%' : ' ج.إ'}</td>
+        <td>${c.used_count || 0} / ${c.usage_limit || c.max_uses || '∞'}</td>
+        <td>${c.valid_until || c.expires_at ? new Date(c.valid_until || c.expires_at).toLocaleDateString('ar') : 'بلا حد'}</td>
+        <td><span class="badge badge-${c.is_active ? 'success' : 'error'}">${c.is_active ? 'فعال' : 'معطل'}</span></td>
+        <td><button class="btn btn-sm btn-outline" onclick="deleteCoupon(${c.id})">حذف</button></td>
+      </tr>`).join('') || '<tr><td colspan="7" class="text-center">لا توجد كوبونات</td></tr>';
+  }
+
+  async function deleteCoupon(id) {
+    if (!confirm('هل تريد حذف هذا الكوبون؟')) return;
+    await fetch(ADMIN_BASE + `/api/admin/coupons/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
+    loadCoupons();
+  }
+
+  document.getElementById('create-coupon-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const res = await fetch(ADMIN_BASE + '/api/admin/coupons', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: document.getElementById('c-code').value, discount_type: document.getElementById('c-type').value, discount_value: parseFloat(document.getElementById('c-value').value), max_uses: parseInt(document.getElementById('c-max').value), applies_to: document.getElementById('c-applies').value, expires_at: document.getElementById('c-expires').value || null })
+    });
+    if (res.ok) { document.getElementById('create-modal').style.display = 'none'; loadCoupons(); }
+    else { const err = await res.json(); alert(err.message || 'حدث خطأ'); }
+  });
+
+  loadCoupons();
+</script>
+</body>
+</html>

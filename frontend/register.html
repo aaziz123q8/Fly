@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إنشاء حساب — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card" style="max-width:540px">
+    <div class="auth-logo">
+      <div class="brand-icon">✈️</div>
+      <div class="brand-name">FlyMasar</div>
+    </div>
+    <h1 class="auth-title">إنشاء حساب جديد</h1>
+    <p class="auth-subtitle">انضم إلى ملايين المسافرين واحجز بأفضل الأسعار</p>
+    <div id="errorAlert" class="alert alert-error" style="display:none"></div>
+    <div id="successAlert" class="alert alert-success" style="display:none"></div>
+    <form id="registerForm" onsubmit="register(event)">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="form-group">
+          <label class="form-label">الاسم الأول</label>
+          <input type="text" class="form-control" id="firstName" placeholder="محمد" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">الاسم الأخير</label>
+          <input type="text" class="form-control" id="lastName" placeholder="العمري" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">البريد الإلكتروني</label>
+        <input type="email" class="form-control" id="email" placeholder="example@email.com" required autocomplete="email">
+      </div>
+      <div style="display:grid;grid-template-columns:120px 1fr;gap:8px">
+        <div class="form-group">
+          <label class="form-label">الدولة</label>
+          <select class="form-control" id="countryCode">
+            <option value="+966">🇸🇦 +966</option>
+            <option value="+971">🇦🇪 +971</option>
+            <option value="+965">🇰🇼 +965</option>
+            <option value="+973">🇧🇭 +973</option>
+            <option value="+974">🇶🇦 +974</option>
+            <option value="+968">🇴🇲 +968</option>
+            <option value="+20">🇪🇬 +20</option>
+            <option value="+962">🇯🇴 +962</option>
+            <option value="+1">🇺🇸 +1</option>
+            <option value="+44">🇬🇧 +44</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">رقم الهاتف</label>
+          <input type="tel" class="form-control" id="phone" placeholder="5X XXX XXXX" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">كلمة المرور</label>
+        <div style="position:relative">
+          <input type="password" class="form-control" id="password" placeholder="٨ أحرف على الأقل" required minlength="8" autocomplete="new-password">
+          <button type="button" onclick="togglePwd('password','eye1')" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text-muted)" id="eye1">👁</button>
+        </div>
+        <div class="form-hint">يجب أن تكون ٨ أحرف على الأقل</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">تأكيد كلمة المرور</label>
+        <div style="position:relative">
+          <input type="password" class="form-control" id="confirmPassword" placeholder="أعد إدخال كلمة المرور" required autocomplete="new-password">
+          <button type="button" onclick="togglePwd('confirmPassword','eye2')" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text-muted)" id="eye2">👁</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label style="display:flex;align-items:flex-start;gap:8px;cursor:pointer;font-size:.88rem;line-height:1.5">
+          <input type="checkbox" id="terms" required style="margin-top:3px;accent-color:var(--primary)">
+          <span>أوافق على <a href="#" style="color:var(--primary)">شروط الاستخدام</a> و<a href="#" style="color:var(--primary)">سياسة الخصوصية</a></span>
+        </label>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block" id="regBtn">
+        <span id="regBtnTxt">إنشاء الحساب</span>
+        <div class="spinner spinner-sm" id="regSpinner" style="display:none;border-top-color:white"></div>
+      </button>
+    </form>
+    <div class="auth-footer">
+      لديك حساب بالفعل؟ <a href="login.html">تسجيل الدخول ←</a>
+    </div>
+    <div style="text-align:center;margin-top:12px">
+      <a href="index.html" style="color:var(--text-muted);font-size:.85rem">← العودة للرئيسية</a>
+    </div>
+  </div>
+</div>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+  if (Auth.isLoggedIn()) window.location.href = 'dashboard.html';
+
+  function togglePwd(id, btnId) {
+    const p = document.getElementById(id);
+    p.type = p.type === 'password' ? 'text' : 'password';
+    document.getElementById(btnId).textContent = p.type === 'text' ? '🙈' : '👁';
+  }
+
+  async function register(e) {
+    e.preventDefault();
+    const pass = document.getElementById('password').value;
+    const confirm = document.getElementById('confirmPassword').value;
+    if (pass !== confirm) {
+      showError('كلمتا المرور غير متطابقتتين');
+      return;
+    }
+    const btn = document.getElementById('regBtn');
+    const txt = document.getElementById('regBtnTxt');
+    const sp = document.getElementById('regSpinner');
+    btn.disabled = true; txt.style.display = 'none'; sp.style.display = 'inline-block';
+    document.getElementById('errorAlert').style.display = 'none';
+    try {
+      const phone = document.getElementById('countryCode').value + document.getElementById('phone').value.replace(/\s/g,'');
+      const res = await Api.post('/api/auth/register', {
+        first_name: document.getElementById('firstName').value.trim(),
+        last_name: document.getElementById('lastName').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        password: pass,
+        phone,
+      });
+      const token = res.session_token || res.token || res.access_token;
+      const user = res.user || res;
+      if (token) Auth.setSession(token, user);
+      const el = document.getElementById('successAlert');
+      el.textContent = '🎉 تم إنشاء الحساب بنجاح! جاري التحويل...';
+      el.style.display = 'flex';
+      setTimeout(() => window.location.href = 'dashboard.html', 1200);
+    } catch (err) {
+      showError(err.message || 'حدث خطأ أثناء إنشاء الحساب، يرجى المحاولة مجدداً');
+    } finally {
+      btn.disabled = false; txt.style.display = 'inline'; sp.style.display = 'none';
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('errorAlert');
+    el.textContent = '⚠️ ' + msg;
+    el.style.display = 'flex';
+  }
+</script>
+</body>
+</html>

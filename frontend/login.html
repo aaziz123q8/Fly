@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="brand-icon">✈️</div>
+      <div class="brand-name">FlyMasar</div>
+      <div style="color:var(--text-muted);font-size:.85rem;margin-top:2px">فلاي مسار</div>
+    </div>
+    <h1 class="auth-title">مرحباً بعودتك!</h1>
+    <p class="auth-subtitle">سجّل دخولك للوصول إلى حجوزاتك وأفضل العروض</p>
+    <div id="errorAlert" class="alert alert-error" style="display:none"></div>
+    <div id="successAlert" class="alert alert-success" style="display:none"></div>
+    <form id="loginForm" onsubmit="login(event)">
+      <div class="form-group">
+        <label class="form-label" for="email">البريد الإلكتروني</label>
+        <input type="email" class="form-control" id="email" placeholder="example@email.com" required autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label class="form-label">
+          كلمة المرور
+          <a href="#" style="float:left;font-size:.82rem;color:var(--primary);font-weight:500">نسيت كلمة المرور؟</a>
+        </label>
+        <div style="position:relative">
+          <input type="password" class="form-control" id="password" placeholder="أدخل كلمة المرور" required autocomplete="current-password">
+          <button type="button" onclick="togglePwd()" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text-muted)" id="eyeBtn">👁</button>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-lg btn-block" id="loginBtn">
+        <span id="loginBtnTxt">تسجيل الدخول</span>
+        <div class="spinner spinner-sm" id="loginSpinner" style="display:none;border-top-color:white"></div>
+      </button>
+    </form>
+    <div class="auth-footer">
+      ليس لديك حساب؟ <a href="register.html">أنشئ حساباً مجانياً ←</a>
+    </div>
+    <div style="text-align:center;margin-top:12px">
+      <a href="index.html" style="color:var(--text-muted);font-size:.85rem">← العودة للرئيسية</a>
+    </div>
+  </div>
+</div>
+<div class="toast-container" id="toastContainer"></div>
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+  if (Auth.isLoggedIn()) window.location.href = 'dashboard.html';
+
+  function togglePwd() {
+    const p = document.getElementById('password');
+    const b = document.getElementById('eyeBtn');
+    p.type = p.type === 'password' ? 'text' : 'password';
+    b.textContent = p.type === 'text' ? '🙈' : '👁';
+  }
+
+  async function login(e) {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    const txt = document.getElementById('loginBtnTxt');
+    const sp = document.getElementById('loginSpinner');
+    btn.disabled = true; txt.style.display = 'none'; sp.style.display = 'inline-block';
+    document.getElementById('errorAlert').style.display = 'none';
+    try {
+      const res = await Api.post('/api/auth/login', {
+        email: document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value,
+      });
+      const token = res.session_token || res.token || res.access_token;
+      const user = res.user || res;
+      if (!token) throw { message: 'لم يُستلم رمز الجلسة من الخادم' };
+      Auth.setSession(token, user);
+      const el = document.getElementById('successAlert');
+      el.textContent = 'تم تسجيل الدخول بنجاح! جاري التحويل...';
+      el.style.display = 'flex';
+      setTimeout(() => {
+        const r = new URLSearchParams(window.location.search).get('redirect');
+        window.location.href = r || 'dashboard.html';
+      }, 900);
+    } catch (err) {
+      const el = document.getElementById('errorAlert');
+      el.textContent = '⚠️ ' + (err.message || 'بيانات الدخول غير صحيحة');
+      el.style.display = 'flex';
+    } finally {
+      btn.disabled = false; txt.style.display = 'inline'; sp.style.display = 'none';
+    }
+  }
+</script>
+</body>
+</html>
