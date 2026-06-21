@@ -111,6 +111,8 @@ class DatePicker {
         if (this.mode === 'single') {
           this.startDate = d;
           this.trigger.value = this._fmt(d);
+          // Store ISO date for programmatic reading
+          this.trigger.dataset.isoDate = d.toISOString().substring(0, 10);
           this.trigger.classList.add('filled');
           this.onSelect(d, null, this);
           this._render();

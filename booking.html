@@ -197,16 +197,67 @@
     const tabs = document.getElementById('paxTabs');
     const forms = document.getElementById('paxForms');
     tabs.innerHTML = paxTypes.map((p,i)=>`<button class="pax-tab ${i===0?'active':''}" onclick="switchPax(${i},this)">${p.label}</button>`).join('');
+    const nationalities = [
+      ['','اختر الجنسية'],
+      ['Algerian','جزائري'],['Bahraini','بحريني'],['Egyptian','مصري'],['Emirati','إماراتي'],
+      ['Jordanian','أردني'],['Kuwaiti','كويتي'],['Lebanese','لبناني'],['Libyan','ليبي'],
+      ['Mauritanian','موريتاني'],['Moroccan','مغربي'],['Omani','عماني'],['Palestinian','فلسطيني'],
+      ['Qatari','قطري'],['Saudi','سعودي'],['Sudanese','سوداني'],['Syrian','سوري'],
+      ['Tunisian','تونسي'],['Yemeni','يمني'],['American','أمريكي'],['British','بريطاني'],
+      ['French','فرنسي'],['German','ألماني'],['Indian','هندي'],['Pakistani','باكستاني'],
+      ['Filipino','فلبيني'],['Turkish','تركي'],['Iranian','إيراني'],['Indonesian','إندونيسي'],
+      ['Malaysian','ماليزي'],['Bangladeshi','بنغلاديشي'],['Ethiopian','إثيوبي'],['Kenyan','كيني'],
+      ['Nigerian','نيجيري'],['South African','جنوب أفريقي'],['Canadian','كندي'],['Australian','أسترالي'],
+      ['Chinese','صيني'],['Japanese','ياباني'],['Korean','كوري'],['Russian','روسي'],
+      ['Spanish','إسباني'],['Italian','إيطالي'],['Dutch','هولندي'],['Swedish','سويدي'],
+      ['Other','أخرى'],
+    ];
+    const natOptions = nationalities.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+
+    const thisYear = new Date().getFullYear();
+    const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+
+    function dobFields(i, type) {
+      const now = thisYear;
+      let minYear, maxYear, hint;
+      if (type === 'infant') {
+        // Must be under 2 on date of travel
+        minYear = now - 2; maxYear = now;
+        hint = 'أقل من سنتين في تاريخ السفر';
+      } else if (type === 'child') {
+        // Must be 2–11 on date of travel
+        minYear = now - 12; maxYear = now - 2;
+        hint = 'من ٢ إلى ١١ سنة في تاريخ السفر';
+      } else {
+        // Adult: 12+
+        minYear = now - 100; maxYear = now - 12;
+        hint = '١٢ سنة فأكثر';
+      }
+      const dayOpts = ['<option value="">يوم</option>',...Array.from({length:31},(_,k)=>`<option value="${String(k+1).padStart(2,'0')}">${k+1}</option>`)].join('');
+      const monOpts = ['<option value="">شهر</option>',...months.map((m,k)=>`<option value="${String(k+1).padStart(2,'0')}">${m}</option>`)].join('');
+      let yearOpts = '<option value="">سنة</option>';
+      for (let y=maxYear; y>=minYear; y--) yearOpts += `<option value="${y}">${y}</option>`;
+      return `<div class="form-group" style="grid-column:1/-1">
+        <label class="form-label">تاريخ الميلاد <span style="color:red">*</span> <small style="color:var(--text-muted)">(${hint})</small></label>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+          <select class="form-control" id="p${i}_dob_d" onchange="updateDob(${i})" required><option value="">يوم</option>${dayOpts}</select>
+          <select class="form-control" id="p${i}_dob_m" onchange="updateDob(${i})" required>${monOpts}</select>
+          <select class="form-control" id="p${i}_dob_y" onchange="updateDob(${i})" required>${yearOpts}</select>
+        </div>
+        <input type="hidden" id="p${i}_dob">
+      </div>`;
+    }
+
     forms.innerHTML = paxTypes.map((p,i)=>`
       <div class="pax-form ${i===0?'active':''}" id="paxForm${i}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-          <div style="font-size:0.85rem;color:var(--text-muted);font-weight:600">${p.label} — ${p.type==='adult'?'بالغ':p.type==='child'?'طفل':'رضيع'}</div>
+          <div style="font-size:0.85rem;color:var(--text-muted);font-weight:600">${p.label} — ${p.type==='adult'?'بالغ (١٢+ سنة)':p.type==='child'?'طفل (٢–١١ سنة)':'رضيع (أقل من سنتين)'}</div>
           <button type="button" class="btn btn-ghost btn-sm" onclick="loadSavedTraveler(${i})" style="font-size:0.8rem">📋 اختر من المحفوظين</button>
         </div>
         <div class="form-row3">
           <div class="form-group">
             <label class="form-label">الاسم الأول <span style="color:red">*</span></label>
-            <input type="text" class="form-control" id="p${i}_first" placeholder="بالإنجليزي" required>
+            <input type="text" class="form-control" id="p${i}_first" placeholder="بالإنجليزي (كما في جواز السفر)" required autocomplete="off">
           </div>
           <div class="form-group">
             <label class="form-label">الاسم الأوسط</label>
@@ -214,26 +265,25 @@
           </div>
           <div class="form-group">
             <label class="form-label">الاسم الأخير <span style="color:red">*</span></label>
-            <input type="text" class="form-control" id="p${i}_last" placeholder="بالإنجليزي" required>
+            <input type="text" class="form-control" id="p${i}_last" placeholder="بالإنجليزي (كما في جواز السفر)" required autocomplete="off">
           </div>
         </div>
-        <div class="form-row3">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
           <div class="form-group">
             <label class="form-label">الجنس <span style="color:red">*</span></label>
             <select class="form-control" id="p${i}_gender" required>
-              <option value="">اختر</option>
+              <option value="">اختر الجنس</option>
               <option value="male">ذكر</option>
               <option value="female">أنثى</option>
             </select>
           </div>
           <div class="form-group">
             <label class="form-label">الجنسية <span style="color:red">*</span></label>
-            <input type="text" class="form-control" id="p${i}_nationality" placeholder="مثال: Kuwaiti" required>
+            <select class="form-control" id="p${i}_nationality" required>${natOptions}</select>
           </div>
-          <div class="form-group">
-            <label class="form-label">تاريخ الميلاد <span style="color:red">*</span></label>
-            <input type="text" class="form-control" id="p${i}_dob" placeholder="YYYY-MM-DD" required>
-          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:16px">
+          ${dobFields(i, p.type)}
         </div>
         <div style="border-top:1px solid #f0f2f5;margin:16px 0;padding-top:16px">
           <div style="font-size:0.85rem;font-weight:600;color:var(--text-muted);margin-bottom:12px">وثيقة السفر</div>
@@ -248,7 +298,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">رقم الوثيقة <span style="color:red">*</span></label>
-              <input type="text" class="form-control" id="p${i}_doc_num" placeholder="رقم الوثيقة" required>
+              <input type="text" class="form-control" id="p${i}_doc_num" placeholder="رقم الوثيقة" required autocomplete="off">
             </div>
           </div>
           <div class="form-row2">
@@ -262,6 +312,7 @@
             </div>
           </div>
         </div>
+        <div id="p${i}_ageError" style="color:var(--error,#ef4444);font-size:0.82rem;display:none;padding:6px 0"></div>
       </div>`).join('');
   }
 
@@ -269,6 +320,61 @@
     activePax = idx;
     document.querySelectorAll('.pax-tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
     document.querySelectorAll('.pax-form').forEach((f,i)=>f.classList.toggle('active',i===idx));
+  }
+
+  function updateDob(i) {
+    const d = document.getElementById(`p${i}_dob_d`)?.value;
+    const m = document.getElementById(`p${i}_dob_m`)?.value;
+    const y = document.getElementById(`p${i}_dob_y`)?.value;
+    const hidden = document.getElementById(`p${i}_dob`);
+    if (d && m && y) {
+      hidden.value = `${y}-${m}-${d}`;
+      validatePaxAge(i);
+    } else {
+      hidden.value = '';
+    }
+  }
+
+  function validatePaxAge(i) {
+    const p = paxTypes[i];
+    const dob = document.getElementById(`p${i}_dob`)?.value;
+    const errEl = document.getElementById(`p${i}_ageError`);
+    if (!dob || !errEl) return true;
+
+    // Use travel date from flight data or fallback to today+1
+    const travelDate = flightData?.slices?.[0]?.segments?.[0]?.departing_at
+      ? new Date(flightData.slices[0].segments[0].departing_at)
+      : new Date(Date.now() + 86400000);
+
+    const dobDate = new Date(dob);
+    const ageMs = travelDate - dobDate;
+    const ageYears = ageMs / (365.25 * 24 * 3600 * 1000);
+
+    let error = '';
+    if (p.type === 'adult' && ageYears < 12) {
+      error = `⚠️ يجب أن يكون عمر البالغ 12 سنة أو أكثر في تاريخ السفر (العمر المحسوب: ${Math.floor(ageYears)} سنة)`;
+    } else if (p.type === 'child' && (ageYears < 2 || ageYears >= 12)) {
+      error = `⚠️ يجب أن يكون عمر الطفل بين سنتين و١١ سنة في تاريخ السفر (العمر المحسوب: ${Math.floor(ageYears)} سنة)`;
+    } else if (p.type === 'infant' && ageYears >= 2) {
+      error = `⚠️ يجب أن يكون عمر الرضيع أقل من سنتين في تاريخ السفر (العمر المحسوب: ${Math.floor(ageYears)} سنة)`;
+    }
+
+    errEl.textContent = error;
+    errEl.style.display = error ? 'block' : 'none';
+    return !error;
+  }
+
+  function checkDuplicateNames(passengers) {
+    const seen = new Set();
+    for (let i = 0; i < passengers.length; i++) {
+      const key = (passengers[i].first_name + '|' + passengers[i].last_name).toUpperCase().trim();
+      if (!key || key === '|') continue;
+      if (seen.has(key)) {
+        return paxTypes[i].label + ': الاسم مكرر في نفس الحجز — يجب أن يكون اسم كل مسافر فريداً';
+      }
+      seen.add(key);
+    }
+    return null;
   }
 
   async function loadFlightInfo() {
@@ -356,11 +462,20 @@
     set(`p${formIdx}_last`, t.last_name);
     set(`p${formIdx}_gender`, t.gender);
     set(`p${formIdx}_nationality`, t.nationality);
-    set(`p${formIdx}_dob`, t.date_of_birth);
     set(`p${formIdx}_doc_type`, t.document_type || 'passport');
     set(`p${formIdx}_doc_num`, t.document_number);
     set(`p${formIdx}_doc_exp`, t.document_expiry);
     set(`p${formIdx}_doc_issue`, t.document_issue);
+    // Fill DOB dropdowns
+    if (t.date_of_birth) {
+      const parts = t.date_of_birth.split('-');
+      if (parts.length === 3) {
+        set(`p${formIdx}_dob_y`, parts[0]);
+        set(`p${formIdx}_dob_m`, parts[1]);
+        set(`p${formIdx}_dob_d`, parts[2]);
+        set(`p${formIdx}_dob`, t.date_of_birth);
+      }
+    }
   }
 
   function updateTotal() {
@@ -419,7 +534,18 @@
         switchPax(i, document.querySelectorAll('.pax-tab')[i]);
         alert('يرجى إكمال بيانات ' + paxTypes[i].label); return;
       }
+      if (!/^[a-zA-Z\s\-]+$/.test(p.first_name) || !/^[a-zA-Z\s\-]+$/.test(p.last_name)) {
+        switchPax(i, document.querySelectorAll('.pax-tab')[i]);
+        alert('يجب إدخال الاسم بالحروف الإنجليزية فقط كما في جواز السفر — ' + paxTypes[i].label); return;
+      }
+      if (!validatePaxAge(i)) {
+        switchPax(i, document.querySelectorAll('.pax-tab')[i]);
+        const errMsg = document.getElementById(`p${i}_ageError`)?.textContent;
+        alert(errMsg || 'يرجى التحقق من تاريخ ميلاد ' + paxTypes[i].label); return;
+      }
     }
+    const dupErr = checkDuplicateNames(passengers);
+    if (dupErr) { alert('⚠️ ' + dupErr); return; }
     const btn = document.getElementById('bookBtn');
     const sp  = document.getElementById('bookSpinner');
     const tx  = document.getElementById('bookBtnTxt');

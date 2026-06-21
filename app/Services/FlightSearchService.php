@@ -40,6 +40,7 @@ class FlightSearchService
         $cabinClass    = $params['cabin_class'] ?? 'economy';
         $adults        = max(1, (int) ($params['adults'] ?? 1));
         $children      = is_array($params['children'] ?? null) ? $params['children'] : [];
+        $infantCount   = (int) ($params['infants'] ?? 0);
 
         // Sort children ages so hash is deterministic regardless of input order.
         $childrenSorted = $children;
@@ -48,7 +49,7 @@ class FlightSearchService
         $searchHash = md5(
             $origin . $destination . $departureDate .
             ($returnDate ?? '') . $cabinClass . $adults .
-            implode(',', $childrenSorted)
+            implode(',', $childrenSorted) . 'i' . $infantCount
         );
 
         // ── 1. Cache lookup ──────────────────────────────────────────────────
@@ -78,7 +79,10 @@ class FlightSearchService
 
         $passengers = array_fill(0, $adults, ['type' => 'adult']);
         foreach ($children as $age) {
-            $passengers[] = ['type' => 'child', 'age' => (int) $age];
+            $passengers[] = ['type' => 'child', 'age' => max(2, min(11, (int) $age))];
+        }
+        for ($i = 0; $i < $infantCount; $i++) {
+            $passengers[] = ['type' => 'infant_without_seat', 'age' => 0];
         }
 
         // ── 3. Call Duffel ───────────────────────────────────────────────────

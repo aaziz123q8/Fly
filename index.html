@@ -727,8 +727,10 @@ document.addEventListener('DOMContentLoaded', () => {
 function searchFlights() {
   const from  = document.getElementById('fFrom').dataset.code || document.getElementById('fFrom').value.trim();
   const to    = document.getElementById('fTo').dataset.code   || document.getElementById('fTo').value.trim();
-  const dep   = document.getElementById('fDep').value;
-  const ret   = typeof dpRet !== 'undefined' && dpRet ? (dpRet.getSelected ? (dpRet.getSelected()[0] ? dpRet.getSelected()[0].toISOString().substring(0,10) : '') : '') : '';
+  const depEl = document.getElementById('fDep');
+  const dep   = depEl?.dataset?.isoDate || depEl?.value || '';
+  const retEl = document.getElementById('fRet');
+  const ret = retEl?.dataset?.isoDate || '';
   const cabin = document.getElementById('fClass') ? document.getElementById('fClass').value : 'economy';
   if (!from||!to||!dep) { toast(t('fill_fields'), 'err'); return; }
   localStorage.setItem('bk_adults',   pax.adult);

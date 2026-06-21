@@ -40,7 +40,19 @@ class FlightController
         $userId = $user ? (int) $user['id'] : 0;
 
         try {
-            $offers = $this->searchService->search($request->json() ?: [], $userId);
+            $body = $request->json() ?: [];
+
+            // Normalize children/infants: frontend may send counts (int) instead of age arrays.
+            // Duffel requires child ages (2-11) and infant ages (0-1) per passenger.
+            if (isset($body['children']) && is_int($body['children'])) {
+                $count = $body['children'];
+                $body['children'] = array_fill(0, $count, 5); // default child age 5
+            }
+            if (isset($body['infants']) && (is_int($body['infants']) || is_numeric($body['infants']))) {
+                $body['infants'] = (int) $body['infants'];
+            }
+
+            $offers = $this->searchService->search($body, $userId);
             Response::json(['offers' => $offers, 'count' => count($offers)]);
         } catch (\RuntimeException $e) {
             $code = $e->getCode();
