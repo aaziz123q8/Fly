@@ -30,7 +30,8 @@ class HotelController
     {
         // Rate limit: 10 per minute
         $ip = $this->resolveIp();
-        if (!RateLimiter::allow('hotel_search_' . $ip, 10, 60)) {
+        $rateLimiter = new RateLimiter();
+        if (!$rateLimiter->allow($ip, 'ip', 'hotel_search', 10, 60)) {
             Response::error('Too many requests. Please slow down.', 429);
         }
 

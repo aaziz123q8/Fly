@@ -392,44 +392,45 @@ class FlightBookingService
         // Insert flight_booking_passengers.
         $pStmt = $this->db->prepare(
             'INSERT INTO flight_booking_passengers
-               (flight_booking_id, first_name, last_name, gender,
+               (booking_id, passenger_type, first_name, last_name, gender,
                 date_of_birth, nationality, passport_number, passport_expiry)
              VALUES
-               (:booking_id, :first_name, :last_name, :gender,
+               (:booking_id, :passenger_type, :first_name, :last_name, :gender,
                 :dob, :nationality, :passport_number, :passport_expiry)'
         );
         foreach ($passengersData as $passenger) {
             $pStmt->execute([
                 ':booking_id'      => $bookingId,
+                ':passenger_type'  => $passenger['type'] ?? 'adult',
                 ':first_name'      => $passenger['first_name'],
                 ':last_name'       => $passenger['last_name'],
                 ':gender'          => $passenger['gender'],
                 ':dob'             => $passenger['date_of_birth'],
                 ':nationality'     => $passenger['nationality'],
-                ':passport_number' => $passenger['passport_number'],
-                ':passport_expiry' => $passenger['passport_expiry'],
+                ':passport_number' => $passenger['passport_number'] ?? null,
+                ':passport_expiry' => $passenger['passport_expiry'] ?? null,
             ]);
         }
 
         // Insert flight_booking_segments.
         $sStmt = $this->db->prepare(
             'INSERT INTO flight_booking_segments
-               (flight_booking_id, slice_index, segment_index,
+               (booking_id, slice_index, segment_order,
                 origin_airport, destination_airport,
-                departing_at, arriving_at,
-                carrier_iata_code, flight_number, aircraft_iata_code, duration)
+                departure_at, arrival_at,
+                flight_number, airline_code, aircraft_type)
              VALUES
-               (:booking_id, :slice_index, :segment_index,
+               (:booking_id, :slice_index, :segment_order,
                 :origin, :destination,
                 :departing_at, :arriving_at,
-                :carrier, :flight_number, :aircraft, :duration)'
+                :flight_number, :carrier, :aircraft)'
         );
         foreach ($slices as $sliceIdx => $slice) {
             foreach (($slice['segments'] ?? []) as $segIdx => $seg) {
                 $sStmt->execute([
                     ':booking_id'     => $bookingId,
                     ':slice_index'    => $sliceIdx,
-                    ':segment_index'  => $segIdx,
+                    ':segment_order'  => $segIdx + 1,
                     ':origin'         => $seg['origin']['iata_code']      ?? '',
                     ':destination'    => $seg['destination']['iata_code'] ?? '',
                     ':departing_at'   => $seg['departing_at']             ?? null,
@@ -437,7 +438,6 @@ class FlightBookingService
                     ':carrier'        => $seg['marketing_carrier']['iata_code'] ?? '',
                     ':flight_number'  => ($seg['marketing_carrier']['iata_code'] ?? '') . ($seg['marketing_carrier_flight_number'] ?? ''),
                     ':aircraft'       => $seg['aircraft']['iata_code']    ?? null,
-                    ':duration'       => $seg['duration']                 ?? null,
                 ]);
             }
         }
@@ -482,7 +482,7 @@ class FlightBookingService
                         )
                     ) AS segments
              FROM flight_bookings fb
-             LEFT JOIN flight_booking_segments fbs ON fbs.flight_booking_id = fb.id
+             LEFT JOIN flight_booking_segments fbs ON fbs.booking_id = fb.id
              WHERE fb.user_id = :uid
              GROUP BY fb.id
              ORDER BY fb.created_at DESC'
@@ -517,15 +517,15 @@ class FlightBookingService
         // Segments.
         $segStmt = $this->db->prepare(
             'SELECT * FROM flight_booking_segments
-             WHERE flight_booking_id = :id
-             ORDER BY slice_index ASC, segment_index ASC'
+             WHERE booking_id = :id
+             ORDER BY slice_index ASC, segment_order ASC'
         );
         $segStmt->execute([':id' => $bookingId]);
         $booking['segments'] = $segStmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Passengers.
         $pStmt = $this->db->prepare(
-            'SELECT * FROM flight_booking_passengers WHERE flight_booking_id = :id'
+            'SELECT * FROM flight_booking_passengers WHERE booking_id = :id'
         );
         $pStmt->execute([':id' => $bookingId]);
         $booking['passengers'] = $pStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -680,16 +680,16 @@ class FlightBookingService
     {
         $jobs = [
             [
-                'job_type' => 'generate_invoice',
+                'job_type' => 'generate_invoice_pdf',
                 'payload'  => json_encode(['booking_type' => 'flight', 'booking_id' => $bookingId]),
             ],
             [
                 'job_type' => 'send_booking_confirmation_email',
-                'payload'  => json_encode(['booking_id' => $bookingId, 'user_id' => $userId]),
+                'payload'  => json_encode(['booking_type' => 'flight', 'booking_id' => $bookingId, 'user_id' => $userId]),
             ],
             [
-                'job_type' => 'send_booking_confirmation_whatsapp',
-                'payload'  => json_encode(['booking_id' => $bookingId, 'user_id' => $userId]),
+                'job_type' => 'send_whatsapp_booking_confirmation',
+                'payload'  => json_encode(['booking_type' => 'flight', 'booking_id' => $bookingId, 'user_id' => $userId]),
             ],
         ];
 

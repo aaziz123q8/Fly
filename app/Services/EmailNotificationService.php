@@ -135,7 +135,7 @@ class EmailNotificationService
         $roomRows = $rooms->fetchAll(PDO::FETCH_ASSOC);
 
         $guests = $this->db->prepare(
-            'SELECT * FROM hotel_booking_guests WHERE booking_id = :id ORDER BY is_lead_guest DESC, id'
+            'SELECT * FROM hotel_booking_guests WHERE booking_id = :id ORDER BY is_lead DESC, id'
         );
         $guests->execute([':id' => $bookingId]);
         $guestRows = $guests->fetchAll(PDO::FETCH_ASSOC);
@@ -390,16 +390,16 @@ HTML;
                    <td style="padding:10px;border-bottom:1px solid #eee;">%s</td>
                    <td style="padding:10px;border-bottom:1px solid #eee;">%d</td>
                  </tr>',
-                htmlspecialchars($r['room_name'], ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars($r['board_type'] ?? 'Room Only', ENT_QUOTES, 'UTF-8'),
-                (int)$r['adults']
+                htmlspecialchars($r['room_type'] ?? 'Room', ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($r['meal_plan'] ?? 'Room Only', ENT_QUOTES, 'UTF-8'),
+                1
             );
         }
 
         // Lead guest
         $leadGuest = '';
         foreach ($guests as $g) {
-            if ($g['is_lead_guest']) {
+            if ($g['is_lead']) {
                 $leadGuest = htmlspecialchars(
                     trim($g['first_name'] . ' ' . $g['last_name']),
                     ENT_QUOTES,
@@ -461,7 +461,6 @@ HTML;
               <tr style="background:#f0f5fb;">
                 <th style="padding:10px;text-align:left;">Room</th>
                 <th style="padding:10px;text-align:left;">Board</th>
-                <th style="padding:10px;text-align:left;">Adults</th>
               </tr>
               {$roomHtml}
             </table>

@@ -449,7 +449,7 @@ class HotelBookingService
         foreach ($rooms as $room) {
             $rStmt->execute([
                 ':booking_id'       => $hotelBookingId,
-                ':room_type'        => $room['room_type'] ?? $room['type'] ?? null,
+                ':room_type'        => $room['room_type'] ?? $room['type'] ?? 'Standard Room',
                 ':meal_plan'        => $room['meal_plan'] ?? $room['board_type'] ?? null,
                 ':provider_room_id' => $room['id'] ?? $room['room_id'] ?? null,
                 ':amount'           => $room['amount'] ?? $room['price'] ?? null,
@@ -547,7 +547,7 @@ class HotelBookingService
 
         // Guests
         $gStmt = $this->db->prepare(
-            'SELECT * FROM hotel_booking_guests WHERE booking_id = :id ORDER BY is_lead DESC'
+            'SELECT * FROM hotel_booking_guests WHERE booking_id = :id ORDER BY is_lead DESC, id ASC'
         );
         $gStmt->execute([':id' => $bookingId]);
         $booking['guests'] = $gStmt->fetchAll(PDO::FETCH_ASSOC);
@@ -602,7 +602,7 @@ class HotelBookingService
     {
         $jobs = [
             [
-                'job_type' => 'generate_invoice',
+                'job_type' => 'generate_invoice_pdf',
                 'payload'  => json_encode(['booking_type' => 'hotel', 'booking_id' => $bookingId]),
             ],
             [
@@ -610,7 +610,7 @@ class HotelBookingService
                 'payload'  => json_encode(['booking_type' => 'hotel', 'booking_id' => $bookingId, 'user_id' => $userId]),
             ],
             [
-                'job_type' => 'send_booking_confirmation_whatsapp',
+                'job_type' => 'send_whatsapp_booking_confirmation',
                 'payload'  => json_encode(['booking_type' => 'hotel', 'booking_id' => $bookingId, 'user_id' => $userId]),
             ],
         ];

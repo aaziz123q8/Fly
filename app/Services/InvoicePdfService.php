@@ -114,7 +114,7 @@ class InvoicePdfService
         $roomRows = $rooms->fetchAll(PDO::FETCH_ASSOC);
 
         $guests = $this->db->prepare(
-            'SELECT * FROM hotel_booking_guests WHERE booking_id = :id ORDER BY is_lead_guest DESC, id'
+            'SELECT * FROM hotel_booking_guests WHERE booking_id = :id ORDER BY is_lead DESC, id'
         );
         $guests->execute([':id' => $bookingId]);
         $guestRows = $guests->fetchAll(PDO::FETCH_ASSOC);
@@ -354,7 +354,7 @@ HTML;
         $guestName = '';
         $guestEmail = htmlspecialchars($booking['email'], ENT_QUOTES, 'UTF-8');
         foreach ($guests as $g) {
-            if ($g['is_lead_guest']) {
+            if ($g['is_lead']) {
                 $guestName = htmlspecialchars(trim($g['first_name'] . ' ' . $g['last_name']), ENT_QUOTES, 'UTF-8');
                 break;
             }
@@ -368,19 +368,15 @@ HTML;
         // Room rows
         $roomRows = '';
         foreach ($rooms as $r) {
-            $ages = json_decode($r['children_ages'] ?? '[]', true);
-            $agesStr = $ages ? implode(', ', $ages) : 'None';
             $roomRows .= sprintf(
                 '<tr>
                   <td class="cell">%s</td>
                   <td class="cell">%s</td>
-                  <td class="cell">%d</td>
                   <td class="cell">%s</td>
                 </tr>',
-                htmlspecialchars($r['room_name'], ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars($r['board_type'] ?? 'Room Only', ENT_QUOTES, 'UTF-8'),
-                (int)$r['adults'],
-                htmlspecialchars($agesStr, ENT_QUOTES, 'UTF-8')
+                htmlspecialchars($r['room_type'] ?? 'Room', ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($r['meal_plan'] ?? 'Room Only', ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars(number_format((float)($r['amount'] ?? 0), 2), ENT_QUOTES, 'UTF-8')
             );
         }
 
@@ -451,7 +447,7 @@ HTML;
   <!-- Rooms -->
   <h3>Rooms</h3>
   <table>
-    <tr><th>Room</th><th>Board Type</th><th>Adults</th><th>Children Ages</th></tr>
+    <tr><th>Room</th><th>Board Type</th><th>Amount</th></tr>
     {$roomRows}
   </table>
 
