@@ -91,7 +91,7 @@ class JobWorker
                 'SELECT id FROM job_queue
                  WHERE status = \'pending\'
                    AND attempts < max_attempts
-                   AND scheduled_at <= NOW()
+                   AND (run_at IS NULL OR run_at <= NOW())
                  ORDER BY id ASC
                  LIMIT ' . self::BATCH_SIZE . '
                  FOR UPDATE SKIP LOCKED'
@@ -173,7 +173,7 @@ class JobWorker
     private function markDone(int $id): void
     {
         $this->db->prepare(
-            "UPDATE job_queue SET status = 'done', finished_at = NOW() WHERE id = :id"
+            "UPDATE job_queue SET status = 'done', completed_at = NOW() WHERE id = :id"
         )->execute([':id' => $id]);
     }
 
@@ -187,7 +187,7 @@ class JobWorker
 
         $this->db->prepare(
             "UPDATE job_queue
-             SET status = :status, error_message = :msg, finished_at = NOW()
+             SET status = :status, error_message = :msg, completed_at = NOW()
              WHERE id = :id"
         )->execute([
             ':status' => $newStatus,
