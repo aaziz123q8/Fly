@@ -33,6 +33,12 @@ if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
     $dotenv->safeLoad();
 }
 
+use App\Controllers\Admin\AdminAuthController;
+use App\Controllers\Admin\AdminBookingsController;
+use App\Controllers\Admin\AdminCouponsController;
+use App\Controllers\Admin\AdminDashboardController;
+use App\Controllers\Admin\AdminPricingController;
+use App\Controllers\Admin\AdminTravelersController;
 use App\Controllers\Auth\AuthController;
 use App\Controllers\Flight\FlightController;
 use App\Controllers\Hotel\HotelController;
@@ -40,6 +46,7 @@ use App\Controllers\Webhook\WebhookController;
 use App\Core\Request;
 use App\Core\Response;
 use App\Core\Router;
+use App\Middleware\AdminMiddleware;
 use App\Middleware\AuthMiddleware;
 
 // ---------------------------------------------------------------------------
@@ -193,6 +200,88 @@ $router->group('api/hotels', function (Router $r): void {
     $r->get('/:provider_hotel_id', function (Request $req): void {
         (new HotelController())->detail($req);
     });
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Admin Panel
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin', function (Router $r): void {
+
+    // Auth (no middleware needed for login).
+    $r->post('/auth/login', function (Request $req): void {
+        (new AdminAuthController())->login($req);
+    });
+    $r->post('/auth/logout', function (Request $req): void {
+        (new AdminAuthController())->logout($req);
+    }, [AdminMiddleware::handle()]);
+    $r->get('/auth/me', function (Request $req): void {
+        (new AdminAuthController())->me($req);
+    }, [AdminMiddleware::handle()]);
+
+    // Dashboard.
+    $r->get('/dashboard', function (Request $req): void {
+        (new AdminDashboardController())->index($req);
+    }, [AdminMiddleware::handle()]);
+
+    // Travelers (users).
+    $r->get('/travelers', function (Request $req): void {
+        (new AdminTravelersController())->index($req);
+    }, [AdminMiddleware::handle()]);
+    $r->get('/travelers/:id', function (Request $req): void {
+        (new AdminTravelersController())->show($req);
+    }, [AdminMiddleware::handle()]);
+    $r->put('/travelers/:id', function (Request $req): void {
+        (new AdminTravelersController())->update($req);
+    }, [AdminMiddleware::handle()]);
+    $r->delete('/travelers/:id', function (Request $req): void {
+        (new AdminTravelersController())->destroy($req);
+    }, [AdminMiddleware::handle()]);
+
+    // Bookings.
+    $r->get('/bookings', function (Request $req): void {
+        (new AdminBookingsController())->index($req);
+    }, [AdminMiddleware::handle()]);
+    $r->get('/bookings/:type/:id', function (Request $req): void {
+        (new AdminBookingsController())->show($req);
+    }, [AdminMiddleware::handle()]);
+    $r->put('/bookings/:type/:id/status', function (Request $req): void {
+        (new AdminBookingsController())->updateStatus($req);
+    }, [AdminMiddleware::handle()]);
+
+    // Coupons.
+    $r->get('/coupons', function (Request $req): void {
+        (new AdminCouponsController())->index($req);
+    }, [AdminMiddleware::handle()]);
+    $r->post('/coupons', function (Request $req): void {
+        (new AdminCouponsController())->store($req);
+    }, [AdminMiddleware::handle()]);
+    $r->get('/coupons/:id', function (Request $req): void {
+        (new AdminCouponsController())->show($req);
+    }, [AdminMiddleware::handle()]);
+    $r->put('/coupons/:id', function (Request $req): void {
+        (new AdminCouponsController())->update($req);
+    }, [AdminMiddleware::handle()]);
+    $r->delete('/coupons/:id', function (Request $req): void {
+        (new AdminCouponsController())->destroy($req);
+    }, [AdminMiddleware::handle()]);
+
+    // Pricing rules.
+    $r->get('/pricing', function (Request $req): void {
+        (new AdminPricingController())->index($req);
+    }, [AdminMiddleware::handle()]);
+    $r->post('/pricing', function (Request $req): void {
+        (new AdminPricingController())->store($req);
+    }, [AdminMiddleware::handle()]);
+    $r->get('/pricing/:id', function (Request $req): void {
+        (new AdminPricingController())->show($req);
+    }, [AdminMiddleware::handle()]);
+    $r->put('/pricing/:id', function (Request $req): void {
+        (new AdminPricingController())->update($req);
+    }, [AdminMiddleware::handle()]);
+    $r->delete('/pricing/:id', function (Request $req): void {
+        (new AdminPricingController())->destroy($req);
+    }, [AdminMiddleware::handle()]);
 });
 
 // ---------------------------------------------------------------------------
