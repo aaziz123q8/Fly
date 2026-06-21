@@ -125,7 +125,7 @@
 
     try {
       const params = new URLSearchParams({ page: currentPage, limit: 20, search, status });
-      const res = await Api.get(`/api/admin/users?${params}`, true);
+      const res = await Api.get(`/api/admin/travelers?${params}`, true);
       const list = res.data || res.users || (Array.isArray(res) ? res : []);
       const total = res.total || res.count || list.length;
 
@@ -190,7 +190,7 @@
   async function toggleStatus(userId, newStatus, btn) {
     btn.disabled = true;
     try {
-      await Api.patch(`/api/admin/users/${userId}/status`, { status: newStatus }, true);
+      await Api.put(`/api/admin/travelers/${userId}`, { is_active: newStatus === "active" ? 1 : 0 }, true);
       showToast(`تم ${newStatus === 'active' ? 'تفعيل' : 'إيقاف'} المستخدم`, 'success');
       loadTravelers();
     } catch (err) {
@@ -204,7 +204,7 @@
     el.innerHTML = '<div class="loading-state" style="padding:32px"><div class="spinner"></div></div>';
     document.getElementById('userModal').classList.add('active');
     try {
-      const res = await Api.get(`/api/admin/users/${userId}`, true);
+      const res = await Api.get(`/api/admin/travelers/${userId}`, true);
       const u = res.data || res.user || res;
       el.innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
