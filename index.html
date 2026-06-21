@@ -203,9 +203,9 @@
 
 <!-- HERO -->
 <section class="hero">
-  <div class="hero-badge">🌟 منصة السفر الأولى في المنطقة</div>
-  <h1>سافر بـ<span class="hl">أفضل الأسعار</span></h1>
-  <p>أكثر من ٥٠٠ شركة طيران وآلاف الفنادق حول العالم</p>
+  <div class="hero-badge" data-i18n="hero_badge">🌟 منصة السفر الأولى في المنطقة</div>
+  <h1 data-i18n-html="hero_title">سافر بـ<span class="hl">أفضل الأسعار</span></h1>
+  <p data-i18n="hero_sub">أكثر من ٥٠٠ شركة طيران وآلاف الفنادق حول العالم</p>
 </section>
 
 <!-- SEARCH BOX -->
@@ -214,49 +214,49 @@
 
     <!-- TABS -->
     <div class="tabs">
-      <button class="tab on" onclick="switchTab('flights',this)">✈️ رحلات</button>
-      <button class="tab" onclick="switchTab('hotels',this)">🏨 فنادق</button>
+      <button class="tab on" onclick="switchTab('flights',this)" data-i18n="tab_flights">✈️ رحلات</button>
+      <button class="tab" onclick="switchTab('hotels',this)" data-i18n="tab_hotels">🏨 فنادق</button>
     </div>
 
     <!-- FLIGHTS PANEL -->
     <div id="flP" class="panel on">
       <div class="trip-pills">
-        <button class="tp on" id="tp1" onclick="setTrip('oneway')">ذهاب فقط</button>
-        <button class="tp" id="tp2" onclick="setTrip('round')">ذهاب وعودة</button>
+        <button class="tp on" id="tp1" onclick="setTrip('oneway')" data-i18n="oneway">ذهاب فقط</button>
+        <button class="tp" id="tp2" onclick="setTrip('round')" data-i18n="roundtrip">ذهاب وعودة</button>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:12px">
         <div class="row2">
           <div class="fg">
-            <label>من</label>
-            <input class="fi" id="fFrom" placeholder="مدينة أو رمز المطار" autocomplete="off" oninput="showDrop('fFrom','dFrom')">
+            <label data-i18n="lbl_from">من</label>
+            <input class="fi" id="fFrom" placeholder="مدينة أو رمز المطار" data-i18n-ph="ph_airport" autocomplete="off" oninput="showDrop('fFrom','dFrom')">
             <div class="adrop" id="dFrom"></div>
           </div>
           <div class="swap-wrap" style="align-items:flex-end;padding-bottom:2px">
             <button class="swap" onclick="swapAirports()">⇄</button>
           </div>
           <div class="fg">
-            <label>إلى</label>
-            <input class="fi" id="fTo" placeholder="مدينة أو رمز المطار" autocomplete="off" oninput="showDrop('fTo','dTo')">
+            <label data-i18n="lbl_to">إلى</label>
+            <input class="fi" id="fTo" placeholder="مدينة أو رمز المطار" data-i18n-ph="ph_airport" autocomplete="off" oninput="showDrop('fTo','dTo')">
             <div class="adrop" id="dTo"></div>
           </div>
         </div>
 
         <div id="datesRow" class="row3">
           <div class="fg">
-            <label>تاريخ الذهاب</label>
-            <input class="fi" id="fDep" readonly placeholder="اختر التاريخ" dir="ltr" style="text-align:right">
+            <label data-i18n="lbl_dep">تاريخ الذهاب</label>
+            <input class="fi" id="fDep" readonly placeholder="اختر التاريخ" data-i18n-ph="ph_date" dir="ltr" style="text-align:right">
           </div>
           <div class="fg" id="retWrap" style="display:none">
-            <label>تاريخ العودة</label>
-            <input class="fi" id="fRet" readonly placeholder="اختر التاريخ" dir="ltr" style="text-align:right">
+            <label data-i18n="lbl_ret">تاريخ العودة</label>
+            <input class="fi" id="fRet" readonly placeholder="اختر التاريخ" data-i18n-ph="ph_date" dir="ltr" style="text-align:right">
           </div>
           <div class="fg pop-wrap">
-            <label>المسافرون</label>
+            <label data-i18n="lbl_pax">المسافرون</label>
             <input class="fi" id="fPax" readonly value="١ بالغ" onclick="togglePop('paxPop')">
             <div class="pop" id="paxPop">
               <div class="prow">
-                <div class="pinfo"><strong>بالغ</strong><small>١٢ سنة فأكثر</small></div>
+                <div class="pinfo"><strong data-i18n="pax_adult">بالغ</strong><small data-i18n="pax_adult_sub">١٢ سنة فأكثر</small></div>
                 <div class="pctr">
                   <button class="pbtn" onclick="chPax('adult',-1)">−</button>
                   <span class="pval" id="cA">1</span>
@@ -264,7 +264,7 @@
                 </div>
               </div>
               <div class="prow">
-                <div class="pinfo"><strong>طفل</strong><small>٢–١١ سنة</small></div>
+                <div class="pinfo"><strong data-i18n="pax_child">طفل</strong><small data-i18n="pax_child_sub">٢–١١ سنة</small></div>
                 <div class="pctr">
                   <button class="pbtn" onclick="chPax('child',-1)">−</button>
                   <span class="pval" id="cC">0</span>
@@ -272,28 +272,28 @@
                 </div>
               </div>
               <div class="prow">
-                <div class="pinfo"><strong>رضيع</strong><small>أقل من سنتين</small></div>
+                <div class="pinfo"><strong data-i18n="pax_infant">رضيع</strong><small data-i18n="pax_infant_sub">أقل من سنتين</small></div>
                 <div class="pctr">
                   <button class="pbtn" onclick="chPax('infant',-1)">−</button>
                   <span class="pval" id="cI">0</span>
                   <button class="pbtn" onclick="chPax('infant',1)">+</button>
                 </div>
               </div>
-              <button class="pop-done" onclick="closePop('paxPop')">تم</button>
+              <button class="pop-done" onclick="closePop('paxPop')" data-i18n="done">تم</button>
             </div>
           </div>
           <div class="fg">
-            <label>الدرجة</label>
+            <label data-i18n="lbl_class">الدرجة</label>
             <select class="fi" id="fClass">
-              <option value="economy">اقتصادية</option>
-              <option value="business">أعمال</option>
-              <option value="first">أولى</option>
+              <option value="economy" data-i18n="cls_economy">اقتصادية</option>
+              <option value="business" data-i18n="cls_business">أعمال</option>
+              <option value="first" data-i18n="cls_first">أولى</option>
             </select>
           </div>
         </div>
 
         <button class="btn-search" onclick="searchFlights()">
-          <span id="fTxt">🔍 بحث عن رحلات</span>
+          <span id="fTxt" data-i18n="btn_flights">🔍 بحث عن رحلات</span>
           <span id="fSpin" class="spin hidden"></span>
         </button>
       </div>
@@ -303,24 +303,24 @@
     <div id="htP" class="panel">
       <div style="display:flex;flex-direction:column;gap:12px">
         <div class="fg">
-          <label>الوجهة</label>
-          <input class="fi" id="hDest" placeholder="المدينة أو الفندق">
+          <label data-i18n="lbl_dest">الوجهة</label>
+          <input class="fi" id="hDest" placeholder="المدينة أو الفندق" data-i18n-ph="ph_dest">
         </div>
         <div class="row3">
           <div class="fg">
-            <label>تاريخ الوصول</label>
-            <input class="fi" id="hIn" readonly placeholder="اختر التاريخ" dir="ltr" style="text-align:right">
+            <label data-i18n="lbl_checkin">تاريخ الوصول</label>
+            <input class="fi" id="hIn" readonly placeholder="اختر التاريخ" data-i18n-ph="ph_date" dir="ltr" style="text-align:right">
           </div>
           <div class="fg">
-            <label>تاريخ المغادرة</label>
-            <input class="fi" id="hOut" readonly placeholder="اختر التاريخ" dir="ltr" style="text-align:right">
+            <label data-i18n="lbl_checkout">تاريخ المغادرة</label>
+            <input class="fi" id="hOut" readonly placeholder="اختر التاريخ" data-i18n-ph="ph_date" dir="ltr" style="text-align:right">
           </div>
           <div class="fg pop-wrap">
-            <label>الغرف والضيوف</label>
+            <label data-i18n="lbl_rooms">الغرف والضيوف</label>
             <input class="fi" id="hRooms" readonly value="١ غرفة، ٢ ضيوف" onclick="togglePop('rmPop')">
             <div class="pop" id="rmPop">
               <div class="prow">
-                <div class="pinfo"><strong>الغرف</strong></div>
+                <div class="pinfo"><strong data-i18n="rm_rooms">الغرف</strong></div>
                 <div class="pctr">
                   <button class="pbtn" onclick="chRm('rooms',-1)">−</button>
                   <span class="pval" id="cRm">1</span>
@@ -328,18 +328,18 @@
                 </div>
               </div>
               <div class="prow">
-                <div class="pinfo"><strong>الضيوف</strong></div>
+                <div class="pinfo"><strong data-i18n="rm_guests">الضيوف</strong></div>
                 <div class="pctr">
                   <button class="pbtn" onclick="chRm('guests',-1)">−</button>
                   <span class="pval" id="cGs">2</span>
                   <button class="pbtn" onclick="chRm('guests',1)">+</button>
                 </div>
               </div>
-              <button class="pop-done" onclick="closePop('rmPop')">تم</button>
+              <button class="pop-done" onclick="closePop('rmPop')" data-i18n="done">تم</button>
             </div>
           </div>
         </div>
-        <button class="btn-search" onclick="searchHotels()">🔍 بحث عن فنادق</button>
+        <button class="btn-search" onclick="searchHotels()" data-i18n="btn_hotels">🔍 بحث عن فنادق</button>
       </div>
     </div>
 
@@ -350,7 +350,7 @@
 <div class="results" id="flResults">
   <div style="max-width:900px;margin:0 auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="font-size:1.2rem;font-weight:700;color:#1B4F8E">نتائج الرحلات</h2>
+      <h2 style="font-size:1.2rem;font-weight:700;color:#1B4F8E" data-i18n="fl_results">نتائج الرحلات</h2>
       <span id="flCount" style="color:#6B7280;font-size:.9rem"></span>
     </div>
     <div id="flList"></div>
@@ -360,21 +360,21 @@
 <!-- FEATURES -->
 <section class="feats">
   <div class="feats-inner">
-    <div class="feat"><i>💰</i><h3>أسعار مضمونة</h3><p>نضمن لك أفضل سعر أو نرد الفرق</p></div>
-    <div class="feat"><i>🔒</i><h3>حجز آمن</h3><p>تشفير كامل وحماية لبياناتك</p></div>
-    <div class="feat"><i>🎧</i><h3>دعم ٢٤/٧</h3><p>فريق متخصص لمساعدتك في أي وقت</p></div>
-    <div class="feat"><i>⚡</i><h3>تأكيد فوري</h3><p>تذكرتك تصلك خلال دقائق</p></div>
+    <div class="feat"><i>💰</i><h3 data-i18n="feat1_t">أسعار مضمونة</h3><p data-i18n="feat1_d">نضمن لك أفضل سعر أو نرد الفرق</p></div>
+    <div class="feat"><i>🔒</i><h3 data-i18n="feat2_t">حجز آمن</h3><p data-i18n="feat2_d">تشفير كامل وحماية لبياناتك</p></div>
+    <div class="feat"><i>🎧</i><h3 data-i18n="feat3_t">دعم ٢٤/٧</h3><p data-i18n="feat3_d">فريق متخصص لمساعدتك في أي وقت</p></div>
+    <div class="feat"><i>⚡</i><h3 data-i18n="feat4_t">تأكيد فوري</h3><p data-i18n="feat4_d">تذكرتك تصلك خلال دقائق</p></div>
   </div>
 </section>
 
 <!-- STEPS -->
 <section class="steps">
   <div class="steps-inner">
-    <h2 class="steps-title">كيف يعمل فلاي مسار؟</h2>
+    <h2 class="steps-title" data-i18n="steps_title">كيف يعمل فلاي مسار؟</h2>
     <div class="steps-grid">
-      <div><div class="snum">١</div><h3>ابحث</h3><p>أدخل وجهتك والتواريخ وعدد المسافرين</p></div>
-      <div><div class="snum">٢</div><h3>اختر</h3><p>قارن الأسعار واختر العرض المناسب</p></div>
-      <div><div class="snum">٣</div><h3>احجز</h3><p>أكمل الدفع واستلم تذكرتك فوراً</p></div>
+      <div><div class="snum">١</div><h3 data-i18n="step1_t">ابحث</h3><p data-i18n="step1_d">أدخل وجهتك والتواريخ وعدد المسافرين</p></div>
+      <div><div class="snum">٢</div><h3 data-i18n="step2_t">اختر</h3><p data-i18n="step2_d">قارن الأسعار واختر العرض المناسب</p></div>
+      <div><div class="snum">٣</div><h3 data-i18n="step3_t">احجز</h3><p data-i18n="step3_d">أكمل الدفع واستلم تذكرتك فوراً</p></div>
     </div>
   </div>
 </section>
@@ -408,12 +408,12 @@
 
 <!-- BOTTOM NAV -->
 <nav class="bnav">
-  <a href="index.html" class="bni on"><span class="bni-icon">🏠</span><span>الرئيسية</span></a>
+  <a href="index.html" class="bni on"><span class="bni-icon">🏠</span><span data-i18n="bnav_home">الرئيسية</span></a>
   <button class="bni" onclick="switchTab('flights',null);document.querySelector('.search-wrap').scrollIntoView({behavior:'smooth'})">
-    <span class="bni-icon">✈️</span><span>رحلات</span>
+    <span class="bni-icon">✈️</span><span data-i18n="bnav_flights">رحلات</span>
   </button>
-  <a href="hotels.html" class="bni"><span class="bni-icon">🏨</span><span>فنادق</span></a>
-  <a href="dashboard.html" class="bni"><span class="bni-icon">👤</span><span>حسابي</span></a>
+  <a href="hotels.html" class="bni"><span class="bni-icon">🏨</span><span data-i18n="bnav_hotels">فنادق</span></a>
+  <a href="dashboard.html" class="bni"><span class="bni-icon">👤</span><span data-i18n="bnav_account">حسابي</span></a>
 </nav>
 
 <script src="js/api.js"></script>
@@ -464,15 +464,130 @@ function fmtPrice(gbp) {
   return SYMS[curCur] + ' ' + Number(v).toLocaleString();
 }
 
+/* ── TRANSLATIONS ── */
+const TRANS = {
+  ar:{
+    hero_badge:'🌟 منصة السفر الأولى في المنطقة',
+    hero_title:'سافر بـ<span class="hl">أفضل الأسعار</span>',
+    hero_sub:'أكثر من ٥٠٠ شركة طيران وآلاف الفنادق حول العالم',
+    tab_flights:'✈️ رحلات', tab_hotels:'🏨 فنادق',
+    oneway:'ذهاب فقط', roundtrip:'ذهاب وعودة',
+    lbl_from:'من', lbl_to:'إلى', lbl_dep:'تاريخ الذهاب', lbl_ret:'تاريخ العودة',
+    lbl_pax:'المسافرون', lbl_class:'الدرجة',
+    ph_airport:'مدينة أو رمز المطار', ph_date:'اختر التاريخ',
+    cls_economy:'اقتصادية', cls_business:'أعمال', cls_first:'أولى',
+    pax_adult:'بالغ', pax_adult_sub:'١٢ سنة فأكثر',
+    pax_child:'طفل', pax_child_sub:'٢–١١ سنة',
+    pax_infant:'رضيع', pax_infant_sub:'أقل من سنتين',
+    done:'تم', btn_flights:'🔍 بحث عن رحلات',
+    lbl_dest:'الوجهة', ph_dest:'المدينة أو الفندق',
+    lbl_checkin:'تاريخ الوصول', lbl_checkout:'تاريخ المغادرة',
+    lbl_rooms:'الغرف والضيوف', rm_rooms:'الغرف', rm_guests:'الضيوف',
+    btn_hotels:'🔍 بحث عن فنادق', fl_results:'نتائج الرحلات',
+    feat1_t:'أسعار مضمونة', feat1_d:'نضمن لك أفضل سعر أو نرد الفرق',
+    feat2_t:'حجز آمن', feat2_d:'تشفير كامل وحماية لبياناتك',
+    feat3_t:'دعم ٢٤/٧', feat3_d:'فريق متخصص لمساعدتك في أي وقت',
+    feat4_t:'تأكيد فوري', feat4_d:'تذكرتك تصلك خلال دقائق',
+    steps_title:'كيف يعمل فلاي مسار؟',
+    step1_t:'ابحث', step1_d:'أدخل وجهتك والتواريخ وعدد المسافرين',
+    step2_t:'اختر', step2_d:'قارن الأسعار واختر العرض المناسب',
+    step3_t:'احجز', step3_d:'أكمل الدفع واستلم تذكرتك فوراً',
+    bnav_home:'الرئيسية', bnav_flights:'رحلات', bnav_hotels:'فنادق', bnav_account:'حسابي',
+    per_person:'للمسافر', book_now:'احجز الآن',
+    nav_login:'دخول', nav_reg:'تسجيل', nav_bookings:'حجوزاتي', nav_logout:'خروج',
+    no_flights:'لا توجد رحلات متاحة لهذا المسار',
+    fill_fields:'يرجى ملء جميع الحقول', fill_dest:'يرجى إدخال الوجهة',
+    direct:'مباشر', stops_word:'توقف',
+    months:['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'],
+    days:['أح','إث','ث','أر','خ','ج','س'],
+    pax_fmt:(a,c,i) => `${a} بالغ${a>1?'ين':''}`+(c?`، ${c} طفل`:'')+(i?`، ${i} رضيع`:''),
+    rm_fmt:(r,g) => `${r} غرفة، ${g} ضيوف`,
+    nights:'ليلة',
+  },
+  en:{
+    hero_badge:'🌟 #1 Travel Platform in the Region',
+    hero_title:'Travel with <span class="hl">Best Prices</span>',
+    hero_sub:'Over 500 airlines and thousands of hotels worldwide',
+    tab_flights:'✈️ Flights', tab_hotels:'🏨 Hotels',
+    oneway:'One Way', roundtrip:'Round Trip',
+    lbl_from:'From', lbl_to:'To', lbl_dep:'Departure Date', lbl_ret:'Return Date',
+    lbl_pax:'Passengers', lbl_class:'Class',
+    ph_airport:'City or airport code', ph_date:'Select date',
+    cls_economy:'Economy', cls_business:'Business', cls_first:'First Class',
+    pax_adult:'Adult', pax_adult_sub:'12+ years',
+    pax_child:'Child', pax_child_sub:'2–11 years',
+    pax_infant:'Infant', pax_infant_sub:'Under 2 years',
+    done:'Done', btn_flights:'🔍 Search Flights',
+    lbl_dest:'Destination', ph_dest:'City or hotel name',
+    lbl_checkin:'Check-in Date', lbl_checkout:'Check-out Date',
+    lbl_rooms:'Rooms & Guests', rm_rooms:'Rooms', rm_guests:'Guests',
+    btn_hotels:'🔍 Search Hotels', fl_results:'Flight Results',
+    feat1_t:'Best Prices', feat1_d:'We guarantee the best price or refund the difference',
+    feat2_t:'Secure Booking', feat2_d:'Full encryption and data protection',
+    feat3_t:'24/7 Support', feat3_d:'Dedicated team to help you anytime',
+    feat4_t:'Instant Confirmation', feat4_d:'Your ticket arrives within minutes',
+    steps_title:'How does FlyMasar work?',
+    step1_t:'Search', step1_d:'Enter your destination, dates and passengers',
+    step2_t:'Choose', step2_d:'Compare prices and pick the best deal',
+    step3_t:'Book', step3_d:'Complete payment and receive your ticket instantly',
+    bnav_home:'Home', bnav_flights:'Flights', bnav_hotels:'Hotels', bnav_account:'Account',
+    per_person:'per person', book_now:'Book Now',
+    nav_login:'Login', nav_reg:'Register', nav_bookings:'My Bookings', nav_logout:'Logout',
+    no_flights:'No flights available for this route',
+    fill_fields:'Please fill in all fields', fill_dest:'Please enter a destination',
+    direct:'Direct', stops_word:'stop',
+    months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+    days:['Su','Mo','Tu','We','Th','Fr','Sa'],
+    pax_fmt:(a,c,i) => `${a} Adult${a>1?'s':''}`+(c?`, ${c} Child`:'')+(i?`, ${i} Infant`:''),
+    rm_fmt:(r,g) => `${r} Room${r>1?'s':''}, ${g} Guest${g>1?'s':''}`,
+    nights:'night',
+  }
+};
+
 /* ── LANG ── */
 let curLang = localStorage.getItem('fly_lang') || 'ar';
+function t(key) { return (TRANS[curLang]||TRANS.ar)[key] || key; }
+function applyLang(l) {
+  const T = TRANS[l] || TRANS.ar;
+  document.documentElement.lang = l;
+  document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
+  // textContent translations
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = T[el.dataset.i18n]; if (v !== undefined) el.textContent = v;
+  });
+  // innerHTML translations (for elements with HTML like <span>)
+  document.querySelectorAll('[data-i18n-html]').forEach(el => {
+    const v = T[el.dataset.i18nHtml]; if (v !== undefined) el.innerHTML = v;
+  });
+  // placeholder translations
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+    const v = T[el.dataset.i18nPh]; if (v !== undefined) el.placeholder = v;
+  });
+  // update datepickers
+  if (window.DatePickerInstances) window.DatePickerInstances.forEach(dp => {
+    dp.lang = l;
+    window.I18N = window.I18N || {};
+    window.I18N[l] = { months: T.months, days: T.days, nights: T.nights };
+    dp._render();
+  });
+  // update navAuth text if logged in
+  const nav = document.getElementById('navAuth');
+  if (nav && nav.children.length) {
+    if (Auth && Auth.isLoggedIn()) {
+      nav.innerHTML = `<a href="dashboard.html" class="btn-login" style="margin-left:6px">${T.nav_bookings}</a><button class="btn-reg" onclick="Auth.logout()">${T.nav_logout}</button>`;
+    } else {
+      nav.innerHTML = `<a href="login.html" class="btn-login" style="margin-left:6px">${T.nav_login}</a><a href="register.html" class="btn-reg">${T.nav_reg}</a>`;
+    }
+  }
+  // update pax/rooms display
+  updatePaxDisplay();
+  updateRmDisplay();
+}
 function setLang(l) {
   curLang = l;
   localStorage.setItem('fly_lang', l);
-  document.documentElement.lang = l;
-  document.documentElement.dir = l === 'ar' ? 'rtl' : 'ltr';
   document.querySelectorAll('[data-lang]').forEach(b => b.classList.toggle('on', b.dataset.lang === l));
-  if (window.DatePickerInstances) window.DatePickerInstances.forEach(dp => { dp.lang = l; dp._render(); });
+  applyLang(l);
 }
 
 /* ── STATE ── */
@@ -486,9 +601,9 @@ function switchTab(id, btn) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
   if (btn) btn.classList.add('on');
   else {
-    document.querySelectorAll('.tab').forEach(t => {
-      if (id==='flights' && t.textContent.includes('رحلات')) t.classList.add('on');
-      if (id==='hotels'  && t.textContent.includes('فنادق'))  t.classList.add('on');
+    document.querySelectorAll('.tab').forEach(tb => {
+      if (id==='flights' && tb.dataset.i18n==='tab_flights') tb.classList.add('on');
+      if (id==='hotels'  && tb.dataset.i18n==='tab_hotels')  tb.classList.add('on');
     });
   }
   document.getElementById(id==='flights' ? 'flP' : 'htP').classList.add('on');
@@ -519,17 +634,22 @@ function chPax(type, d) {
   document.getElementById('cA').textContent = pax.adult;
   document.getElementById('cC').textContent = pax.child;
   document.getElementById('cI').textContent = pax.infant;
-  let lbl = pax.adult + ' بالغ';
-  if (pax.child)  lbl += '، ' + pax.child  + ' طفل';
-  if (pax.infant) lbl += '، ' + pax.infant + ' رضيع';
-  document.getElementById('fPax').value = lbl;
+  updatePaxDisplay();
+}
+function updatePaxDisplay() {
+  const T = TRANS[curLang]||TRANS.ar;
+  document.getElementById('fPax').value = T.pax_fmt(pax.adult, pax.child, pax.infant);
 }
 function chRm(k, d) {
   const max = k==='rooms'?8:20;
   rm[k] = Math.max(1, Math.min(rm[k]+d, max));
   document.getElementById('cRm').textContent = rm.rooms;
   document.getElementById('cGs').textContent = rm.guests;
-  document.getElementById('hRooms').value = rm.rooms + ' غرفة، ' + rm.guests + ' ضيوف';
+  updateRmDisplay();
+}
+function updateRmDisplay() {
+  const T = TRANS[curLang]||TRANS.ar;
+  document.getElementById('hRooms').value = T.rm_fmt(rm.rooms, rm.guests);
 }
 
 /* ── POPUP ── */
@@ -578,16 +698,9 @@ function openDp(which) {
   if (which==='hotel' && dpHotel) dpHotel.toggle();
 }
 document.addEventListener('DOMContentLoaded', () => {
-  // Auth nav
-  const nav = document.getElementById('navAuth');
-  if (Auth && Auth.isLoggedIn()) {
-    nav.innerHTML = `<a href="dashboard.html" class="btn-login" style="margin-left:6px">حجوزاتي</a><button class="btn-reg" onclick="Auth.logout()">خروج</button>`;
-  } else {
-    nav.innerHTML = `<a href="login.html" class="btn-login" style="margin-left:6px">دخول</a><a href="register.html" class="btn-reg">تسجيل</a>`;
-  }
-
-  // Apply saved lang/currency
-  setLang(curLang);
+  // Apply saved lang/currency first (before datepicker init so I18N is set)
+  document.querySelectorAll('[data-lang]').forEach(b => b.classList.toggle('on', b.dataset.lang === curLang));
+  applyLang(curLang);
   setCur(curCur);
 
   const today = new Date();
@@ -614,7 +727,7 @@ async function searchFlights() {
   const from = document.getElementById('fFrom').dataset.code || document.getElementById('fFrom').value.trim();
   const to   = document.getElementById('fTo').dataset.code   || document.getElementById('fTo').value.trim();
   const dep  = document.getElementById('fDep').value;
-  if (!from||!to||!dep) { toast('يرجى ملء جميع الحقول', 'err'); return; }
+  if (!from||!to||!dep) { toast(t('fill_fields'), 'err'); return; }
   const btn = document.querySelector('#flP .btn-search');
   const txt = document.getElementById('fTxt');
   const sp  = document.getElementById('fSpin');
@@ -632,10 +745,10 @@ async function searchFlights() {
     const sec = document.getElementById('flResults');
     sec.classList.add('open');
     sec.scrollIntoView({behavior:'smooth'});
-    document.getElementById('flCount').textContent = list.length + ' رحلة متاحة';
+    document.getElementById('flCount').textContent = list.length + (curLang==='en' ? ' flights found' : ' رحلة متاحة');
     document.getElementById('flList').innerHTML = list.length
       ? list.map(fl => flightCard(fl)).join('')
-      : '<p style="text-align:center;padding:40px;color:#6B7280">لا توجد رحلات متاحة لهذا المسار</p>';
+      : `<p style="text-align:center;padding:40px;color:#6B7280">${t('no_flights')}</p>`;
   } catch(e) {
     toast(e.message||'حدث خطأ أثناء البحث', 'err');
   } finally {
@@ -648,7 +761,7 @@ function flightCard(fl) {
   const dep = fl.departure_time||'--:--';
   const arr = fl.arrival_time||'--:--';
   const dur = fl.duration||'';
-  const stops = fl.stops===0 ? '<span class="rstops direct">مباشر</span>' : `<span class="rstops">${fl.stops} توقف</span>`;
+  const stops = fl.stops===0 ? `<span class="rstops direct">${t('direct')}</span>` : `<span class="rstops">${fl.stops} ${t('stops_word')}</span>`;
   const price = fmtPrice(fl.price||fl.base_price||0);
   return `<div class="fc">
     <img class="fc-logo" src="${logo}" onerror="this.style.display='none'" alt="${fl.airline||''}">
@@ -663,15 +776,15 @@ function flightCard(fl) {
     </div>
     <div class="fc-price">
       <div class="fp">${price}</div>
-      <div class="fpp">للمسافر</div>
-      <button class="btn-reg" onclick="window.location.href='booking.html?flight=${fl.id||''}'">احجز الآن</button>
+      <div class="fpp">${t('per_person')}</div>
+      <button class="btn-reg" onclick="window.location.href='booking.html?flight=${fl.id||''}'"> ${t('book_now')}</button>
     </div>
   </div>`;
 }
 
 function searchHotels() {
   const dest = document.getElementById('hDest').value.trim();
-  if (!dest) { toast('يرجى إدخال الوجهة', 'err'); return; }
+  if (!dest) { toast(t('fill_dest'), 'err'); return; }
   window.location.href = `hotels.html?dest=${encodeURIComponent(dest)}&rooms=${rm.rooms}&guests=${rm.guests}`;
 }
 
