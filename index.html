@@ -21,7 +21,6 @@
     .nav-inner{max-width:1200px;margin:0 auto;height:60px;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 16px}
     .nav-brand{font-size:1.35rem;font-weight:800;color:#1B4F8E;display:flex;align-items:center;gap:5px;white-space:nowrap}
     .nav-brand span{color:#E8A020}
-    /* Desktop controls — single row */
     .nav-controls{display:flex;align-items:center;gap:6px;flex-wrap:nowrap}
     .pill-btn{padding:5px 11px;border-radius:20px;border:1.5px solid #e5e7eb;background:none;font-size:.8rem;font-weight:600;color:#6B7280;transition:.2s;white-space:nowrap}
     .pill-btn:hover,.pill-btn.active,.pill-btn.on{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
@@ -30,18 +29,44 @@
     .btn-login:hover{background:#1B4F8E;color:#fff}
     .btn-reg{padding:6px 14px;border-radius:8px;border:none;background:#1B4F8E;color:#fff;font-size:.85rem;font-weight:700;transition:.2s;white-space:nowrap}
     .btn-reg:hover{background:#13396B}
-    /* Mobile secondary bar */
-    .nav-mobile-bar{display:none;background:#f8fafc;border-top:1px solid #f0f2f5;padding:6px 16px;gap:6px;align-items:center;justify-content:space-between}
-    .nav-mobile-bar .pill-group{display:flex;gap:4px}
+    /* Hamburger — desktop hidden */
+    .nav-hamburger{display:none;width:40px;height:40px;border:none;background:none;cursor:pointer;flex-direction:column;justify-content:center;align-items:center;gap:5px;padding:0;flex-shrink:0}
+    .nav-hamburger span{display:block;width:22px;height:2.5px;background:#1B4F8E;border-radius:2px;transition:.3s}
+    /* Mobile drawer */
+    .mob-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;opacity:0;transition:opacity .25s}
+    .mob-overlay.open{display:block;opacity:1}
+    .mob-drawer{position:fixed;top:0;right:-320px;width:300px;max-width:85vw;height:100%;background:#fff;z-index:501;transition:right .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column}
+    .mob-drawer.open{right:0}
+    .mob-drawer-head{background:linear-gradient(135deg,#0f2444,#1B4F8E);padding:20px 18px 16px;display:flex;justify-content:space-between;align-items:center}
+    .mob-drawer-brand{font-size:1.3rem;font-weight:800;color:#fff}
+    .mob-drawer-brand span{color:#E8A020}
+    .mob-close{background:none;border:none;color:rgba(255,255,255,.8);font-size:1.5rem;cursor:pointer;line-height:1;padding:4px}
+    .mob-drawer-body{padding:16px;flex:1}
+    .mob-section{margin-bottom:20px}
+    .mob-section-title{font-size:.7rem;font-weight:800;color:#9ca3af;text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #f0f2f5}
+    .mob-pill-row{display:flex;gap:6px;flex-wrap:wrap}
+    .mob-nav-links{display:flex;flex-direction:column;gap:2px}
+    .mob-nav-link{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;color:#374151;font-size:.92rem;font-weight:600;text-decoration:none;transition:.15s}
+    .mob-nav-link:hover,.mob-nav-link:active{background:#f0f5ff;color:#1B4F8E}
+    .mob-nav-link .mico{font-size:1.1rem;width:24px;text-align:center}
+    .mob-auth-row{display:flex;gap:8px;margin-top:auto;padding:16px}
+    .mob-auth-row a{flex:1;text-align:center;padding:11px;border-radius:10px;font-size:.9rem;font-weight:700}
+    .mob-auth-login{border:1.5px solid #1B4F8E;color:#1B4F8E;background:none}
+    .mob-auth-reg{background:#1B4F8E;color:#fff;border:none}
+    .mob-drawer-footer{padding:14px 16px;border-top:1px solid #f0f2f5;font-size:.75rem;color:#9ca3af;text-align:center}
     @media(max-width:640px){
-      .nav-inner{height:52px;padding:0 14px}
+      .nav-inner{height:54px;padding:0 14px}
       .nav-brand{font-size:1.2rem}
-      /* Hide lang + currency pills from top bar on mobile */
-      .nav-controls .pill-btn[data-lang],.nav-controls .pill-btn[data-cur],.nav-controls .sep{display:none}
-      /* Show mobile secondary bar */
-      .nav-mobile-bar{display:flex}
-      .btn-login{padding:5px 12px;font-size:.8rem}
-      .btn-reg{padding:5px 12px;font-size:.8rem}
+      .nav-controls .pill-btn,.nav-controls .sep{display:none}
+      .nav-controls #navAuth{display:none}
+      .nav-hamburger{display:flex}
+      /* Hide desktop sections on mobile */
+      .feats,.steps,.footer{display:none!important}
+      /* Hero compact */
+      .hero{padding:28px 16px 70px}
+      .hero-badge{font-size:.75rem;padding:5px 14px;margin-bottom:12px}
+      .hero h1{font-size:1.6rem;margin-bottom:8px}
+      .hero p{font-size:.85rem}
     }
 
     /* ── HERO ── */
@@ -212,21 +237,68 @@
       <span class="sep">|</span>
       <span id="navAuth"></span>
     </div>
-  </div>
-  <!-- Mobile secondary bar: lang + currency -->
-  <div class="nav-mobile-bar" id="navMobileBar">
-    <div class="pill-group">
-      <button class="pill-btn on" data-lang="ar" onclick="setLang('ar')">ع</button>
-      <button class="pill-btn" data-lang="en" onclick="setLang('en')">EN</button>
-    </div>
-    <div class="pill-group">
-      <button class="pill-btn on" data-cur="GBP" onclick="setCur('GBP')">£</button>
-      <button class="pill-btn" data-cur="KWD" onclick="setCur('KWD')">د.ك</button>
-      <button class="pill-btn" data-cur="SAR" onclick="setCur('SAR')">ر.س</button>
-      <button class="pill-btn" data-cur="USD" onclick="setCur('USD')">$</button>
-    </div>
+    <!-- Mobile: hamburger only -->
+    <button class="nav-hamburger" onclick="openDrawer()" aria-label="القائمة">
+      <span></span><span></span><span></span>
+    </button>
   </div>
 </nav>
+
+<!-- MOBILE DRAWER -->
+<div class="mob-overlay" id="mobOverlay" onclick="closeDrawer()"></div>
+<div class="mob-drawer" id="mobDrawer">
+  <div class="mob-drawer-head">
+    <div class="mob-drawer-brand">✈️ <span>فلاي</span> مسار</div>
+    <button class="mob-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="mob-drawer-body">
+    <!-- Auth (dynamic) -->
+    <div class="mob-section" id="mobAuthSection"></div>
+
+    <!-- Nav links -->
+    <div class="mob-section">
+      <div class="mob-section-title">التنقل</div>
+      <div class="mob-nav-links">
+        <a href="index.html" class="mob-nav-link"><span class="mico">🏠</span> الرئيسية</a>
+        <a href="flights.html" class="mob-nav-link"><span class="mico">✈️</span> رحلات جوية</a>
+        <a href="hotels.html" class="mob-nav-link"><span class="mico">🏨</span> فنادق</a>
+        <a href="dashboard.html" class="mob-nav-link"><span class="mico">👤</span> حسابي</a>
+      </div>
+    </div>
+
+    <!-- Language -->
+    <div class="mob-section">
+      <div class="mob-section-title">اللغة</div>
+      <div class="mob-pill-row">
+        <button class="pill-btn on" data-lang="ar" onclick="setLang('ar')">العربية</button>
+        <button class="pill-btn" data-lang="en" onclick="setLang('en')">English</button>
+      </div>
+    </div>
+
+    <!-- Currency -->
+    <div class="mob-section">
+      <div class="mob-section-title">العملة</div>
+      <div class="mob-pill-row">
+        <button class="pill-btn on" data-cur="KWD" onclick="setCur('KWD')">د.ك دينار كويتي</button>
+        <button class="pill-btn" data-cur="SAR" onclick="setCur('SAR')">ر.س ريال سعودي</button>
+        <button class="pill-btn" data-cur="USD" onclick="setCur('USD')">$ دولار</button>
+        <button class="pill-btn" data-cur="GBP" onclick="setCur('GBP')">£ جنيه</button>
+      </div>
+    </div>
+
+    <!-- Legal links -->
+    <div class="mob-section">
+      <div class="mob-section-title">روابط مهمة</div>
+      <div class="mob-nav-links">
+        <a href="about.html" class="mob-nav-link"><span class="mico">ℹ️</span> من نحن</a>
+        <a href="contact.html" class="mob-nav-link"><span class="mico">📞</span> اتصل بنا</a>
+        <a href="privacy.html" class="mob-nav-link"><span class="mico">🔒</span> سياسة الخصوصية</a>
+        <a href="terms.html" class="mob-nav-link"><span class="mico">📄</span> الشروط والأحكام</a>
+      </div>
+    </div>
+  </div>
+  <div class="mob-drawer-footer">© ٢٠٢٦ فلاي مسار — جميع الحقوق محفوظة</div>
+</div>
 
 <!-- HERO -->
 <section class="hero">
@@ -822,6 +894,40 @@ function toast(msg, type='ok') {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3500);
 }
+
+/* ── MOBILE DRAWER ── */
+function openDrawer() {
+  document.getElementById('mobDrawer').classList.add('open');
+  document.getElementById('mobOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Populate auth section dynamically
+  const authEl = document.getElementById('mobAuthSection');
+  if (Auth.isLoggedIn()) {
+    const u = Auth.getUser();
+    authEl.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;background:#f0f5ff;border-radius:12px;padding:12px">
+        <div style="width:38px;height:38px;border-radius:50%;background:#1B4F8E;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;flex-shrink:0">${(u.name||'م')[0]}</div>
+        <div><div style="font-weight:700;font-size:.9rem">${u.name||'مستخدم'}</div><div style="font-size:.75rem;color:#6b7280">${u.email||''}</div></div>
+      </div>
+      <div class="mob-nav-links" style="margin-top:8px">
+        <a href="dashboard.html" class="mob-nav-link"><span class="mico">📋</span> حجوزاتي</a>
+        <a href="#" class="mob-nav-link" onclick="Auth.logout();location.reload()"><span class="mico">🚪</span> تسجيل الخروج</a>
+      </div>`;
+  } else {
+    authEl.innerHTML = `
+      <div style="display:flex;gap:8px">
+        <a href="login.html" style="flex:1;text-align:center;padding:11px;border-radius:10px;font-size:.9rem;font-weight:700;border:1.5px solid #1B4F8E;color:#1B4F8E;background:none;text-decoration:none">تسجيل دخول</a>
+        <a href="register.html" style="flex:1;text-align:center;padding:11px;border-radius:10px;font-size:.9rem;font-weight:700;background:#1B4F8E;color:#fff;text-decoration:none">إنشاء حساب</a>
+      </div>`;
+  }
+}
+function closeDrawer() {
+  document.getElementById('mobDrawer').classList.remove('open');
+  document.getElementById('mobOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+// Close on ESC
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
 </script>
 </body>
 </html>
