@@ -653,16 +653,61 @@ class FlightBookingService
 
     private function fetchOffer(string $offerId): ?array
     {
-        $stmt = $this->db->prepare(
-            'SELECT offer_id, offer_data, total_amount, currency, expires_at
-             FROM offer_cache
-             WHERE offer_id = :oid AND expires_at > NOW()
-             LIMIT 1'
-        );
-        $stmt->execute([':oid' => $offerId]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Try local cache first.
+        try {
+            $stmt = $this->db->prepare(
+                'SELECT offer_id, offer_data, total_amount, currency, expires_at
+                 FROM offer_cache
+                 WHERE offer_id = :oid AND expires_at > NOW()
+                 LIMIT 1'
+            );
+            $stmt->execute([':oid' => $offerId]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($row) {
+                return $row;
+            }
+        } catch (\Throwable) {
+            // offer_cache table may not exist — fall through to Duffel.
+        }
 
-        return $row ?: null;
+        // Fall back: fetch live from Duffel.
+        try {
+            $data      = $this->duffel->getOfferWithServices($offerId);
+            $offerData = $data['data'] ?? $data;
+            if (empty($offerData['id'])) {
+                return null;
+            }
+            $expiresAt   = $offerData['expires_at'] ?? date('Y-m-d H:i:s', time() + 1800);
+            $totalAmount = $offerData['total_amount'] ?? '0.00';
+            $currency    = strtoupper($offerData['total_currency'] ?? 'GBP');
+
+            // Re-cache for this request.
+            try {
+                $ins = $this->db->prepare(
+                    'INSERT IGNORE INTO offer_cache
+                       (offer_request_id, offer_id, provider_id, search_hash,
+                        offer_data, total_amount, currency, expires_at)
+                     VALUES ("", :oid, 1, "", :odata, :amount, :cur, :exp)'
+                );
+                $ins->execute([
+                    ':oid'   => $offerId,
+                    ':odata' => json_encode($offerData, JSON_UNESCAPED_UNICODE),
+                    ':amount'=> $totalAmount,
+                    ':cur'   => $currency,
+                    ':exp'   => date('Y-m-d H:i:s', strtotime($expiresAt)),
+                ]);
+            } catch (\Throwable) { /* non-critical */ }
+
+            return [
+                'offer_id'     => $offerId,
+                'offer_data'   => json_encode($offerData, JSON_UNESCAPED_UNICODE),
+                'total_amount' => $totalAmount,
+                'currency'     => $currency,
+                'expires_at'   => $expiresAt,
+            ];
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function formatOffer(array $offerData): array
