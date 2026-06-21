@@ -42,18 +42,14 @@ class AdminNotificationsController
 
         $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
 
-        $countParams = $params;
-        $total = (int)$db->prepare(
+        $countStmt = $db->prepare(
             "SELECT COUNT(DISTINCT n.id)
              FROM user_notifications n
              LEFT JOIN notification_dispatch_log dl ON dl.notification_id = n.id
              {$whereClause}"
-        )->execute($countParams) ? $db->query(
-            "SELECT COUNT(DISTINCT n.id)
-             FROM user_notifications n
-             LEFT JOIN notification_dispatch_log dl ON dl.notification_id = n.id
-             {$whereClause}"
-        )->fetchColumn() : 0;
+        );
+        $countStmt->execute($params);
+        $total = (int)$countStmt->fetchColumn();
 
         // Re-run with params
         $stmt = $db->prepare(
@@ -236,13 +232,6 @@ class AdminNotificationsController
         $stmt->execute([$user['id']]);
         $notifications = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        $unreadCount = (int)$db->prepare(
-            'SELECT COUNT(*) FROM user_notifications WHERE user_id = ? AND is_read = 0'
-        )->execute([$user['id']]) ? $db->prepare(
-            'SELECT COUNT(*) FROM user_notifications WHERE user_id = ? AND is_read = 0'
-        )->execute([$user['id']]) || true : 0;
-
-        // Simpler unread count
         $unreadStmt = $db->prepare(
             'SELECT COUNT(*) FROM user_notifications WHERE user_id = ? AND is_read = 0'
         );
