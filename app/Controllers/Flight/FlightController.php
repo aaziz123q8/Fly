@@ -39,6 +39,9 @@ class FlightController
             Response::json(['offers' => $offers, 'count' => count($offers)]);
         } catch (\RuntimeException $e) {
             Response::error($e->getMessage(), 502);
+        } catch (\Throwable $e) {
+            $isDev = (getenv('APP_ENV') ?: 'production') === 'development';
+            Response::error($isDev ? $e->getMessage() : 'حدث خطأ أثناء البحث. الرجاء المحاولة لاحقاً.', 500);
         }
     }
 

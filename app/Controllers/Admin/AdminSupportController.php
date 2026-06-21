@@ -33,26 +33,28 @@ class AdminSupportController
 
         $whereClause = 'WHERE ' . implode(' AND ', $where);
 
-        $countStmt = $db->prepare("SELECT COUNT(*) FROM support_tickets t LEFT JOIN users u ON u.id = t.user_id $whereClause");
-        $countStmt->execute($params);
-        $total = (int) $countStmt->fetchColumn();
+        try {
+            $countStmt = $db->prepare("SELECT COUNT(*) FROM support_tickets t LEFT JOIN users u ON u.id = t.user_id $whereClause");
+            $countStmt->execute($params);
+            $total = (int) $countStmt->fetchColumn();
 
-        $stmt = $db->prepare(
-            "SELECT t.id, t.subject, t.status, t.priority, t.created_at, t.updated_at,
-                    u.email AS user_email, u.first_name, u.last_name,
-                    (SELECT COUNT(*) FROM support_replies sr WHERE sr.ticket_id = t.id) AS reply_count
-             FROM support_tickets t
-             LEFT JOIN users u ON u.id = t.user_id
-             $whereClause
-             ORDER BY FIELD(t.priority,'urgent','high','medium','low'), t.created_at DESC
-             LIMIT ? OFFSET ?"
-        );
-        $stmt->execute(array_merge($params, [$perPage, $offset]));
-        $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-
-        // Stats
-        $open   = (int) $db->query("SELECT COUNT(*) FROM support_tickets WHERE status='open'")->fetchColumn();
-        $closed = (int) $db->query("SELECT COUNT(*) FROM support_tickets WHERE status='closed'")->fetchColumn();
+            $stmt = $db->prepare(
+                "SELECT t.id, t.subject, t.status, t.priority, t.created_at, t.updated_at,
+                        u.email AS user_email, u.first_name, u.last_name,
+                        (SELECT COUNT(*) FROM support_replies sr WHERE sr.ticket_id = t.id) AS reply_count
+                 FROM support_tickets t
+                 LEFT JOIN users u ON u.id = t.user_id
+                 $whereClause
+                 ORDER BY FIELD(t.priority,'urgent','high','medium','low'), t.created_at DESC
+                 LIMIT ? OFFSET ?"
+            );
+            $stmt->execute(array_merge($params, [$perPage, $offset]));
+            $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $open   = (int) $db->query("SELECT COUNT(*) FROM support_tickets WHERE status='open'")->fetchColumn();
+            $closed = (int) $db->query("SELECT COUNT(*) FROM support_tickets WHERE status='closed'")->fetchColumn();
+        } catch (\Throwable) {
+            $total = 0; $data = []; $open = 0; $closed = 0;
+        }
 
         Response::json([
             'data'  => $data,
@@ -61,7 +63,7 @@ class AdminSupportController
                 'total'     => $total,
                 'page'      => $page,
                 'per_page'  => $perPage,
-                'last_page' => (int) ceil($total / $perPage),
+                'last_page' => max(1, (int) ceil($total / $perPage)),
             ],
         ]);
     }

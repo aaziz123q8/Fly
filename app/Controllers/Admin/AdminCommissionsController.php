@@ -12,13 +12,17 @@ class AdminCommissionsController
 {
     public function index(Request $request): void
     {
-        $db   = Database::getInstance();
-        $stmt = $db->query(
-            'SELECT id, type, name, commission_type, commission_value,
-                    applies_to, condition_value, is_active, created_at
-             FROM commissions ORDER BY created_at DESC'
-        );
-        $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $db = Database::getInstance();
+        try {
+            $stmt = $db->query(
+                'SELECT id, type, name, commission_type, commission_value,
+                        applies_to, condition_value, is_active, created_at
+                 FROM commissions ORDER BY created_at DESC'
+            );
+            $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Throwable) {
+            $data = [];
+        }
         Response::json(['data' => $data]);
     }
 

@@ -260,9 +260,11 @@ function fetchFlights() {
     allOffers = offers;
     buildAirlineFilters(offers);
     applyFilters();
-  }).catch(function() {
+  }).catch(function(err) {
     document.getElementById('loadingState').style.display = 'none';
+    var msg = (err && err.message) || 'خدمة البحث غير متاحة حالياً';
     document.getElementById('errorState').style.display = 'block';
+    document.getElementById('errorState').querySelector('p').textContent = msg;
   });
 }
 

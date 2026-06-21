@@ -37,6 +37,10 @@ class DuffelAdapter
      */
     public function searchOffers(array $slices, array $passengers, string $cabinClass = 'economy'): array
     {
+        if ($this->apiKey === '') {
+            throw new \RuntimeException('خدمة البحث عن الرحلات غير متاحة حالياً. الرجاء المحاولة لاحقاً.');
+        }
+
         $body = [
             'data' => [
                 'slices'       => $slices,

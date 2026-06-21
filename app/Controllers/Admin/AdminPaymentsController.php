@@ -35,25 +35,28 @@ class AdminPaymentsController
 
         $whereClause = 'WHERE ' . implode(' AND ', $where);
 
-        $countStmt = $db->prepare("SELECT COUNT(*) FROM payments p LEFT JOIN users u ON u.id = p.user_id $whereClause");
-        $countStmt->execute($params);
-        $total = (int) $countStmt->fetchColumn();
+        try {
+            $countStmt = $db->prepare("SELECT COUNT(*) FROM payments p LEFT JOIN users u ON u.id = p.user_id $whereClause");
+            $countStmt->execute($params);
+            $total = (int) $countStmt->fetchColumn();
 
-        $stmt = $db->prepare(
-            "SELECT p.id, p.stripe_payment_intent_id, p.amount, p.currency,
-                    p.status, p.booking_type, p.booking_id, p.created_at,
-                    u.email AS user_email, u.first_name, u.last_name
-             FROM payments p
-             LEFT JOIN users u ON u.id = p.user_id
-             $whereClause
-             ORDER BY p.created_at DESC LIMIT ? OFFSET ?"
-        );
-        $stmt->execute(array_merge($params, [$perPage, $offset]));
-        $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            $stmt = $db->prepare(
+                "SELECT p.id, p.stripe_payment_intent_id, p.amount, p.currency,
+                        p.status, p.booking_type, p.booking_id, p.created_at,
+                        u.email AS user_email, u.first_name, u.last_name
+                 FROM payments p
+                 LEFT JOIN users u ON u.id = p.user_id
+                 $whereClause
+                 ORDER BY p.created_at DESC LIMIT ? OFFSET ?"
+            );
+            $stmt->execute(array_merge($params, [$perPage, $offset]));
+            $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
-        // Summary stats
-        $statsStmt = $db->query("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM payments WHERE status='succeeded'");
-        $stats = $statsStmt->fetch(\PDO::FETCH_ASSOC);
+            $statsStmt = $db->query("SELECT COALESCE(SUM(amount),0) as total, COUNT(*) as count FROM payments WHERE status='succeeded'");
+            $stats = $statsStmt->fetch(\PDO::FETCH_ASSOC);
+        } catch (\Throwable) {
+            $total = 0; $data = []; $stats = ['total' => 0, 'count' => 0];
+        }
 
         Response::json([
             'data'  => $data,
@@ -62,7 +65,7 @@ class AdminPaymentsController
                 'total'     => $total,
                 'page'      => $page,
                 'per_page'  => $perPage,
-                'last_page' => (int) ceil($total / $perPage),
+                'last_page' => max(1, (int) ceil($total / $perPage)),
             ],
         ]);
     }

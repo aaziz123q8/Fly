@@ -13,8 +13,12 @@ class AdminApiSettingsController
     public function index(Request $request): void
     {
         $db   = Database::getInstance();
-        $stmt = $db->query('SELECT id, provider, setting_key, setting_value, is_secret, updated_at FROM api_settings ORDER BY provider, setting_key');
-        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        try {
+            $stmt = $db->query('SELECT id, provider, setting_key, setting_value, is_secret, updated_at FROM api_settings ORDER BY provider, setting_key');
+            $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Throwable) {
+            $rows = [];
+        }
 
         // Mask secret values
         foreach ($rows as &$row) {
@@ -46,11 +50,27 @@ class AdminApiSettingsController
 
         if ($provider === '' || $key === '') { Response::error('Provider and key required.', 422); }
 
-        $db->prepare(
-            'INSERT INTO api_settings (provider, setting_key, setting_value, is_secret, updated_at)
-             VALUES (?,?,?,?,NOW())
-             ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()'
-        )->execute([$provider, $key, $value, $isSecret]);
+        try {
+            $db->exec(
+                'CREATE TABLE IF NOT EXISTS api_settings (
+                  id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+                  provider VARCHAR(50) NOT NULL,
+                  setting_key VARCHAR(100) NOT NULL,
+                  setting_value TEXT NULL,
+                  is_secret TINYINT(1) NOT NULL DEFAULT 0,
+                  updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(),
+                  PRIMARY KEY (id),
+                  UNIQUE KEY uq_provider_key (provider, setting_key)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
+            );
+            $db->prepare(
+                'INSERT INTO api_settings (provider, setting_key, setting_value, is_secret, updated_at)
+                 VALUES (?,?,?,?,NOW())
+                 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value), updated_at = NOW()'
+            )->execute([$provider, $key, $value, $isSecret]);
+        } catch (\Throwable $e) {
+            Response::error('Database error: ' . $e->getMessage(), 500);
+        }
 
         Response::json(['success' => true]);
     }

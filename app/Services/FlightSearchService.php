@@ -51,7 +51,11 @@ class FlightSearchService
         );
 
         // ── 1. Cache lookup ──────────────────────────────────────────────────
-        $cachedOffers = $this->fetchFromCache($searchHash);
+        try {
+            $cachedOffers = $this->fetchFromCache($searchHash);
+        } catch (\Throwable) {
+            $cachedOffers = null;
+        }
 
         if ($cachedOffers !== null) {
             $this->logSearch($params, $userId, count($cachedOffers), $origin, $destination, $departureDate, $adults, count($children), $cabinClass);
@@ -85,14 +89,18 @@ class FlightSearchService
         // ── 4. Cache each offer ──────────────────────────────────────────────
         $formattedOffers = [];
 
-        $stmt = $this->db->prepare(
-            'INSERT IGNORE INTO offer_cache
-               (offer_request_id, offer_id, provider_id, search_hash,
-                offer_data, total_amount, currency, expires_at)
-             VALUES
-               (:offer_request_id, :offer_id, 1, :search_hash,
-                :offer_data, :total_amount, :currency, :expires_at)'
-        );
+        try {
+            $stmt = $this->db->prepare(
+                'INSERT IGNORE INTO offer_cache
+                   (offer_request_id, offer_id, provider_id, search_hash,
+                    offer_data, total_amount, currency, expires_at)
+                 VALUES
+                   (:offer_request_id, :offer_id, 1, :search_hash,
+                    :offer_data, :total_amount, :currency, :expires_at)'
+            );
+        } catch (\Throwable) {
+            $stmt = null;
+        }
 
         foreach ($rawOffers as $offer) {
             $offerId    = $offer['id']              ?? '';
@@ -101,15 +109,21 @@ class FlightSearchService
             $expiresAt  = $offer['expires_at']      ?? date('Y-m-d H:i:s', time() + 3600);
             $offerJson  = json_encode($offer, JSON_UNESCAPED_UNICODE);
 
-            $stmt->execute([
-                ':offer_request_id' => $offerRequestId,
-                ':offer_id'         => $offerId,
-                ':search_hash'      => $searchHash,
-                ':offer_data'       => $offerJson,
-                ':total_amount'     => $amount,
-                ':currency'         => $currency,
-                ':expires_at'       => date('Y-m-d H:i:s', strtotime($expiresAt)),
-            ]);
+            if ($stmt !== null) {
+                try {
+                    $stmt->execute([
+                        ':offer_request_id' => $offerRequestId,
+                        ':offer_id'         => $offerId,
+                        ':search_hash'      => $searchHash,
+                        ':offer_data'       => $offerJson,
+                        ':total_amount'     => $amount,
+                        ':currency'         => $currency,
+                        ':expires_at'       => date('Y-m-d H:i:s', strtotime($expiresAt)),
+                    ]);
+                } catch (\Throwable) {
+                    // Cache insert failed — non-critical.
+                }
+            }
 
             $formattedOffers[] = $this->formatOffer($offer);
         }

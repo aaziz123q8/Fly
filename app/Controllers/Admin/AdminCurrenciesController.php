@@ -12,9 +12,14 @@ class AdminCurrenciesController
 {
     public function index(Request $request): void
     {
-        $db   = Database::getInstance();
-        $stmt = $db->query('SELECT id, code, name, symbol, rate_to_gbp, is_active, updated_at FROM currencies ORDER BY code ASC');
-        Response::json(['data' => $stmt->fetchAll(\PDO::FETCH_ASSOC)]);
+        $db = Database::getInstance();
+        try {
+            $stmt = $db->query('SELECT id, code, name, symbol, rate_to_gbp, is_active, updated_at FROM currencies ORDER BY code ASC');
+            $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        } catch (\Throwable) {
+            $data = [];
+        }
+        Response::json(['data' => $data]);
     }
 
     public function store(Request $request): void
