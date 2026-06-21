@@ -169,11 +169,15 @@ class DatePicker {
   show() {
     const rect = this.trigger.getBoundingClientRect();
     this.popup.style.display = 'block';
-    const popW = this.popup.offsetWidth;
-    let left = rect.left + window.scrollX;
+    const popW = this.popup.offsetWidth || 300;
+    const popH = this.popup.offsetHeight || 320;
+    let left = rect.left;
+    let top = rect.bottom + 4;
     if (left + popW > window.innerWidth - 10) left = window.innerWidth - popW - 10;
     if (left < 10) left = 10;
-    this.popup.style.top = (rect.bottom + window.scrollY + 4) + 'px';
+    if (top + popH > window.innerHeight - 10) top = rect.top - popH - 4;
+    if (top < 10) top = 10;
+    this.popup.style.top = top + 'px';
     this.popup.style.left = left + 'px';
   }
 
