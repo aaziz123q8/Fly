@@ -743,56 +743,75 @@ function renderResults() {
 
   var html = '';
   filteredOffers.forEach(function(o) {
-    var al       = getAirline(o);
-    var stops    = getStops(o);
-    var depDt    = getDepDt(o);
-    var arrDt    = getArrDt(o);
-    var durMins  = getDuration(o);
-    var origCode = getOriginCode(o);
-    var destCode = getDestCode(o);
-    var origName = getOriginName(o);
-    var destName = getDestName(o);
-    var aircraft = getAircraftType(o);
-    var bagText  = getBaggageText(o);
-    var refund   = isRefundable(o);
-    var change   = isChangeable(o);
-    var nextDay  = isNextDay(depDt, arrDt);
-    var priceGBP = parseFloat(o.total_amount||0);
-    var offerId  = o.offer_id||o.id||'';
+    var al        = getAirline(o);
+    var sliceCount = (o.slices || []).length;
+    var isRoundTrip = sliceCount >= 2;
 
-    // WhatsApp share text
-    var shareText = 'رحلة ✈ '+origCode+' ← '+destCode+' | '+fmtTime(depDt)+' – '+fmtTime(arrDt)+(nextDay?' (+1)':'')+' | '+fmtDuration(durMins)+' | '+(stops===0?'مباشر':stops+' توقف')+'\n'+al.name+'\nالسعر: '+formatPrice(priceGBP)+'\nللحجز: https://flymasar.com';
-    var waLink = 'https://api.whatsapp.com/send?text='+encodeURIComponent(shareText);
+    // Outbound slice (slice 0) values used for filters / share text
+    var stops    = getSliceStops(o, 0);
+    var depDt    = getSliceDepDt(o, 0);
+    var arrDt    = getSliceArrDt(o, 0);
+    var durMins  = getSliceDuration(o, 0);
+    var origCode = getSliceOriginCode(o, 0);
+    var destCode = getSliceDestCode(o, 0);
+    var aircraft  = getAircraftType(o);
+    var bagText   = getBaggageText(o);
+    var refundTxt = getRefundText(o);
+    var changeTxt = getChangeText(o);
+    var nextDay   = isNextDay(depDt, arrDt);
+    var priceGBP  = parseFloat(o.total_amount || 0);
+    var offerId   = o.offer_id || o.id || '';
 
-    // Airline logo
-    var logoHtml = al.logo
-      ? '<img src="'+al.logo+'" alt="'+al.name+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
-        + '<div class="al-logo-fallback" style="display:none">'+(al.code||al.name.substring(0,2).toUpperCase())+'</div>'
-      : '<div class="al-logo-fallback">'+(al.code||al.name.substring(0,2).toUpperCase())+'</div>';
-
-    // Stops label
+    // Stops label (outbound)
     var stopsLabel = stops===0
       ? '<span class="tag tag-green">مباشر</span>'
       : stops===1
         ? '<span class="tag tag-gray">توقف واحد</span>'
         : '<span class="tag tag-orange">'+stops+' توقفات</span>';
 
-    // Transit airports
-    var segs = getSegs(o);
-    var transitText = '';
-    if (stops>0) {
-      var transitCodes = [];
-      for (var i=0;i<segs.length-1;i++){
-        var ar = segs[i].arriving_airport;
-        if (ar&&ar.iata_code) transitCodes.push(ar.iata_code);
-      }
-      if (transitCodes.length) transitText = '<span class="tag tag-gray" style="font-size:.65rem">عبر: '+transitCodes.join('، ')+'</span>';
+    // For round-trips also show return-slice stops in footer
+    var returnStopsLabel = '';
+    if (isRoundTrip) {
+      var rs = getSliceStops(o, 1);
+      returnStopsLabel = rs===0
+        ? '<span class="tag tag-green">عودة مباشر</span>'
+        : '<span class="tag tag-gray">عودة: '+rs+' توقف</span>';
     }
+
+    // WhatsApp share text
+    var shareText = 'رحلة ✈ '+origCode+' → '+destCode
+      + ' | '+fmtTime(depDt)+' – '+fmtTime(arrDt)+(nextDay?' (+1)':'')
+      + ' | '+fmtDuration(durMins)
+      + ' | '+(stops===0?'مباشر':stops+' توقف')
+      + (isRoundTrip ? '\nعودة: '+getSliceOriginCode(o,1)+' → '+getSliceDestCode(o,1)+' | '+fmtTime(getSliceDepDt(o,1))+' – '+fmtTime(getSliceArrDt(o,1)) : '')
+      + '\n'+al.name+'\nالسعر: '+formatPrice(priceGBP)+'\nللحجز: https://flymasar.com';
+    var waLink = 'https://api.whatsapp.com/send?text='+encodeURIComponent(shareText);
+
+    // Airline logo with airhex fallback
+    var fallbackInitials = al.code || al.name.substring(0,2).toUpperCase();
+    var logoHtml;
+    if (al.logo) {
+      logoHtml = '<img src="'+al.logo+'" alt="'+al.name+'"'
+        + ' onerror="this.onerror=null;'
+          // on first error try airhex (already baked into al.logo, so we jump straight to fallback div)
+          + 'this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+        + '<div class="al-logo-fallback" style="display:none">'+fallbackInitials+'</div>';
+    } else {
+      logoHtml = '<div class="al-logo-fallback">'+fallbackInitials+'</div>';
+    }
+
+    // Build slice rows
+    var routeHtml = '<div class="fc-routes">'
+      + getSliceRow(o, 0, false);
+    if (isRoundTrip) {
+      routeHtml += getSliceRow(o, 1, true);
+    }
+    routeHtml += '</div>';
 
     html += '<div class="flight-card">'
       + '<div class="fc-main">'
 
-        // Airline
+        // Airline column
         + '<div class="fc-airline">'
           + logoHtml
           + '<div class="al-name">'+al.name+'</div>'
@@ -800,31 +819,13 @@ function renderResults() {
           + (aircraft ? '<div class="al-code" style="margin-top:2px">✈ '+aircraft+'</div>' : '')
         + '</div>'
 
-        // Route
-        + '<div class="fc-route">'
-          + '<div class="fc-point">'
-            + '<div class="time">'+fmtTime(depDt)+'</div>'
-            + '<div class="iata">'+origCode+'</div>'
-            + (origName ? '<div class="apt-name" title="'+origName+'">'+origName+'</div>' : '')
-            + '<div class="date-lbl">'+fmtDate(depDt)+'</div>'
-          + '</div>'
-          + '<div class="fc-mid">'
-            + '<div class="fc-duration">'+fmtDuration(durMins)+'</div>'
-            + '<div class="fc-line"><div class="fc-line-bar"></div><span class="fc-plane">✈</span><div class="fc-line-bar"></div></div>'
-            + '<div class="fc-stops-lbl">'+(stops===0?'مباشر':stops+' توقف')+'</div>'
-          + '</div>'
-          + '<div class="fc-point">'
-            + '<div class="time">'+fmtTime(arrDt)+(nextDay?'<sup class="next-day-badge">+1</sup>':'')+'</div>'
-            + '<div class="iata">'+destCode+'</div>'
-            + (destName ? '<div class="apt-name" title="'+destName+'">'+destName+'</div>' : '')
-            + '<div class="date-lbl">'+fmtDate(arrDt)+'</div>'
-          + '</div>'
-        + '</div>'
+        // Route(s) column
+        + routeHtml
 
-        // Price
+        // Price column
         + '<div class="fc-price">'
           + '<div class="amount" data-price-gbp="'+priceGBP+'">'+formatPrice(priceGBP)+'</div>'
-          + '<div class="per-pax">لكل مسافر</div>'
+          + '<div class="per-pax">'+(isRoundTrip?'ذهاب وعودة':'لكل مسافر')+'</div>'
           + '<button class="btn btn-primary btn-sm select-btn" onclick="selectFlight(\''+offerId+'\')">اختيار</button>'
         + '</div>'
 
@@ -833,10 +834,10 @@ function renderResults() {
       // Footer tags
       + '<div class="fc-footer">'
         + stopsLabel
-        + transitText
+        + returnStopsLabel
         + (bagText ? '<span class="tag tag-blue">'+bagText+'</span>' : '<span class="tag tag-gray">بدون أمتعة</span>')
-        + (refund  ? '<span class="tag tag-green">قابل للاسترداد</span>' : '<span class="tag tag-red">غير مسترد</span>')
-        + (change  ? '<span class="tag tag-blue">قابل للتغيير</span>' : '')
+        + (refundTxt ? '<span class="tag tag-green">'+refundTxt+'</span>' : '<span class="tag tag-red">غير مسترد</span>')
+        + (changeTxt ? '<span class="tag tag-blue">'+changeTxt+'</span>' : '')
         + (nextDay ? '<span class="tag tag-orange">وصول اليوم التالي</span>' : '')
         + '<a href="'+waLink+'" target="_blank" rel="noopener" style="margin-right:auto;color:#25d366;text-decoration:none;font-size:.78rem;display:flex;align-items:center;gap:4px">📲 واتساب</a>'
       + '</div>'
