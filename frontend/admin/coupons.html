@@ -3,104 +3,299 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>الكوبونات — فلاي مسار</title>
+  <title>القسائم — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
 </head>
-<body class="admin-body">
+<body>
 <div class="admin-layout">
-  <aside class="admin-sidebar">
-    <div class="sidebar-brand">⚙️ FlyMasar Admin</div>
+  <aside class="sidebar">
+    <div class="sidebar-header"><div class="sidebar-brand">✈️ Fly<span>Masar</span></div></div>
     <nav class="sidebar-nav">
-      <a href="index.html">📊 لوحة التحكم</a>
-      <a href="travelers.html">👥 المسافرون</a>
-      <a href="bookings.html">📋 الحجوزات</a>
-      <a href="coupons.html" class="active">🎟️ الكوبونات</a>
-      <a href="#" onclick="adminLogout()">🚪 تسجيل الخروج</a>
+      <div class="sidebar-section-title">الرئيسية</div>
+      <a href="index.html"><span class="nav-icon">📊</span> لوحة التحكم</a>
+      <div class="sidebar-section-title">الإدارة</div>
+      <a href="travelers.html"><span class="nav-icon">👥</span> المسافرون</a>
+      <a href="bookings.html"><span class="nav-icon">📋</span> الحجوزات</a>
+      <a href="coupons.html" class="active"><span class="nav-icon">🎟️</span> القسائم</a>
+      <a href="../index.html"><span class="nav-icon">🌐</span> الموقع الرئيسي</a>
     </nav>
+    <div class="sidebar-footer">
+      <button onclick="Auth.logout()" class="btn btn-ghost btn-sm btn-block" style="border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)">🚪 تسجيل الخروج</button>
+    </div>
   </aside>
+
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>🎟️ الكوبونات</h1>
-      <button class="btn btn-primary" onclick="document.getElementById('create-modal').style.display='flex'">+ إضافة كوبون</button>
+      <h1>🎟️ إدارة القسائم والخصومات</h1>
+      <button class="btn btn-primary" onclick="openCreateModal()">+ إنشاء قسيمة جديدة</button>
     </div>
 
-    <div class="admin-panel">
-      <div id="coupons-loading" class="loading-state"><div class="spinner-lg"></div></div>
-      <table class="admin-table" id="coupons-table" style="display:none">
-        <thead><tr><th>الكود</th><th>النوع</th><th>القيمة</th><th>الاستخدامات</th><th>الصلاحية</th><th>الحالة</th><th>إجراءات</th></tr></thead>
-        <tbody id="coupons-tbody"></tbody>
-      </table>
-    </div>
+    <div class="admin-content">
+      <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start">
+        <!-- Coupons Table -->
+        <div class="table-card">
+          <div class="card-header">
+            <span style="font-weight:700">قائمة القسائم</span>
+            <div>
+              <input type="search" class="form-control" id="searchInput" placeholder="البحث برمز القسيمة..." oninput="filterCoupons()" style="min-width:200px">
+            </div>
+          </div>
 
-    <!-- Create Modal -->
-    <div class="modal-overlay" id="create-modal" style="display:none">
-      <div class="modal">
-        <div class="modal-header"><h2>إضافة كوبون جديد</h2><button onclick="document.getElementById('create-modal').style.display='none'">✕</button></div>
-        <form id="create-coupon-form">
-          <div class="form-row">
-            <div class="form-group"><label>كود الكوبون</label><input type="text" id="c-code" class="form-control" placeholder="SUMMER20" required></div>
-            <div class="form-group"><label>نوع الخصم</label><select id="c-type" class="form-control"><option value="percentage">نسبة مئوية %</option><option value="fixed">مبلغ ثابت</option></select></div>
+          <div id="tableLoading" class="loading-state" style="padding:48px">
+            <div class="spinner"></div><p>جاري التحميل...</p>
           </div>
-          <div class="form-row">
-            <div class="form-group"><label>القيمة</label><input type="number" id="c-value" class="form-control" min="0" step="0.01" required></div>
-            <div class="form-group"><label>الحد الأقصى للاستخدام</label><input type="number" id="c-max" class="form-control" min="1" value="100"></div>
+
+          <div id="tableWrapper" style="display:none;overflow-x:auto">
+            <table>
+              <thead>
+                <tr>
+                  <th>الرمز</th>
+                  <th>الخصم</th>
+                  <th>النوع</th>
+                  <th>الحد الأقصى</th>
+                  <th>الاستخدامات</th>
+                  <th>الانتهاء</th>
+                  <th>الحالة</th>
+                  <th>الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody id="couponsTable"></tbody>
+            </table>
           </div>
-          <div class="form-row">
-            <div class="form-group"><label>يطبق على</label><select id="c-applies" class="form-control"><option value="all">الكل</option><option value="flights">رحلات</option><option value="hotels">فنادق</option></select></div>
-            <div class="form-group"><label>تاريخ الانتهاء</label><input type="date" id="c-expires" class="form-control"></div>
+
+          <div id="emptyState" class="empty-state" style="display:none">
+            <div class="empty-icon">🎟️</div>
+            <h3>لا توجد قسائم</h3>
+            <p>أنشئ أول قسيمة خصم الآن</p>
+            <button class="btn btn-primary" style="margin-top:12px" onclick="openCreateModal()">+ إنشاء قسيمة</button>
           </div>
-          <div class="modal-actions">
-            <button type="button" class="btn btn-outline" onclick="document.getElementById('create-modal').style.display='none'">إلغاء</button>
-            <button type="submit" class="btn btn-primary">إنشاء الكوبون</button>
+        </div>
+
+        <!-- Create/Edit Form -->
+        <div class="card" id="couponFormCard">
+          <div class="card-header">
+            <span id="formTitle">+ إنشاء قسيمة جديدة</span>
           </div>
-        </form>
+          <div class="card-body">
+            <form id="couponForm" onsubmit="saveCoupon(event)">
+              <input type="hidden" id="couponId">
+              <div class="form-group">
+                <label class="form-label">رمز القسيمة</label>
+                <div style="display:flex;gap:8px">
+                  <input type="text" class="form-control" id="couponCode" placeholder="SUMMER20" required style="text-transform:uppercase">
+                  <button type="button" class="btn btn-ghost btn-sm" onclick="generateCode()" title="توليد تلقائي">🔀</button>
+                </div>
+                <div class="form-hint">يجب أن يكون فريداً، يُفضل بالأحرف اللاتينية</div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">نوع الخصم</label>
+                <select class="form-control" id="discountType" onchange="updateDiscountLabel()">
+                  <option value="percent">نسبة مئوية (%)</option>
+                  <option value="fixed">مبلغ ثابت (ر.س)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" id="discountLabel">نسبة الخصم (%)</label>
+                <input type="number" class="form-control" id="discountValue" placeholder="20" min="1" max="100" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">الحد الأدنى للطلب (ر.س)</label>
+                <input type="number" class="form-control" id="minOrder" placeholder="100" min="0">
+              </div>
+              <div class="form-group">
+                <label class="form-label">أقصى عدد استخدامات</label>
+                <input type="number" class="form-control" id="maxUses" placeholder="100" min="1">
+              </div>
+              <div class="form-group">
+                <label class="form-label">تاريخ الانتهاء</label>
+                <input type="date" class="form-control" id="expiryDate">
+              </div>
+              <div class="form-group">
+                <label class="form-label">ينطبق على</label>
+                <select class="form-control" id="applicableTo">
+                  <option value="all">الكل (رحلات وفنادق)</option>
+                  <option value="flights">رحلات جوية فقط</option>
+                  <option value="hotels">فنادق فقط</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">وصف (اختياري)</label>
+                <input type="text" class="form-control" id="couponDesc" placeholder="خصم الصيف 2025">
+              </div>
+              <div style="display:flex;gap:8px">
+                <button type="submit" class="btn btn-primary" style="flex:1" id="saveBtn">
+                  <span id="saveBtnTxt">حفظ القسيمة</span>
+                  <div class="spinner spinner-sm" id="saveSpinner" style="display:none;border-top-color:white"></div>
+                </button>
+                <button type="button" class="btn btn-ghost" onclick="resetForm()">إلغاء</button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   </main>
 </div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
+<script src="../js/admin.js"></script>
 <script>
-  const ADMIN_BASE = 'https://beige-hare-390642.hostingersite.com';
-  const token = localStorage.getItem('admin_token');
-  if (!token) window.location.href = 'login.html';
-  function adminLogout() { localStorage.removeItem('admin_token'); window.location.href = 'login.html'; }
+  const user = Auth.getUser();
+  if (!Auth.isLoggedIn() || !user || (user.role !== 'admin' && user.role !== 'super_admin')) window.location.href = 'login.html';
+
+  let allCoupons = [];
+
+  function updateDiscountLabel() {
+    const type = document.getElementById('discountType').value;
+    document.getElementById('discountLabel').textContent = type === 'percent' ? 'نسبة الخصم (%)' : 'مبلغ الخصم (ر.س)';
+    const input = document.getElementById('discountValue');
+    if (type === 'percent') { input.max = 100; input.placeholder = '20'; }
+    else { input.removeAttribute('max'); input.placeholder = '50'; }
+  }
+
+  function generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    document.getElementById('couponCode').value = code;
+  }
+
+  function filterCoupons() {
+    const q = document.getElementById('searchInput').value.toLowerCase();
+    const filtered = q ? allCoupons.filter(c => (c.code||'').toLowerCase().includes(q) || (c.description||'').toLowerCase().includes(q)) : allCoupons;
+    renderCoupons(filtered);
+  }
+
+  function renderCoupons(list) {
+    if (!list.length) {
+      document.getElementById('tableWrapper').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'block';
+      return;
+    }
+    document.getElementById('tableWrapper').style.display = 'block';
+    document.getElementById('emptyState').style.display = 'none';
+    const now = new Date();
+    document.getElementById('couponsTable').innerHTML = list.map(c => {
+      const expired = c.expiry_date && new Date(c.expiry_date) < now;
+      const status = expired ? 'inactive' : (c.status || 'active');
+      return `<tr>
+        <td><span style="font-family:monospace;font-weight:700;color:var(--primary);font-size:.95rem">${c.code||'—'}</span></td>
+        <td style="font-weight:700;color:var(--secondary)">${c.discount_value||c.discount||'—'}${c.discount_type==='percent'?'%':' ر.س'}</td>
+        <td><span class="badge badge-info">${c.discount_type==='percent'?'نسبة':'ثابت'}</span></td>
+        <td style="color:var(--text-muted);font-size:.85rem">${c.min_order_amount?Number(c.min_order_amount).toLocaleString('ar')+' ر.س':'—'}</td>
+        <td style="text-align:center">${c.used_count||0} / ${c.max_uses||'∞'}</td>
+        <td style="font-size:.82rem;color:var(--text-muted)">${c.expiry_date?new Date(c.expiry_date).toLocaleDateString('ar-SA'):'لا ينتهي'}</td>
+        <td>${Admin.renderStatusBadge(status)}</td>
+        <td>
+          <div class="table-actions">
+            <button class="btn btn-ghost btn-sm" onclick="editCoupon(${JSON.stringify(c).replace(/"/g,'&quot;')})">تعديل</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCoupon('${c.id}', this)">حذف</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
 
   async function loadCoupons() {
-    const res = await fetch(ADMIN_BASE + '/api/admin/coupons', { headers: { 'Authorization': 'Bearer ' + token } });
-    if (res.status === 401) { adminLogout(); return; }
-    const data = await res.json();
-    document.getElementById('coupons-loading').style.display = 'none';
-    document.getElementById('coupons-table').style.display = 'table';
-    const coupons = data.data || [];
-    document.getElementById('coupons-tbody').innerHTML = coupons.map(c => `
-      <tr>
-        <td><strong>${c.code}</strong></td>
-        <td>${c.discount_type === 'percentage' ? 'نسبة %' : 'مبلغ ثابت'}</td>
-        <td>${c.discount_value}${c.discount_type === 'percentage' ? '%' : ' ج.إ'}</td>
-        <td>${c.used_count || 0} / ${c.usage_limit || c.max_uses || '∞'}</td>
-        <td>${c.valid_until || c.expires_at ? new Date(c.valid_until || c.expires_at).toLocaleDateString('ar') : 'بلا حد'}</td>
-        <td><span class="badge badge-${c.is_active ? 'success' : 'error'}">${c.is_active ? 'فعال' : 'معطل'}</span></td>
-        <td><button class="btn btn-sm btn-outline" onclick="deleteCoupon(${c.id})">حذف</button></td>
-      </tr>`).join('') || '<tr><td colspan="7" class="text-center">لا توجد كوبونات</td></tr>';
+    document.getElementById('tableLoading').style.display = 'block';
+    document.getElementById('tableWrapper').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+    try {
+      const res = await Api.get('/api/admin/coupons', true);
+      allCoupons = res.data || res.coupons || (Array.isArray(res) ? res : []);
+      renderCoupons(allCoupons);
+    } catch (err) {
+      showToast(err.message || 'تعذر تحميل القسائم', 'error');
+    } finally {
+      document.getElementById('tableLoading').style.display = 'none';
+    }
   }
 
-  async function deleteCoupon(id) {
-    if (!confirm('هل تريد حذف هذا الكوبون؟')) return;
-    await fetch(ADMIN_BASE + `/api/admin/coupons/${id}`, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-    loadCoupons();
+  function openCreateModal() { resetForm(); document.getElementById('couponFormCard').scrollIntoView({behavior:'smooth'}); }
+
+  function editCoupon(c) {
+    document.getElementById('couponId').value = c.id;
+    document.getElementById('couponCode').value = c.code;
+    document.getElementById('discountType').value = c.discount_type || 'percent';
+    updateDiscountLabel();
+    document.getElementById('discountValue').value = c.discount_value || c.discount;
+    document.getElementById('minOrder').value = c.min_order_amount || '';
+    document.getElementById('maxUses').value = c.max_uses || '';
+    document.getElementById('expiryDate').value = c.expiry_date ? c.expiry_date.split('T')[0] : '';
+    document.getElementById('applicableTo').value = c.applicable_to || 'all';
+    document.getElementById('couponDesc').value = c.description || '';
+    document.getElementById('formTitle').textContent = '✏️ تعديل القسيمة';
+    document.getElementById('saveBtnTxt').textContent = 'حفظ التعديلات';
+    document.getElementById('couponFormCard').scrollIntoView({behavior:'smooth'});
   }
 
-  document.getElementById('create-coupon-form').addEventListener('submit', async (e) => {
+  function resetForm() {
+    document.getElementById('couponForm').reset();
+    document.getElementById('couponId').value = '';
+    document.getElementById('formTitle').textContent = '+ إنشاء قسيمة جديدة';
+    document.getElementById('saveBtnTxt').textContent = 'حفظ القسيمة';
+    updateDiscountLabel();
+  }
+
+  async function saveCoupon(e) {
     e.preventDefault();
-    const res = await fetch(ADMIN_BASE + '/api/admin/coupons', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code: document.getElementById('c-code').value, discount_type: document.getElementById('c-type').value, discount_value: parseFloat(document.getElementById('c-value').value), max_uses: parseInt(document.getElementById('c-max').value), applies_to: document.getElementById('c-applies').value, expires_at: document.getElementById('c-expires').value || null })
-    });
-    if (res.ok) { document.getElementById('create-modal').style.display = 'none'; loadCoupons(); }
-    else { const err = await res.json(); alert(err.message || 'حدث خطأ'); }
-  });
+    const id = document.getElementById('couponId').value;
+    const btn = document.getElementById('saveBtn');
+    const txt = document.getElementById('saveBtnTxt');
+    const sp = document.getElementById('saveSpinner');
+    btn.disabled = true; txt.style.display = 'none'; sp.style.display = 'inline-block';
+    const data = {
+      code: document.getElementById('couponCode').value.trim().toUpperCase(),
+      discount_type: document.getElementById('discountType').value,
+      discount_value: parseFloat(document.getElementById('discountValue').value),
+      min_order_amount: parseFloat(document.getElementById('minOrder').value) || 0,
+      max_uses: parseInt(document.getElementById('maxUses').value) || null,
+      expiry_date: document.getElementById('expiryDate').value || null,
+      applicable_to: document.getElementById('applicableTo').value,
+      description: document.getElementById('couponDesc').value.trim(),
+    };
+    try {
+      if (id) {
+        await Api.put(`/api/admin/coupons/${id}`, data, true);
+        showToast('تم تحديث القسيمة بنجاح', 'success');
+      } else {
+        await Api.post('/api/admin/coupons', data, true);
+        showToast('تم إنشاء القسيمة بنجاح 🎉', 'success');
+      }
+      resetForm();
+      loadCoupons();
+    } catch (err) {
+      showToast(err.message || 'فشل حفظ القسيمة', 'error');
+    } finally {
+      btn.disabled = false; txt.style.display = 'inline'; sp.style.display = 'none';
+    }
+  }
 
+  async function deleteCoupon(id, btn) {
+    if (!confirm('هل أنت متأكد من حذف هذه القسيمة؟')) return;
+    btn.disabled = true;
+    try {
+      await Api.delete(`/api/admin/coupons/${id}`, true);
+      showToast('تم حذف القسيمة', 'success');
+      loadCoupons();
+    } catch (err) {
+      showToast(err.message || 'فشل حذف القسيمة', 'error');
+      btn.disabled = false;
+    }
+  }
+
+  function showToast(msg, type='info') {
+    let c = document.getElementById('toastContainer');
+    const t = document.createElement('div'); t.className = `toast toast-${type}`;
+    t.innerHTML = `<span>${msg}</span>`; c.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('show'));
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
+  }
+
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('expiryDate').min = today;
   loadCoupons();
 </script>
 </body>

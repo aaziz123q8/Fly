@@ -3,81 +3,262 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>الحجوزات — فلاي مسار</title>
+  <title>الحجوزات — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
 </head>
-<body class="admin-body">
+<body>
 <div class="admin-layout">
-  <aside class="admin-sidebar">
-    <div class="sidebar-brand">⚙️ FlyMasar Admin</div>
+  <aside class="sidebar">
+    <div class="sidebar-header"><div class="sidebar-brand">✈️ Fly<span>Masar</span></div></div>
     <nav class="sidebar-nav">
-      <a href="index.html">📊 لوحة التحكم</a>
-      <a href="travelers.html">👥 المسافرون</a>
-      <a href="bookings.html" class="active">📋 الحجوزات</a>
-      <a href="coupons.html">🎟️ الكوبونات</a>
-      <a href="#" onclick="adminLogout()">🚪 تسجيل الخروج</a>
+      <div class="sidebar-section-title">الرئيسية</div>
+      <a href="index.html"><span class="nav-icon">📊</span> لوحة التحكم</a>
+      <div class="sidebar-section-title">الإدارة</div>
+      <a href="travelers.html"><span class="nav-icon">👥</span> المسافرون</a>
+      <a href="bookings.html" class="active"><span class="nav-icon">📋</span> الحجوزات</a>
+      <a href="coupons.html"><span class="nav-icon">🎟️</span> القسائم</a>
+      <a href="../index.html"><span class="nav-icon">🌐</span> الموقع الرئيسي</a>
     </nav>
+    <div class="sidebar-footer">
+      <button onclick="Auth.logout()" class="btn btn-ghost btn-sm btn-block" style="border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)">🚪 تسجيل الخروج</button>
+    </div>
   </aside>
+
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>📋 الحجوزات</h1>
-      <div class="topbar-actions">
-        <select id="type-filter" class="form-control form-control-sm" onchange="loadBookings()">
-          <option value="all">الكل</option>
-          <option value="flight">رحلات</option>
-          <option value="hotel">فنادق</option>
-        </select>
-        <select id="status-filter" class="form-control form-control-sm" onchange="loadBookings()">
-          <option value="">كل الحالات</option>
-          <option value="confirmed">مؤكد</option>
-          <option value="pending">معلق</option>
-          <option value="cancelled">ملغي</option>
-        </select>
-      </div>
+      <h1>📋 إدارة الحجوزات</h1>
+      <span id="totalCount" style="font-size:.85rem;color:var(--text-muted)"></span>
     </div>
-    <div class="admin-panel">
-      <div id="bookings-loading" class="loading-state"><div class="spinner-lg"></div></div>
-      <div id="bookings-table" style="display:none">
-        <table class="admin-table">
-          <thead><tr><th>المرجع</th><th>النوع</th><th>المستخدم</th><th>الحالة</th><th>المبلغ</th><th>التاريخ</th></tr></thead>
-          <tbody id="bookings-tbody"></tbody>
-        </table>
+
+    <div class="admin-content">
+      <!-- Filters -->
+      <div class="card" style="margin-bottom:20px;padding:0">
+        <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:200px">
+            <label class="form-label" style="font-size:.78rem">البحث</label>
+            <input type="search" class="form-control" id="searchInput" placeholder="البحث بالاسم أو رقم الحجز..." oninput="debouncedSearch()">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">النوع</label>
+            <select class="form-control" id="typeFilter" onchange="loadBookings()" style="min-width:120px">
+              <option value="">الكل</option>
+              <option value="flight">رحلات جوية</option>
+              <option value="hotel">فنادق</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">الحالة</label>
+            <select class="form-control" id="statusFilter" onchange="loadBookings()" style="min-width:130px">
+              <option value="">الكل</option>
+              <option value="pending">معلق</option>
+              <option value="confirmed">مؤكد</option>
+              <option value="completed">مكتمل</option>
+              <option value="cancelled">ملغي</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">من تاريخ</label>
+            <input type="date" class="form-control" id="fromDate" onchange="loadBookings()">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">إلى تاريخ</label>
+            <input type="date" class="form-control" id="toDate" onchange="loadBookings()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">مسح الفلاتر</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div id="tableLoading" class="loading-state" style="padding:48px">
+          <div class="spinner"></div><p>جاري تحميل الحجوزات...</p>
+        </div>
+
+        <div id="tableWrapper" style="display:none;overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>رقم الحجز</th>
+                <th>المسافر</th>
+                <th>النوع</th>
+                <th>التفاصيل</th>
+                <th>تاريخ الحجز</th>
+                <th>المبلغ</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsTable"></tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display:none">
+          <div class="empty-icon">📋</div>
+          <h3>لا توجد حجوزات</h3>
+          <p>لم يتم العثور على نتائج</p>
+        </div>
+
+        <div id="paginationContainer"></div>
       </div>
     </div>
   </main>
 </div>
+
+<!-- Booking Details Modal -->
+<div class="modal-overlay" id="bookingModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">📋 تفاصيل الحجز</h2>
+      <button class="modal-close" onclick="document.getElementById('bookingModal').classList.remove('active')">✕</button>
+    </div>
+    <div id="bookingModalContent"></div>
+  </div>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal-overlay" id="statusModal">
+  <div class="modal" style="max-width:380px">
+    <div class="modal-header">
+      <h2 class="modal-title">تحديث حالة الحجز</h2>
+      <button class="modal-close" onclick="document.getElementById('statusModal').classList.remove('active')">✕</button>
+    </div>
+    <div style="padding:8px 0">
+      <input type="hidden" id="updateBookingId">
+      <div class="form-group">
+        <label class="form-label">الحالة الجديدة</label>
+        <select class="form-control" id="newStatus">
+          <option value="pending">معلق</option>
+          <option value="confirmed">مؤكد</option>
+          <option value="completed">مكتمل</option>
+          <option value="cancelled">ملغي</option>
+        </select>
+      </div>
+      <button class="btn btn-primary btn-block" onclick="confirmStatusUpdate()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
+<script src="../js/admin.js"></script>
 <script>
-  const ADMIN_BASE = 'https://beige-hare-390642.hostingersite.com';
-  const token = localStorage.getItem('admin_token');
-  if (!token) window.location.href = 'login.html';
-  function adminLogout() { localStorage.removeItem('admin_token'); window.location.href = 'login.html'; }
-  const statusLabels = { confirmed: ['مؤكد','success'], pending: ['معلق','warning'], cancelled: ['ملغي','error'], completed: ['مكتمل','info'] };
+  const user = Auth.getUser();
+  if (!Auth.isLoggedIn() || !user || (user.role !== 'admin' && user.role !== 'super_admin')) window.location.href = 'login.html';
+
+  let currentPage = 1, searchTimer;
+
+  function debouncedSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => { currentPage=1; loadBookings(); }, 400); }
+  function clearFilters() {
+    ['searchInput','typeFilter','statusFilter','fromDate','toDate'].forEach(id => document.getElementById(id).value = '');
+    loadBookings();
+  }
 
   async function loadBookings() {
-    document.getElementById('bookings-loading').style.display = 'flex';
-    document.getElementById('bookings-table').style.display = 'none';
-    const type = document.getElementById('type-filter').value;
-    const status = document.getElementById('status-filter').value;
-    const q = `?type=${type}${status ? '&status='+status : ''}`;
-    const res = await fetch(ADMIN_BASE + '/api/admin/bookings' + q, { headers: { 'Authorization': 'Bearer ' + token } });
-    if (res.status === 401) { adminLogout(); return; }
-    const data = await res.json();
-    document.getElementById('bookings-loading').style.display = 'none';
-    document.getElementById('bookings-table').style.display = 'block';
-    const bookings = data.data || [];
-    const [label, cls] = statusLabels;
-    document.getElementById('bookings-tbody').innerHTML = bookings.map(b => {
-      const [sl, sc] = statusLabels[b.status] || [b.status, 'info'];
-      return `<tr>
-        <td><strong>${b.booking_reference}</strong></td>
-        <td>${b.booking_type === 'flight' ? '✈️ رحلة' : '🏨 فندق'}</td>
-        <td>${b.user_email || b.user_id}</td>
-        <td><span class="badge badge-${sc}">${sl}</span></td>
-        <td>${b.total_amount} ${b.currency}</td>
-        <td>${new Date(b.created_at).toLocaleDateString('ar')}</td>
-      </tr>`;
-    }).join('') || '<tr><td colspan="6" class="text-center">لا توجد حجوزات</td></tr>';
+    document.getElementById('tableLoading').style.display = 'block';
+    document.getElementById('tableWrapper').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+    const params = new URLSearchParams({
+      page: currentPage, limit: 20,
+      search: document.getElementById('searchInput').value,
+      type: document.getElementById('typeFilter').value,
+      status: document.getElementById('statusFilter').value,
+      from_date: document.getElementById('fromDate').value,
+      to_date: document.getElementById('toDate').value,
+    });
+    try {
+      const res = await Api.get(`/api/admin/bookings?${params}`, true);
+      const list = res.data || res.bookings || (Array.isArray(res) ? res : []);
+      const total = res.total || list.length;
+      document.getElementById('totalCount').textContent = `${total} حجز`;
+      if (!list.length) { document.getElementById('emptyState').style.display = 'block'; return; }
+      document.getElementById('tableWrapper').style.display = 'block';
+      document.getElementById('bookingsTable').innerHTML = list.map(b => `
+      <tr>
+        <td><span style="font-family:monospace;font-size:.82rem;color:var(--primary)">#${b.id || b.booking_ref || '—'}</span></td>
+        <td>
+          <div style="font-weight:600;font-size:.88rem">${b.user_name || b.first_name || '—'} ${b.last_name || ''}</div>
+          <div style="color:var(--text-muted);font-size:.78rem">${b.email || ''}</div>
+        </td>
+        <td>${b.type === 'flight' ? '<span class="badge badge-info">✈️ رحلة</span>' : '<span class="badge badge-primary">🏨 فندق</span>'}</td>
+        <td style="font-size:.85rem;color:var(--text-muted)">${b.from || b.city || ''} ${b.to ? '→ ' + b.to : ''}</td>
+        <td style="font-size:.82rem;color:var(--text-muted)">${b.created_at ? new Date(b.created_at).toLocaleDateString('ar-SA') : '—'}</td>
+        <td style="font-weight:700;color:var(--primary)">${b.total_price ? Number(b.total_price).toLocaleString('ar') + ' ر.س' : '—'}</td>
+        <td>${Admin.renderStatusBadge(b.status)}</td>
+        <td>
+          <div class="table-actions">
+            <button class="btn btn-ghost btn-sm" onclick="viewBooking('${b.id}')">عرض</button>
+            <button class="btn btn-secondary btn-sm" onclick="openStatusModal('${b.id}','${b.status}')">تحديث</button>
+          </div>
+        </td>
+      </tr>`).join('');
+      // Pagination
+      const pages = Math.ceil(total / 20);
+      const pc = document.getElementById('paginationContainer');
+      if (pages > 1) {
+        let html = '<div class="pagination">';
+        if (currentPage > 1) html += `<button class="btn btn-ghost btn-sm" onclick="goPage(${currentPage-1})">السابق</button>`;
+        for (let i = Math.max(1,currentPage-2); i <= Math.min(pages,currentPage+2); i++)
+          html += `<button class="btn btn-sm ${i===currentPage?'btn-primary':'btn-ghost'}" onclick="goPage(${i})">${i}</button>`;
+        if (currentPage < pages) html += `<button class="btn btn-ghost btn-sm" onclick="goPage(${currentPage+1})">التالي</button>`;
+        html += '</div>';
+        pc.innerHTML = html;
+      } else pc.innerHTML = '';
+    } catch (err) {
+      showToast(err.message || 'تعذر تحميل الحجوزات', 'error');
+      document.getElementById('emptyState').style.display = 'block';
+    } finally {
+      document.getElementById('tableLoading').style.display = 'none';
+    }
+  }
+
+  function goPage(p) { currentPage = p; loadBookings(); }
+
+  async function viewBooking(id) {
+    const el = document.getElementById('bookingModalContent');
+    el.innerHTML = '<div class="loading-state" style="padding:32px"><div class="spinner"></div></div>';
+    document.getElementById('bookingModal').classList.add('active');
+    try {
+      const res = await Api.get(`/api/admin/bookings/${id}`, true);
+      const b = res.data || res.booking || res;
+      el.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">رقم الحجز</div><div style="font-weight:700;color:var(--primary)">#${b.id||'—'}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الحالة</div>${Admin.renderStatusBadge(b.status)}</div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">المسافر</div><div style="font-weight:600">${b.first_name||''} ${b.last_name||''}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">البريد</div><div>${b.email||'—'}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">النوع</div><div>${b.type==='flight'?'✈️ رحلة':'🏨 فندق'}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">المبلغ</div><div style="font-weight:700;font-size:1.1rem;color:var(--primary)">${b.total_price?Number(b.total_price).toLocaleString('ar')+' ر.س':'—'}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">تاريخ الحجز</div><div>${b.created_at?new Date(b.created_at).toLocaleDateString('ar-SA'):'—'}</div></div>
+          ${b.coupon_code?`<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">كود الخصم</div><div style="font-weight:600;color:var(--success)">${b.coupon_code}</div></div>`:''}
+        </div>`;
+    } catch {
+      el.innerHTML = '<div class="alert alert-error">تعذر تحميل تفاصيل الحجز</div>';
+    }
+  }
+
+  function openStatusModal(id, currentStatus) {
+    document.getElementById('updateBookingId').value = id;
+    document.getElementById('newStatus').value = currentStatus;
+    document.getElementById('statusModal').classList.add('active');
+  }
+
+  async function confirmStatusUpdate() {
+    const id = document.getElementById('updateBookingId').value;
+    const status = document.getElementById('newStatus').value;
+    try {
+      await Api.patch(`/api/admin/bookings/${id}/status`, { status }, true);
+      showToast('تم تحديث حالة الحجز', 'success');
+      document.getElementById('statusModal').classList.remove('active');
+      loadBookings();
+    } catch (err) { showToast(err.message || 'فشل التحديث', 'error'); }
+  }
+
+  function showToast(msg, type='info') {
+    let c = document.getElementById('toastContainer');
+    const t = document.createElement('div'); t.className = `toast toast-${type}`;
+    t.innerHTML = `<span>${msg}</span>`; c.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('show'));
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
   }
 
   loadBookings();

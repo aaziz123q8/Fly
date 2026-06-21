@@ -3,99 +3,179 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة التحكم — فلاي مسار</title>
+  <title>لوحة الإدارة — فلاي مسار</title>
   <link rel="stylesheet" href="../css/app.css">
 </head>
-<body class="admin-body">
+<body>
 <div class="admin-layout">
   <!-- Sidebar -->
-  <aside class="admin-sidebar">
-    <div class="sidebar-brand">⚙️ FlyMasar Admin</div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-brand">✈️ Fly<span>Masar</span></div>
+      <div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-top:4px">لوحة التحكم</div>
+    </div>
     <nav class="sidebar-nav">
-      <a href="index.html" class="active">📊 لوحة التحكم</a>
-      <a href="travelers.html">👥 المسافرون</a>
-      <a href="bookings.html">📋 الحجوزات</a>
-      <a href="coupons.html">🎟️ الكوبونات</a>
-      <a href="#" onclick="adminLogout()">🚪 تسجيل الخروج</a>
+      <div class="sidebar-section-title">الرئيسية</div>
+      <a href="index.html" class="active"><span class="nav-icon">📊</span> لوحة التحكم</a>
+      <div class="sidebar-section-title">الإدارة</div>
+      <a href="travelers.html"><span class="nav-icon">👥</span> المسافرون</a>
+      <a href="bookings.html"><span class="nav-icon">📋</span> الحجوزات</a>
+      <a href="coupons.html"><span class="nav-icon">🎟️</span> القسائم</a>
+      <div class="sidebar-section-title">النظام</div>
+      <a href="../index.html"><span class="nav-icon">🌐</span> الموقع الرئيسي</a>
     </nav>
-    <div class="sidebar-user" id="sidebar-user"></div>
+    <div class="sidebar-footer">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+        <div class="user-avatar" style="background:rgba(255,255,255,.15);font-size:.8rem" id="adminInitial">أ</div>
+        <div>
+          <div style="color:white;font-weight:600;font-size:.88rem" id="adminName">المشرف</div>
+          <div style="color:rgba(255,255,255,.4);font-size:.75rem">مشرف النظام</div>
+        </div>
+      </div>
+      <button onclick="Auth.logout()" class="btn btn-ghost btn-sm btn-block" style="border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)">🚪 تسجيل الخروج</button>
+    </div>
   </aside>
 
   <!-- Main -->
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>لوحة التحكم</h1>
-      <span id="current-date"></span>
-    </div>
-
-    <div class="stats-grid" id="stats-grid">
-      <div class="stat-card loading-card"><div class="spinner-lg"></div></div>
-      <div class="stat-card loading-card"><div class="spinner-lg"></div></div>
-      <div class="stat-card loading-card"><div class="spinner-lg"></div></div>
-      <div class="stat-card loading-card"><div class="spinner-lg"></div></div>
-    </div>
-
-    <div class="admin-grid-2">
-      <div class="admin-panel">
-        <h2 class="panel-title">📋 آخر الحجوزات</h2>
-        <div id="recent-bookings"><div class="spinner-lg"></div></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <button onclick="toggleSidebar()" style="border:none;background:none;cursor:pointer;font-size:1.3rem;color:var(--text-muted)" class="d-md-none">☰</button>
+        <h1>لوحة التحكم</h1>
       </div>
-      <div class="admin-panel">
-        <h2 class="panel-title">👥 آخر المستخدمين</h2>
-        <div id="recent-users"><div class="spinner-lg"></div></div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span style="font-size:.85rem;color:var(--text-muted)" id="dateDisplay"></span>
+        <a href="../index.html" class="btn btn-ghost btn-sm">← الموقع</a>
+      </div>
+    </div>
+
+    <div class="admin-content">
+      <!-- Stats Cards -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-icon blue">👥</div><div><div class="stat-value" id="statUsers">—</div><div class="stat-label">إجمالي المستخدمين</div></div></div>
+        <div class="stat-card"><div class="stat-icon gold">📋</div><div><div class="stat-value" id="statBookings">—</div><div class="stat-label">إجمالي الحجوزات</div></div></div>
+        <div class="stat-card"><div class="stat-icon green">💰</div><div><div class="stat-value" id="statRevenue">—</div><div class="stat-label">الإيرادات (ر.س)</div></div></div>
+        <div class="stat-card"><div class="stat-icon red">⏳</div><div><div class="stat-value" id="statPending">—</div><div class="stat-label">حجوزات معلقة</div></div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+        <!-- Recent Bookings -->
+        <div class="table-card">
+          <div class="card-header">
+            <span>📋 أحدث الحجوزات</span>
+            <a href="bookings.html" class="btn btn-ghost btn-sm">عرض الكل</a>
+          </div>
+          <div id="recentBookings">
+            <div class="loading-state" style="padding:32px"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div>
+          <div class="table-card" style="margin-bottom:16px">
+            <div class="card-header"><span>⚡ إجراءات سريعة</span></div>
+            <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+              <a href="travelers.html" class="btn btn-ghost btn-block" style="justify-content:flex-start;gap:12px">👥 إدارة المسافرين</a>
+              <a href="bookings.html" class="btn btn-ghost btn-block" style="justify-content:flex-start;gap:12px">📋 إدارة الحجوزات</a>
+              <a href="coupons.html" class="btn btn-ghost btn-block" style="justify-content:flex-start;gap:12px">🎟️ إنشاء قسيمة خصم</a>
+            </div>
+          </div>
+
+          <div class="table-card">
+            <div class="card-header"><span>📊 توزيع الحجوزات</span></div>
+            <div style="padding:16px" id="bookingStats">
+              <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </main>
 </div>
 
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
+<script src="../js/admin.js"></script>
 <script>
-  const ADMIN_BASE = 'https://beige-hare-390642.hostingersite.com';
-  const token = localStorage.getItem('admin_token');
-  if (!token) window.location.href = 'login.html';
-
-  const adminUser = JSON.parse(localStorage.getItem('admin_user') || '{}');
-  document.getElementById('sidebar-user').innerHTML = `<span>👤 ${adminUser.first_name || 'مشرف'}</span>`;
-  document.getElementById('current-date').textContent = new Date().toLocaleDateString('ar-SA', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-
-  function adminLogout() {
-    localStorage.removeItem('admin_token');
-    localStorage.removeItem('admin_user');
+  // Auth check
+  const user = Auth.getUser();
+  if (!Auth.isLoggedIn() || !user || (user.role !== 'admin' && user.role !== 'super_admin')) {
     window.location.href = 'login.html';
   }
 
-  async function adminFetch(endpoint) {
-    const res = await fetch(ADMIN_BASE + endpoint, { headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' } });
-    if (res.status === 401) { adminLogout(); return null; }
-    return res.json();
+  if (user) {
+    document.getElementById('adminName').textContent = user.first_name || user.email;
+    document.getElementById('adminInitial').textContent = (user.first_name || user.email || 'أ')[0].toUpperCase();
   }
 
-  async function loadDashboard() {
-    const data = await adminFetch('/api/admin/dashboard');
-    if (!data) return;
-    const s = data.stats || {};
-    document.getElementById('stats-grid').innerHTML = `
-      <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">${s.total_users || 0}</div><div class="stat-label">إجمالي المستخدمين</div></div>
-      <div class="stat-card"><div class="stat-icon">✈️</div><div class="stat-value">${s.total_flight_bookings || 0}</div><div class="stat-label">حجوزات رحلات</div></div>
-      <div class="stat-card"><div class="stat-icon">🏨</div><div class="stat-value">${s.total_hotel_bookings || 0}</div><div class="stat-label">حجوزات فنادق</div></div>
-      <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-value">${s.total_revenue || '0.00'} ${s.revenue_currency || 'GBP'}</div><div class="stat-label">إجمالي الإيرادات</div></div>`;
+  document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString('ar-SA', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
 
-    const bookings = data.recent_bookings || [];
-    document.getElementById('recent-bookings').innerHTML = bookings.length
-      ? `<table class="admin-table"><thead><tr><th>المرجع</th><th>النوع</th><th>الحالة</th><th>المبلغ</th></tr></thead><tbody>${
-        bookings.map(b => `<tr><td>${b.booking_reference}</td><td>${b.type === 'flight' ? '✈️' : '🏨'}</td><td>${b.status}</td><td>${b.total_amount}</td></tr>`).join('')
-      }</tbody></table>`
-      : '<p class="text-muted">لا توجد حجوزات بعد</p>';
-
-    const users = data.recent_users || [];
-    document.getElementById('recent-users').innerHTML = users.length
-      ? `<table class="admin-table"><thead><tr><th>الاسم</th><th>البريد</th><th>التاريخ</th></tr></thead><tbody>${
-        users.map(u => `<tr><td>${u.first_name} ${u.last_name}</td><td>${u.email}</td><td>${new Date(u.created_at).toLocaleDateString('ar')}</td></tr>`).join('')
-      }</tbody></table>`
-      : '<p class="text-muted">لا يوجد مستخدمون بعد</p>';
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
   }
 
-  loadDashboard();
+  async function loadStats() {
+    try {
+      const res = await Api.get('/api/admin/stats', true);
+      const s = res.data || res;
+      document.getElementById('statUsers').textContent = (s.total_users || s.users || 0).toLocaleString('ar');
+      document.getElementById('statBookings').textContent = (s.total_bookings || s.bookings || 0).toLocaleString('ar');
+      document.getElementById('statRevenue').textContent = (s.total_revenue || s.revenue || 0).toLocaleString('ar');
+      document.getElementById('statPending').textContent = (s.pending_bookings || s.pending || 0).toLocaleString('ar');
+    } catch {
+      ['statUsers','statBookings','statRevenue','statPending'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+    }
+  }
+
+  async function loadRecentBookings() {
+    const el = document.getElementById('recentBookings');
+    try {
+      const res = await Api.get('/api/admin/bookings?limit=5', true);
+      const list = res.data || res.bookings || (Array.isArray(res) ? res : []);
+      if (!list.length) { el.innerHTML = '<div class="empty-state" style="padding:24px"><p>لا توجد حجوزات</p></div>'; return; }
+      el.innerHTML = `<table><thead><tr><th>المستخدم</th><th>النوع</th><th>الحالة</th><th>المبلغ</th></tr></thead><tbody>
+        ${list.slice(0,5).map(b => `<tr>
+          <td>${b.user_name || b.email || b.user_id || '—'}</td>
+          <td>${b.type === 'flight' ? '✈️ رحلة' : '🏨 فندق'}</td>
+          <td>${Admin.renderStatusBadge(b.status)}</td>
+          <td style="font-weight:700;color:var(--primary)">${b.total_price ? Number(b.total_price).toLocaleString('ar') + ' ر.س' : '—'}</td>
+        </tr>`).join('')}
+      </tbody></table>`;
+    } catch {
+      el.innerHTML = '<div class="alert alert-error" style="margin:16px">تعذر تحميل البيانات</div>';
+    }
+  }
+
+  async function loadBookingStats() {
+    const el = document.getElementById('bookingStats');
+    try {
+      const res = await Api.get('/api/admin/bookings?limit=100', true);
+      const list = res.data || res.bookings || [];
+      const flights = list.filter(b => b.type === 'flight').length;
+      const hotels = list.length - flights;
+      const confirmed = list.filter(b => b.status === 'confirmed').length;
+      const pending = list.filter(b => b.status === 'pending').length;
+      el.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.88rem;color:var(--text-muted)">رحلات جوية</span><strong>${flights}</strong></div>
+          <div style="background:var(--bg);border-radius:100px;height:6px"><div style="background:var(--primary);height:100%;border-radius:100px;width:${list.length ? (flights/list.length*100).toFixed(0) : 0}%"></div></div>
+          <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:.88rem;color:var(--text-muted)">فنادق</span><strong>${hotels}</strong></div>
+          <div style="background:var(--bg);border-radius:100px;height:6px"><div style="background:var(--secondary);height:100%;border-radius:100px;width:${list.length ? (hotels/list.length*100).toFixed(0) : 0}%"></div></div>
+          <div class="divider" style="margin:8px 0"></div>
+          <div style="display:flex;justify-content:space-between"><span class="badge badge-success">مؤكدة: ${confirmed}</span><span class="badge badge-warning">معلقة: ${pending}</span></div>
+        </div>`;
+    } catch {
+      el.innerHTML = '<p style="color:var(--text-muted);font-size:.88rem;text-align:center">تعذر تحميل الإحصائيات</p>';
+    }
+  }
+
+  loadStats();
+  loadRecentBookings();
+  loadBookingStats();
 </script>
 </body>
 </html>
