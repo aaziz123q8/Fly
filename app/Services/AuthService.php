@@ -101,8 +101,9 @@ class AuthService
         $this->recordAttempt($ip, $email, true);
         $this->userModel->updateLastLogin($user['id']);
 
-        $token     = bin2hex(random_bytes(32));          // 64-char hex
-        $expiresAt = date('Y-m-d H:i:s', time() + self::SESSION_TTL);
+        $token      = bin2hex(random_bytes(32));          // 64-char hex (raw, returned to client)
+        $tokenHash  = hash('sha256', $token);             // stored in DB
+        $expiresAt  = date('Y-m-d H:i:s', time() + self::SESSION_TTL);
 
         $stmt = $this->pdo->prepare(
             'INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at)
@@ -110,7 +111,7 @@ class AuthService
         );
         $stmt->execute([
             ':user_id'    => $user['id'],
-            ':token'      => $token,
+            ':token'      => $tokenHash,
             ':ip'         => $ip,
             ':ua'         => $userAgent,
             ':expires_at' => $expiresAt,
@@ -129,8 +130,9 @@ class AuthService
 
     public function logout(string $sessionToken): void
     {
+        $tokenHash = hash('sha256', $sessionToken);
         $stmt = $this->pdo->prepare('DELETE FROM user_sessions WHERE session_token = ?');
-        $stmt->execute([$sessionToken]);
+        $stmt->execute([$tokenHash]);
     }
 
     // -------------------------------------------------------------------------
@@ -142,6 +144,7 @@ class AuthService
      */
     public function validateSession(string $sessionToken): ?array
     {
+        $tokenHash = hash('sha256', $sessionToken);
         $stmt = $this->pdo->prepare(
             'SELECT u.id, u.email, u.first_name, u.last_name, u.phone_country_code, u.phone_number,
                     u.is_verified, u.is_active, u.email_verified_at, u.last_login_at, u.created_at, u.updated_at
@@ -152,7 +155,7 @@ class AuthService
                 AND u.is_active = 1
               LIMIT 1'
         );
-        $stmt->execute([$sessionToken]);
+        $stmt->execute([$tokenHash]);
         $user = $stmt->fetch();
 
         if ($user === false) {
@@ -163,7 +166,7 @@ class AuthService
         $touch = $this->pdo->prepare(
             'UPDATE user_sessions SET last_active_at = NOW() WHERE session_token = ?'
         );
-        $touch->execute([$sessionToken]);
+        $touch->execute([$tokenHash]);
 
         return $user;
     }
@@ -184,13 +187,14 @@ class AuthService
             throw new RuntimeException('email_not_found', 404);
         }
 
-        $token     = bin2hex(random_bytes(32));
+        $token     = bin2hex(random_bytes(32));          // raw token returned to caller for email link
+        $tokenHash = hash('sha256', $token);              // hash stored in DB
         $expiresAt = date('Y-m-d H:i:s', time() + 3600);
 
         $stmt = $this->pdo->prepare(
             'INSERT INTO password_resets (user_id, token, expires_at) VALUES (?, ?, ?)'
         );
-        $stmt->execute([$user['id'], $token, $expiresAt]);
+        $stmt->execute([$user['id'], $tokenHash, $expiresAt]);
 
         return $token;
     }
@@ -202,6 +206,7 @@ class AuthService
      */
     public function resetPassword(string $token, string $newPassword): bool
     {
+        $tokenHash = hash('sha256', $token);
         $stmt = $this->pdo->prepare(
             'SELECT id, user_id FROM password_resets
               WHERE token = ?
@@ -209,7 +214,7 @@ class AuthService
                 AND used_at IS NULL
               LIMIT 1'
         );
-        $stmt->execute([$token]);
+        $stmt->execute([$tokenHash]);
         $reset = $stmt->fetch();
 
         if ($reset === false) {

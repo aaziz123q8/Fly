@@ -52,6 +52,14 @@ class Request
     // -------------------------------------------------------------------------
 
     /**
+     * Get a value from the query string only.
+     */
+    public function query(string $key, mixed $default = null): mixed
+    {
+        return $_GET[$key] ?? $default;
+    }
+
+    /**
      * Get a value from POST body, JSON body, or query string — in that order.
      */
     public function input(string $key, mixed $default = null): mixed
