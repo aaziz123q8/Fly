@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>من نحن — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .page-hero { background:linear-gradient(135deg,#0f2444,#1B4F8E); padding:60px 0; text-align:center; color:#fff; }
+    .page-hero h1 { font-size:2.2rem; font-weight:800; margin:0 0 12px; }
+    .page-hero p { color:rgba(255,255,255,0.8); font-size:1.05rem; }
+    .about-section { padding:60px 0; }
+    .about-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:28px; margin-top:48px; }
+    .about-card { background:#fff; border-radius:16px; padding:28px; box-shadow:var(--shadow); text-align:center; }
+    .about-card .icon { font-size:2.5rem; margin-bottom:16px; }
+    .about-card h3 { color:var(--primary); font-size:1.1rem; margin:0 0 8px; }
+    .about-card p { color:var(--text-muted); font-size:0.9rem; line-height:1.7; }
+    .stats { background:var(--primary); color:#fff; padding:48px 0; }
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:24px; text-align:center; }
+    .stat-num { font-size:2.5rem; font-weight:800; color:#E8A020; }
+    .stat-label { font-size:0.9rem; opacity:0.8; margin-top:4px; }
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
+    .bnav-item:hover { color:var(--primary); }
+    .bnav-icon { font-size:1.4rem; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
+    <div style="display:flex;gap:8px">
+      <a href="login.html" class="btn btn-ghost btn-sm">دخول</a>
+      <a href="register.html" class="btn btn-primary btn-sm">تسجيل</a>
+    </div>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="container">
+    <h1>من نحن</h1>
+    <p>نحن فلاي مسار — منصتك الأولى لحجز السفر في العالم العربي</p>
+  </div>
+</section>
+
+<section class="about-section" style="background:var(--bg)">
+  <div class="container">
+    <div style="max-width:720px;margin:0 auto;text-align:center">
+      <h2 style="color:var(--primary);font-size:1.8rem;margin-bottom:20px">قصتنا</h2>
+      <p style="color:var(--text-muted);font-size:1.05rem;line-height:1.8">
+        انطلقت فلاي مسار من رؤية واضحة: أن يحجز كل مسافر عربي رحلته وفندقه بكل سهولة وأمان وبأفضل الأسعار.
+        جمعنا أكثر من ٥٠٠ شركة طيران وآلاف الفنادق حول العالم في منصة واحدة متكاملة تدعم اللغة العربية بالكامل.
+      </p>
+    </div>
+    <div class="about-grid">
+      <div class="about-card">
+        <div class="icon">🎯</div>
+        <h3>رسالتنا</h3>
+        <p>تمكين المسافر العربي من الوصول إلى أفضل عروض السفر في العالم بخطوات بسيطة وآمنة</p>
+      </div>
+      <div class="about-card">
+        <div class="icon">👁️</div>
+        <h3>رؤيتنا</h3>
+        <p>أن نكون المنصة السفرية الأولى الموثوقة للمسافر العربي حول العالم بحلول عام ٢٠٣٠</p>
+      </div>
+      <div class="about-card">
+        <div class="icon">💎</div>
+        <h3>قيمنا</h3>
+        <p>الشفافية في الأسعار، الأمان في المدفوعات، الجودة في الخدمة، والاحترام للعميل</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="stats">
+  <div class="container">
+    <div class="stats-grid">
+      <div><div class="stat-num">+٥٠٠</div><div class="stat-label">شركة طيران</div></div>
+      <div><div class="stat-num">+١٠٠٠٠</div><div class="stat-label">فندق حول العالم</div></div>
+      <div><div class="stat-num">+٥٠٠٠٠</div><div class="stat-label">عميل راضٍ</div></div>
+      <div><div class="stat-num">٢٤/٧</div><div class="stat-label">دعم متواصل</div></div>
+    </div>
+  </div>
+</section>
+
+<footer style="background:#0f2444;color:#fff;padding:32px 0;text-align:center">
+  <div class="container">
+    <p style="margin:0 0 12px;font-size:1.1rem;font-weight:700">✈️ فلاي مسار</p>
+    <p style="color:rgba(255,255,255,0.5);font-size:0.85rem">© ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.</p>
+  </div>
+</footer>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
+  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
+  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
+</nav>
+</body>
+</html>

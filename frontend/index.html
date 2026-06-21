@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="ar">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,579 +7,572 @@
   <meta name="description" content="ابحث عن أرخص الرحلات والفنادق في مكان واحد. فلاي مسار — منصة السفر الأولى.">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
   <link rel="stylesheet" href="css/app.css">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    .hero {
+      background: linear-gradient(135deg, #0f2444 0%, #1B4F8E 60%, #2563ab 100%);
+      padding: 80px 0 120px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+    }
+    .hero-content { position: relative; z-index: 1; }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(232,160,32,0.2);
+      color: #E8A020;
+      border: 1px solid rgba(232,160,32,0.4);
+      padding: 6px 18px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      margin-bottom: 20px;
+    }
+    .hero h1 { font-size: clamp(2rem,5vw,3.5rem); color:#fff; font-weight:800; margin:0 0 16px; line-height:1.2; }
+    .hero h1 .highlight { color:#E8A020; }
+    .hero p { color:rgba(255,255,255,0.8); font-size:1.1rem; margin:0; }
+
+    .search-box {
+      background:#fff;
+      border-radius:20px;
+      box-shadow:0 20px 60px rgba(0,0,0,0.18);
+      padding:28px;
+      margin-top:-60px;
+      position:relative;
+      z-index:10;
+    }
+    .search-tabs { display:flex; gap:8px; margin-bottom:24px; border-bottom:2px solid #f0f2f5; }
+    .search-tab { padding:10px 24px; border:none; background:none; cursor:pointer; font-size:1rem; font-weight:600; color:var(--text-muted); border-bottom:3px solid transparent; margin-bottom:-2px; transition:all .2s; font-family:inherit; }
+    .search-tab.active { color:var(--primary); border-bottom-color:var(--primary); }
+    .search-panel { display:none; }
+    .search-panel.active { display:block; }
+
+    .trip-type { display:flex; gap:8px; margin-bottom:20px; }
+    .trip-pill { padding:7px 18px; border-radius:50px; border:2px solid #e5e7eb; background:none; cursor:pointer; font-size:0.9rem; font-weight:600; color:var(--text-muted); transition:all .2s; font-family:inherit; }
+    .trip-pill.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    .search-fields { display:grid; gap:12px; }
+    .srow-2 { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; align-items:end; }
+    .srow-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+    .srow-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:12px; }
+    @media(max-width:768px) {
+      .srow-2,.srow-3,.srow-4 { grid-template-columns:1fr; }
+      .swap-btn { display:none!important; }
+      .srow-2 { grid-template-columns:1fr; }
+    }
+    .field-group { display:flex; flex-direction:column; gap:6px; }
+    .field-group label { font-size:0.8rem; font-weight:600; color:var(--text-muted); }
+    .field-input { width:100%; padding:12px 16px; border:2px solid #e5e7eb; border-radius:12px; font-size:0.95rem; background:#f8fafc; cursor:pointer; transition:border-color .2s; box-sizing:border-box; text-align:right; font-family:inherit; }
+    [dir=ltr] .field-input { text-align:left; }
+    .field-input:focus { outline:none; border-color:var(--primary); background:#fff; }
+    .field-input.filled { background:#fff; border-color:#c5d5e8; }
+    .field-select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:left 12px center; }
+    [dir=ltr] .field-select { background-position:right 12px center; }
+
+    .swap-btn { width:40px; height:40px; border-radius:50%; border:2px solid #e5e7eb; background:#fff; cursor:pointer; font-size:1.2rem; display:flex; align-items:center; justify-content:center; align-self:flex-end; margin-bottom:2px; transition:all .2s; flex-shrink:0; }
+    .swap-btn:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    .pax-popup,.rooms-popup { display:none; position:absolute; background:#fff; border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.15); padding:20px; z-index:500; min-width:280px; top:100%; right:0; margin-top:4px; }
+    [dir=ltr] .pax-popup,[dir=ltr] .rooms-popup { right:auto; left:0; }
+    .pax-popup.open,.rooms-popup.open { display:block; }
+    .pax-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid #f0f2f5; }
+    .pax-row:last-of-type { border-bottom:none; }
+    .pax-info strong { display:block; font-size:0.95rem; }
+    .pax-info small { color:var(--text-muted); font-size:0.8rem; }
+    .pax-counter { display:flex; align-items:center; gap:12px; }
+    .pax-btn { width:32px; height:32px; border-radius:50%; border:2px solid #e5e7eb; background:#fff; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; font-weight:700; transition:all .2s; font-family:inherit; }
+    .pax-btn:hover:not(:disabled) { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .pax-btn:disabled { opacity:0.3; cursor:not-allowed; }
+    .pax-count { font-size:1.1rem; font-weight:700; min-width:24px; text-align:center; }
+    .pax-done { width:100%; margin-top:12px; padding:10px; background:var(--primary); color:#fff; border:none; border-radius:10px; font-size:0.95rem; font-weight:600; cursor:pointer; font-family:inherit; }
+
+    /* Lang / Currency */
+    .lang-currency { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    .lang-btn,.currency-btn { padding:4px 10px; border-radius:6px; border:1px solid #e5e7eb; background:none; cursor:pointer; font-size:0.8rem; font-weight:600; color:var(--text-muted); transition:all .2s; font-family:inherit; }
+    .lang-btn.active,.currency-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .currency-sep { color:#e5e7eb; }
+
+    /* Date Picker */
+    .dp-popup { display:none; position:fixed; background:#fff; border-radius:16px; box-shadow:0 8px 40px rgba(0,0,0,0.18); z-index:2000; padding:16px; user-select:none; }
+    .dp-wrap { display:flex; gap:16px; flex-wrap:wrap; }
+    .dp-month-block { min-width:260px; }
+    .dp-month-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+    .dp-month-title { font-weight:700; font-size:0.95rem; }
+    .dp-nav { background:none; border:1px solid #e5e7eb; border-radius:8px; width:30px; height:30px; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; font-family:inherit; }
+    .dp-nav:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .dp-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+    .dp-day-name { text-align:center; font-size:0.72rem; font-weight:600; color:var(--text-muted); padding:4px 0; }
+    .dp-day { text-align:center; padding:8px 4px; border-radius:8px; cursor:pointer; font-size:0.88rem; transition:all .15s; }
+    .dp-day:hover:not(.dp-disabled) { background:#e8f0fb; }
+    .dp-disabled { color:#d1d5db; cursor:not-allowed; }
+    .dp-today { font-weight:700; color:var(--primary); }
+    .dp-selected { background:var(--primary)!important; color:#fff!important; font-weight:700; }
+    .dp-in-range { background:#dbeafe; border-radius:0; }
+    .dp-start { border-radius:8px 0 0 8px; }
+    .dp-end { border-radius:0 8px 8px 0; }
+    [dir=ltr] .dp-start { border-radius:0 8px 8px 0; }
+    [dir=ltr] .dp-end { border-radius:8px 0 0 8px; }
+    .dp-nights { text-align:center; margin-top:10px; font-weight:700; color:var(--primary); }
+
+    /* Features */
+    .features { padding:80px 0; background:var(--bg); }
+    .features-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:24px; }
+    .feature-card { background:#fff; border-radius:16px; padding:28px 24px; text-align:center; box-shadow:var(--shadow); transition:transform .2s; }
+    .feature-card:hover { transform:translateY(-4px); }
+    .feature-icon { font-size:2.5rem; margin-bottom:16px; }
+    .feature-card h3 { font-size:1.05rem; font-weight:700; margin:0 0 8px; color:var(--primary); }
+    .feature-card p { font-size:0.9rem; color:var(--text-muted); margin:0; }
+
+    /* Steps */
+    .steps { padding:80px 0; background:#fff; }
+    .steps-title { text-align:center; font-size:1.8rem; font-weight:800; margin-bottom:48px; color:var(--primary); }
+    .steps-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:40px; text-align:center; }
+    .step-num { width:56px; height:56px; background:var(--primary); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.4rem; font-weight:800; margin:0 auto 16px; }
+    .step h3 { font-size:1.1rem; font-weight:700; margin-bottom:8px; }
+    .step p { color:var(--text-muted); font-size:0.9rem; }
+
+    /* Bottom Nav */
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; transition:color .2s; border:none; background:none; cursor:pointer; }
+    .bnav-item.active,.bnav-item:hover { color:var(--primary); }
+    .bnav-icon { font-size:1.4rem; }
+
+    /* Results */
+    .results-section { padding:40px 0; background:var(--bg); }
+    .results-section.hidden { display:none; }
+    .flight-card { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:20px 24px; margin-bottom:16px; display:flex; align-items:center; gap:20px; flex-wrap:wrap; transition:box-shadow .2s; }
+    .flight-card:hover { box-shadow:0 8px 30px rgba(27,79,142,.15); }
+    .fc-airline { display:flex; flex-direction:column; align-items:center; gap:4px; min-width:72px; }
+    .airline-logo { width:48px; height:48px; object-fit:contain; border-radius:8px; background:#f0f2f5; padding:4px; }
+    .airline-name { font-size:0.75rem; color:var(--text-muted); text-align:center; }
+    .fc-route { flex:1; display:flex; align-items:center; gap:12px; }
+    .route-point { text-align:center; }
+    .route-time { font-size:1.5rem; font-weight:800; }
+    .route-code { font-size:0.78rem; color:var(--text-muted); }
+    .route-mid { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+    .route-duration { font-size:0.78rem; color:var(--text-muted); }
+    .route-bar { width:100%; height:2px; background:linear-gradient(to left,var(--primary),#E8A020); position:relative; }
+    .route-bar::after { content:'✈'; position:absolute; top:-9px; left:50%; transform:translateX(-50%); font-size:0.85rem; }
+    .route-stops { font-size:0.75rem; color:var(--text-muted); }
+    .route-stops.direct { color:#16a34a; font-weight:600; }
+    .fc-price { display:flex; flex-direction:column; align-items:flex-end; gap:8px; margin-right:auto; }
+    [dir=ltr] .fc-price { margin-right:0; margin-left:auto; align-items:flex-start; }
+    .price-amount { font-size:1.6rem; font-weight:800; color:var(--primary); }
+    .price-per { font-size:0.78rem; color:var(--text-muted); }
+    .result-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    .result-count { color:var(--text-muted); font-size:0.9rem; }
+  </style>
 </head>
 <body>
 
-<!-- Navbar -->
+<!-- NAVBAR -->
 <nav class="navbar">
-  <div class="container">
-    <a href="index.html" class="navbar-brand">
-      <span class="brand-icon">✈️</span>
-      <div>
-        <span>FlyMasar</span>
-        <span class="brand-sub">فلاي مسار</span>
-      </div>
-    </a>
-
-    <nav class="navbar-nav">
-      <a href="index.html" class="active">الرحلات</a>
-      <a href="hotels.html">الفنادق</a>
-      <a href="dashboard.html">حجوزاتي</a>
-    </nav>
-
-    <div class="navbar-actions">
-      <div id="authButtons" class="flex gap-3">
-        <a href="login.html" class="btn btn-ghost">تسجيل الدخول</a>
-        <a href="register.html" class="btn btn-primary">حساب جديد</a>
-      </div>
-      <div id="userMenu" class="user-menu" style="display:none">
-        <a href="dashboard.html" class="flex align-center gap-2" style="text-decoration:none;color:inherit">
-          <div class="user-avatar" id="userInitial">م</div>
-          <span id="userName" style="font-weight:600;font-size:.92rem"></span>
-        </a>
-        <button onclick="Auth.logout()" class="btn btn-ghost btn-sm">خروج</button>
-      </div>
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
+    <div class="lang-currency">
+      <button class="lang-btn active" data-lang="ar" onclick="setLang('ar')">ع</button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')">EN</button>
+      <span class="currency-sep">|</span>
+      <button class="currency-btn active" data-currency="GBP" onclick="setCurrency('GBP')">£</button>
+      <button class="currency-btn" data-currency="KWD" onclick="setCurrency('KWD')">د.ك</button>
+      <button class="currency-btn" data-currency="SAR" onclick="setCurrency('SAR')">ر.س</button>
+      <button class="currency-btn" data-currency="USD" onclick="setCurrency('USD')">$</button>
+      <span class="currency-sep">|</span>
+      <span id="navAuth"></span>
     </div>
-
-    <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="القائمة">
-      <span></span><span></span><span></span>
-    </button>
   </div>
 </nav>
 
-<!-- Mobile Menu -->
-<div class="mobile-menu" id="mobileMenu">
-  <a href="index.html">✈️ الرحلات</a>
-  <a href="hotels.html">🏨 الفنادق</a>
-  <a href="dashboard.html">📋 حجوزاتي</a>
-  <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px" id="mobileAuth">
-    <a href="login.html" class="btn btn-ghost btn-block" style="margin-bottom:8px">تسجيل الدخول</a>
-    <a href="register.html" class="btn btn-primary btn-block">حساب جديد</a>
-  </div>
-  <div id="mobileUserMenu" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
-    <a href="dashboard.html">📋 حجوزاتي</a>
-    <a href="#" onclick="Auth.logout()">🚪 تسجيل الخروج</a>
-  </div>
-</div>
-
-<!-- Hero Section -->
+<!-- HERO -->
 <section class="hero">
-  <div class="hero-airplane">✈</div>
-  <div class="hero-content">
-    <div class="hero-badge">🌟 أفضل منصة سفر في المنطقة</div>
-    <h1>سافر بـ<span class="highlight">أفضل الأسعار</span></h1>
-    <p>ابحث عن أرخص الرحلات والفنادق في مكان واحد</p>
-    <p style="opacity:.65;font-size:.9rem">أكثر من ٥٠٠ شركة طيران وآلاف الفنادق حول العالم</p>
+  <div class="container hero-content">
+    <div class="hero-badge">🌟 منصة السفر الأولى في المنطقة</div>
+    <h1 data-i18n="hero_title">سافر بـ<span class="highlight">أفضل الأسعار</span></h1>
+    <p data-i18n="hero_sub">أكثر من ٥٠٠ شركة طيران وآلاف الفنادق حول العالم</p>
   </div>
+</section>
 
-  <!-- Search Box -->
-  <div class="search-box">
-    <div class="search-tabs">
-      <button class="search-tab active" onclick="switchTab('flights', this)">
-        ✈️ رحلات جوية
-      </button>
-      <button class="search-tab" onclick="switchTab('hotels', this)">
-        🏨 فنادق
-      </button>
-    </div>
+<!-- SEARCH BOX -->
+<section style="background:var(--bg);padding-bottom:0">
+  <div class="container">
+    <div class="search-box">
+      <div class="search-tabs">
+        <button class="search-tab active" onclick="switchTab('flights',this)" data-i18n="tab_flights">✈️ رحلات</button>
+        <button class="search-tab" onclick="switchTab('hotels',this)" data-i18n="tab_hotels">🏨 فنادق</button>
+      </div>
 
-    <!-- Flights Search -->
-    <div id="flightsPanel" class="search-panel active">
-      <form id="flightForm" onsubmit="searchFlights(event)">
-        <div class="search-grid search-grid-2" style="margin-bottom:12px">
-          <div class="search-field">
-            <label>من</label>
-            <span class="search-field-icon">🛫</span>
-            <input type="text" class="form-control" id="flightFrom" placeholder="المدينة أو المطار" required>
-          </div>
-          <div class="search-field" style="position:relative">
-            <label>إلى</label>
-            <span class="search-field-icon">🛬</span>
-            <input type="text" class="form-control" id="flightTo" placeholder="المدينة أو المطار" required>
-            <button type="button" onclick="swapCities()" style="position:absolute;left:50%;top:50%;transform:translate(-50%,0);background:white;border:2px solid var(--border);border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.9rem;z-index:5;margin-top:10px">⇄</button>
-          </div>
+      <!-- FLIGHTS -->
+      <div id="flightsPanel" class="search-panel active">
+        <div class="trip-type">
+          <button class="trip-pill active" id="pill_oneway" onclick="setTripType('oneway')" data-i18n="one_way">ذهاب فقط</button>
+          <button class="trip-pill" id="pill_round" onclick="setTripType('round')" data-i18n="round_trip">ذهاب وعودة</button>
         </div>
-        <div class="search-grid search-grid-4" style="margin-bottom:12px">
-          <div class="search-field">
-            <label>تاريخ الذهاب</label>
-            <span class="search-field-icon">📅</span>
-            <input type="date" class="form-control" id="departDate" required>
+        <div class="search-fields">
+          <div class="srow-2">
+            <div class="field-group">
+              <label data-i18n="from">من</label>
+              <input type="text" class="field-input" id="fFrom" placeholder="مدينة المغادرة" autocomplete="off">
+            </div>
+            <div style="display:flex;align-items:flex-end;padding-bottom:2px">
+              <button class="swap-btn" onclick="swapCities()" title="تبديل">⇄</button>
+            </div>
+            <div class="field-group">
+              <label data-i18n="to">إلى</label>
+              <input type="text" class="field-input" id="fTo" placeholder="مدينة الوصول" autocomplete="off">
+            </div>
           </div>
-          <div class="search-field">
-            <label>تاريخ العودة <span style="color:var(--text-light)">(اختياري)</span></label>
-            <span class="search-field-icon">📅</span>
-            <input type="date" class="form-control" id="returnDate">
-          </div>
-          <div class="search-field">
-            <label>الدرجة</label>
-            <select class="form-control" id="cabinClass">
-              <option value="economy">اقتصادية</option>
-              <option value="business">أعمال</option>
-              <option value="first">أولى</option>
-            </select>
-          </div>
-          <div class="search-field">
-            <label>المسافرون</label>
-            <div class="flex gap-2 align-center" style="margin-top:4px">
-              <div style="flex:1">
-                <div class="number-input">
-                  <button type="button" onclick="changeCount('adults',-1)">−</button>
-                  <span id="adultsCount">1</span>
-                  <button type="button" onclick="changeCount('adults',1)">+</button>
+          <div class="srow-4" id="flightDatesRow">
+            <div class="field-group">
+              <label data-i18n="departure">تاريخ الذهاب</label>
+              <input type="text" class="field-input" id="fDepDate" readonly placeholder="اختر التاريخ">
+            </div>
+            <div class="field-group" id="retDateWrap" style="display:none">
+              <label data-i18n="return">تاريخ العودة</label>
+              <input type="text" class="field-input" id="fRetDate" readonly placeholder="اختر التاريخ">
+            </div>
+            <div class="field-group" style="position:relative">
+              <label data-i18n="passengers">المسافرون</label>
+              <input type="text" class="field-input" id="fPax" readonly value="١ بالغ" onclick="togglePop('paxPop')">
+              <div class="pax-popup" id="paxPop">
+                <div class="pax-row">
+                  <div class="pax-info"><strong data-i18n="adult">بالغ</strong><small data-i18n="adult_desc">١٢ سنة فأكثر</small></div>
+                  <div class="pax-counter">
+                    <button class="pax-btn" onclick="chPax('adult',-1)">−</button>
+                    <span class="pax-count" id="cAdult">1</span>
+                    <button class="pax-btn" onclick="chPax('adult',1)">+</button>
+                  </div>
                 </div>
-                <div style="font-size:.72rem;text-align:center;color:var(--text-muted);margin-top:2px">بالغون</div>
-              </div>
-              <div style="flex:1">
-                <div class="number-input">
-                  <button type="button" onclick="changeCount('children',-1)">−</button>
-                  <span id="childrenCount">0</span>
-                  <button type="button" onclick="changeCount('children',1)">+</button>
+                <div class="pax-row">
+                  <div class="pax-info"><strong data-i18n="child">طفل</strong><small data-i18n="child_desc">٢–١١ سنة</small></div>
+                  <div class="pax-counter">
+                    <button class="pax-btn" onclick="chPax('child',-1)">−</button>
+                    <span class="pax-count" id="cChild">0</span>
+                    <button class="pax-btn" onclick="chPax('child',1)">+</button>
+                  </div>
                 </div>
-                <div style="font-size:.72rem;text-align:center;color:var(--text-muted);margin-top:2px">أطفال</div>
+                <div class="pax-row">
+                  <div class="pax-info"><strong data-i18n="infant">رضيع</strong><small data-i18n="infant_desc">أقل من سنتين</small></div>
+                  <div class="pax-counter">
+                    <button class="pax-btn" onclick="chPax('infant',-1)">−</button>
+                    <span class="pax-count" id="cInfant">0</span>
+                    <button class="pax-btn" onclick="chPax('infant',1)">+</button>
+                  </div>
+                </div>
+                <button class="pax-done" onclick="closePop('paxPop')" data-i18n="done">تم</button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label data-i18n="cabin_class">الدرجة</label>
+              <select class="field-input field-select" id="fClass">
+                <option value="economy">اقتصادية</option>
+                <option value="business">أعمال</option>
+                <option value="first">أولى</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;justify-content:center;margin-top:8px">
+            <button class="btn btn-primary btn-lg" onclick="doFlightSearch()" style="min-width:220px;font-size:1.05rem">
+              <span id="fSearchTxt" data-i18n="search_flights">🔍 بحث عن رحلات</span>
+              <div class="spinner spinner-sm hidden" id="fSpinner" style="border-top-color:white"></div>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- HOTELS -->
+      <div id="hotelsPanel" class="search-panel">
+        <div class="search-fields">
+          <div class="field-group">
+            <label data-i18n="destination">الوجهة</label>
+            <input type="text" class="field-input" id="hDest" placeholder="المدينة أو الفندق">
+          </div>
+          <div class="srow-3">
+            <div class="field-group">
+              <label data-i18n="checkin">تاريخ الوصول</label>
+              <input type="text" class="field-input" id="hCheckin" readonly placeholder="اختر التاريخ">
+            </div>
+            <div class="field-group">
+              <label data-i18n="checkout">تاريخ المغادرة</label>
+              <input type="text" class="field-input" id="hCheckout" readonly placeholder="اختر التاريخ">
+            </div>
+            <div class="field-group" style="position:relative">
+              <label data-i18n="rooms_guests">الغرف والضيوف</label>
+              <input type="text" class="field-input" id="hRooms" readonly value="١ غرفة، ٢ ضيوف" onclick="togglePop('roomsPop')">
+              <div class="rooms-popup" id="roomsPop">
+                <div class="pax-row">
+                  <div class="pax-info"><strong>الغرف</strong></div>
+                  <div class="pax-counter">
+                    <button class="pax-btn" onclick="chRooms('rooms',-1)">−</button>
+                    <span class="pax-count" id="cRooms">1</span>
+                    <button class="pax-btn" onclick="chRooms('rooms',1)">+</button>
+                  </div>
+                </div>
+                <div class="pax-row">
+                  <div class="pax-info"><strong>الضيوف</strong></div>
+                  <div class="pax-counter">
+                    <button class="pax-btn" onclick="chRooms('guests',-1)">−</button>
+                    <span class="pax-count" id="cGuests">2</span>
+                    <button class="pax-btn" onclick="chRooms('guests',1)">+</button>
+                  </div>
+                </div>
+                <button class="pax-done" onclick="closePop('roomsPop')" data-i18n="done">تم</button>
               </div>
             </div>
           </div>
-        </div>
-        <div style="display:flex;justify-content:center">
-          <button type="submit" class="btn btn-primary btn-lg" style="min-width:200px">
-            <span id="flightSearchText">🔍 بحث عن رحلات</span>
-            <div class="spinner spinner-sm hidden" id="flightSpinner" style="border-top-color:white"></div>
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Hotels Search -->
-    <div id="hotelsPanel" class="search-panel">
-      <form id="hotelFormHome" onsubmit="searchHotels(event)">
-        <div class="search-grid search-grid-3" style="margin-bottom:12px">
-          <div class="search-field">
-            <label>المدينة أو الفندق</label>
-            <span class="search-field-icon">📍</span>
-            <input type="text" class="form-control" id="hotelCity" placeholder="الرياض، دبي، القاهرة..." required>
-          </div>
-          <div class="search-field">
-            <label>تاريخ الوصول</label>
-            <span class="search-field-icon">📅</span>
-            <input type="date" class="form-control" id="checkIn" required>
-          </div>
-          <div class="search-field">
-            <label>تاريخ المغادرة</label>
-            <span class="search-field-icon">📅</span>
-            <input type="date" class="form-control" id="checkOut" required>
+          <div style="display:flex;justify-content:center;margin-top:8px">
+            <button class="btn btn-primary btn-lg" onclick="doHotelSearch()" style="min-width:220px;font-size:1.05rem" data-i18n="search_hotels">🔍 بحث عن فنادق</button>
           </div>
         </div>
-        <div class="search-grid search-grid-2" style="margin-bottom:16px">
-          <div class="search-field">
-            <label>الغرف</label>
-            <div class="number-input">
-              <button type="button" onclick="changeCount('rooms',-1)">−</button>
-              <span id="roomsCount">1</span>
-              <button type="button" onclick="changeCount('rooms',1)">+</button>
-            </div>
-          </div>
-          <div class="search-field">
-            <label>البالغون</label>
-            <div class="number-input">
-              <button type="button" onclick="changeCount('hotelAdults',-1)">−</button>
-              <span id="hotelAdultsCount">2</span>
-              <button type="button" onclick="changeCount('hotelAdults',1)">+</button>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;justify-content:center">
-          <button type="submit" class="btn btn-primary btn-lg" style="min-width:200px">
-            🔍 بحث عن فنادق
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- Flight Results Section (hidden initially) -->
+<!-- FLIGHT RESULTS -->
 <section id="flightResults" class="results-section hidden">
   <div class="container">
-    <div class="results-header">
+    <div class="result-header">
       <div>
-        <h2 style="font-size:1.3rem;font-weight:700">نتائج البحث</h2>
-        <p class="results-count" id="flightResultsCount"></p>
-      </div>
-      <div class="results-sort">
-        <label style="color:var(--text-muted);font-size:.9rem">ترتيب حسب:</label>
-        <select class="form-control" style="width:auto" onchange="sortFlights(this.value)">
-          <option value="price">الأسعار</option>
-          <option value="duration">المدة</option>
-          <option value="departure">وقت الإقلاع</option>
-        </select>
+        <h2 style="font-size:1.3rem;font-weight:700;margin:0 0 4px">نتائج البحث</h2>
+        <p class="result-count" id="flightResultsCount"></p>
       </div>
     </div>
     <div id="flightResultsList"></div>
   </div>
 </section>
 
-<!-- Features Section -->
-<section class="section" style="background:white">
+<!-- FEATURES -->
+<section class="features">
   <div class="container">
-    <div class="section-header">
-      <h2>لماذا فلاي مسار؟</h2>
-      <p>نقدم لك تجربة سفر لا مثيل لها بأفضل الأسعار وأعلى معايير الجودة</p>
-    </div>
-    <div class="grid-3">
+    <div class="features-grid">
       <div class="feature-card">
-        <span class="feature-icon">💰</span>
-        <h3>أفضل الأسعار</h3>
-        <p>نقارن مئات شركات الطيران والفنادق لنضمن لك أفضل سعر ممكن في كل مرة</p>
+        <div class="feature-icon">💰</div>
+        <h3 data-i18n="feat1_title">أسعار مضمونة</h3>
+        <p data-i18n="feat1_desc">نضمن لك أفضل سعر أو نرد الفرق</p>
       </div>
       <div class="feature-card">
-        <span class="feature-icon">🔒</span>
-        <h3>حجز آمن وموثوق</h3>
-        <p>بياناتك وبطاقاتك الائتمانية محمية بأعلى معايير التشفير والأمان</p>
+        <div class="feature-icon">🔒</div>
+        <h3 data-i18n="feat2_title">حجز آمن</h3>
+        <p data-i18n="feat2_desc">تشفير كامل وحماية لبياناتك</p>
       </div>
       <div class="feature-card">
-        <span class="feature-icon">📞</span>
-        <h3>دعم على مدار الساعة</h3>
-        <p>فريق الدعم متاح ٢٤/٧ لمساعدتك في أي وقت وأي مكان حول العالم</p>
+        <div class="feature-icon">🎧</div>
+        <h3 data-i18n="feat3_title">دعم ٢٤/٧</h3>
+        <p data-i18n="feat3_desc">فريق متخصص لمساعدتك في أي وقت</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3 data-i18n="feat4_title">تأكيد فوري</h3>
+        <p data-i18n="feat4_desc">تذكرتك تصلك خلال دقائق</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- How It Works -->
-<section class="section">
+<!-- HOW IT WORKS -->
+<section class="steps">
   <div class="container">
-    <div class="section-header">
-      <h2>كيف يعمل فلاي مسار؟</h2>
-      <p>ثلاث خطوات بسيطة للحجز المثالي</p>
-    </div>
-    <div class="steps">
+    <h2 class="steps-title" data-i18n="steps_title">كيف يعمل فلاي مسار؟</h2>
+    <div class="steps-grid">
       <div class="step">
         <div class="step-num">١</div>
-        <h3>ابحث</h3>
-        <p>أدخل وجهتك والتواريخ وعدد المسافرين</p>
+        <h3 data-i18n="step1_title">ابحث</h3>
+        <p data-i18n="step1_desc">أدخل وجهتك والتواريخ وعدد المسافرين</p>
       </div>
       <div class="step">
         <div class="step-num">٢</div>
-        <h3>اختر</h3>
-        <p>قارن الأسعار واختر العرض المناسب لك</p>
+        <h3 data-i18n="step2_title">اختر</h3>
+        <p data-i18n="step2_desc">قارن الأسعار واختر العرض المناسب</p>
       </div>
       <div class="step">
         <div class="step-num">٣</div>
-        <h3>احجز</h3>
-        <p>أكمل الدفع الآمن واستلم تأكيد الحجز فوراً</p>
+        <h3 data-i18n="step3_title">احجز</h3>
+        <p data-i18n="step3_desc">أكمل الدفع واستلم تذكرتك فوراً</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- Destinations -->
-<section class="section" style="background:white">
+<!-- FOOTER -->
+<footer style="background:#0f2444;color:#fff;padding:48px 0 24px">
   <div class="container">
-    <div class="section-header">
-      <h2>وجهات مميزة</h2>
-      <p>اكتشف أجمل المدن وأكثرها طلباً هذا الموسم</p>
-    </div>
-    <div class="grid-4">
-      <div class="feature-card" style="cursor:pointer" onclick="quickSearch('دبي')">
-        <span class="feature-icon">🏙️</span>
-        <h3>دبي</h3>
-        <p style="color:var(--secondary);font-weight:700">يبدأ من ٥٩٩ ر.س</p>
-      </div>
-      <div class="feature-card" style="cursor:pointer" onclick="quickSearch('إسطنبول')">
-        <span class="feature-icon">🕌</span>
-        <h3>إسطنبول</h3>
-        <p style="color:var(--secondary);font-weight:700">يبدأ من ٨٩٩ ر.س</p>
-      </div>
-      <div class="feature-card" style="cursor:pointer" onclick="quickSearch('القاهرة')">
-        <span class="feature-icon">🏛️</span>
-        <h3>القاهرة</h3>
-        <p style="color:var(--secondary);font-weight:700">يبدأ من ٣٩٩ ر.س</p>
-      </div>
-      <div class="feature-card" style="cursor:pointer" onclick="quickSearch('لندن')">
-        <span class="feature-icon">🎡</span>
-        <h3>لندن</h3>
-        <p style="color:var(--secondary);font-weight:700">يبدأ من ١٢٩٩ ر.س</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CTA Banner -->
-<section style="background:linear-gradient(135deg,var(--primary),var(--primary-light));padding:60px 0;text-align:center;color:white">
-  <div class="container">
-    <h2 style="font-size:2rem;font-weight:800;margin-bottom:12px">لا تفوّت أفضل الصفقات!</h2>
-    <p style="opacity:.85;margin-bottom:28px;font-size:1.05rem">سجّل الآن واحصل على إشعارات فورية بأقل الأسعار</p>
-    <a href="register.html" class="btn btn-white btn-lg">إنشاء حساب مجاني ←</a>
-  </div>
-</section>
-
-<!-- Booking Modal -->
-<div class="modal-overlay" id="bookingModal" onclick="if(event.target===this)closeModal('bookingModal')">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 class="modal-title">✈️ إتمام الحجز</h2>
-      <button class="modal-close" onclick="closeModal('bookingModal')" style="font-size:1.5rem;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:#f0f2f5;border-radius:50%;border:none;cursor:pointer;color:#333">✕</button>
-    </div>
-    <form id="bookingForm" onsubmit="submitBooking(event)">
-      <input type="hidden" id="bookingFlightId">
-      <div class="form-group">
-        <label class="form-label">الاسم الأول</label>
-        <input type="text" class="form-control" id="bFirstName" required placeholder="محمد">
-      </div>
-      <div class="form-group">
-        <label class="form-label">الاسم الأخير</label>
-        <input type="text" class="form-control" id="bLastName" required placeholder="العمري">
-      </div>
-      <div class="form-group">
-        <label class="form-label">رقم جواز السفر</label>
-        <input type="text" class="form-control" id="bPassport" required placeholder="A1234567">
-      </div>
-      <div class="form-group">
-        <label class="form-label">رمز قسيمة الخصم (اختياري)</label>
-        <div class="coupon-input-group">
-          <input type="text" class="form-control" id="bCoupon" placeholder="أدخل الرمز">
-          <button type="button" class="btn btn-ghost" onclick="applyCoupon()">تطبيق</button>
-        </div>
-      </div>
-      <div id="couponMsg" class="hidden"></div>
-      <button type="submit" class="btn btn-primary btn-block btn-lg">
-        تأكيد الحجز
-      </button>
-    </form>
-  </div>
-</div>
-
-<!-- Footer -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer-grid">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:32px;margin-bottom:32px">
       <div>
-        <div class="footer-brand">✈️ Fly<span>Masar</span></div>
-        <p class="footer-desc">منصة السفر الأولى في المنطقة. نقدم أفضل أسعار الرحلات والفنادق مع تجربة حجز سلسة وآمنة.</p>
-        <div class="footer-social">
-          <a href="#" class="social-btn" aria-label="تويتر">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-          </a>
-          <a href="#" class="social-btn" aria-label="إنستجرام">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
-          </a>
-          <a href="#" class="social-btn" aria-label="واتساب">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          </a>
-        </div>
+        <div style="font-size:1.4rem;font-weight:800;margin-bottom:12px">✈️ فلاي مسار</div>
+        <p style="color:rgba(255,255,255,0.6);font-size:0.9rem;line-height:1.7" data-i18n="footer_desc">منصة السفر الأولى للعالم العربي. أفضل الأسعار، أسرع الحجوزات.</p>
       </div>
-      <div class="footer-col">
-        <h4>الخدمات</h4>
-        <div class="footer-links">
-          <a href="index.html">رحلات جوية</a>
-          <a href="hotels.html">فنادق</a>
-          <a href="#">باقات سياحية</a>
-          <a href="#">تأمين السفر</a>
-        </div>
+      <div>
+        <h4 style="margin:0 0 16px;color:#E8A020" data-i18n="footer_company">الشركة</h4>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px">
+          <li><a href="about.html" style="color:rgba(255,255,255,0.7);text-decoration:none" data-i18n="footer_about">من نحن</a></li>
+          <li><a href="contact.html" style="color:rgba(255,255,255,0.7);text-decoration:none" data-i18n="footer_contact">اتصل بنا</a></li>
+        </ul>
       </div>
-      <div class="footer-col">
-        <h4>الشركة</h4>
-        <div class="footer-links">
-          <a href="#">من نحن</a>
-          <a href="#">تواصل معنا</a>
-          <a href="#">المدونة</a>
-          <a href="#">الوظائف</a>
-        </div>
-      </div>
-      <div class="footer-col">
-        <h4>الدعم</h4>
-        <div class="footer-links">
-          <a href="#">مركز المساعدة</a>
-          <a href="#">سياسة الخصوصية</a>
-          <a href="#">الشروط والأحكام</a>
-          <a href="#">سياسة الإلغاء</a>
-        </div>
+      <div>
+        <h4 style="margin:0 0 16px;color:#E8A020" data-i18n="footer_legal">قانوني</h4>
+        <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px">
+          <li><a href="privacy.html" style="color:rgba(255,255,255,0.7);text-decoration:none" data-i18n="footer_privacy">سياسة الخصوصية</a></li>
+          <li><a href="terms.html" style="color:rgba(255,255,255,0.7);text-decoration:none" data-i18n="footer_terms">الشروط والأحكام</a></li>
+        </ul>
       </div>
     </div>
-  </div>
-  <div class="footer-bottom">
-    <div class="container" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-      <span>© ٢٠٢٥ فلاي مسار. جميع الحقوق محفوظة.</span>
-      <div class="flex gap-3" style="align-items:center">
-        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='24' viewBox='0 0 40 24'%3E%3Crect width='40' height='24' rx='4' fill='%23252525'/%3E%3Ctext x='50%25' y='55%25' fill='white' font-size='7' text-anchor='middle' dominant-baseline='middle'%3EVISA%3C/text%3E%3C/svg%3E" alt="Visa" height="24">
-        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='24' viewBox='0 0 40 24'%3E%3Crect width='40' height='24' rx='4' fill='%23252525'/%3E%3Ccircle cx='15' cy='12' r='7' fill='%23EB001B'/%3E%3Ccircle cx='25' cy='12' r='7' fill='%23F79E1B'/%3E%3C/svg%3E" alt="Mastercard" height="24">
-        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='24' viewBox='0 0 40 24'%3E%3Crect width='40' height='24' rx='4' fill='%23003087'/%3E%3Ctext x='50%25' y='55%25' fill='white' font-size='7' text-anchor='middle' dominant-baseline='middle'%3EPayPal%3C/text%3E%3C/svg%3E" alt="PayPal" height="24">
-      </div>
-    </div>
+    <div style="border-top:1px solid rgba(255,255,255,0.1);padding-top:24px;text-align:center;color:rgba(255,255,255,0.5);font-size:0.85rem" data-i18n="footer_rights">© ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.</div>
   </div>
 </footer>
 
-<!-- Scripts -->
-<script src="js/auth.js"></script>
-<script src="js/api.js"></script>
-<script src="js/flights.js"></script>
-<script src="js/hotels.js"></script>
-<script>
-  // Counters state
-  const counters = { adults: 1, children: 0, rooms: 1, hotelAdults: 2 };
-  const minValues = { adults: 1, children: 0, rooms: 1, hotelAdults: 1 };
+<!-- BOTTOM NAV (mobile only) -->
+<nav class="bottom-nav">
+  <a href="index.html" class="bnav-item active">
+    <span class="bnav-icon">🏠</span>
+    <span data-i18n="nav_home">الرئيسية</span>
+  </a>
+  <button class="bnav-item" onclick="switchTab('flights',null);document.querySelector('.search-box').scrollIntoView({behavior:'smooth'})">
+    <span class="bnav-icon">✈️</span>
+    <span data-i18n="nav_flights">رحلات</span>
+  </button>
+  <a href="hotels.html" class="bnav-item">
+    <span class="bnav-icon">🏨</span>
+    <span data-i18n="nav_hotels">فنادق</span>
+  </a>
+  <a href="dashboard.html" class="bnav-item" id="bnavAccount">
+    <span class="bnav-icon">👤</span>
+    <span data-i18n="nav_account">حسابي</span>
+  </a>
+</nav>
 
-  function changeCount(key, delta) {
-    counters[key] = Math.max(minValues[key], (counters[key] || 0) + delta);
-    const el = document.getElementById(key + 'Count');
-    if (el) el.textContent = counters[key];
-  }
+<script src="js/i18n.js"></script>
+<script src="js/currency.js"></script>
+<script src="js/datepicker.js"></script>
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/flights.js"></script>
+<script>
+  const pax = { adult:1, child:0, infant:0 };
+  const rm  = { rooms:1, guests:2 };
+  let tripType = 'oneway';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    initLang();
+    initCurrency();
+
+    // Auth nav
+    const navAuth = document.getElementById('navAuth');
+    if (Auth.isLoggedIn()) {
+      navAuth.innerHTML = `<a href="dashboard.html" class="btn btn-ghost btn-sm" style="margin-left:8px" data-i18n="nav_dashboard">حجوزاتي</a><button class="btn btn-outline btn-sm" onclick="Auth.logout()" data-i18n="nav_logout">خروج</button>`;
+    } else {
+      navAuth.innerHTML = `<a href="login.html" class="btn btn-ghost btn-sm" style="margin-left:8px" data-i18n="nav_login">دخول</a><a href="register.html" class="btn btn-primary btn-sm" data-i18n="nav_register">تسجيل</a>`;
+    }
+
+    // Date pickers
+    new DatePicker(document.getElementById('fDepDate'), { mode:'single', minDate:new Date(), onSelect:(d,_,dp)=>{ document.getElementById('fDepDate').value = dp._fmt(d); document.getElementById('fDepDate').classList.add('filled'); } });
+    new DatePicker(document.getElementById('fRetDate'), { mode:'single', minDate:new Date(), onSelect:(d,_,dp)=>{ document.getElementById('fRetDate').value = dp._fmt(d); document.getElementById('fRetDate').classList.add('filled'); } });
+
+    const ci = document.getElementById('hCheckin'), co = document.getElementById('hCheckout');
+    const hotelDp = new DatePicker(ci, {
+      mode:'range', minDate:new Date(),
+      onSelect:(s,e,dp)=>{
+        ci.value = dp._fmt(s); ci.classList.add('filled');
+        if(e){ co.value = dp._fmt(e); co.classList.add('filled'); }
+      }
+    });
+    co.addEventListener('click', ()=>hotelDp.show());
+
+    // Close popups on outside click
+    document.addEventListener('click', e=>{
+      if(!e.target.closest('#paxPop') && !e.target.closest('#fPax')) closePop('paxPop');
+      if(!e.target.closest('#roomsPop') && !e.target.closest('#hRooms')) closePop('roomsPop');
+    });
+  });
 
   function switchTab(tab, btn) {
-    document.querySelectorAll('.search-tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.search-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById(tab + 'Panel').classList.add('active');
+    document.querySelectorAll('.search-tab').forEach(t=>t.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    else { document.querySelectorAll('.search-tab').forEach((t,i)=>{ if((i===0&&tab==='flights')||(i===1&&tab==='hotels')) t.classList.add('active'); }); }
+    document.getElementById('flightsPanel').classList.toggle('active', tab==='flights');
+    document.getElementById('hotelsPanel').classList.toggle('active', tab==='hotels');
+  }
+
+  function setTripType(type) {
+    tripType = type;
+    document.getElementById('pill_oneway').classList.toggle('active', type==='oneway');
+    document.getElementById('pill_round').classList.toggle('active', type==='round');
+    document.getElementById('retDateWrap').style.display = type==='round' ? '' : 'none';
+    document.getElementById('flightDatesRow').style.gridTemplateColumns = type==='round' ? '1fr 1fr 1fr 1fr' : '1fr 1fr 1fr';
   }
 
   function swapCities() {
-    const from = document.getElementById('flightFrom');
-    const to = document.getElementById('flightTo');
-    [from.value, to.value] = [to.value, from.value];
+    const f=document.getElementById('fFrom'), t=document.getElementById('fTo');
+    [f.value,t.value]=[t.value,f.value];
   }
 
-  function toggleMenu() {
-    const menu = document.getElementById('mobileMenu');
-    const hamburger = document.getElementById('hamburger');
-    menu.classList.toggle('open');
-    hamburger.classList.toggle('open');
+  function togglePop(id) { document.getElementById(id).classList.toggle('open'); }
+  function closePop(id)  { document.getElementById(id).classList.remove('open'); }
+
+  function chPax(type, d) {
+    pax[type] = Math.max(type==='adult'?1:0, pax[type]+d);
+    if(pax.adult+pax.child+pax.infant>9) { pax[type]-=d; return; }
+    document.getElementById('cAdult').textContent  = pax.adult;
+    document.getElementById('cChild').textContent  = pax.child;
+    document.getElementById('cInfant').textContent = pax.infant;
+    const lang = window.currentLang||'ar';
+    let lbl = lang==='ar' ? pax.adult+' بالغ' : pax.adult+' Adult';
+    if(pax.child)  lbl += lang==='ar' ? '، '+pax.child+' طفل' : ', '+pax.child+' Child';
+    if(pax.infant) lbl += lang==='ar' ? '، '+pax.infant+' رضيع' : ', '+pax.infant+' Infant';
+    document.getElementById('fPax').value = lbl;
   }
 
-  // Set min date to today
-  const today = new Date().toISOString().split('T')[0];
-  document.querySelectorAll('input[type="date"]').forEach(d => d.min = today);
+  function chRooms(type, d) {
+    rm[type] = Math.max(1, Math.min(rm[type]+d, type==='rooms'?8:20));
+    document.getElementById('cRooms').textContent  = rm.rooms;
+    document.getElementById('cGuests').textContent = rm.guests;
+    const lang = window.currentLang||'ar';
+    document.getElementById('hRooms').value = lang==='ar'
+      ? rm.rooms+' غرفة، '+rm.guests+' ضيف'
+      : rm.rooms+' Room, '+rm.guests+' Guests';
+  }
 
-  // Update navbar
-  document.addEventListener('DOMContentLoaded', () => {
-    Auth.updateNavbar();
-    const user = Auth.getUser();
-    if (user) {
-      const initial = (user.first_name || user.email || '?')[0].toUpperCase();
-      const el = document.getElementById('userInitial');
-      if (el) el.textContent = initial;
-      if (Auth.isLoggedIn()) {
-        document.getElementById('mobileAuth').style.display = 'none';
-        document.getElementById('mobileUserMenu').style.display = 'block';
-      }
-    }
-  });
-
-  async function searchFlights(e) {
-    e.preventDefault();
-    const btn = e.target.querySelector('[type="submit"]');
-    const txt = document.getElementById('flightSearchText');
-    const spinner = document.getElementById('flightSpinner');
-    btn.disabled = true;
-    txt.classList.add('hidden');
-    spinner.classList.remove('hidden');
-
-    const params = {
-      from: document.getElementById('flightFrom').value,
-      to: document.getElementById('flightTo').value,
-      date: document.getElementById('departDate').value,
-      return_date: document.getElementById('returnDate').value || '',
-      cabin_class: document.getElementById('cabinClass').value,
-      adults: counters.adults,
-      children: counters.children,
-    };
-
+  async function doFlightSearch() {
+    const from = document.getElementById('fFrom').value.trim();
+    const to   = document.getElementById('fTo').value.trim();
+    const dep  = document.getElementById('fDepDate').value;
+    if(!from||!to||!dep) { showToast('يرجى ملء جميع الحقول', 'error'); return; }
+    const btn = document.querySelector('#flightsPanel .btn-primary');
+    const sp  = document.getElementById('fSpinner');
+    const tx  = document.getElementById('fSearchTxt');
+    btn.disabled=true; sp.classList.remove('hidden'); tx.classList.add('hidden');
     try {
-      const res = await Flights.search(params);
-      const results = res.data || res.flights || res.results || res || [];
-      const section = document.getElementById('flightResults');
-      section.classList.remove('hidden');
-      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      document.getElementById('flightResultsCount').textContent =
-        `تم العثور على ${Array.isArray(results) ? results.length : 0} رحلة`;
-      Flights.renderSearchResults(Array.isArray(results) ? results : [], document.getElementById('flightResultsList'));
-    } catch (err) {
-      showToast(err.message || 'حدث خطأ أثناء البحث، يرجى المحاولة مجدداً', 'error');
+      const res = await Flights.search({ origin:from, destination:to, departure_date:dep, adults:pax.adult, children:pax.child, infants:pax.infant, cabin_class:document.getElementById('fClass').value });
+      const list = Array.isArray(res.data)?res.data:Array.isArray(res.flights)?res.flights:[];
+      const sec  = document.getElementById('flightResults');
+      sec.classList.remove('hidden');
+      sec.scrollIntoView({behavior:'smooth'});
+      document.getElementById('flightResultsCount').textContent = list.length+' رحلة متاحة';
+      Flights.renderSearchResults(list, document.getElementById('flightResultsList'));
+    } catch(err) {
+      showToast(err.message||'حدث خطأ أثناء البحث', 'error');
     } finally {
-      btn.disabled = false;
-      txt.classList.remove('hidden');
-      spinner.classList.add('hidden');
+      btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
     }
   }
 
-  function searchHotels(e) {
-    e.preventDefault();
-    const params = new URLSearchParams({
-      city: document.getElementById('hotelCity').value,
-      check_in: document.getElementById('checkIn').value,
-      check_out: document.getElementById('checkOut').value,
-      rooms: counters.rooms,
-      adults: counters.hotelAdults,
-    });
-    window.location.href = `hotels.html?${params}`;
+  function doHotelSearch() {
+    const dest = document.getElementById('hDest').value.trim();
+    if(!dest) { showToast('يرجى إدخال الوجهة', 'error'); return; }
+    window.location.href = `hotels.html?dest=${encodeURIComponent(dest)}&rooms=${rm.rooms}&guests=${rm.guests}`;
   }
 
-  function quickSearch(city) {
-    document.getElementById('flightTo').value = city;
-    switchTab('flights', document.querySelectorAll('.search-tab')[0]);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    setTimeout(() => document.getElementById('flightFrom').focus(), 500);
-  }
-
-  function sortFlights(by) {
-    showToast('جاري إعادة الترتيب...', 'info');
-  }
-
-  function closeModal(id) {
-    document.getElementById(id).classList.remove('active');
-  }
-
-  async function submitBooking(e) {
-    e.preventDefault();
-    const flightId = document.getElementById('bookingFlightId').value;
-    const btn = e.target.querySelector('[type="submit"]');
-    btn.disabled = true;
-    btn.textContent = 'جاري الحجز...';
-    try {
-      const res = await Flights.book({
-        flight_id: flightId,
-        first_name: document.getElementById('bFirstName').value,
-        last_name: document.getElementById('bLastName').value,
-        passport_number: document.getElementById('bPassport').value,
-        coupon_code: document.getElementById('bCoupon').value,
-      });
-      closeModal('bookingModal');
-      showToast('تم الحجز بنجاح! 🎉 تحقق من حجوزاتك', 'success');
-      setTimeout(() => window.location.href = 'dashboard.html', 2000);
-    } catch (err) {
-      showToast(err.message || 'فشل الحجز، يرجى المحاولة مجدداً', 'error');
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'تأكيد الحجز';
-    }
-  }
-
-  async function applyCoupon() {
-    const code = document.getElementById('bCoupon').value.trim();
-    if (!code) { showToast('أدخل رمز القسيمة أولاً', 'warning'); return; }
-    const el = document.getElementById('couponMsg');
-    try {
-      const res = await Api.post('/api/coupons/validate', { code });
-      el.innerHTML = `<div class="alert alert-success">✅ خصم ${res.discount_percent || res.discount}% على هذا الحجز</div>`;
-      el.classList.remove('hidden');
-    } catch (err) {
-      el.innerHTML = `<div class="alert alert-error">❌ ${err.message || 'رمز القسيمة غير صحيح'}</div>`;
-      el.classList.remove('hidden');
-    }
-  }
-
-  function showToast(message, type = 'info') {
-    let container = document.querySelector('.toast-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.className = 'toast-container';
-      document.body.appendChild(container);
-    }
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `<span>${message}</span>`;
-    container.appendChild(toast);
-    requestAnimationFrame(() => toast.classList.add('show'));
-    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 300); }, 3500);
+  function showToast(msg, type='info') {
+    const t = document.createElement('div');
+    t.className = 'toast toast-'+type;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 3500);
   }
 </script>
 </body>

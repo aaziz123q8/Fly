@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>اتصل بنا — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .page-hero { background:linear-gradient(135deg,#0f2444,#1B4F8E); padding:60px 0; text-align:center; color:#fff; }
+    .page-hero h1 { font-size:2.2rem; font-weight:800; margin:0 0 12px; }
+    .page-hero p { color:rgba(255,255,255,0.8); }
+    .contact-section { padding:60px 0; background:var(--bg); }
+    .contact-grid { display:grid; grid-template-columns:1fr 2fr; gap:40px; }
+    @media(max-width:768px) { .contact-grid { grid-template-columns:1fr; } }
+    .contact-info { display:flex; flex-direction:column; gap:20px; }
+    .info-card { background:#fff; border-radius:16px; padding:24px; box-shadow:var(--shadow); display:flex; gap:16px; align-items:flex-start; }
+    .info-icon { font-size:1.8rem; flex-shrink:0; }
+    .info-card h4 { margin:0 0 6px; color:var(--primary); }
+    .info-card p { margin:0; color:var(--text-muted); font-size:0.9rem; }
+    .contact-form { background:#fff; border-radius:20px; padding:32px; box-shadow:var(--shadow); }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:600px) { .form-row { grid-template-columns:1fr; } }
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
+    .bnav-item:hover { color:var(--primary); }
+    .bnav-icon { font-size:1.4rem; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
+    <div style="display:flex;gap:8px">
+      <a href="login.html" class="btn btn-ghost btn-sm">دخول</a>
+      <a href="register.html" class="btn btn-primary btn-sm">تسجيل</a>
+    </div>
+  </div>
+</nav>
+
+<section class="page-hero">
+  <div class="container">
+    <h1>اتصل بنا</h1>
+    <p>فريقنا دائماً هنا لمساعدتك — تواصل معنا في أي وقت</p>
+  </div>
+</section>
+
+<section class="contact-section">
+  <div class="container">
+    <div class="contact-grid">
+      <div class="contact-info">
+        <div class="info-card">
+          <div class="info-icon">📧</div>
+          <div>
+            <h4>البريد الإلكتروني</h4>
+            <p>support@flymasar.com</p>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">💬</div>
+          <div>
+            <h4>واتساب</h4>
+            <p>+44 20 0000 0000</p>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-icon">🕐</div>
+          <div>
+            <h4>ساعات العمل</h4>
+            <p>٢٤ ساعة — ٧ أيام في الأسبوع</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-form">
+        <h2 style="color:var(--primary);margin:0 0 24px;font-size:1.4rem">أرسل رسالة</h2>
+        <form id="contactForm" onsubmit="sendMsg(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">الاسم الكامل</label>
+              <input type="text" class="form-control" id="cName" required placeholder="اسمك">
+            </div>
+            <div class="form-group">
+              <label class="form-label">البريد الإلكتروني</label>
+              <input type="email" class="form-control" id="cEmail" required placeholder="email@example.com">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">الموضوع</label>
+            <select class="form-control" id="cSubject">
+              <option value="booking">استفسار عن حجز</option>
+              <option value="payment">مشكلة في الدفع</option>
+              <option value="cancel">إلغاء أو تعديل</option>
+              <option value="other">أخرى</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">الرسالة</label>
+            <textarea class="form-control" id="cMsg" rows="5" required placeholder="اكتب رسالتك هنا..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;font-size:1rem" id="cBtn">إرسال الرسالة</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer style="background:#0f2444;color:#fff;padding:32px 0;text-align:center">
+  <div class="container">
+    <p style="margin:0 0 12px;font-size:1.1rem;font-weight:700">✈️ فلاي مسار</p>
+    <p style="color:rgba(255,255,255,0.5);font-size:0.85rem">© ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.</p>
+  </div>
+</footer>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
+  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
+  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
+</nav>
+
+<script src="js/api.js"></script>
+<script>
+async function sendMsg(e) {
+  e.preventDefault();
+  const btn = document.getElementById('cBtn');
+  btn.disabled = true; btn.textContent = 'جاري الإرسال...';
+  try {
+    await API.post('/contact', {
+      name: document.getElementById('cName').value,
+      email: document.getElementById('cEmail').value,
+      subject: document.getElementById('cSubject').value,
+      message: document.getElementById('cMsg').value,
+    });
+    document.getElementById('contactForm').innerHTML = '<div style="text-align:center;padding:40px"><div style="font-size:3rem;margin-bottom:16px">✅</div><h3 style="color:var(--primary)">تم إرسال رسالتك بنجاح!</h3><p style="color:var(--text-muted)">سنرد عليك خلال ٢٤ ساعة</p></div>';
+  } catch(err) {
+    btn.disabled = false; btn.textContent = 'إرسال الرسالة';
+    alert(err.message || 'حدث خطأ، يرجى المحاولة مجدداً');
+  }
+}
+</script>
+</body>
+</html>
