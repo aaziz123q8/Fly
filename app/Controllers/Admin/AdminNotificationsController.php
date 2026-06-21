@@ -19,8 +19,8 @@ class AdminNotificationsController
     public function index(Request $request): void
     {
         $db   = Database::getInstance();
-        $page = max(1, (int)($request->query('page') ?? 1));
-        $limit = 20;
+        $page   = max(1, (int)($request->query('page') ?? 1));
+        $limit  = min(100, max(1, (int)($request->query('limit') ?? 20)));
         $offset = ($page - 1) * $limit;
 
         $type   = $request->query('type');
@@ -60,9 +60,9 @@ class AdminNotificationsController
              LEFT JOIN notification_dispatch_log dl ON dl.notification_id = n.id
              {$whereClause}
              ORDER BY n.created_at DESC
-             LIMIT {$limit} OFFSET {$offset}"
+             LIMIT ? OFFSET ?"
         );
-        $stmt->execute($params);
+        $stmt->execute(array_merge($params, [$limit, $offset]));
         $notifications = $stmt->fetchAll(\PDO::FETCH_ASSOC);
 
         Response::json([

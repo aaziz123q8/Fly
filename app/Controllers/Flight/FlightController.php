@@ -124,6 +124,7 @@ class FlightController
         if (!empty($errors)) Response::validationError($errors);
 
         $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
         try {
             $result = $this->bookingService->startCheckout(
                 (string) $request->input('offer_id'),
@@ -141,6 +142,7 @@ class FlightController
         if (!empty($errors)) Response::validationError($errors);
 
         $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
         try {
             $this->bookingService->savePassengers(
                 (string) $request->input('session_key'),
@@ -159,6 +161,7 @@ class FlightController
         if (!empty($errors)) Response::validationError($errors);
 
         $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
         try {
             $this->bookingService->saveServices(
                 (string) $request->input('session_key'),
@@ -177,6 +180,7 @@ class FlightController
         if (empty($sessionKey)) Response::error('session_key is required.', 400);
 
         $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
         try {
             $data = $this->bookingService->getReview($sessionKey, (int) $user['id']);
             Response::json($data);
@@ -191,6 +195,7 @@ class FlightController
         if (!empty($errors)) Response::validationError($errors);
 
         $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
         try {
             $result = $this->bookingService->createPaymentIntent(
                 (string) $request->input('session_key'),
@@ -209,15 +214,17 @@ class FlightController
 
     public function listBookings(Request $request): void
     {
-        $user     = AuthMiddleware::currentUser();
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
         $bookings = $this->bookingService->getUserBookings((int) $user['id']);
         Response::json(['bookings' => $bookings, 'count' => count($bookings)]);
     }
 
     public function getBooking(Request $request): void
     {
-        $id      = (int) $request->param('id');
-        $user    = AuthMiddleware::currentUser();
+        $id   = (int) $request->param('id');
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
         $booking = $this->bookingService->getBookingById($id, (int) $user['id']);
 
         if ($booking === null) Response::notFound('Booking not found.');
@@ -237,6 +244,7 @@ class FlightController
     {
         $id   = (int) $request->param('id');
         $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
 
         try {
             $result = $this->bookingService->cancelBooking($id, (int) $user['id']);
@@ -257,6 +265,7 @@ class FlightController
         $id             = (int) $request->param('id');
         $cancellationId = (string) $request->input('cancellation_id');
         $user           = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
 
         try {
             $result = $this->bookingService->confirmCancelBooking($id, $cancellationId, (int) $user['id']);

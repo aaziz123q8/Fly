@@ -110,7 +110,7 @@ class AdminInvoicesController
     private function fetchBooking(\PDO $db, string $type, int $id): array|false
     {
         $table = $type === 'flight' ? 'flight_bookings' : 'hotel_bookings';
-        $stmt  = $db->prepare("SELECT * FROM {$table} WHERE id = ? LIMIT 1");
+        $stmt  = $db->prepare("SELECT * FROM " . $table . " WHERE id = ? LIMIT 1");
         $stmt->execute([$id]);
         return $stmt->fetch(\PDO::FETCH_ASSOC);
     }

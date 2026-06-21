@@ -346,16 +346,21 @@ class HotelBookingService
         $roomData  = $pricingSnapshot['room_data'] ?? [];
         $rooms     = is_array($roomData) && !empty($roomData) ? $roomData : [[]];
 
-        // ── Generate booking reference in HM00000001 format ──────────────────
-        $db = \App\Helpers\Database::getInstance();
-        $lastRef = $db->query("SELECT booking_reference FROM hotel_bookings ORDER BY id DESC LIMIT 1")->fetchColumn();
-        if ($lastRef && preg_match('/^HM(\d+)$/', $lastRef, $m)) {
-            $nextNum = (int)$m[1] + 1;
-        } else {
-            $countStmt = $db->query("SELECT COUNT(*) FROM hotel_bookings");
-            $nextNum = (int)$countStmt->fetchColumn() + 1;
+        // ── Generate booking reference in HM00000001 format — atomic via table lock ──
+        $this->db->exec("LOCK TABLES hotel_bookings WRITE");
+        try {
+            $lastRef = $this->db->query(
+                "SELECT booking_reference FROM hotel_bookings ORDER BY id DESC LIMIT 1"
+            )->fetchColumn();
+            if ($lastRef && preg_match('/^HM(\d+)$/', $lastRef, $m)) {
+                $nextNum = (int)$m[1] + 1;
+            } else {
+                $nextNum = (int)$this->db->query("SELECT COUNT(*) FROM hotel_bookings")->fetchColumn() + 1;
+            }
+            $bookingReference = 'HM' . str_pad((string)$nextNum, 8, '0', STR_PAD_LEFT);
+        } finally {
+            $this->db->exec("UNLOCK TABLES");
         }
-        $bookingReference = 'HM' . str_pad((string)$nextNum, 8, '0', STR_PAD_LEFT);
 
         // ── Call RateHawk createBooking ───────────────────────────────────────
         $bookingResponse = $this->rateHawk->createBooking(

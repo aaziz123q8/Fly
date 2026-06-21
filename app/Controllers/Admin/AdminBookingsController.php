@@ -335,7 +335,8 @@ class AdminBookingsController
         }
 
         // Fetch current booking.
-        $stmt = $db->prepare("SELECT * FROM $table WHERE id = ? LIMIT 1");
+        $safeTable = $type === 'flight' ? 'flight_bookings' : 'hotel_bookings';
+        $stmt = $db->prepare("SELECT * FROM " . $safeTable . " WHERE id = ? LIMIT 1");
         $stmt->execute([$id]);
         $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
 
@@ -351,9 +352,13 @@ class AdminBookingsController
             Response::error("Status '$newStatus' is not valid for $type bookings.", 422);
         }
 
-        $setCancelled = $dbStatus === 'cancelled' ? ', cancelled_at = NOW()' : '';
-        $db->prepare("UPDATE $table SET status = ? $setCancelled WHERE id = ?")
-           ->execute([$dbStatus, $id]);
+        if ($dbStatus === 'cancelled') {
+            $db->prepare("UPDATE " . $safeTable . " SET status = ?, cancelled_at = NOW() WHERE id = ?")
+               ->execute([$dbStatus, $id]);
+        } else {
+            $db->prepare("UPDATE " . $safeTable . " SET status = ? WHERE id = ?")
+               ->execute([$dbStatus, $id]);
+        }
 
         // Log to booking_audit_log.
         $admin = AdminMiddleware::currentAdmin();
