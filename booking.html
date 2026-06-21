@@ -171,8 +171,9 @@
   if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=booking.html' + window.location.search;
 
   const params = new URLSearchParams(window.location.search);
-  const flightId = params.get('flight') || localStorage.getItem('booking_flight_id');
+  const flightId = params.get('offer_id') || params.get('flight') || localStorage.getItem('booking_flight_id');
   let flightData = null;
+  let sessionKey = null;
   let savedTravelers = [];
   let priceGBP = 0;
   let taxGBP = 0;
@@ -274,26 +275,44 @@
     const el = document.getElementById('flightInfoContent');
     if (!flightId) { el.innerHTML = '<p style="color:var(--error)">لم يتم تحديد رحلة</p>'; return; }
     try {
-      const res = await Api.get('/api/flights/' + flightId);
-      flightData = res.flight || res.data || res;
-      priceGBP = parseFloat(flightData.price) || 0;
-      taxGBP = priceGBP * 0.10;
-      const total = priceGBP + taxGBP;
+      // Start checkout session — this prices the offer and returns a session key
+      const res = await Api.post('/api/flights/checkout/start', { offer_id: flightId }, true);
+      sessionKey = res.session_key;
+      flightData = res.offer || res;
+
+      // Price from checkout response
+      const offerObj   = res.offer || {};
+      const totalAmount = parseFloat(offerObj.total_amount || res.total_amount || 0);
+      const baseAmount  = parseFloat(offerObj.base_amount  || totalAmount * 0.90);
+      const taxAmount   = parseFloat(offerObj.tax_amount   || totalAmount * 0.10);
+      priceGBP = baseAmount;
+      taxGBP   = taxAmount;
+
+      // Build display from slices
+      const slices = flightData.slices || [];
+      const firstSlice = slices[0] || {};
+      const firstSeg   = (firstSlice.segments||[])[0] || {};
+      const origin      = firstSeg.departing_airport?.iata_code || firstSlice.origin?.iata_code || '---';
+      const destination = (slices[slices.length-1]?.segments||[]).slice(-1)[0]?.arriving_airport?.iata_code
+                        || firstSlice.destination?.iata_code || '---';
+      const airline     = firstSeg.operating_carrier?.name || firstSeg.marketing_carrier?.name || '';
+      const depTime     = firstSeg.departing_at?.substring(0,16).replace('T',' ') || '';
+
       el.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
           <div>
-            <div style="font-size:1.1rem;font-weight:700">${flightData.origin||'---'} → ${flightData.destination||'---'}</div>
-            <div style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">${flightData.airline_name||''} · ${flightData.departure_date||''} · ${flightData.departure_time||''}</div>
+            <div style="font-size:1.1rem;font-weight:700">${origin} → ${destination}</div>
+            <div style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">${airline} · ${depTime}</div>
           </div>
-          <div style="font-size:1.4rem;font-weight:800;color:var(--primary)">${formatPrice(total)}</div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--primary)">${formatPrice(totalAmount)}</div>
         </div>`;
       document.getElementById('priceBase').textContent = formatPrice(priceGBP);
-      document.getElementById('priceTax').textContent = formatPrice(taxGBP);
+      document.getElementById('priceTax').textContent  = formatPrice(taxGBP);
       updateTotal();
-    } catch {
-      el.innerHTML = '<p style="color:var(--text-muted)">جاري تحميل تفاصيل الرحلة...</p>';
+    } catch(err) {
+      el.innerHTML = '<p style="color:var(--error);text-align:center">' + (err.message || 'تعذر تحميل تفاصيل الرحلة') + '</p>';
       document.getElementById('priceBase').textContent = '—';
-      document.getElementById('priceTax').textContent = '—';
+      document.getElementById('priceTax').textContent  = '—';
       document.getElementById('priceTotal').textContent = '—';
     }
   }
@@ -385,29 +404,40 @@
     if (!document.getElementById('agreeTerms').checked) {
       alert('يرجى الموافقة على الشروط والأحكام'); return;
     }
+    if (!sessionKey) {
+      alert('جاري تحميل تفاصيل الرحلة، يرجى الانتظار'); return;
+    }
     const passengers = collectPassengers();
     for (let i=0;i<passengers.length;i++) {
       const p = passengers[i];
       if (!p.first_name || !p.last_name || !p.gender || !p.nationality || !p.date_of_birth || !p.document_number || !p.document_expiry) {
         switchPax(i, document.querySelectorAll('.pax-tab')[i]);
-        alert(`يرجى إكمال بيانات ${paxTypes[i].label}`); return;
+        alert('يرجى إكمال بيانات ' + paxTypes[i].label); return;
       }
     }
     const btn = document.getElementById('bookBtn');
-    const sp = document.getElementById('bookSpinner');
-    const tx = document.getElementById('bookBtnTxt');
+    const sp  = document.getElementById('bookSpinner');
+    const tx  = document.getElementById('bookBtnTxt');
     btn.disabled=true; sp.classList.remove('hidden'); tx.classList.add('hidden');
     try {
-      const res = await Api.post('/api/bookings/flights', {
-        offer_id: flightId,
+      // Step 1: save passengers
+      await Api.post('/api/flights/checkout/passengers', {
+        session_key: sessionKey,
         passengers,
-        contact_email: document.getElementById('contactEmail').value.trim(),
-        contact_phone: document.getElementById('contactPhone').value.trim(),
-        coupon_code: document.getElementById('couponInput').value.trim() || null,
-        currency: typeof currentCurrency !== 'undefined' ? currentCurrency : 'GBP',
       }, true);
+
+      // Step 2: no extra services, skip to payment intent
+      const piRes = await Api.post('/api/flights/checkout/payment-intent', {
+        session_key: sessionKey,
+        coupon_code: document.getElementById('couponInput').value.trim() || null,
+      }, true);
+
       localStorage.removeItem('booking_flight_id');
-      window.location.href = 'confirmation.html?ref=' + (res.booking_number || res.id || '');
+      // Redirect to payment page with client_secret and session
+      window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey)
+        + '&pi=' + encodeURIComponent(piRes.payment_intent_id || '')
+        + '&secret=' + encodeURIComponent(piRes.client_secret || '')
+        + '&amount=' + encodeURIComponent(piRes.amount || '');
     } catch(err) {
       btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
       alert('⚠️ ' + (err.message || 'حدث خطأ أثناء الحجز، يرجى المحاولة مجدداً'));

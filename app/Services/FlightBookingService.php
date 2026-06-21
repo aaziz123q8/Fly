@@ -80,7 +80,7 @@ class FlightBookingService
 
         // Validate each passenger record.
         $required = ['first_name', 'last_name', 'gender', 'date_of_birth',
-                     'nationality', 'passport_number', 'passport_expiry'];
+                     'nationality', 'document_number', 'document_expiry'];
 
         foreach ($passengers as $idx => $p) {
             foreach ($required as $field) {
@@ -171,7 +171,7 @@ class FlightBookingService
     ): array {
         $session = $this->requireSession($sessionKey, $userId);
 
-        if ($session['current_step'] !== 'payment') {
+        if (!in_array($session['current_step'], ['payment', 'services'], true)) {
             throw new RuntimeException('Session is not at the payment step.', 422);
         }
 
