@@ -20,6 +20,7 @@ if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
 }
 
 use App\Controllers\Auth\AuthController;
+use App\Controllers\Flight\FlightController;
 use App\Controllers\Webhook\WebhookController;
 use App\Core\Request;
 use App\Core\Response;
@@ -88,6 +89,53 @@ $router->group('api/auth', function (Router $r): void {
     $r->post('/password/reset', function (Request $req): void {
         (new AuthController())->resetPassword($req);
     });
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Flights
+// ---------------------------------------------------------------------------
+
+$router->group('api/flights', function (Router $r): void {
+
+    // Flight search — auth optional, rate-limited.
+    $r->post('/search', function (Request $req): void {
+        (new FlightController())->search($req);
+    });
+
+    // Checkout: start (auth required).
+    $r->post('/checkout/start', function (Request $req): void {
+        (new FlightController())->startCheckout($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Checkout: passengers (auth required).
+    $r->post('/checkout/passengers', function (Request $req): void {
+        (new FlightController())->savePassengers($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Checkout: services (auth required).
+    $r->post('/checkout/services', function (Request $req): void {
+        (new FlightController())->saveServices($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Checkout: review (auth required).
+    $r->get('/checkout/review', function (Request $req): void {
+        (new FlightController())->getReview($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Checkout: payment intent (auth required).
+    $r->post('/checkout/payment-intent', function (Request $req): void {
+        (new FlightController())->createPaymentIntent($req);
+    }, [AuthMiddleware::handle()]);
+
+    // User bookings list (auth required).
+    $r->get('/bookings', function (Request $req): void {
+        (new FlightController())->listBookings($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Single booking detail (auth required).
+    $r->get('/bookings/:id', function (Request $req): void {
+        (new FlightController())->getBooking($req);
+    }, [AuthMiddleware::handle()]);
 });
 
 // ---------------------------------------------------------------------------
