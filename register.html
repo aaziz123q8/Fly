@@ -112,13 +112,16 @@
     btn.disabled = true; txt.style.display = 'none'; sp.style.display = 'inline-block';
     document.getElementById('errorAlert').style.display = 'none';
     try {
-      const phone = document.getElementById('countryCode').value + document.getElementById('phone').value.replace(/\s/g,'');
+      const phone_country_code = document.getElementById('countryCode').value;
+      const phone_number = document.getElementById('phone').value.replace(/\s/g,'');
       const res = await Api.post('/api/auth/register', {
         first_name: document.getElementById('firstName').value.trim(),
         last_name: document.getElementById('lastName').value.trim(),
         email: document.getElementById('email').value.trim(),
         password: pass,
-        phone,
+        password_confirmation: pass,
+        phone_country_code,
+        phone_number,
       });
       const token = res.session_token || res.token || res.access_token;
       const user = res.user || res;

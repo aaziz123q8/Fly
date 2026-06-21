@@ -180,10 +180,10 @@
   <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
 </nav>
 
-<script src="js/i18n.js"></script>
-<script src="js/currency.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/currency.js"></script>
 <script src="js/datepicker.js"></script>
 <script>
   const guestState = { rooms:1, adults:2, children:0 };
@@ -315,12 +315,12 @@
 
   function bookHotel(id) {
     if(!Auth.isLoggedIn()) { showToast('يرجى تسجيل الدخول أولاً','warning'); setTimeout(()=>window.location.href='login.html',1500); return; }
-    window.location.href = 'hotel-booking.html?hotel='+id;
+    window.location.href = 'booking.html?hotel='+id;
   }
 
-  function formatPrice(a) {
-    if(typeof window.formatPrice==='function') return window.formatPrice(a);
-    return '£ '+parseFloat(a||0).toFixed(0);
+  // formatPrice is provided by currency.js (loaded above)
+  if (typeof formatPrice === 'undefined') {
+    window.formatPrice = function(a) { return '£ ' + parseFloat(a||0).toFixed(0); };
   }
 
   function showToast(msg,type='info') {

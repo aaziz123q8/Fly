@@ -399,12 +399,12 @@
     btn.disabled=true; sp.classList.remove('hidden'); tx.classList.add('hidden');
     try {
       const res = await Api.post('/api/bookings/flights', {
-        flight_id: flightId,
+        offer_id: flightId,
         passengers,
         contact_email: document.getElementById('contactEmail').value.trim(),
         contact_phone: document.getElementById('contactPhone').value.trim(),
         coupon_code: document.getElementById('couponInput').value.trim() || null,
-        currency: currentCurrency || 'GBP',
+        currency: typeof currentCurrency !== 'undefined' ? currentCurrency : 'GBP',
       }, true);
       localStorage.removeItem('booking_flight_id');
       window.location.href = 'confirmation.html?ref=' + (res.booking_number || res.id || '');
@@ -414,9 +414,12 @@
     }
   }
 
-  function formatPrice(amount) {
-    if (typeof window.formatPrice === 'function') return window.formatPrice(amount);
-    return '£ ' + parseFloat(amount||0).toFixed(2);
+  // formatPrice is provided by currency.js (loaded above)
+  // Fallback in case currency.js isn't loaded
+  if (typeof formatPrice === 'undefined') {
+    window.formatPrice = function(amount) {
+      return '£ ' + parseFloat(amount||0).toFixed(2);
+    };
   }
 
   // Init

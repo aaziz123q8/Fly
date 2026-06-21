@@ -570,10 +570,10 @@ function applyLang(l) {
     window.I18N[l] = { months: T.months, days: T.days, nights: T.nights };
     dp._render();
   });
-  // update navAuth text if logged in
+  // update navAuth text
   const nav = document.getElementById('navAuth');
-  if (nav && nav.children.length) {
-    if (Auth && Auth.isLoggedIn()) {
+  if (nav) {
+    if (typeof Auth !== 'undefined' && Auth.isLoggedIn()) {
       nav.innerHTML = `<a href="dashboard.html" class="btn-login" style="margin-left:6px">${T.nav_bookings}</a><button class="btn-reg" onclick="Auth.logout()">${T.nav_logout}</button>`;
     } else {
       nav.innerHTML = `<a href="login.html" class="btn-login" style="margin-left:6px">${T.nav_login}</a><a href="register.html" class="btn-reg">${T.nav_reg}</a>`;
