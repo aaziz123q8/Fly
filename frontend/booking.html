@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إتمام الحجز — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .booking-page { background:var(--bg); min-height:100vh; padding:32px 0 80px; }
+    .booking-grid { display:grid; grid-template-columns:1fr 380px; gap:24px; }
+    @media(max-width:900px) { .booking-grid { grid-template-columns:1fr; } }
+    .booking-card { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:28px; margin-bottom:20px; }
+    .booking-card h2 { font-size:1.1rem; font-weight:700; color:var(--primary); margin:0 0 20px; display:flex; align-items:center; gap:8px; }
+    .section-num { width:28px; height:28px; background:var(--primary); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.85rem; font-weight:700; flex-shrink:0; }
+    .pax-tabs { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+    .pax-tab { padding:6px 16px; border-radius:50px; border:2px solid #e5e7eb; background:none; cursor:pointer; font-size:0.85rem; font-weight:600; color:var(--text-muted); transition:all .2s; font-family:inherit; }
+    .pax-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .pax-form { display:none; }
+    .pax-form.active { display:block; }
+    .form-row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .form-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+    @media(max-width:600px) { .form-row2,.form-row3 { grid-template-columns:1fr; } }
+    .price-summary { position:sticky; top:20px; }
+    .price-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f0f2f5; font-size:0.92rem; }
+    .price-row:last-child { border-bottom:none; }
+    .price-total { display:flex; justify-content:space-between; padding:16px 0 0; font-size:1.1rem; font-weight:800; color:var(--primary); border-top:2px solid var(--primary); margin-top:8px; }
+    .coupon-row { display:flex; gap:8px; margin-top:12px; }
+    .coupon-row input { flex:1; }
+    .saved-travelers { margin-bottom:16px; }
+    .saved-traveler-item { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:2px solid #e5e7eb; border-radius:12px; margin-bottom:8px; cursor:pointer; transition:all .2s; }
+    .saved-traveler-item:hover, .saved-traveler-item.selected { border-color:var(--primary); background:#f0f5ff; }
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
+    .bnav-icon { font-size:1.4rem; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
+    <div style="display:flex;gap:8px">
+      <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
+      <button onclick="Auth.logout()" class="btn btn-outline btn-sm">خروج</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Steps indicator -->
+<div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:16px 0">
+  <div class="container">
+    <div style="display:flex;align-items:center;gap:8px;justify-content:center">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:28px;height:28px;background:var(--primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700">١</div>
+        <span style="font-size:0.85rem;font-weight:600;color:var(--primary)">بيانات المسافرين</span>
+      </div>
+      <div style="width:40px;height:2px;background:#e5e7eb"></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:28px;height:28px;background:#e5e7eb;color:#9ca3af;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700" id="step2Num">٢</div>
+        <span style="font-size:0.85rem;color:var(--text-muted)" id="step2Label">الدفع</span>
+      </div>
+      <div style="width:40px;height:2px;background:#e5e7eb"></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="width:28px;height:28px;background:#e5e7eb;color:#9ca3af;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700">٣</div>
+        <span style="font-size:0.85rem;color:var(--text-muted)">التأكيد</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="booking-page">
+  <div class="container">
+    <div class="booking-grid">
+
+      <!-- Left: Passenger Forms -->
+      <div>
+        <!-- Flight Info (loaded dynamically) -->
+        <div class="booking-card" id="flightInfoCard">
+          <h2><span class="section-num">✈</span> تفاصيل الرحلة</h2>
+          <div id="flightInfoContent" style="color:var(--text-muted);text-align:center;padding:20px">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+        <!-- Passenger Forms -->
+        <div class="booking-card">
+          <h2><span class="section-num">١</span> بيانات المسافرين</h2>
+
+          <!-- Passenger tabs -->
+          <div class="pax-tabs" id="paxTabs"></div>
+
+          <!-- Saved travelers -->
+          <div class="saved-travelers" id="savedTravelersSection" style="display:none">
+            <div style="font-size:0.85rem;color:var(--text-muted);margin-bottom:8px;font-weight:600">المسافرون المحفوظون:</div>
+            <div id="savedTravelersList"></div>
+          </div>
+
+          <!-- Forms container -->
+          <div id="paxForms"></div>
+        </div>
+
+        <!-- Contact Info -->
+        <div class="booking-card">
+          <h2><span class="section-num">٢</span> معلومات التواصل</h2>
+          <div class="form-row2">
+            <div class="form-group">
+              <label class="form-label">البريد الإلكتروني</label>
+              <input type="email" class="form-control" id="contactEmail" placeholder="email@example.com" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم الهاتف</label>
+              <input type="tel" class="form-control" id="contactPhone" placeholder="+965 XXXX XXXX" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="agreeTerms" required>
+              <span style="font-size:0.9rem">أوافق على <a href="terms.html" target="_blank" style="color:var(--primary)">الشروط والأحكام</a> و<a href="privacy.html" target="_blank" style="color:var(--primary)">سياسة الخصوصية</a></span>
+            </label>
+          </div>
+          <button class="btn btn-primary btn-lg btn-block" onclick="submitBooking()" id="bookBtn" style="margin-top:8px">
+            <span id="bookBtnTxt">المتابعة للدفع ←</span>
+            <div class="spinner spinner-sm hidden" id="bookSpinner" style="border-top-color:white"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Price Summary -->
+      <div class="price-summary">
+        <div class="booking-card">
+          <h2>ملخص السعر</h2>
+          <div id="priceSummary">
+            <div class="price-row"><span>سعر الرحلة</span><span id="priceBase">—</span></div>
+            <div class="price-row"><span>الضرائب والرسوم</span><span id="priceTax">—</span></div>
+            <div class="price-row" id="discountRow" style="display:none;color:#16a34a"><span>الخصم</span><span id="priceDiscount">—</span></div>
+            <div class="price-total"><span>الإجمالي</span><span id="priceTotal">—</span></div>
+          </div>
+          <div class="coupon-row">
+            <input type="text" class="form-control" id="couponInput" placeholder="كود الخصم">
+            <button class="btn btn-outline btn-sm" onclick="applyCoupon()">تطبيق</button>
+          </div>
+          <div id="couponMsg" style="font-size:0.82rem;margin-top:6px"></div>
+        </div>
+
+        <div class="booking-card" style="background:#f0f5ff;border:2px solid #c5d5e8">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="font-size:1.5rem">🔒</span>
+            <div>
+              <div style="font-weight:700;color:var(--primary);margin-bottom:4px">حجز آمن ومضمون</div>
+              <div style="font-size:0.82rem;color:var(--text-muted)">بياناتك محمية بتشفير SSL. لا نخزن بيانات بطاقتك.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
+  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
+  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
+</nav>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script src="js/currency.js"></script>
+<script>
+  if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=booking.html' + window.location.search;
+
+  const params = new URLSearchParams(window.location.search);
+  const flightId = params.get('flight') || localStorage.getItem('booking_flight_id');
+  let flightData = null;
+  let savedTravelers = [];
+  let priceGBP = 0;
+  let taxGBP = 0;
+  let discountGBP = 0;
+
+  // Passenger counts from search
+  const paxCounts = {
+    adult: parseInt(localStorage.getItem('bk_adults') || '1'),
+    child: parseInt(localStorage.getItem('bk_children') || '0'),
+    infant: parseInt(localStorage.getItem('bk_infants') || '0'),
+  };
+
+  const paxTypes = [];
+  for (let i=0;i<paxCounts.adult;i++) paxTypes.push({type:'adult',label:'بالغ '+(i+1)});
+  for (let i=0;i<paxCounts.child;i++) paxTypes.push({type:'child',label:'طفل '+(i+1)});
+  for (let i=0;i<paxCounts.infant;i++) paxTypes.push({type:'infant',label:'رضيع '+(i+1)});
+
+  let activePax = 0;
+
+  function buildTabs() {
+    const tabs = document.getElementById('paxTabs');
+    const forms = document.getElementById('paxForms');
+    tabs.innerHTML = paxTypes.map((p,i)=>`<button class="pax-tab ${i===0?'active':''}" onclick="switchPax(${i},this)">${p.label}</button>`).join('');
+    forms.innerHTML = paxTypes.map((p,i)=>`
+      <div class="pax-form ${i===0?'active':''}" id="paxForm${i}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div style="font-size:0.85rem;color:var(--text-muted);font-weight:600">${p.label} — ${p.type==='adult'?'بالغ':p.type==='child'?'طفل':'رضيع'}</div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="loadSavedTraveler(${i})" style="font-size:0.8rem">📋 اختر من المحفوظين</button>
+        </div>
+        <div class="form-row3">
+          <div class="form-group">
+            <label class="form-label">الاسم الأول <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="p${i}_first" placeholder="بالإنجليزي" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">الاسم الأوسط</label>
+            <input type="text" class="form-control" id="p${i}_middle" placeholder="اختياري">
+          </div>
+          <div class="form-group">
+            <label class="form-label">الاسم الأخير <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="p${i}_last" placeholder="بالإنجليزي" required>
+          </div>
+        </div>
+        <div class="form-row3">
+          <div class="form-group">
+            <label class="form-label">الجنس <span style="color:red">*</span></label>
+            <select class="form-control" id="p${i}_gender" required>
+              <option value="">اختر</option>
+              <option value="male">ذكر</option>
+              <option value="female">أنثى</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">الجنسية <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="p${i}_nationality" placeholder="مثال: Kuwaiti" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">تاريخ الميلاد <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="p${i}_dob" placeholder="YYYY-MM-DD" required>
+          </div>
+        </div>
+        <div style="border-top:1px solid #f0f2f5;margin:16px 0;padding-top:16px">
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text-muted);margin-bottom:12px">وثيقة السفر</div>
+          <div class="form-row2" style="margin-bottom:12px">
+            <div class="form-group">
+              <label class="form-label">نوع الوثيقة <span style="color:red">*</span></label>
+              <select class="form-control" id="p${i}_doc_type" required>
+                <option value="passport">جواز سفر</option>
+                <option value="id_card">بطاقة مدنية</option>
+                <option value="national_id">هوية وطنية</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم الوثيقة <span style="color:red">*</span></label>
+              <input type="text" class="form-control" id="p${i}_doc_num" placeholder="رقم الوثيقة" required>
+            </div>
+          </div>
+          <div class="form-row2">
+            <div class="form-group">
+              <label class="form-label">تاريخ الإصدار</label>
+              <input type="text" class="form-control" id="p${i}_doc_issue" placeholder="YYYY-MM-DD">
+            </div>
+            <div class="form-group">
+              <label class="form-label">تاريخ الانتهاء <span style="color:red">*</span></label>
+              <input type="text" class="form-control" id="p${i}_doc_exp" placeholder="YYYY-MM-DD" required>
+            </div>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function switchPax(idx, btn) {
+    activePax = idx;
+    document.querySelectorAll('.pax-tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+    document.querySelectorAll('.pax-form').forEach((f,i)=>f.classList.toggle('active',i===idx));
+  }
+
+  async function loadFlightInfo() {
+    const el = document.getElementById('flightInfoContent');
+    if (!flightId) { el.innerHTML = '<p style="color:var(--error)">لم يتم تحديد رحلة</p>'; return; }
+    try {
+      const res = await Api.get('/api/flights/' + flightId);
+      flightData = res.flight || res.data || res;
+      priceGBP = parseFloat(flightData.price) || 0;
+      taxGBP = priceGBP * 0.10;
+      const total = priceGBP + taxGBP;
+      el.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-size:1.1rem;font-weight:700">${flightData.origin||'---'} → ${flightData.destination||'---'}</div>
+            <div style="color:var(--text-muted);font-size:0.85rem;margin-top:4px">${flightData.airline_name||''} · ${flightData.departure_date||''} · ${flightData.departure_time||''}</div>
+          </div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--primary)">${formatPrice(total)}</div>
+        </div>`;
+      document.getElementById('priceBase').textContent = formatPrice(priceGBP);
+      document.getElementById('priceTax').textContent = formatPrice(taxGBP);
+      updateTotal();
+    } catch {
+      el.innerHTML = '<p style="color:var(--text-muted)">جاري تحميل تفاصيل الرحلة...</p>';
+      document.getElementById('priceBase').textContent = '—';
+      document.getElementById('priceTax').textContent = '—';
+      document.getElementById('priceTotal').textContent = '—';
+    }
+  }
+
+  async function loadSavedTravelers() {
+    try {
+      const res = await Api.get('/api/travelers', true);
+      savedTravelers = res.data || res.travelers || (Array.isArray(res) ? res : []);
+    } catch { savedTravelers = []; }
+  }
+
+  function loadSavedTraveler(idx) {
+    if (!savedTravelers.length) { alert('لا يوجد مسافرون محفوظون. يمكنك إضافتهم من صفحة حجوزاتي.'); return; }
+    const popup = document.createElement('div');
+    popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px';
+    popup.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:460px;max-height:80vh;overflow-y:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <h3 style="margin:0;color:var(--primary)">اختر مسافراً</h3>
+        <button onclick="this.closest('div[style]').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer">✕</button>
+      </div>
+      ${savedTravelers.map((t,ti)=>`
+        <div style="padding:12px;border:2px solid #e5e7eb;border-radius:12px;margin-bottom:8px;cursor:pointer" onclick="fillTraveler(${idx},${ti});this.closest('div[style]').remove()">
+          <div style="font-weight:600">${t.first_name||''} ${t.last_name||''}</div>
+          <div style="font-size:0.82rem;color:var(--text-muted)">${t.nationality||''} · ${t.document_number||''}</div>
+        </div>`).join('')}
+    </div>`;
+    document.body.appendChild(popup);
+  }
+
+  function fillTraveler(formIdx, travelerIdx) {
+    const t = savedTravelers[travelerIdx];
+    if (!t) return;
+    const set = (id, val) => { const el = document.getElementById(id); if(el) el.value = val||''; };
+    set(`p${formIdx}_first`, t.first_name);
+    set(`p${formIdx}_middle`, t.middle_name);
+    set(`p${formIdx}_last`, t.last_name);
+    set(`p${formIdx}_gender`, t.gender);
+    set(`p${formIdx}_nationality`, t.nationality);
+    set(`p${formIdx}_dob`, t.date_of_birth);
+    set(`p${formIdx}_doc_type`, t.document_type || 'passport');
+    set(`p${formIdx}_doc_num`, t.document_number);
+    set(`p${formIdx}_doc_exp`, t.document_expiry);
+    set(`p${formIdx}_doc_issue`, t.document_issue);
+  }
+
+  function updateTotal() {
+    const total = priceGBP + taxGBP - discountGBP;
+    document.getElementById('priceTotal').textContent = formatPrice(Math.max(0, total));
+  }
+
+  async function applyCoupon() {
+    const code = document.getElementById('couponInput').value.trim();
+    if (!code) return;
+    const msg = document.getElementById('couponMsg');
+    try {
+      const res = await Api.post('/api/coupons/validate', { code, amount: priceGBP + taxGBP });
+      discountGBP = parseFloat(res.discount_amount || res.discount || 0);
+      msg.style.color = '#16a34a';
+      msg.textContent = '✅ تم تطبيق الكوبون — خصم ' + formatPrice(discountGBP);
+      document.getElementById('discountRow').style.display = 'flex';
+      document.getElementById('priceDiscount').textContent = '−' + formatPrice(discountGBP);
+      updateTotal();
+    } catch(err) {
+      msg.style.color = 'var(--error)';
+      msg.textContent = '⚠️ ' + (err.message || 'كوبون غير صالح');
+      discountGBP = 0;
+      document.getElementById('discountRow').style.display = 'none';
+      updateTotal();
+    }
+  }
+
+  function collectPassengers() {
+    return paxTypes.map((p,i)=>({
+      type: p.type,
+      first_name: document.getElementById(`p${i}_first`)?.value?.trim(),
+      middle_name: document.getElementById(`p${i}_middle`)?.value?.trim(),
+      last_name: document.getElementById(`p${i}_last`)?.value?.trim(),
+      gender: document.getElementById(`p${i}_gender`)?.value,
+      nationality: document.getElementById(`p${i}_nationality`)?.value?.trim(),
+      date_of_birth: document.getElementById(`p${i}_dob`)?.value?.trim(),
+      document_type: document.getElementById(`p${i}_doc_type`)?.value,
+      document_number: document.getElementById(`p${i}_doc_num`)?.value?.trim(),
+      document_expiry: document.getElementById(`p${i}_doc_exp`)?.value?.trim(),
+      document_issue: document.getElementById(`p${i}_doc_issue`)?.value?.trim(),
+    }));
+  }
+
+  async function submitBooking() {
+    if (!document.getElementById('agreeTerms').checked) {
+      alert('يرجى الموافقة على الشروط والأحكام'); return;
+    }
+    const passengers = collectPassengers();
+    for (let i=0;i<passengers.length;i++) {
+      const p = passengers[i];
+      if (!p.first_name || !p.last_name || !p.gender || !p.nationality || !p.date_of_birth || !p.document_number || !p.document_expiry) {
+        switchPax(i, document.querySelectorAll('.pax-tab')[i]);
+        alert(`يرجى إكمال بيانات ${paxTypes[i].label}`); return;
+      }
+    }
+    const btn = document.getElementById('bookBtn');
+    const sp = document.getElementById('bookSpinner');
+    const tx = document.getElementById('bookBtnTxt');
+    btn.disabled=true; sp.classList.remove('hidden'); tx.classList.add('hidden');
+    try {
+      const res = await Api.post('/api/bookings/flights', {
+        flight_id: flightId,
+        passengers,
+        contact_email: document.getElementById('contactEmail').value.trim(),
+        contact_phone: document.getElementById('contactPhone').value.trim(),
+        coupon_code: document.getElementById('couponInput').value.trim() || null,
+        currency: window.currentCurrency || 'GBP',
+      }, true);
+      localStorage.removeItem('booking_flight_id');
+      window.location.href = 'confirmation.html?ref=' + (res.booking_number || res.id || '');
+    } catch(err) {
+      btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+      alert('⚠️ ' + (err.message || 'حدث خطأ أثناء الحجز، يرجى المحاولة مجدداً'));
+    }
+  }
+
+  function formatPrice(amount) {
+    if (typeof window.formatPrice === 'function') return window.formatPrice(amount);
+    return '£ ' + parseFloat(amount||0).toFixed(2);
+  }
+
+  // Init
+  initCurrency();
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('contactEmail').value = user.email || '';
+    document.getElementById('contactPhone').value = user.phone || '';
+  }
+  buildTabs();
+  loadFlightInfo();
+  loadSavedTravelers();
+</script>
+</body>
+</html>

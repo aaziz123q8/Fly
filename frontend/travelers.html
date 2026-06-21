@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المسافرون — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .page-bg { background:var(--bg); min-height:100vh; padding:32px 0 80px; }
+    .traveler-card { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:20px 24px; margin-bottom:16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+    .traveler-avatar { width:52px; height:52px; background:var(--primary); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:800; flex-shrink:0; }
+    .traveler-info { flex:1; }
+    .traveler-name { font-size:1rem; font-weight:700; margin-bottom:4px; }
+    .traveler-meta { font-size:0.82rem; color:var(--text-muted); display:flex; gap:12px; flex-wrap:wrap; }
+    .traveler-actions { display:flex; gap:8px; }
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+    .modal-overlay.active { display:flex; }
+    .modal { background:#fff; border-radius:20px; padding:28px; width:100%; max-width:580px; max-height:90vh; overflow-y:auto; }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
+    .modal-header h2 { margin:0; color:var(--primary); font-size:1.2rem; }
+    .close-btn { background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); line-height:1; }
+    .form-row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:600px) { .form-row2 { grid-template-columns:1fr; } }
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
+    .bnav-icon { font-size:1.4rem; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
+    <div style="display:flex;gap:8px">
+      <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
+      <button onclick="Auth.logout()" class="btn btn-outline btn-sm">خروج</button>
+    </div>
+  </div>
+</nav>
+
+<div class="page-bg">
+  <div class="container">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+      <div>
+        <h1 style="font-size:1.5rem;font-weight:800;color:var(--primary);margin:0 0 4px">👥 المسافرون</h1>
+        <p style="color:var(--text-muted);margin:0;font-size:0.9rem">أضف وأدر بيانات المسافرين لتسريع الحجز</p>
+      </div>
+      <button class="btn btn-primary" onclick="openModal()">+ إضافة مسافر</button>
+    </div>
+
+    <div id="travelersList">
+      <div style="text-align:center;padding:40px"><div class="spinner"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="travelerModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">إضافة مسافر</h2>
+      <button class="close-btn" onclick="closeModal()">✕</button>
+    </div>
+    <form onsubmit="saveTraveler(event)">
+      <input type="hidden" id="travelerId">
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">الاسم الأول (بالإنجليزي) <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="tFirst" required placeholder="First Name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">الاسم الأوسط</label>
+          <input type="text" class="form-control" id="tMiddle" placeholder="Middle Name">
+        </div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">الاسم الأخير (بالإنجليزي) <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="tLast" required placeholder="Last Name">
+        </div>
+        <div class="form-group">
+          <label class="form-label">الجنس <span style="color:red">*</span></label>
+          <select class="form-control" id="tGender" required>
+            <option value="">اختر</option>
+            <option value="male">ذكر</option>
+            <option value="female">أنثى</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">الجنسية <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="tNationality" required placeholder="مثال: Kuwaiti">
+        </div>
+        <div class="form-group">
+          <label class="form-label">تاريخ الميلاد <span style="color:red">*</span></label>
+          <input type="date" class="form-control" id="tDob" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">البريد الإلكتروني</label>
+        <input type="email" class="form-control" id="tEmail" placeholder="email@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label">رقم الهاتف</label>
+        <input type="tel" class="form-control" id="tPhone" placeholder="+965 XXXX XXXX">
+      </div>
+      <div style="border-top:1px solid #f0f2f5;margin:20px 0;padding-top:20px">
+        <div style="font-weight:600;color:var(--text-muted);font-size:0.85rem;margin-bottom:12px">وثيقة السفر</div>
+        <div class="form-row2">
+          <div class="form-group">
+            <label class="form-label">نوع الوثيقة <span style="color:red">*</span></label>
+            <select class="form-control" id="tDocType" required>
+              <option value="passport">جواز سفر</option>
+              <option value="id_card">بطاقة مدنية</option>
+              <option value="national_id">هوية وطنية</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">رقم الوثيقة <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="tDocNum" required placeholder="Document Number">
+          </div>
+        </div>
+        <div class="form-row2">
+          <div class="form-group">
+            <label class="form-label">تاريخ الإصدار</label>
+            <input type="date" class="form-control" id="tDocIssue">
+          </div>
+          <div class="form-group">
+            <label class="form-label">تاريخ الانتهاء <span style="color:red">*</span></label>
+            <input type="date" class="form-control" id="tDocExp" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">الدولة المصدرة</label>
+          <input type="text" class="form-control" id="tDocCountry" placeholder="مثال: Kuwait">
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;margin-top:4px">
+        <button type="submit" class="btn btn-primary" style="flex:1" id="saveBtn">حفظ المسافر</button>
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
+  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
+  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
+</nav>
+
+<script src="js/auth.js"></script>
+<script src="js/api.js"></script>
+<script>
+  if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=travelers.html';
+
+  let travelers = [];
+
+  async function loadTravelers() {
+    const el = document.getElementById('travelersList');
+    try {
+      const res = await Api.get('/api/travelers', true);
+      travelers = res.data || res.travelers || (Array.isArray(res) ? res : []);
+      renderTravelers();
+    } catch(err) {
+      el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted)"><div style="font-size:2.5rem;margin-bottom:12px">👥</div><p>${err.message||'تعذر تحميل المسافرين'}</p></div>`;
+    }
+  }
+
+  function renderTravelers() {
+    const el = document.getElementById('travelersList');
+    if (!travelers.length) {
+      el.innerHTML = `<div style="text-align:center;padding:60px 20px;background:#fff;border-radius:16px;box-shadow:var(--shadow)">
+        <div style="font-size:3rem;margin-bottom:16px">👤</div>
+        <h3 style="color:var(--primary);margin-bottom:8px">لا يوجد مسافرون</h3>
+        <p style="color:var(--text-muted);margin-bottom:24px">أضف مسافريك لتسريع عملية الحجز</p>
+        <button class="btn btn-primary" onclick="openModal()">+ إضافة مسافر</button>
+      </div>`;
+      return;
+    }
+    el.innerHTML = travelers.map((t,i)=>`
+      <div class="traveler-card">
+        <div class="traveler-avatar">${(t.first_name||'?')[0].toUpperCase()}</div>
+        <div class="traveler-info">
+          <div class="traveler-name">${t.first_name||''} ${t.middle_name||''} ${t.last_name||''}</div>
+          <div class="traveler-meta">
+            ${t.nationality ? `<span>🌍 ${t.nationality}</span>` : ''}
+            ${t.date_of_birth ? `<span>🎂 ${t.date_of_birth}</span>` : ''}
+            ${t.document_number ? `<span>🪪 ${t.document_number}</span>` : ''}
+            ${t.document_expiry ? `<span>📅 ينتهي: ${t.document_expiry}</span>` : ''}
+          </div>
+        </div>
+        <div class="traveler-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editTraveler(${i})">تعديل</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--error)" onclick="deleteTraveler('${t.id}',${i})">حذف</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function openModal(traveler=null, idx=null) {
+    document.getElementById('modalTitle').textContent = traveler ? 'تعديل مسافر' : 'إضافة مسافر';
+    document.getElementById('travelerId').value = traveler?.id || '';
+    document.getElementById('tFirst').value = traveler?.first_name || '';
+    document.getElementById('tMiddle').value = traveler?.middle_name || '';
+    document.getElementById('tLast').value = traveler?.last_name || '';
+    document.getElementById('tGender').value = traveler?.gender || '';
+    document.getElementById('tNationality').value = traveler?.nationality || '';
+    document.getElementById('tDob').value = traveler?.date_of_birth || '';
+    document.getElementById('tEmail').value = traveler?.email || '';
+    document.getElementById('tPhone').value = traveler?.phone || '';
+    document.getElementById('tDocType').value = traveler?.document_type || 'passport';
+    document.getElementById('tDocNum').value = traveler?.document_number || '';
+    document.getElementById('tDocIssue').value = traveler?.document_issue || '';
+    document.getElementById('tDocExp').value = traveler?.document_expiry || '';
+    document.getElementById('tDocCountry').value = traveler?.document_country || '';
+    document.getElementById('travelerModal').classList.add('active');
+  }
+
+  function closeModal() { document.getElementById('travelerModal').classList.remove('active'); }
+
+  function editTraveler(idx) { openModal(travelers[idx], idx); }
+
+  async function saveTraveler(e) {
+    e.preventDefault();
+    const id = document.getElementById('travelerId').value;
+    const data = {
+      first_name: document.getElementById('tFirst').value.trim(),
+      middle_name: document.getElementById('tMiddle').value.trim(),
+      last_name: document.getElementById('tLast').value.trim(),
+      gender: document.getElementById('tGender').value,
+      nationality: document.getElementById('tNationality').value.trim(),
+      date_of_birth: document.getElementById('tDob').value,
+      email: document.getElementById('tEmail').value.trim(),
+      phone: document.getElementById('tPhone').value.trim(),
+      document_type: document.getElementById('tDocType').value,
+      document_number: document.getElementById('tDocNum').value.trim(),
+      document_issue: document.getElementById('tDocIssue').value,
+      document_expiry: document.getElementById('tDocExp').value,
+      document_country: document.getElementById('tDocCountry').value.trim(),
+    };
+    const btn = document.getElementById('saveBtn');
+    btn.disabled = true; btn.textContent = 'جاري الحفظ...';
+    try {
+      if (id) {
+        await Api.put('/api/travelers/' + id, data, true);
+      } else {
+        await Api.post('/api/travelers', data, true);
+      }
+      closeModal();
+      loadTravelers();
+      showToast(id ? 'تم تحديث المسافر' : 'تم إضافة المسافر', 'success');
+    } catch(err) {
+      showToast(err.message || 'حدث خطأ', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'حفظ المسافر';
+    }
+  }
+
+  async function deleteTraveler(id, idx) {
+    if (!confirm('هل تريد حذف هذا المسافر؟')) return;
+    try {
+      await Api.delete('/api/travelers/' + id, true);
+      travelers.splice(idx, 1);
+      renderTravelers();
+      showToast('تم حذف المسافر', 'success');
+    } catch(err) {
+      showToast(err.message || 'فشل الحذف', 'error');
+    }
+  }
+
+  function showToast(msg, type='info') {
+    const t = document.createElement('div');
+    t.className = 'toast toast-'+type;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 3500);
+  }
+
+  document.getElementById('travelerModal').addEventListener('click', e=>{
+    if(e.target===document.getElementById('travelerModal')) closeModal();
+  });
+
+  loadTravelers();
+</script>
+</body>
+</html>
