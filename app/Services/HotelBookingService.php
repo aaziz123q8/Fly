@@ -1,0 +1,630 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services;
+
+use App\Adapters\RateHawk\RateHawkAdapter;
+use App\Adapters\Stripe\StripeAdapter;
+use App\Helpers\Database;
+use PDO;
+use RuntimeException;
+
+class HotelBookingService
+{
+    private const PROVIDER_ID           = 2;   // RateHawk
+    private const PRICE_CHANGE_THRESHOLD = 0.02; // 2%
+
+    private PDO $db;
+    private RateHawkAdapter $rateHawk;
+    private StripeAdapter $stripe;
+    private BookingSessionService $sessionService;
+
+    public function __construct(
+        ?PDO                   $db             = null,
+        ?RateHawkAdapter       $rateHawk       = null,
+        ?StripeAdapter         $stripe         = null,
+        ?BookingSessionService $sessionService = null
+    ) {
+        $this->db             = $db             ?? Database::getInstance();
+        $this->rateHawk       = $rateHawk       ?? new RateHawkAdapter();
+        $this->stripe         = $stripe         ?? new StripeAdapter();
+        $this->sessionService = $sessionService ?? new BookingSessionService($this->db);
+    }
+
+    // =========================================================================
+    // prebook
+    // =========================================================================
+
+    /**
+     * Pre-book a hotel rate to lock the price, then create a booking session.
+     *
+     * @param string $bookHash        The book_hash from RateHawk search results
+     * @param int    $userId
+     * @param string $checkIn         YYYY-MM-DD
+     * @param string $checkOut        YYYY-MM-DD
+     * @param int    $hotelId         Local hotels_content.id (or provider hotel id as string)
+     * @param float  $displayedPrice  The price shown to the user (for price-change detection)
+     * @return array
+     */
+    public function prebook(
+        string $bookHash,
+        int    $userId,
+        string $checkIn,
+        string $checkOut,
+        int    $hotelId,
+        float  $displayedPrice = 0.0
+    ): array {
+        // ── Call RateHawk prebook ────────────────────────────────────────────
+        $prebookResponse = $this->rateHawk->prebook($bookHash);
+
+        // Handle both response shapes: data.session_id or session_id
+        $prebookData       = $prebookResponse['data'] ?? $prebookResponse;
+        $prebookSessionId  = $prebookData['session_id'] ?? $prebookData['prebook_id'] ?? '';
+        $priceData         = $prebookData['price_data'] ?? $prebookData['init_price_info'] ?? [];
+        $confirmedPrice    = (float) ($priceData['price'] ?? $priceData['amount'] ?? $priceData['total'] ?? 0.0);
+        $currency          = strtoupper($priceData['currency'] ?? 'GBP');
+        $cancellationPolicy = $prebookData['cancellation_policy']
+                              ?? $prebookData['cancellation_penalties']
+                              ?? [];
+        $roomData          = $prebookData['room_data'] ?? $prebookData['rooms'] ?? [];
+
+        // ── Create booking session ───────────────────────────────────────────
+        $sessionKey = $this->sessionService->create($userId, 'hotel');
+
+        $offerExpiresAt = date('Y-m-d H:i:s', time() + 900); // 15 minutes
+
+        $pricingSnapshot = [
+            'confirmed_price'     => $confirmedPrice,
+            'currency'            => $currency,
+            'cancellation_policy' => $cancellationPolicy,
+            'check_in'            => $checkIn,
+            'check_out'           => $checkOut,
+            'hotel_id'            => $hotelId,
+            'room_data'           => $roomData,
+            'book_hash'           => $bookHash,
+        ];
+
+        $this->sessionService->update($sessionKey, [
+            'provider_offer_id'  => (string) $hotelId,
+            'prebook_session_id' => $prebookSessionId,
+            'offer_expires_at'   => $offerExpiresAt,
+            'pricing_snapshot'   => $pricingSnapshot,
+            'current_step'       => 'guests',
+        ]);
+
+        // ── Price-change detection ───────────────────────────────────────────
+        $priceChanged = false;
+        if ($displayedPrice > 0.0) {
+            $diff = abs($confirmedPrice - $displayedPrice) / max(1.0, $displayedPrice);
+            $priceChanged = $diff > self::PRICE_CHANGE_THRESHOLD;
+        }
+
+        return [
+            'session_key'         => $sessionKey,
+            'prebook_id'          => $prebookSessionId,
+            'confirmed_price'     => $confirmedPrice,
+            'currency'            => $currency,
+            'cancellation_policy' => $cancellationPolicy,
+            'offer_expires_at'    => $offerExpiresAt,
+            'price_changed'       => $priceChanged,
+        ];
+    }
+
+    // =========================================================================
+    // saveGuests
+    // =========================================================================
+
+    /**
+     * Save guest information to the booking session.
+     *
+     * @param string      $sessionKey
+     * @param array       $guests  [{first_name, last_name, email (lead), phone (lead), is_lead}]
+     * @param int         $userId
+     * @param string|null $specialRequests
+     * @return bool
+     */
+    public function saveGuests(
+        string  $sessionKey,
+        array   $guests,
+        int     $userId,
+        ?string $specialRequests = null
+    ): bool {
+        $session = $this->requireSession($sessionKey, $userId);
+
+        if ($session['current_step'] !== 'guests') {
+            throw new RuntimeException('Invalid step for saving guests. Expected: guests.', 422);
+        }
+
+        // Validate: at least one lead guest with required fields
+        $hasLead = false;
+        foreach ($guests as $idx => $guest) {
+            if (!empty($guest['is_lead'])) {
+                if (empty($guest['first_name']) || empty($guest['last_name'])) {
+                    throw new RuntimeException("Lead guest must have first_name and last_name.", 422);
+                }
+                $hasLead = true;
+            } else {
+                // Non-lead guests still need names
+                if (empty($guest['first_name']) || empty($guest['last_name'])) {
+                    throw new RuntimeException("Guest {$idx}: first_name and last_name are required.", 422);
+                }
+            }
+        }
+
+        if (!$hasLead) {
+            throw new RuntimeException('At least one lead guest is required.', 422);
+        }
+
+        $guestsData = [
+            'guests'           => $guests,
+            'special_requests' => $specialRequests,
+        ];
+
+        return $this->sessionService->update($sessionKey, [
+            'guests_data'  => $guestsData,
+            'current_step' => 'payment',
+        ]);
+    }
+
+    // =========================================================================
+    // createPaymentIntent
+    // =========================================================================
+
+    /**
+     * Create a Stripe PaymentIntent for the hotel booking.
+     *
+     * @param string      $sessionKey
+     * @param int         $userId
+     * @param string|null $couponCode
+     * @return array {client_secret, payment_intent_id, amount, currency}
+     */
+    public function createPaymentIntent(
+        string  $sessionKey,
+        int     $userId,
+        ?string $couponCode = null
+    ): array {
+        $session = $this->requireSession($sessionKey, $userId);
+
+        if ($session['current_step'] !== 'payment') {
+            throw new RuntimeException('Session is not at the payment step.', 422);
+        }
+
+        $pricingSnapshot = is_string($session['pricing_snapshot'])
+            ? json_decode($session['pricing_snapshot'], true)
+            : ($session['pricing_snapshot'] ?? null);
+
+        if (empty($pricingSnapshot)) {
+            throw new RuntimeException('Pricing snapshot not found. Please prebook again.', 422);
+        }
+
+        $totalAmount = (float) ($pricingSnapshot['confirmed_price'] ?? 0);
+        $currency    = strtolower($pricingSnapshot['currency'] ?? 'gbp');
+
+        // ── Apply coupon if provided ─────────────────────────────────────────
+        if ($couponCode !== null && $couponCode !== '') {
+            $coupon = $this->findActiveCoupon($couponCode);
+            if ($coupon) {
+                if ($coupon['discount_type'] === 'percentage') {
+                    $discount = round($totalAmount * ((float) $coupon['discount_value'] / 100), 2);
+                } else {
+                    $discount = min($totalAmount, (float) $coupon['discount_value']);
+                }
+                $totalAmount -= $discount;
+                $totalAmount  = max(0.0, $totalAmount);
+
+                $pricingSnapshot['coupon_code']     = $couponCode;
+                $pricingSnapshot['discount_amount'] = $discount;
+                $pricingSnapshot['total']           = $totalAmount;
+            }
+        }
+
+        $amountInPence  = (int) round($totalAmount * 100);
+        $idempotencyKey = bin2hex(random_bytes(32));
+
+        // ── Insert payment record ────────────────────────────────────────────
+        $payStmt = $this->db->prepare(
+            'INSERT INTO payments
+               (booking_type, booking_id, user_id, payment_method,
+                idempotency_key, amount, currency, status)
+             VALUES
+               (:booking_type, 0, :user_id, :method,
+                :idem_key, :amount, :currency, :status)'
+        );
+        $payStmt->execute([
+            ':booking_type' => 'hotel',
+            ':user_id'      => $userId,
+            ':method'       => 'stripe',
+            ':idem_key'     => $idempotencyKey,
+            ':amount'       => number_format($totalAmount, 2, '.', ''),
+            ':currency'     => strtoupper($currency),
+            ':status'       => 'pending',
+        ]);
+        $paymentId = (int) $this->db->lastInsertId();
+
+        // ── Create Stripe PaymentIntent ──────────────────────────────────────
+        $stripeResult = $this->stripe->createPaymentIntent(
+            $amountInPence,
+            $idempotencyKey,
+            $currency,
+            [
+                'session_key'  => $sessionKey,
+                'booking_type' => 'hotel',
+                'user_id'      => (string) $userId,
+            ]
+        );
+
+        $paymentIntentId = $stripeResult['payment_intent_id'];
+
+        // ── Update payment row with Stripe PI id ─────────────────────────────
+        $this->db->prepare(
+            'UPDATE payments SET stripe_payment_intent_id = :pi WHERE id = :id'
+        )->execute([':pi' => $paymentIntentId, ':id' => $paymentId]);
+
+        // ── Update session ───────────────────────────────────────────────────
+        $this->sessionService->update($sessionKey, [
+            'payment_intent_id' => $paymentIntentId,
+            'idempotency_key'   => $idempotencyKey,
+            'pricing_snapshot'  => $pricingSnapshot,
+            'current_step'      => 'payment',
+        ]);
+
+        return [
+            'client_secret'     => $stripeResult['client_secret'],
+            'payment_intent_id' => $paymentIntentId,
+            'amount'            => $totalAmount,
+            'currency'          => strtoupper($currency),
+        ];
+    }
+
+    // =========================================================================
+    // completeBooking  (called by WebhookController after payment_intent.succeeded)
+    // =========================================================================
+
+    /**
+     * Finalise the hotel booking after successful Stripe payment.
+     *
+     * @param string $sessionKey
+     * @param string $paymentIntentId
+     * @return array {booking_id, booking_reference}
+     */
+    public function completeBooking(string $sessionKey, string $paymentIntentId): array
+    {
+        // ── Load session ─────────────────────────────────────────────────────
+        $stmt = $this->db->prepare(
+            'SELECT * FROM booking_sessions
+             WHERE payment_intent_id = :pi AND booking_type = :bt
+             LIMIT 1'
+        );
+        $stmt->execute([':pi' => $paymentIntentId, ':bt' => 'hotel']);
+        $session = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$session) {
+            throw new RuntimeException('Booking session not found for payment intent.', 404);
+        }
+
+        $userId = (int) $session['user_id'];
+
+        $guestsData = is_string($session['guests_data'])
+            ? json_decode($session['guests_data'], true)
+            : ($session['guests_data'] ?? []);
+
+        $pricingSnapshot = is_string($session['pricing_snapshot'])
+            ? json_decode($session['pricing_snapshot'], true)
+            : ($session['pricing_snapshot'] ?? []);
+
+        $prebookSessionId = $session['prebook_session_id'] ?? '';
+
+        // ── Find lead guest ──────────────────────────────────────────────────
+        $allGuests   = $guestsData['guests'] ?? [];
+        $specialReqs = $guestsData['special_requests'] ?? null;
+        $leadGuest   = null;
+
+        foreach ($allGuests as $g) {
+            if (!empty($g['is_lead'])) {
+                $leadGuest = $g;
+                break;
+            }
+        }
+
+        if ($leadGuest === null && !empty($allGuests)) {
+            $leadGuest = $allGuests[0];
+        }
+
+        if ($leadGuest === null) {
+            throw new RuntimeException('No lead guest found in session.', 422);
+        }
+
+        $rateHawkLeadGuest = [
+            'first_name' => $leadGuest['first_name'],
+            'last_name'  => $leadGuest['last_name'],
+            'email'      => $leadGuest['email']  ?? '',
+            'phone'      => $leadGuest['phone']  ?? '',
+        ];
+
+        // ── Build rooms payload for RateHawk ─────────────────────────────────
+        $roomData  = $pricingSnapshot['room_data'] ?? [];
+        $rooms     = is_array($roomData) && !empty($roomData) ? $roomData : [[]];
+
+        // ── Generate booking reference ────────────────────────────────────────
+        $bookingReference = 'FMH-' . strtoupper(bin2hex(random_bytes(4)));
+
+        // ── Call RateHawk createBooking ───────────────────────────────────────
+        $bookingResponse = $this->rateHawk->createBooking(
+            $prebookSessionId,
+            $rateHawkLeadGuest,
+            $rooms,
+            $bookingReference,
+            $specialReqs
+        );
+
+        $bookingResponseData = $bookingResponse['data'] ?? $bookingResponse;
+        $providerBookingId   = $bookingResponseData['order_id']
+                               ?? $bookingResponseData['id']
+                               ?? '';
+
+        // ── Extract booking details from snapshot ─────────────────────────────
+        $hotelId     = (int) ($pricingSnapshot['hotel_id']  ?? 0);
+        $checkIn     = $pricingSnapshot['check_in']  ?? '';
+        $checkOut    = $pricingSnapshot['check_out'] ?? '';
+        $currency    = strtoupper($pricingSnapshot['currency'] ?? 'GBP');
+        $totalAmount = (float) ($pricingSnapshot['confirmed_price'] ?? 0);
+        $cancellationPolicy = $pricingSnapshot['cancellation_policy'] ?? [];
+
+        // Compute nights
+        $nightsCount = 1;
+        if ($checkIn && $checkOut) {
+            $diff = (new \DateTimeImmutable($checkIn))->diff(new \DateTimeImmutable($checkOut));
+            $nightsCount = max(1, (int) $diff->days);
+        }
+
+        $roomsCount  = count($rooms);
+        $adultsCount = 0;
+        foreach ($rooms as $room) {
+            $adultsCount += (int) ($room['adults'] ?? 1);
+        }
+        $childrenCount = 0;
+        foreach ($rooms as $room) {
+            $childrenCount += count($room['children'] ?? []);
+        }
+
+        // ── INSERT hotel_bookings ─────────────────────────────────────────────
+        $bStmt = $this->db->prepare(
+            'INSERT INTO hotel_bookings
+               (user_id, provider_id, booking_reference, provider_booking_id,
+                hotel_id, check_in_date, check_out_date, nights_count,
+                rooms_count, adults_count, children_count,
+                total_amount, currency, status, cancellation_policy, special_requests)
+             VALUES
+               (:user_id, :provider_id, :ref, :provider_booking_id,
+                :hotel_id, :check_in, :check_out, :nights,
+                :rooms, :adults, :children,
+                :amount, :currency, :status, :cancellation_policy, :special_requests)'
+        );
+        $bStmt->execute([
+            ':user_id'              => $userId,
+            ':provider_id'          => self::PROVIDER_ID,
+            ':ref'                  => $bookingReference,
+            ':provider_booking_id'  => $providerBookingId,
+            ':hotel_id'             => $hotelId,
+            ':check_in'             => $checkIn,
+            ':check_out'            => $checkOut,
+            ':nights'               => $nightsCount,
+            ':rooms'                => $roomsCount,
+            ':adults'               => $adultsCount,
+            ':children'             => $childrenCount,
+            ':amount'               => number_format($totalAmount, 2, '.', ''),
+            ':currency'             => $currency,
+            ':status'               => 'confirmed',
+            ':cancellation_policy'  => json_encode($cancellationPolicy, JSON_UNESCAPED_UNICODE),
+            ':special_requests'     => $specialReqs,
+        ]);
+        $hotelBookingId = (int) $this->db->lastInsertId();
+
+        // ── INSERT hotel_booking_guests ───────────────────────────────────────
+        $gStmt = $this->db->prepare(
+            'INSERT INTO hotel_booking_guests
+               (booking_id, is_lead, first_name, last_name, email, phone)
+             VALUES
+               (:booking_id, :is_lead, :first_name, :last_name, :email, :phone)'
+        );
+        foreach ($allGuests as $guest) {
+            $gStmt->execute([
+                ':booking_id'  => $hotelBookingId,
+                ':is_lead'     => !empty($guest['is_lead']) ? 1 : 0,
+                ':first_name'  => $guest['first_name'] ?? '',
+                ':last_name'   => $guest['last_name']  ?? '',
+                ':email'       => $guest['email']  ?? null,
+                ':phone'       => $guest['phone']  ?? null,
+            ]);
+        }
+
+        // ── INSERT hotel_booking_rooms ────────────────────────────────────────
+        $rStmt = $this->db->prepare(
+            'INSERT INTO hotel_booking_rooms
+               (booking_id, room_type, meal_plan, provider_room_id, amount, currency)
+             VALUES
+               (:booking_id, :room_type, :meal_plan, :provider_room_id, :amount, :currency)'
+        );
+        foreach ($rooms as $room) {
+            $rStmt->execute([
+                ':booking_id'       => $hotelBookingId,
+                ':room_type'        => $room['room_type'] ?? $room['type'] ?? null,
+                ':meal_plan'        => $room['meal_plan'] ?? $room['board_type'] ?? null,
+                ':provider_room_id' => $room['id'] ?? $room['room_id'] ?? null,
+                ':amount'           => $room['amount'] ?? $room['price'] ?? null,
+                ':currency'         => $currency,
+            ]);
+        }
+
+        // ── Update payments row ───────────────────────────────────────────────
+        $this->db->prepare(
+            'UPDATE payments
+             SET booking_id = :bid, status = :status
+             WHERE stripe_payment_intent_id = :pi'
+        )->execute([':bid' => $hotelBookingId, ':status' => 'succeeded', ':pi' => $paymentIntentId]);
+
+        // ── Advance session ───────────────────────────────────────────────────
+        $this->sessionService->update($session['session_key'], ['current_step' => 'complete']);
+
+        // ── Queue jobs ────────────────────────────────────────────────────────
+        $this->queueJobs($hotelBookingId, $userId);
+
+        return [
+            'booking_id'        => $hotelBookingId,
+            'booking_reference' => $bookingReference,
+        ];
+    }
+
+    // =========================================================================
+    // getUserBookings
+    // =========================================================================
+
+    /**
+     * Return all hotel bookings for a user, enriched with hotel name + image.
+     *
+     * @param int $userId
+     * @return array
+     */
+    public function getUserBookings(int $userId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT hb.*,
+                    hc.name_en      AS hotel_name_en,
+                    hc.name_ar      AS hotel_name_ar,
+                    hc.main_image_url
+             FROM hotel_bookings hb
+             LEFT JOIN hotels_content hc ON hc.id = hb.hotel_id
+             WHERE hb.user_id = :uid
+             ORDER BY hb.created_at DESC'
+        );
+        $stmt->execute([':uid' => $userId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return array_map(function (array $row): array {
+            if (isset($row['cancellation_policy']) && is_string($row['cancellation_policy'])) {
+                $row['cancellation_policy'] = json_decode($row['cancellation_policy'], true) ?? [];
+            }
+            return $row;
+        }, $rows);
+    }
+
+    // =========================================================================
+    // getBookingById
+    // =========================================================================
+
+    /**
+     * Return a single hotel booking with guests and rooms.
+     *
+     * @param int $bookingId
+     * @param int $userId
+     * @return array|null
+     */
+    public function getBookingById(int $bookingId, int $userId): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT hb.*,
+                    hc.name_en     AS hotel_name_en,
+                    hc.name_ar     AS hotel_name_ar,
+                    hc.main_image_url,
+                    hc.star_rating,
+                    hc.guest_rating
+             FROM hotel_bookings hb
+             LEFT JOIN hotels_content hc ON hc.id = hb.hotel_id
+             WHERE hb.id = :id AND hb.user_id = :uid
+             LIMIT 1'
+        );
+        $stmt->execute([':id' => $bookingId, ':uid' => $userId]);
+        $booking = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$booking) {
+            return null;
+        }
+
+        if (isset($booking['cancellation_policy']) && is_string($booking['cancellation_policy'])) {
+            $booking['cancellation_policy'] = json_decode($booking['cancellation_policy'], true) ?? [];
+        }
+
+        // Guests
+        $gStmt = $this->db->prepare(
+            'SELECT * FROM hotel_booking_guests WHERE booking_id = :id ORDER BY is_lead DESC'
+        );
+        $gStmt->execute([':id' => $bookingId]);
+        $booking['guests'] = $gStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Rooms
+        $rStmt = $this->db->prepare(
+            'SELECT * FROM hotel_booking_rooms WHERE booking_id = :id'
+        );
+        $rStmt->execute([':id' => $bookingId]);
+        $booking['rooms'] = $rStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $booking;
+    }
+
+    // =========================================================================
+    // Private helpers
+    // =========================================================================
+
+    private function requireSession(string $sessionKey, int $userId): array
+    {
+        $session = $this->sessionService->get($sessionKey);
+
+        if ($session === null) {
+            throw new RuntimeException('Booking session not found or expired.', 404);
+        }
+
+        if ((int) $session['user_id'] !== $userId) {
+            throw new RuntimeException('Forbidden.', 403);
+        }
+
+        return $session;
+    }
+
+    private function findActiveCoupon(string $code): ?array
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'SELECT * FROM coupons
+                 WHERE code = :code AND is_active = 1
+                   AND (valid_until IS NULL OR valid_until > NOW())
+                 LIMIT 1'
+            );
+            $stmt->execute([':code' => $code]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            return $row ?: null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function queueJobs(int $bookingId, int $userId): void
+    {
+        $jobs = [
+            [
+                'job_type' => 'generate_invoice',
+                'payload'  => json_encode(['booking_type' => 'hotel', 'booking_id' => $bookingId]),
+            ],
+            [
+                'job_type' => 'send_booking_confirmation_email',
+                'payload'  => json_encode(['booking_type' => 'hotel', 'booking_id' => $bookingId, 'user_id' => $userId]),
+            ],
+            [
+                'job_type' => 'send_booking_confirmation_whatsapp',
+                'payload'  => json_encode(['booking_type' => 'hotel', 'booking_id' => $bookingId, 'user_id' => $userId]),
+            ],
+        ];
+
+        $stmt = $this->db->prepare(
+            'INSERT INTO job_queue (job_type, payload) VALUES (:job_type, :payload)'
+        );
+
+        foreach ($jobs as $job) {
+            try {
+                $stmt->execute($job);
+            } catch (\Throwable) {
+                // Non-critical
+            }
+        }
+    }
+}

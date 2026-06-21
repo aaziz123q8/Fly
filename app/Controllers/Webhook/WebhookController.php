@@ -6,6 +6,8 @@ namespace App\Controllers\Webhook;
 
 use App\Helpers\Database;
 use App\Helpers\SecurityHelper;
+use App\Services\FlightBookingService;
+use App\Services\HotelBookingService;
 use PDO;
 
 /**
@@ -151,6 +153,7 @@ class WebhookController
             return 'missing_intent_id';
         }
 
+        // Update the payment row first
         $stmt = $this->db->prepare(
             'UPDATE payments
              SET status = :status, gateway_status = :gs,
@@ -164,6 +167,38 @@ class WebhookController
             ':pi_id'   => $intentId,
             ':pending' => 'pending',
         ]);
+
+        // Look up booking session to route to correct booking service
+        $sessionStmt = $this->db->prepare(
+            'SELECT session_key, booking_type
+             FROM booking_sessions
+             WHERE payment_intent_id = :pi
+             LIMIT 1'
+        );
+        $sessionStmt->execute([':pi' => $intentId]);
+        $sessionRow = $sessionStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$sessionRow) {
+            return 'payment_updated_no_session';
+        }
+
+        $sessionKey  = $sessionRow['session_key'];
+        $bookingType = $sessionRow['booking_type'] ?? '';
+
+        try {
+            if ($bookingType === 'hotel') {
+                (new HotelBookingService($this->db))->completeBooking($sessionKey, $intentId);
+                return 'hotel_booking_completed';
+            }
+
+            if ($bookingType === 'flight') {
+                (new FlightBookingService($this->db))->completeBooking($sessionKey, $intentId);
+                return 'flight_booking_completed';
+            }
+        } catch (\Throwable $e) {
+            // Log and return error detail so webhook_logs captures it
+            return 'booking_completion_error: ' . $e->getMessage();
+        }
 
         return 'payment_updated';
     }

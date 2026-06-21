@@ -21,6 +21,7 @@ if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
 
 use App\Controllers\Auth\AuthController;
 use App\Controllers\Flight\FlightController;
+use App\Controllers\Hotel\HotelController;
 use App\Controllers\Webhook\WebhookController;
 use App\Core\Request;
 use App\Core\Response;
@@ -136,6 +137,48 @@ $router->group('api/flights', function (Router $r): void {
     $r->get('/bookings/:id', function (Request $req): void {
         (new FlightController())->getBooking($req);
     }, [AuthMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Hotels
+// ---------------------------------------------------------------------------
+
+$router->group('api/hotels', function (Router $r): void {
+
+    // Hotel search — auth optional, rate-limited.
+    $r->post('/search', function (Request $req): void {
+        (new HotelController())->search($req);
+    });
+
+    // Checkout: prebook (auth required).
+    $r->post('/checkout/prebook', function (Request $req): void {
+        (new HotelController())->prebook($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Checkout: save guests (auth required).
+    $r->post('/checkout/guests', function (Request $req): void {
+        (new HotelController())->saveGuests($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Checkout: payment intent (auth required).
+    $r->post('/checkout/payment-intent', function (Request $req): void {
+        (new HotelController())->createPaymentIntent($req);
+    }, [AuthMiddleware::handle()]);
+
+    // User bookings list (auth required) — must come before /:provider_hotel_id
+    $r->get('/bookings', function (Request $req): void {
+        (new HotelController())->listBookings($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Single booking detail (auth required).
+    $r->get('/bookings/:id', function (Request $req): void {
+        (new HotelController())->getBooking($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Hotel detail — auth optional (register after /bookings to avoid conflict).
+    $r->get('/:provider_hotel_id', function (Request $req): void {
+        (new HotelController())->detail($req);
+    });
 });
 
 // ---------------------------------------------------------------------------
