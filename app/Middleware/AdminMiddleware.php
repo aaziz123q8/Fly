@@ -21,6 +21,7 @@ class AdminMiddleware
                 Response::unauthorized('Admin authentication required.');
             }
 
+            $tokenHash = hash('sha256', $token);
             $db   = Database::getInstance();
             $stmt = $db->prepare(
                 'SELECT s.*, u.email, u.first_name, u.last_name, u.role
@@ -32,7 +33,7 @@ class AdminMiddleware
                    AND u.is_active = 1
                  LIMIT 1'
             );
-            $stmt->execute([$token]);
+            $stmt->execute([$tokenHash]);
             $session = $stmt->fetch(\PDO::FETCH_ASSOC);
 
             if (!$session) {
@@ -40,7 +41,7 @@ class AdminMiddleware
             }
 
             $db->prepare('UPDATE admin_sessions SET last_active_at = NOW() WHERE id = ?')
-               ->execute([$session['id']]);
+               ->execute([(int)$session['id']]);
 
             self::$currentAdmin = $session;
             $next($request);

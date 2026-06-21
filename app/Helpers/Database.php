@@ -61,7 +61,10 @@ class Database
         try {
             self::$instance = new PDO($dsn, $config['username'], $config['password'], $options);
         } catch (PDOException $e) {
-            throw new \RuntimeException('Database connection failed: ' . $e->getMessage(), (int)$e->getCode(), $e);
+            // Do not expose connection details (host, credentials) in the message.
+            // Log the real error server-side; surface only a generic message to callers.
+            error_log('Database connection failed: ' . $e->getMessage());
+            throw new \RuntimeException('Database connection failed.', (int)$e->getCode());
         }
 
         return self::$instance;

@@ -97,7 +97,14 @@ class AdminNotificationsController
         $message  = (string)$request->input('message');
         $type     = (string)$request->input('type');
         $target   = (string)$request->input('target');
-        $channels = (array)($request->input('channels') ?? ['email']);
+        $rawChannels = (array)($request->input('channels') ?? ['email']);
+
+        // Allowlist permitted notification channels.
+        $allowedChannels = ['email', 'sms', 'push', 'whatsapp'];
+        $channels = array_values(array_filter($rawChannels, fn($c) => in_array($c, $allowedChannels, true)));
+        if (empty($channels)) {
+            Response::error('No valid channels specified. Allowed: ' . implode(', ', $allowedChannels), 422);
+        }
 
         $db = Database::getInstance();
 
