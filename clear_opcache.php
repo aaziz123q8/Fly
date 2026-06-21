@@ -1,10 +1,19 @@
 <?php
-// ONE-TIME SCRIPT — DELETE AFTER USE
+// OPcache reset — served directly by Apache (bypasses router + OPcache on index.php)
 if (function_exists('opcache_reset')) {
     opcache_reset();
-    echo "<p style='color:green;font-family:monospace'>✅ OPcache cleared successfully.</p>";
+    $status = function_exists('opcache_get_status') ? opcache_get_status(false) : [];
+    echo json_encode([
+        'success'        => true,
+        'opcache_cleared' => true,
+        'cached_scripts'  => $status['opcache_statistics']['num_cached_scripts'] ?? 0,
+        'time'            => date('c'),
+    ]);
 } else {
-    echo "<p style='color:orange;font-family:monospace'>⚠️ OPcache not available or not enabled.</p>";
+    echo json_encode([
+        'success'        => true,
+        'opcache_cleared' => false,
+        'note'            => 'OPcache not enabled or not available',
+        'time'            => date('c'),
+    ]);
 }
-echo "<p style='color:red;font-size:.85rem'>Delete this file: <code>rm clear_opcache.php</code></p>";
-echo "<p><a href='index.html'>← الرئيسية</a></p>";

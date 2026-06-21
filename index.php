@@ -83,7 +83,7 @@ $router->get('/health', fn(Request $req) => Response::json([
 ]));
 
 $router->get('/admin/clear-cache', function (Request $req): void {
-    $token = $req->header('X-Cache-Token') ?? ($_GET['token'] ?? '');
+    $token     = $_GET['token'] ?? '';
     $masterKey = getenv('APP_MASTER_KEY') ?: '';
     if ($masterKey === '' || $token !== $masterKey) {
         Response::error('Forbidden', 403);
