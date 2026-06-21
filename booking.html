@@ -301,15 +301,20 @@
               <input type="text" class="form-control" id="p${i}_doc_num" placeholder="رقم الوثيقة" required autocomplete="off">
             </div>
           </div>
-          <div class="form-row2">
-            <div class="form-group">
-              <label class="form-label">تاريخ الإصدار</label>
-              <input type="text" class="form-control" id="p${i}_doc_issue" placeholder="YYYY-MM-DD">
+          <div class="form-group" style="margin-bottom:12px">
+            <label class="form-label">تاريخ الإصدار <small style="color:var(--text-muted)">(اختياري)</small></label>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+              ${(()=>{ const dy=['<option value="">يوم</option>',...Array.from({length:31},(_,k)=>`<option value="${String(k+1).padStart(2,'0')}">${k+1}</option>`)].join(''); const dm=['<option value="">شهر</option>','يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'].map((m,k)=>k===0?m:`<option value="${String(k).padStart(2,'0')}">${m}</option>`).join(''); let dyrs='<option value="">سنة</option>'; for(let y=thisYear;y>=thisYear-30;y--) dyrs+=`<option value="${y}">${y}</option>`; return `<select class="form-control" id="p${i}_issue_d" onchange="updateDocDate(${i},'issue')">${dy}</select><select class="form-control" id="p${i}_issue_m" onchange="updateDocDate(${i},'issue')">${dm}</select><select class="form-control" id="p${i}_issue_y" onchange="updateDocDate(${i},'issue')">${dyrs}</select>`; })()}
             </div>
-            <div class="form-group">
-              <label class="form-label">تاريخ الانتهاء <span style="color:red">*</span></label>
-              <input type="text" class="form-control" id="p${i}_doc_exp" placeholder="YYYY-MM-DD" required>
+            <input type="hidden" id="p${i}_doc_issue">
+          </div>
+          <div class="form-group">
+            <label class="form-label">تاريخ الانتهاء <span style="color:red">*</span> <small style="color:var(--text-muted)">(يجب أن يكون سارياً بعد تاريخ السفر)</small></label>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+              ${(()=>{ const dy=['<option value="">يوم</option>',...Array.from({length:31},(_,k)=>`<option value="${String(k+1).padStart(2,'0')}">${k+1}</option>`)].join(''); const dm=['<option value="">شهر</option>','يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'].map((m,k)=>k===0?m:`<option value="${String(k).padStart(2,'0')}">${m}</option>`).join(''); let dyrs='<option value="">سنة</option>'; for(let y=thisYear;y<=thisYear+15;y++) dyrs+=`<option value="${y}">${y}</option>`; return `<select class="form-control" id="p${i}_exp_d" onchange="updateDocDate(${i},'exp')" required>${dy}</select><select class="form-control" id="p${i}_exp_m" onchange="updateDocDate(${i},'exp')" required>${dm}</select><select class="form-control" id="p${i}_exp_y" onchange="updateDocDate(${i},'exp')" required>${dyrs}</select>`; })()}
             </div>
+            <input type="hidden" id="p${i}_doc_exp">
+            <div id="p${i}_expError" style="color:var(--error,#ef4444);font-size:0.78rem;display:none;margin-top:4px"></div>
           </div>
         </div>
         <div id="p${i}_ageError" style="color:var(--error,#ef4444);font-size:0.82rem;display:none;padding:6px 0"></div>
@@ -320,6 +325,42 @@
     activePax = idx;
     document.querySelectorAll('.pax-tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
     document.querySelectorAll('.pax-form').forEach((f,i)=>f.classList.toggle('active',i===idx));
+  }
+
+  function updateDocDate(i, field) {
+    const prefix = field === 'issue' ? `p${i}_issue` : `p${i}_exp`;
+    const hiddenId = field === 'issue' ? `p${i}_doc_issue` : `p${i}_doc_exp`;
+    const d = document.getElementById(`${prefix}_d`)?.value;
+    const m = document.getElementById(`${prefix}_m`)?.value;
+    const y = document.getElementById(`${prefix}_y`)?.value;
+    const hidden = document.getElementById(hiddenId);
+    if (!hidden) return;
+    if (d && m && y) {
+      hidden.value = `${y}-${m}-${d}`;
+      if (field === 'exp') validateDocExpiry(i);
+    } else {
+      hidden.value = '';
+    }
+  }
+
+  function validateDocExpiry(i) {
+    const expVal = document.getElementById(`p${i}_doc_exp`)?.value;
+    const errEl  = document.getElementById(`p${i}_expError`);
+    if (!expVal || !errEl) return true;
+    const travelDate = flightData?.slices?.[0]?.segments?.[0]?.departing_at
+      ? new Date(flightData.slices[0].segments[0].departing_at)
+      : new Date(Date.now() + 86400000);
+    const expDate = new Date(expVal);
+    // Must be valid at least 6 months after travel date (international standard)
+    const minExpiry = new Date(travelDate);
+    minExpiry.setMonth(minExpiry.getMonth() + 6);
+    if (expDate < minExpiry) {
+      errEl.textContent = `⚠️ يجب أن يكون الجواز سارياً لمدة 6 أشهر على الأقل بعد تاريخ السفر (${minExpiry.toISOString().substring(0,10)})`;
+      errEl.style.display = 'block';
+      return false;
+    }
+    errEl.style.display = 'none';
+    return true;
   }
 
   function updateDob(i) {
@@ -476,6 +517,19 @@
         set(`p${formIdx}_dob`, t.date_of_birth);
       }
     }
+    // Fill doc expiry dropdowns
+    const fillDateSelects = (isoDate, prefix, hidden) => {
+      if (!isoDate) return;
+      const parts = isoDate.split('-');
+      if (parts.length === 3) {
+        set(`${prefix}_y`, parts[0]);
+        set(`${prefix}_m`, parts[1]);
+        set(`${prefix}_d`, parts[2]);
+        set(hidden, isoDate);
+      }
+    };
+    fillDateSelects(t.document_expiry,  `p${formIdx}_exp`,   `p${formIdx}_doc_exp`);
+    fillDateSelects(t.document_issue,   `p${formIdx}_issue`, `p${formIdx}_doc_issue`);
   }
 
   function updateTotal() {
@@ -542,6 +596,11 @@
         switchPax(i, document.querySelectorAll('.pax-tab')[i]);
         const errMsg = document.getElementById(`p${i}_ageError`)?.textContent;
         alert(errMsg || 'يرجى التحقق من تاريخ ميلاد ' + paxTypes[i].label); return;
+      }
+      if (!validateDocExpiry(i)) {
+        switchPax(i, document.querySelectorAll('.pax-tab')[i]);
+        const errMsg = document.getElementById(`p${i}_expError`)?.textContent;
+        alert(errMsg || 'يرجى التحقق من تاريخ انتهاء وثيقة ' + paxTypes[i].label); return;
       }
     }
     const dupErr = checkDuplicateNames(passengers);

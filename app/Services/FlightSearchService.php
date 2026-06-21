@@ -77,12 +77,14 @@ class FlightSearchService
             ];
         }
 
+        // Duffel v2: adults → {type:'adult'}, children → {age:N} only, infants → {type:'infant_without_seat'}
         $passengers = array_fill(0, $adults, ['type' => 'adult']);
         foreach ($children as $age) {
-            $passengers[] = ['type' => 'child', 'age' => max(2, min(11, (int) $age))];
+            $childAge = max(2, min(11, (int) $age));
+            $passengers[] = ['age' => $childAge];   // age-only, no type
         }
         for ($i = 0; $i < $infantCount; $i++) {
-            $passengers[] = ['type' => 'infant_without_seat', 'age' => 0];
+            $passengers[] = ['type' => 'infant_without_seat'];  // type-only, no age
         }
 
         // ── 3. Call Duffel ───────────────────────────────────────────────────
