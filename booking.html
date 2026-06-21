@@ -310,6 +310,11 @@
       document.getElementById('priceTax').textContent  = formatPrice(taxGBP);
       updateTotal();
     } catch(err) {
+      if (err.status === 401) {
+        Auth.clear();
+        window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+        return;
+      }
       el.innerHTML = '<p style="color:var(--error);text-align:center">' + (err.message || 'تعذر تحميل تفاصيل الرحلة') + '</p>';
       document.getElementById('priceBase').textContent = '—';
       document.getElementById('priceTax').textContent  = '—';
