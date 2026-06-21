@@ -19,100 +19,99 @@ if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
     $dotenv->safeLoad();
 }
 
-// ---------------------------------------------------------------------------
-// Request parsing
-// ---------------------------------------------------------------------------
-
-$method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
-$uri    = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
-$uri    = '/' . trim((string)$uri, '/');
-
-// ---------------------------------------------------------------------------
-// Router
-// ---------------------------------------------------------------------------
-
-/**
- * Simple pattern-based router.
- * Patterns use named captures: /api/bookings/:id  →  (?P<id>[^/]+)
- */
-$routes = [
-    // ── Health / Meta ───────────────────────────────────────────────────────
-    'GET /'                               => fn() => jsonResponse(['status' => 'FlyMasar API', 'version' => '1.0.0']),
-    'GET /health'                         => fn() => jsonResponse(['status' => 'ok', 'time' => date('c')]),
-
-    // ── Webhooks ────────────────────────────────────────────────────────────
-    'POST /webhooks/stripe'               => 'webhook_stripe',
-    'POST /webhooks/duffel'               => 'webhook_duffel',
-
-    // ── Auth ─────────────────────────────────────────────────────────────────
-    // POST /api/auth/register
-    // POST /api/auth/login
-    // POST /api/auth/logout
-    // POST /api/auth/password/reset
-
-    // ── Flights ──────────────────────────────────────────────────────────────
-    // POST /api/flights/search
-    // POST /api/flights/book
-    // GET  /api/flights/bookings/:id
-
-    // ── Hotels ───────────────────────────────────────────────────────────────
-    // POST /api/hotels/search
-    // POST /api/hotels/prebook
-    // POST /api/hotels/book
-    // GET  /api/hotels/bookings/:id
-
-    // ── Payments ─────────────────────────────────────────────────────────────
-    // POST /api/payments/intent
-    // POST /api/payments/:id/refund
-];
-
-// Resolve the route.
-$routeKey = $method . ' ' . $uri;
-
-if (isset($routes[$routeKey])) {
-    $handler = $routes[$routeKey];
-
-    if (is_callable($handler)) {
-        $handler();
-    } elseif (is_string($handler)) {
-        dispatchNamedHandler($handler);
-    }
-    exit;
-}
-
-// 404 fallback.
-http_response_code(404);
-echo json_encode(['error' => 'not_found', 'path' => $uri]);
-exit;
+use App\Controllers\Auth\AuthController;
+use App\Controllers\Webhook\WebhookController;
+use App\Core\Request;
+use App\Core\Response;
+use App\Core\Router;
+use App\Middleware\AuthMiddleware;
 
 // ---------------------------------------------------------------------------
-// Handler dispatch
+// Bootstrap core objects
 // ---------------------------------------------------------------------------
 
-function dispatchNamedHandler(string $name): void
-{
-    switch ($name) {
-        case 'webhook_stripe':
-            (new \App\Controllers\Webhook\WebhookController())->handleStripe();
-            break;
-
-        case 'webhook_duffel':
-            (new \App\Controllers\Webhook\WebhookController())->handleDuffel();
-            break;
-
-        default:
-            http_response_code(501);
-            echo json_encode(['error' => 'not_implemented']);
-    }
-}
+$request = new Request();
+$router  = new Router();
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Routes — Health / Meta
 // ---------------------------------------------------------------------------
 
-function jsonResponse(array $data, int $status = 200): void
-{
-    http_response_code($status);
+$router->get('/', fn(Request $req) => Response::json([
+    'status'  => 'FlyMasar API',
+    'version' => '1.0.0',
+]));
+
+$router->get('/health', fn(Request $req) => Response::json([
+    'status' => 'ok',
+    'time'   => date('c'),
+]));
+
+// ---------------------------------------------------------------------------
+// Routes — Webhooks
+// ---------------------------------------------------------------------------
+
+$router->post('/webhooks/stripe', function (Request $req): void {
+    (new WebhookController())->handleStripe();
+});
+
+$router->post('/webhooks/duffel', function (Request $req): void {
+    (new WebhookController())->handleDuffel();
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Auth
+// ---------------------------------------------------------------------------
+
+$router->group('api/auth', function (Router $r): void {
+
+    $r->post('/register', function (Request $req): void {
+        (new AuthController())->register($req);
+    });
+
+    $r->post('/login', function (Request $req): void {
+        (new AuthController())->login($req);
+    });
+
+    $r->post('/logout', function (Request $req): void {
+        (new AuthController())->logout($req);
+    }, [AuthMiddleware::handle()]);
+
+    $r->get('/me', function (Request $req): void {
+        (new AuthController())->me($req);
+    }, [AuthMiddleware::handle()]);
+
+    $r->post('/password/forgot', function (Request $req): void {
+        (new AuthController())->forgotPassword($req);
+    });
+
+    $r->post('/password/reset', function (Request $req): void {
+        (new AuthController())->resetPassword($req);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// 404 / 405 handlers
+// ---------------------------------------------------------------------------
+
+$router->setNotFound(function (Request $req): void {
+    Response::error('The requested endpoint does not exist.', 404, 'not_found');
+});
+
+$router->setMethodNotAllowed(function (Request $req, array $allowed): void {
+    http_response_code(405);
     header('Content-Type: application/json; charset=UTF-8');
-    echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-}
+    header('Allow: ' . implode(', ', $allowed));
+    echo json_encode([
+        'error'   => 'method_not_allowed',
+        'message' => 'Method not allowed.',
+        'allowed' => $allowed,
+    ], JSON_UNESCAPED_SLASHES);
+    exit;
+});
+
+// ---------------------------------------------------------------------------
+// Dispatch
+// ---------------------------------------------------------------------------
+
+$router->dispatch($request);
