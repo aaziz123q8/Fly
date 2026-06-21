@@ -1,0 +1,20 @@
+{
+    "name": "flymasar/flymasar",
+    "description": "FlyMasar travel booking platform for flights and hotels",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "stripe/stripe-php": "^13.0",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}

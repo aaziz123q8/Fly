@@ -1,0 +1,8 @@
+config/apis.php
+config/database.php
+storage/
+.env
+vendor/
+*.log
+composer.lock
+.DS_Store

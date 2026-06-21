@@ -1,0 +1,9 @@
+CREATE TABLE providers (
+  id TINYINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(50) NOT NULL,
+  type ENUM('flight','hotel','both') NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_name (name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

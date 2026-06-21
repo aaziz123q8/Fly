@@ -1,0 +1,13 @@
+CREATE TABLE countries (
+  id SMALLINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  iso2 CHAR(2) NOT NULL,
+  iso3 CHAR(3) NOT NULL,
+  name_en VARCHAR(100) NOT NULL,
+  name_ar VARCHAR(100) NULL,
+  phone_code VARCHAR(6) NULL,
+  currency_code CHAR(3) NULL,
+  is_active BOOLEAN NOT NULL DEFAULT 1,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_iso2 (iso2),
+  UNIQUE KEY uq_iso3 (iso3)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

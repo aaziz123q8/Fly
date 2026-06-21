@@ -1,0 +1,22 @@
+CREATE TABLE flight_booking_segments (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  booking_id INT UNSIGNED NOT NULL,
+  slice_index TINYINT NOT NULL DEFAULT 0,
+  segment_order TINYINT NOT NULL DEFAULT 1,
+  flight_number VARCHAR(10) NOT NULL,
+  airline_code CHAR(2) NOT NULL,
+  aircraft_type VARCHAR(50) NULL,
+  origin_airport CHAR(3) NOT NULL,
+  destination_airport CHAR(3) NOT NULL,
+  departure_at DATETIME NOT NULL,
+  arrival_at DATETIME NOT NULL,
+  duration_minutes SMALLINT NULL,
+  cabin_class ENUM('economy','premium_economy','business','first') NOT NULL DEFAULT 'economy',
+  is_overnight BOOLEAN NOT NULL DEFAULT 0,
+  baggage_info JSON NULL,
+  PRIMARY KEY (id),
+  KEY idx_booking (booking_id),
+  KEY idx_booking_slice (booking_id, slice_index),
+  KEY idx_airline (airline_code),
+  FOREIGN KEY (booking_id) REFERENCES flight_bookings(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

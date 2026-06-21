@@ -1,0 +1,21 @@
+CREATE TABLE coupons (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  code VARCHAR(30) NOT NULL,
+  discount_type ENUM('fixed','percentage') NOT NULL,
+  discount_value DECIMAL(10,2) NOT NULL,
+  currency CHAR(3) NULL,
+  max_discount_amount DECIMAL(10,2) NULL,
+  applies_to ENUM('flight','hotel','both') NOT NULL DEFAULT 'both',
+  min_booking_amount DECIMAL(10,2) NULL,
+  usage_limit INT NULL,
+  usage_count INT NOT NULL DEFAULT 0,
+  user_id INT UNSIGNED NULL,
+  valid_from DATETIME NOT NULL,
+  valid_until DATETIME NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT 1,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_code (code),
+  KEY idx_active (is_active, valid_from, valid_until),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

@@ -1,0 +1,23 @@
+CREATE TABLE payments (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  booking_type ENUM('flight','hotel') NOT NULL,
+  booking_id INT UNSIGNED NOT NULL,
+  user_id INT UNSIGNED NOT NULL,
+  payment_method ENUM('stripe','duffel_balance') NOT NULL,
+  idempotency_key VARCHAR(64) NOT NULL,
+  stripe_payment_intent_id VARCHAR(100) NULL,
+  stripe_charge_id VARCHAR(100) NULL,
+  amount DECIMAL(10,2) NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'GBP',
+  status ENUM('pending','succeeded','failed','refunded','cancelled') NOT NULL DEFAULT 'pending',
+  gateway_status VARCHAR(50) NULL,
+  gateway_response JSON NULL,
+  failure_reason TEXT NULL,
+  paid_at TIMESTAMP NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_idempotency (idempotency_key),
+  KEY idx_booking (booking_type, booking_id),
+  KEY idx_user_status (user_id, status),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

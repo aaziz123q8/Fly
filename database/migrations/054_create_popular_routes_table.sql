@@ -1,0 +1,20 @@
+CREATE TABLE popular_routes (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  search_type ENUM('flight','hotel') NOT NULL DEFAULT 'flight',
+  origin_airport CHAR(3) NULL,
+  destination_airport CHAR(3) NULL,
+  destination_city_id INT UNSIGNED NULL,
+  destination_name_ar VARCHAR(150) NOT NULL,
+  destination_name_en VARCHAR(150) NOT NULL,
+  destination_image_url VARCHAR(500) NULL,
+  lowest_price DECIMAL(10,2) NOT NULL,
+  currency CHAR(3) NOT NULL DEFAULT 'GBP',
+  valid_date DATE NOT NULL,
+  display_order TINYINT NOT NULL DEFAULT 0,
+  is_active BOOLEAN NOT NULL DEFAULT 1,
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(),
+  PRIMARY KEY (id),
+  KEY idx_type_active_order (search_type, is_active, display_order),
+  UNIQUE KEY uq_flight_route (search_type, origin_airport, destination_airport, valid_date),
+  FOREIGN KEY (destination_city_id) REFERENCES cities(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
