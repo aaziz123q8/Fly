@@ -91,4 +91,16 @@ SOURCE 054_create_popular_routes_table.sql;
 SOURCE 055_create_rate_limits_table.sql;
 SOURCE 056_create_saved_searches_table.sql;
 
+SOURCE 057_add_role_to_users.sql;
+SOURCE 058_create_admin_sessions.sql;
+SOURCE 059_push_subscriptions.sql;
+SOURCE 060_alter_travelers_add_blueprint_fields.sql;
+
+-- Group O: Payments, Support, Commissions, Currencies, API Settings
+SOURCE 061_create_commissions_table.sql;
+SOURCE 062_create_currencies_table.sql;
+SOURCE 063_create_api_settings_table.sql;
+SOURCE 064_create_payments_table.sql;
+SOURCE 065_create_support_tables.sql;
+
 SET FOREIGN_KEY_CHECKS = 1;

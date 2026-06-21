@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تفاصيل الفندق — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    body { background: var(--bg-secondary, #f5f7fa); }
+    .hotel-hero { position:relative; height:320px; background:#1a2e5a; overflow:hidden; }
+    .hotel-hero-img { width:100%; height:100%; object-fit:cover; opacity:.85; }
+    .hotel-hero-overlay { position:absolute; bottom:0; left:0; right:0; padding:24px; background:linear-gradient(transparent, rgba(0,0,0,.7)); color:#fff; }
+    .hotel-stars { color:#f59e0b; font-size:1.1rem; }
+    .hotel-name { font-size:1.8rem; font-weight:800; margin:6px 0; }
+    .hotel-location { font-size:.9rem; opacity:.85; }
+    .content-grid { display:grid; grid-template-columns:1fr 320px; gap:20px; max-width:1200px; margin:20px auto; padding:0 16px; }
+    @media(max-width:900px) { .content-grid { grid-template-columns:1fr; } }
+    .card { background:#fff; border-radius:12px; padding:20px; margin-bottom:16px; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    .amenities-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:8px; }
+    .amenity-item { display:flex; align-items:center; gap:6px; font-size:.82rem; color:var(--text-muted); }
+    .room-card { border:1px solid var(--border-color, #e0e0e0); border-radius:10px; margin-bottom:12px; overflow:hidden; }
+    .room-card-header { padding:14px 16px; background:var(--bg-secondary,#f5f7fa); }
+    .room-card-body { padding:14px 16px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:12px; }
+    .room-features { display:flex; gap:10px; flex-wrap:wrap; font-size:.78rem; color:var(--text-muted); }
+    .room-price { text-align:center; }
+    .room-price-amount { font-size:1.4rem; font-weight:800; color:var(--primary); }
+    .room-price-label { font-size:.72rem; color:var(--text-muted); }
+    .policy-item { display:flex; gap:10px; padding:8px 0; border-bottom:1px solid var(--border-color, #e0e0e0); font-size:.85rem; }
+    .policy-item:last-child { border-bottom:none; }
+    .sticky-card { position:sticky; top:20px; }
+    .photo-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; border-radius:10px; overflow:hidden; margin-bottom:16px; height:200px; }
+    .photo-grid img { width:100%; height:100%; object-fit:cover; cursor:pointer; transition:opacity .2s; }
+    .photo-grid img:hover { opacity:.85; }
+    .photo-grid .photo-main { grid-column:1; grid-row:1/3; }
+  </style>
+</head>
+<body>
+
+<!-- Nav -->
+<div style="background:#1a2e5a;padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
+  <a href="hotels.html" style="color:#fff;font-size:1.1rem;font-weight:700;text-decoration:none">✈️ FlyMasar</a>
+  <div id="navAuth" style="display:flex;gap:8px"></div>
+</div>
+
+<!-- Hero -->
+<div class="hotel-hero" id="heroSection">
+  <div style="display:flex;align-items:center;justify-content:center;height:100%;color:rgba(255,255,255,.3)">
+    <div class="spinner"></div>
+  </div>
+</div>
+
+<div class="content-grid">
+  <!-- Left: Details -->
+  <div>
+    <!-- Overview -->
+    <div class="card" id="overviewCard" style="display:none">
+      <h2 id="hotelName" style="margin:0 0 8px"></h2>
+      <div id="hotelMeta" style="color:var(--text-muted);font-size:.85rem;margin-bottom:12px"></div>
+      <p id="hotelDescription" style="font-size:.9rem;line-height:1.7;color:var(--text-secondary,#4a5568)"></p>
+    </div>
+
+    <!-- Amenities -->
+    <div class="card" id="amenitiesCard" style="display:none">
+      <h3 style="margin:0 0 14px">المرافق والخدمات</h3>
+      <div class="amenities-grid" id="amenitiesList"></div>
+    </div>
+
+    <!-- Rooms -->
+    <div class="card" id="roomsCard" style="display:none">
+      <h3 style="margin:0 0 14px">الغرف المتاحة</h3>
+      <div id="roomsList"></div>
+    </div>
+
+    <!-- Policies -->
+    <div class="card" id="policiesCard" style="display:none">
+      <h3 style="margin:0 0 14px">سياسات الفندق</h3>
+      <div id="policiesList"></div>
+    </div>
+  </div>
+
+  <!-- Right: Booking Sidebar -->
+  <div>
+    <div class="sticky-card">
+      <div class="card" id="bookingSidebar" style="display:none">
+        <h3 style="margin:0 0 16px;font-size:1rem">📅 اختر موعد إقامتك</h3>
+        <div class="form-group">
+          <label class="form-label">تسجيل الوصول</label>
+          <input type="text" class="form-control" id="checkIn" readonly placeholder="اختر تاريخ" style="direction:ltr">
+        </div>
+        <div class="form-group">
+          <label class="form-label">تسجيل المغادرة</label>
+          <input type="text" class="form-control" id="checkOut" readonly placeholder="اختر تاريخ" style="direction:ltr">
+        </div>
+        <div class="form-group">
+          <label class="form-label">عدد الغرف</label>
+          <select class="form-control" id="roomCount">
+            <option value="1">غرفة واحدة</option>
+            <option value="2">غرفتان</option>
+            <option value="3">3 غرف</option>
+            <option value="4">4 غرف</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">عدد الضيوف</label>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1"><label class="form-label" style="font-size:.75rem">بالغين</label><input type="number" class="form-control" id="adults" min="1" max="9" value="2"></div>
+            <div style="flex:1"><label class="form-label" style="font-size:.75rem">أطفال</label><input type="number" class="form-control" id="children" min="0" max="4" value="0" oninput="showChildAges()"></div>
+          </div>
+        </div>
+        <div id="childAgesContainer"></div>
+        <div id="priceSummary" style="background:var(--bg-secondary,#f5f7fa);border-radius:8px;padding:12px;margin-bottom:14px;display:none">
+          <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px"><span>السعر لليلة</span><span id="pricePerNight"></span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:6px"><span>عدد الليالي</span><span id="nightsCount"></span></div>
+          <hr style="margin:6px 0">
+          <div style="display:flex;justify-content:space-between;font-weight:700"><span>الإجمالي</span><span id="totalPrice"></span></div>
+        </div>
+        <button class="btn btn-primary btn-block" id="bookBtn" onclick="bookRoom()" disabled>احجز الآن</button>
+        <p style="text-align:center;font-size:.75rem;color:var(--text-muted);margin-top:8px">لا رسوم حجز مخفية</p>
+      </div>
+
+      <div class="card" id="sidebarLoading">
+        <div class="loading-state" style="padding:32px"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+var hotelData  = null;
+var selectedRoom = null;
+var dpCheckIn  = null;
+var dpCheckOut = null;
+
+function initPage() {
+  var p  = new URLSearchParams(window.location.search);
+  var id = p.get('id') || p.get('hotel_id') || '';
+
+  // Pre-fill dates from URL
+  var checkIn  = p.get('check_in')  || '';
+  var checkOut = p.get('check_out') || '';
+  if (checkIn)  document.getElementById('checkIn').value  = checkIn;
+  if (checkOut) document.getElementById('checkOut').value = checkOut;
+  var adults   = parseInt(p.get('adults')   || '2');
+  var children = parseInt(p.get('children') || '0');
+  document.getElementById('adults').value   = adults;
+  document.getElementById('children').value = children;
+  showChildAges();
+
+  // Nav
+  if (Auth.isLoggedIn()) {
+    document.getElementById('navAuth').innerHTML = '<a href="dashboard.html" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">حسابي</a>';
+  } else {
+    document.getElementById('navAuth').innerHTML = '<a href="login.html" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">دخول</a>';
+  }
+
+  if (!id) {
+    document.getElementById('heroSection').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff"><div style="text-align:center"><div style="font-size:3rem;margin-bottom:8px">🏨</div><p>لم يتم تحديد فندق</p></div></div>';
+    return;
+  }
+
+  loadHotel(id);
+}
+
+function loadHotel(id) {
+  Api.get('/api/hotels/' + encodeURIComponent(id), false).then(function(res) {
+    hotelData = res.hotel || res;
+    renderHero();
+    renderOverview();
+    renderAmenities();
+    renderRooms(res.rooms || hotelData.rooms || []);
+    renderPolicies(res.policies || hotelData.policies || []);
+    renderSidebar();
+  }).catch(function() {
+    document.getElementById('heroSection').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#fff"><p>خطأ في تحميل بيانات الفندق</p></div>';
+    document.getElementById('sidebarLoading').innerHTML = '<p style="text-align:center;color:var(--danger)">خطأ</p>';
+  });
+}
+
+function renderHero() {
+  var photos = hotelData.images || hotelData.photos || [];
+  var mainImg = photos[0] ? photos[0].url || photos[0] : '';
+  document.title = (hotelData.name || 'فندق') + ' — فلاي مسار';
+
+  var stars = hotelData.stars || hotelData.star_rating || 0;
+  var starStr = '★'.repeat(Math.round(stars));
+  var html = mainImg
+    ? '<img class="hotel-hero-img" src="' + mainImg + '" alt="' + (hotelData.name||'') + '" onerror="this.style.display=\'none\'">'
+    : '';
+  html += '<div class="hotel-hero-overlay">' +
+    '<div class="hotel-stars">' + starStr + '</div>' +
+    '<div class="hotel-name">' + (hotelData.name || 'فندق') + '</div>' +
+    '<div class="hotel-location">📍 ' + (hotelData.address || hotelData.city || '') + '</div>' +
+    '</div>';
+  document.getElementById('heroSection').innerHTML = html;
+  document.getElementById('heroSection').style.background = mainImg ? '#000' : 'linear-gradient(135deg,#1a2e5a,#0056b3)';
+}
+
+function renderOverview() {
+  document.getElementById('overviewCard').style.display = 'block';
+  document.getElementById('hotelName').textContent = hotelData.name || 'فندق';
+  var meta = [];
+  if (hotelData.city) meta.push('📍 ' + hotelData.city + (hotelData.country ? ', ' + hotelData.country : ''));
+  if (hotelData.rating) meta.push('⭐ ' + parseFloat(hotelData.rating).toFixed(1) + '/10');
+  if (hotelData.reviews_count) meta.push('(' + hotelData.reviews_count + ' تقييم)');
+  document.getElementById('hotelMeta').innerHTML = meta.join(' &nbsp;·&nbsp; ');
+  document.getElementById('hotelDescription').textContent = hotelData.description || hotelData.description_ar || 'فندق راقٍ يوفر تجربة إقامة مميزة في موقع استراتيجي.';
+}
+
+function renderAmenities() {
+  var amenities = hotelData.amenities || hotelData.facilities || [];
+  if (amenities.length === 0) return;
+  document.getElementById('amenitiesCard').style.display = 'block';
+  var icons = { 'wifi': '📶', 'pool': '🏊', 'gym': '🏋️', 'spa': '💆', 'parking': '🅿️', 'restaurant': '🍽️', 'bar': '🍸', 'room_service': '🛎️', 'airport_shuttle': '🚌', 'concierge': '🎩', 'laundry': '👔', 'business_center': '💼' };
+  var html = '';
+  amenities.forEach(function(a) {
+    var name = typeof a === 'string' ? a : (a.name || a);
+    var icon = icons[name.toLowerCase().replace(/ /g,'_')] || '✓';
+    html += '<div class="amenity-item">' + icon + ' ' + name + '</div>';
+  });
+  document.getElementById('amenitiesList').innerHTML = html;
+}
+
+function renderRooms(rooms) {
+  if (rooms.length === 0) {
+    document.getElementById('roomsCard').style.display = 'none';
+    return;
+  }
+  document.getElementById('roomsCard').style.display = 'block';
+  var html = '';
+  rooms.forEach(function(r, i) {
+    var price  = parseFloat(r.price || r.rate || r.total_price || 0);
+    var cur    = r.currency || 'GBP';
+    var name   = r.name || r.room_name || 'غرفة';
+    var size   = r.size_sqm ? r.size_sqm + 'م²' : '';
+    var bed    = r.bed_type || '';
+    var capacity = r.max_guests ? 'حتى ' + r.max_guests + ' أشخاص' : '';
+    html += '<div class="room-card">' +
+      '<div class="room-card-header">' +
+        '<strong>' + name + '</strong>' +
+        (r.meal_plan ? ' · ' + r.meal_plan : '') +
+      '</div>' +
+      '<div class="room-card-body">' +
+        '<div class="room-features">' +
+          (size ? '<span>📐 ' + size + '</span>' : '') +
+          (bed ? '<span>🛏️ ' + bed + '</span>' : '') +
+          (capacity ? '<span>👤 ' + capacity + '</span>' : '') +
+          (r.free_cancellation ? '<span style="color:green">✓ إلغاء مجاني</span>' : '') +
+        '</div>' +
+        '<div class="room-price">' +
+          '<div class="room-price-amount">' + cur + ' ' + price.toFixed(0) + '</div>' +
+          '<div class="room-price-label">لليلة</div>' +
+          '<button class="btn btn-primary btn-sm" style="margin-top:6px" onclick="selectRoom(' + i + ')">' +
+            (selectedRoom === i ? '✓ محدد' : 'اختر') +
+          '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  });
+  document.getElementById('roomsList').innerHTML = html;
+  window._rooms = rooms;
+}
+
+function selectRoom(i) {
+  selectedRoom = i;
+  renderRooms(window._rooms || []);
+  updatePriceSummary();
+  document.getElementById('bookBtn').disabled = false;
+}
+
+function renderPolicies(policies) {
+  var checkInTime  = hotelData.check_in_time  || hotelData.checkin_time  || '14:00';
+  var checkOutTime = hotelData.check_out_time || hotelData.checkout_time || '12:00';
+  var children     = hotelData.children_policy || '';
+  var pets         = hotelData.pets_policy || (hotelData.pets_allowed ? 'الحيوانات الأليفة مسموح بها' : 'الحيوانات الأليفة غير مسموح بها');
+
+  document.getElementById('policiesCard').style.display = 'block';
+  var html =
+    '<div class="policy-item"><span>🕑</span><div><strong>الوصول</strong><p style="margin:0;font-size:.82rem;color:var(--text-muted)">من ' + checkInTime + '</p></div></div>' +
+    '<div class="policy-item"><span>🕛</span><div><strong>المغادرة</strong><p style="margin:0;font-size:.82rem;color:var(--text-muted)">قبل ' + checkOutTime + '</p></div></div>' +
+    (children ? '<div class="policy-item"><span>👶</span><div><strong>سياسة الأطفال</strong><p style="margin:0;font-size:.82rem;color:var(--text-muted)">' + children + '</p></div></div>' : '') +
+    '<div class="policy-item"><span>🐾</span><div><strong>الحيوانات الأليفة</strong><p style="margin:0;font-size:.82rem;color:var(--text-muted)">' + pets + '</p></div></div>';
+
+  policies.forEach(function(p) {
+    html += '<div class="policy-item"><span>📋</span><div><strong>' + (p.title||p.name||'') + '</strong><p style="margin:0;font-size:.82rem;color:var(--text-muted)">' + (p.description||p.text||'') + '</p></div></div>';
+  });
+
+  document.getElementById('policiesList').innerHTML = html;
+}
+
+function renderSidebar() {
+  document.getElementById('sidebarLoading').style.display = 'none';
+  document.getElementById('bookingSidebar').style.display = 'block';
+  updatePriceSummary();
+}
+
+function showChildAges() {
+  var count = parseInt(document.getElementById('children').value) || 0;
+  var html  = '';
+  for (var i = 0; i < count; i++) {
+    html += '<div class="form-group"><label class="form-label" style="font-size:.78rem">عمر الطفل ' + (i+1) + '</label>' +
+      '<select class="form-control" id="childAge' + i + '">';
+    for (var a = 0; a <= 17; a++) { html += '<option value="' + a + '">' + a + ' سنة</option>'; }
+    html += '</select></div>';
+  }
+  document.getElementById('childAgesContainer').innerHTML = html;
+}
+
+function updatePriceSummary() {
+  if (selectedRoom === null || !window._rooms) return;
+  var room   = window._rooms[selectedRoom];
+  var price  = parseFloat(room.price || room.rate || 0);
+  var cur    = room.currency || 'GBP';
+  var inVal  = document.getElementById('checkIn').value;
+  var outVal = document.getElementById('checkOut').value;
+  if (!inVal || !outVal) return;
+  var nights = Math.max(1, Math.round((new Date(outVal) - new Date(inVal)) / 86400000));
+  document.getElementById('pricePerNight').textContent = cur + ' ' + price.toFixed(2);
+  document.getElementById('nightsCount').textContent   = nights + ' ليلة';
+  document.getElementById('totalPrice').textContent    = cur + ' ' + (price * nights).toFixed(2);
+  document.getElementById('priceSummary').style.display = 'block';
+}
+
+function bookRoom() {
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href); return; }
+  if (selectedRoom === null) { alert('الرجاء اختيار غرفة'); return; }
+  var room    = window._rooms[selectedRoom];
+  var inVal   = document.getElementById('checkIn').value;
+  var outVal  = document.getElementById('checkOut').value;
+  if (!inVal || !outVal) { alert('الرجاء تحديد تواريخ الإقامة'); return; }
+
+  var params = new URLSearchParams({
+    type:         'hotel',
+    hotel_id:     hotelData.id || hotelData.provider_hotel_id || '',
+    room_id:      room.id || room.room_id || '',
+    check_in:     inVal,
+    check_out:    outVal,
+    adults:       document.getElementById('adults').value,
+    children:     document.getElementById('children').value,
+    rooms:        document.getElementById('roomCount').value,
+  });
+  window.location.href = 'booking.html?' + params.toString();
+}
+
+document.getElementById('checkIn').addEventListener('change', updatePriceSummary);
+document.getElementById('checkOut').addEventListener('change', updatePriceSummary);
+
+initPage();
+</script>
+</body>
+</html>

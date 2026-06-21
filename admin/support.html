@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الدعم — لوحة الإدارة</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header"><div class="sidebar-brand">✈️ Fly<span>Masar</span></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">الرئيسية</div>
+      <a href="index.html"><span class="nav-icon">📊</span> لوحة التحكم</a>
+      <div class="sidebar-section-title">الإدارة</div>
+      <a href="users.html"><span class="nav-icon">👤</span> المستخدمون</a>
+      <a href="travelers.html"><span class="nav-icon">👥</span> المسافرون</a>
+      <a href="bookings.html"><span class="nav-icon">📋</span> الحجوزات</a>
+      <a href="payments.html"><span class="nav-icon">💳</span> المدفوعات</a>
+      <a href="support.html" class="active"><span class="nav-icon">🎧</span> الدعم</a>
+      <a href="coupons.html"><span class="nav-icon">🎟️</span> القسائم</a>
+      <a href="commissions.html"><span class="nav-icon">💰</span> العمولات</a>
+      <a href="currencies.html"><span class="nav-icon">💱</span> العملات</a>
+      <a href="api-settings.html"><span class="nav-icon">⚙️</span> إعدادات API</a>
+      <a href="cms.html"><span class="nav-icon">📝</span> إدارة المحتوى</a>
+      <a href="../index.html"><span class="nav-icon">🌐</span> الموقع الرئيسي</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button onclick="Auth.logout()" class="btn btn-ghost btn-sm btn-block" style="border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)">🚪 تسجيل الخروج</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>🎧 تذاكر الدعم</h1>
+      <div id="statsBar" style="font-size:.85rem;color:var(--text-muted)"></div>
+    </div>
+
+    <div class="admin-content">
+      <div class="card" style="margin-bottom:20px;padding:0">
+        <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:200px">
+            <label class="form-label" style="font-size:.78rem">البحث</label>
+            <input type="search" class="form-control" id="searchInput" placeholder="البحث بالعنوان أو البريد الإلكتروني..." oninput="debouncedSearch()">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">الحالة</label>
+            <select class="form-control" id="statusFilter" onchange="loadTickets()" style="min-width:130px">
+              <option value="">الكل</option>
+              <option value="open">مفتوح</option>
+              <option value="in_progress">قيد المعالجة</option>
+              <option value="closed">مغلق</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">الأولوية</label>
+            <select class="form-control" id="priorityFilter" onchange="loadTickets()" style="min-width:120px">
+              <option value="">الكل</option>
+              <option value="urgent">عاجل</option>
+              <option value="high">عالي</option>
+              <option value="medium">متوسط</option>
+              <option value="low">منخفض</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">مسح</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div id="tableLoading" class="loading-state" style="padding:48px">
+          <div class="spinner"></div><p>جاري التحميل...</p>
+        </div>
+        <div id="tableWrapper" style="display:none;overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>العنوان</th>
+                <th>المستخدم</th>
+                <th>الأولوية</th>
+                <th>الحالة</th>
+                <th>الردود</th>
+                <th>التاريخ</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="ticketsTable"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty-state" style="display:none">
+          <div class="empty-icon">🎧</div>
+          <h3>لا توجد تذاكر</h3>
+          <p>لم يتم العثور على نتائج</p>
+        </div>
+        <div id="paginationContainer"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Ticket Detail Modal -->
+<div id="ticketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="max-width:640px;max-height:80vh;display:flex;flex-direction:column">
+    <div class="modal-header">
+      <h3 id="ticketModalTitle">تفاصيل التذكرة</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" style="flex:1;overflow-y:auto">
+      <div id="ticketInfo" style="margin-bottom:16px;padding:12px;background:var(--bg-secondary);border-radius:8px;font-size:.85rem"></div>
+      <div id="repliesContainer"></div>
+      <div style="margin-top:16px">
+        <label class="form-label">ردك</label>
+        <textarea class="form-control" id="replyText" rows="3" placeholder="اكتب ردك هنا..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer" style="display:flex;gap:8px;justify-content:space-between">
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm" onclick="updateTicketStatus('closed')" id="btnClose">إغلاق التذكرة</button>
+        <button class="btn btn-ghost btn-sm" onclick="updateTicketStatus('open')">إعادة فتح</button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+        <button class="btn btn-primary" onclick="sendReply()">إرسال الرد</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+Auth.requireAuth(true);
+var currentPage = 1;
+var currentTicketId = null;
+var searchTimer;
+
+function debouncedSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function() { currentPage = 1; loadTickets(); }, 400);
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('statusFilter').value = '';
+  document.getElementById('priorityFilter').value = '';
+  currentPage = 1; loadTickets();
+}
+
+function loadTickets() {
+  var params = new URLSearchParams({
+    page: currentPage, per_page: 20,
+    search:   document.getElementById('searchInput').value,
+    status:   document.getElementById('statusFilter').value,
+    priority: document.getElementById('priorityFilter').value,
+  });
+  document.getElementById('tableLoading').style.display = 'block';
+  document.getElementById('tableWrapper').style.display = 'none';
+  document.getElementById('emptyState').style.display   = 'none';
+
+  Api.get('/api/admin/support?' + params, true).then(function(res) {
+    document.getElementById('tableLoading').style.display = 'none';
+    if (res.stats) {
+      document.getElementById('statsBar').textContent = 'مفتوحة: ' + res.stats.open + ' | مغلقة: ' + res.stats.closed;
+    }
+    if (!res.data || res.data.length === 0) { document.getElementById('emptyState').style.display = 'block'; return; }
+    document.getElementById('tableWrapper').style.display = 'block';
+
+    var priorityMap = { urgent: '<span class="badge badge-danger">عاجل</span>', high: '<span class="badge badge-warning">عالي</span>', medium: '<span class="badge badge-info">متوسط</span>', low: '<span class="badge">منخفض</span>' };
+    var statusMap   = { open: '<span class="badge badge-success">مفتوح</span>', in_progress: '<span class="badge badge-warning">قيد المعالجة</span>', closed: '<span class="badge">مغلق</span>' };
+
+    var html = '';
+    res.data.forEach(function(t) {
+      html += '<tr>' +
+        '<td style="color:var(--text-muted);font-size:.8rem">#' + t.id + '</td>' +
+        '<td><strong>' + t.subject + '</strong></td>' +
+        '<td>' + (t.first_name||'') + ' ' + (t.last_name||'') + '<br><small style="color:var(--text-muted)">' + (t.user_email||'') + '</small></td>' +
+        '<td>' + (priorityMap[t.priority] || t.priority) + '</td>' +
+        '<td>' + (statusMap[t.status] || t.status) + '</td>' +
+        '<td style="text-align:center">' + (t.reply_count||0) + '</td>' +
+        '<td>' + new Date(t.created_at).toLocaleDateString('ar-KW') + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" onclick="openTicket(' + t.id + ')">عرض</button></td>' +
+        '</tr>';
+    });
+    document.getElementById('ticketsTable').innerHTML = html;
+    renderPagination(res.meta);
+  }).catch(function() {
+    document.getElementById('tableLoading').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+  });
+}
+
+function openTicket(id) {
+  currentTicketId = id;
+  document.getElementById('replyText').value = '';
+  document.getElementById('repliesContainer').innerHTML = '<div style="text-align:center;padding:20px"><div class="spinner"></div></div>';
+  document.getElementById('ticketModal').style.display = 'flex';
+
+  Api.get('/api/admin/support/' + id, true).then(function(res) {
+    var t = res.ticket;
+    document.getElementById('ticketModalTitle').textContent = '#' + t.id + ' — ' + t.subject;
+    document.getElementById('ticketInfo').innerHTML =
+      '<strong>المستخدم:</strong> ' + (t.first_name||'') + ' ' + (t.last_name||'') + ' (' + (t.user_email||'') + ')<br>' +
+      '<strong>الحالة:</strong> ' + t.status + ' | <strong>الأولوية:</strong> ' + t.priority + ' | <strong>التاريخ:</strong> ' + new Date(t.created_at).toLocaleDateString('ar-KW');
+
+    var replies = res.replies || [];
+    if (replies.length === 0) {
+      document.getElementById('repliesContainer').innerHTML = '<p style="color:var(--text-muted);text-align:center">لا توجد ردود بعد</p>';
+    } else {
+      var html = '';
+      replies.forEach(function(r) {
+        var isAdmin = r.role === 'admin' || r.role === 'super_admin';
+        html += '<div style="margin-bottom:12px;padding:10px 14px;border-radius:8px;background:' + (isAdmin ? 'var(--primary-light,#e8f0fe)' : 'var(--bg-secondary)') + '">' +
+          '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">' + (isAdmin ? '🛡️ فريق الدعم' : '👤 ' + (r.first_name||'المستخدم')) + ' — ' + new Date(r.created_at).toLocaleString('ar-KW') + '</div>' +
+          '<div>' + r.message + '</div>' +
+          '</div>';
+      });
+      document.getElementById('repliesContainer').innerHTML = html;
+    }
+  });
+}
+
+function sendReply() {
+  var msg = document.getElementById('replyText').value.trim();
+  if (!msg) return;
+  Api.post('/api/admin/support/' + currentTicketId + '/reply', { message: msg }, true).then(function() {
+    openTicket(currentTicketId);
+    loadTickets();
+  });
+}
+
+function updateTicketStatus(status) {
+  Api.put('/api/admin/support/' + currentTicketId + '/status', { status: status }, true).then(function() {
+    closeModal(); loadTickets();
+  });
+}
+
+function closeModal() { document.getElementById('ticketModal').style.display = 'none'; currentTicketId = null; }
+
+function renderPagination(meta) {
+  if (!meta || meta.last_page <= 1) { document.getElementById('paginationContainer').innerHTML = ''; return; }
+  var html = '<div style="display:flex;justify-content:center;gap:8px;padding:16px">';
+  if (meta.page > 1) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page-1) + ')">السابق</button>';
+  html += '<span style="padding:6px 12px;font-size:.85rem">' + meta.page + ' / ' + meta.last_page + '</span>';
+  if (meta.page < meta.last_page) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page+1) + ')">التالي</button>';
+  html += '</div>';
+  document.getElementById('paginationContainer').innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; loadTickets(); }
+loadTickets();
+</script>
+</body>
+</html>

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المدفوعات — لوحة الإدارة</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header"><div class="sidebar-brand">✈️ Fly<span>Masar</span></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">الرئيسية</div>
+      <a href="index.html"><span class="nav-icon">📊</span> لوحة التحكم</a>
+      <div class="sidebar-section-title">الإدارة</div>
+      <a href="users.html"><span class="nav-icon">👤</span> المستخدمون</a>
+      <a href="travelers.html"><span class="nav-icon">👥</span> المسافرون</a>
+      <a href="bookings.html"><span class="nav-icon">📋</span> الحجوزات</a>
+      <a href="payments.html" class="active"><span class="nav-icon">💳</span> المدفوعات</a>
+      <a href="support.html"><span class="nav-icon">🎧</span> الدعم</a>
+      <a href="coupons.html"><span class="nav-icon">🎟️</span> القسائم</a>
+      <a href="commissions.html"><span class="nav-icon">💰</span> العمولات</a>
+      <a href="currencies.html"><span class="nav-icon">💱</span> العملات</a>
+      <a href="api-settings.html"><span class="nav-icon">⚙️</span> إعدادات API</a>
+      <a href="cms.html"><span class="nav-icon">📝</span> إدارة المحتوى</a>
+      <a href="../index.html"><span class="nav-icon">🌐</span> الموقع الرئيسي</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button onclick="Auth.logout()" class="btn btn-ghost btn-sm btn-block" style="border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)">🚪 تسجيل الخروج</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>💳 إدارة المدفوعات</h1>
+      <div id="summaryStats" style="font-size:.85rem;color:var(--text-muted)"></div>
+    </div>
+
+    <div class="admin-content">
+      <!-- Stats Cards -->
+      <div class="stats-grid" style="margin-bottom:20px" id="statsCards"></div>
+
+      <!-- Filters -->
+      <div class="card" style="margin-bottom:20px;padding:0">
+        <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:200px">
+            <label class="form-label" style="font-size:.78rem">البحث</label>
+            <input type="search" class="form-control" id="searchInput" placeholder="البحث برقم الدفع أو البريد الإلكتروني..." oninput="debouncedSearch()">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">الحالة</label>
+            <select class="form-control" id="statusFilter" onchange="loadPayments()" style="min-width:130px">
+              <option value="">الكل</option>
+              <option value="succeeded">ناجح</option>
+              <option value="pending">معلق</option>
+              <option value="failed">فاشل</option>
+              <option value="refunded">مسترد</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">من</label>
+            <input type="date" class="form-control" id="fromDate" onchange="loadPayments()">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">إلى</label>
+            <input type="date" class="form-control" id="toDate" onchange="loadPayments()">
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">مسح</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div id="tableLoading" class="loading-state" style="padding:48px">
+          <div class="spinner"></div><p>جاري التحميل...</p>
+        </div>
+        <div id="tableWrapper" style="display:none;overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>رقم المعاملة (Stripe)</th>
+                <th>المستخدم</th>
+                <th>المبلغ</th>
+                <th>نوع الحجز</th>
+                <th>الحالة</th>
+                <th>التاريخ</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTable"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty-state" style="display:none">
+          <div class="empty-icon">💳</div>
+          <h3>لا توجد مدفوعات</h3>
+          <p>لم يتم العثور على نتائج</p>
+        </div>
+        <div id="paginationContainer"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+Auth.requireAuth(true);
+var currentPage = 1;
+var searchTimer;
+
+function debouncedSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function() { currentPage = 1; loadPayments(); }, 400);
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('statusFilter').value = '';
+  document.getElementById('fromDate').value = '';
+  document.getElementById('toDate').value = '';
+  currentPage = 1;
+  loadPayments();
+}
+
+function loadPayments() {
+  var search = document.getElementById('searchInput').value;
+  var status = document.getElementById('statusFilter').value;
+  var from   = document.getElementById('fromDate').value;
+  var to     = document.getElementById('toDate').value;
+  var params = new URLSearchParams({ page: currentPage, per_page: 20, search: search, status: status, from: from, to: to });
+
+  document.getElementById('tableLoading').style.display = 'block';
+  document.getElementById('tableWrapper').style.display = 'none';
+  document.getElementById('emptyState').style.display   = 'none';
+
+  Api.get('/api/admin/payments?' + params, true).then(function(res) {
+    document.getElementById('tableLoading').style.display = 'none';
+
+    if (res.stats) {
+      document.getElementById('statsCards').innerHTML =
+        '<div class="stat-card"><div class="stat-value">£' + parseFloat(res.stats.total||0).toLocaleString('en-GB',{minimumFractionDigits:2}) + '</div><div class="stat-label">إجمالي الإيرادات</div></div>' +
+        '<div class="stat-card"><div class="stat-value">' + (res.stats.count||0) + '</div><div class="stat-label">معاملات ناجحة</div></div>';
+    }
+
+    if (!res.data || res.data.length === 0) {
+      document.getElementById('emptyState').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('tableWrapper').style.display = 'block';
+    var html = '';
+    res.data.forEach(function(p) {
+      var statusBadge = {
+        succeeded: '<span class="badge badge-success">ناجح</span>',
+        pending:   '<span class="badge badge-warning">معلق</span>',
+        failed:    '<span class="badge badge-danger">فاشل</span>',
+        refunded:  '<span class="badge badge-info">مسترد</span>',
+      }[p.status] || '<span class="badge">' + p.status + '</span>';
+      var bookingType = p.booking_type === 'flight' ? '✈️ رحلة' : '🏨 فندق';
+      var amount = (p.currency || 'GBP') + ' ' + parseFloat(p.amount||0).toFixed(2);
+      var stripeId = p.stripe_payment_intent_id ? p.stripe_payment_intent_id.substring(0,20) + '...' : '—';
+      html += '<tr>' +
+        '<td style="color:var(--text-muted);font-size:.8rem">' + p.id + '</td>' +
+        '<td style="direction:ltr;text-align:right;font-size:.78rem;font-family:monospace" title="' + (p.stripe_payment_intent_id||'') + '">' + stripeId + '</td>' +
+        '<td>' + (p.first_name||'') + ' ' + (p.last_name||'') + '<br><small style="color:var(--text-muted)">' + (p.user_email||'') + '</small></td>' +
+        '<td style="font-weight:600">' + amount + '</td>' +
+        '<td>' + bookingType + '</td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td>' + new Date(p.created_at).toLocaleDateString('ar-KW') + '</td>' +
+        '<td>' + (p.status === 'succeeded' ? '<button class="btn btn-ghost btn-sm" onclick="refundPayment(' + p.id + ')" style="color:var(--danger)">استرداد</button>' : '—') + '</td>' +
+        '</tr>';
+    });
+    document.getElementById('paymentsTable').innerHTML = html;
+    renderPagination(res.meta);
+  }).catch(function() {
+    document.getElementById('tableLoading').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+  });
+}
+
+function refundPayment(id) {
+  if (!confirm('هل تريد استرداد هذه الدفعة؟')) return;
+  Api.post('/api/admin/payments/' + id + '/refund', {}, true).then(function() { loadPayments(); });
+}
+
+function renderPagination(meta) {
+  if (!meta || meta.last_page <= 1) { document.getElementById('paginationContainer').innerHTML = ''; return; }
+  var html = '<div style="display:flex;justify-content:center;gap:8px;padding:16px">';
+  if (meta.page > 1) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page-1) + ')">السابق</button>';
+  html += '<span style="padding:6px 12px;font-size:.85rem">' + meta.page + ' / ' + meta.last_page + '</span>';
+  if (meta.page < meta.last_page) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page+1) + ')">التالي</button>';
+  html += '</div>';
+  document.getElementById('paginationContainer').innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; loadPayments(); }
+
+loadPayments();
+</script>
+</body>
+</html>

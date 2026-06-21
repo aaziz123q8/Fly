@@ -34,6 +34,12 @@ if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
 }
 
 use App\Controllers\Admin\AdminAnalyticsController;
+use App\Controllers\Admin\AdminApiSettingsController;
+use App\Controllers\Admin\AdminCommissionsController;
+use App\Controllers\Admin\AdminCurrenciesController;
+use App\Controllers\Admin\AdminPaymentsController;
+use App\Controllers\Admin\AdminSupportController;
+use App\Controllers\Admin\AdminUsersController;
 use App\Controllers\Traveler\TravelerController;
 use App\Controllers\Admin\AdminAuthController;
 use App\Controllers\Admin\AdminBookingsController;
@@ -427,6 +433,74 @@ $router->group('api/admin/invoices', function (Router $r): void {
 
 $router->get('api/cms/pages', fn(Request $req) => (new AdminCmsController())->publicList($req));
 $router->get('api/cms/pages/:slug', fn(Request $req) => (new AdminCmsController())->publicShow($req));
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: Users
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/users', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new AdminUsersController())->index($req), [AdminMiddleware::handle()]);
+    $r->get('/:id', fn(Request $req) => (new AdminUsersController())->show($req), [AdminMiddleware::handle()]);
+    $r->put('/:id', fn(Request $req) => (new AdminUsersController())->update($req), [AdminMiddleware::handle()]);
+    $r->delete('/:id', fn(Request $req) => (new AdminUsersController())->destroy($req), [AdminMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: Payments
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/payments', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new AdminPaymentsController())->index($req), [AdminMiddleware::handle()]);
+    $r->get('/:id', fn(Request $req) => (new AdminPaymentsController())->show($req), [AdminMiddleware::handle()]);
+    $r->post('/:id/refund', fn(Request $req) => (new AdminPaymentsController())->refund($req), [AdminMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: Support
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/support', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new AdminSupportController())->index($req), [AdminMiddleware::handle()]);
+    $r->get('/:id', fn(Request $req) => (new AdminSupportController())->show($req), [AdminMiddleware::handle()]);
+    $r->post('/:id/reply', fn(Request $req) => (new AdminSupportController())->reply($req), [AdminMiddleware::handle()]);
+    $r->put('/:id/status', fn(Request $req) => (new AdminSupportController())->updateStatus($req), [AdminMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: Commissions
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/commissions', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new AdminCommissionsController())->index($req), [AdminMiddleware::handle()]);
+    $r->post('/', fn(Request $req) => (new AdminCommissionsController())->store($req), [AdminMiddleware::handle()]);
+    $r->put('/:id', fn(Request $req) => (new AdminCommissionsController())->update($req), [AdminMiddleware::handle()]);
+    $r->delete('/:id', fn(Request $req) => (new AdminCommissionsController())->destroy($req), [AdminMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: Currencies
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/currencies', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new AdminCurrenciesController())->index($req), [AdminMiddleware::handle()]);
+    $r->post('/', fn(Request $req) => (new AdminCurrenciesController())->store($req), [AdminMiddleware::handle()]);
+    $r->put('/:id', fn(Request $req) => (new AdminCurrenciesController())->update($req), [AdminMiddleware::handle()]);
+    $r->delete('/:id', fn(Request $req) => (new AdminCurrenciesController())->destroy($req), [AdminMiddleware::handle()]);
+    $r->post('/refresh-rates', fn(Request $req) => (new AdminCurrenciesController())->refreshRates($req), [AdminMiddleware::handle()]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: API Settings
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/settings', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new AdminApiSettingsController())->index($req), [AdminMiddleware::handle()]);
+    $r->put('/:id', fn(Request $req) => (new AdminApiSettingsController())->update($req), [AdminMiddleware::handle()]);
+    $r->post('/upsert', fn(Request $req) => (new AdminApiSettingsController())->upsert($req), [AdminMiddleware::handle()]);
+    $r->post('/test/duffel', fn(Request $req) => (new AdminApiSettingsController())->testDuffel($req), [AdminMiddleware::handle()]);
+    $r->post('/test/ratehawk', fn(Request $req) => (new AdminApiSettingsController())->testRatehawk($req), [AdminMiddleware::handle()]);
+    $r->post('/test/stripe', fn(Request $req) => (new AdminApiSettingsController())->testStripe($req), [AdminMiddleware::handle()]);
+});
 
 // ---------------------------------------------------------------------------
 // Routes — Admin: CMS

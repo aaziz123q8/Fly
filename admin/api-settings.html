@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إعدادات API — لوحة الإدارة</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header"><div class="sidebar-brand">✈️ Fly<span>Masar</span></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">الرئيسية</div>
+      <a href="index.html"><span class="nav-icon">📊</span> لوحة التحكم</a>
+      <div class="sidebar-section-title">الإدارة</div>
+      <a href="users.html"><span class="nav-icon">👤</span> المستخدمون</a>
+      <a href="travelers.html"><span class="nav-icon">👥</span> المسافرون</a>
+      <a href="bookings.html"><span class="nav-icon">📋</span> الحجوزات</a>
+      <a href="payments.html"><span class="nav-icon">💳</span> المدفوعات</a>
+      <a href="support.html"><span class="nav-icon">🎧</span> الدعم</a>
+      <a href="coupons.html"><span class="nav-icon">🎟️</span> القسائم</a>
+      <a href="commissions.html"><span class="nav-icon">💰</span> العمولات</a>
+      <a href="currencies.html"><span class="nav-icon">💱</span> العملات</a>
+      <a href="api-settings.html" class="active"><span class="nav-icon">⚙️</span> إعدادات API</a>
+      <a href="cms.html"><span class="nav-icon">📝</span> إدارة المحتوى</a>
+      <a href="../index.html"><span class="nav-icon">🌐</span> الموقع الرئيسي</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button onclick="Auth.logout()" class="btn btn-ghost btn-sm btn-block" style="border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)">🚪 تسجيل الخروج</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>⚙️ إعدادات API</h1>
+    </div>
+
+    <div class="admin-content">
+
+      <div class="card" style="padding:12px 16px;margin-bottom:16px;background:var(--bg-secondary);border:1px solid var(--warning,#f59e0b)">
+        <p style="margin:0;font-size:.85rem">⚠️ <strong>تنبيه أمني:</strong> مفاتيح API حساسة جداً. يُفضّل تخزينها في متغيرات البيئة في Hostinger hPanel بدلاً من قاعدة البيانات.</p>
+      </div>
+
+      <!-- Duffel -->
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="margin:0">✈️ Duffel API (رحلات جوية)</h3>
+          <div style="display:flex;gap:8px">
+            <span id="duffelStatus" style="font-size:.8rem"></span>
+            <button class="btn btn-ghost btn-sm" onclick="testApi('duffel')">اختبار الاتصال</button>
+          </div>
+        </div>
+        <div id="duffelFields">
+          <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- RateHawk -->
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="margin:0">🏨 RateHawk API (فنادق)</h3>
+          <div style="display:flex;gap:8px">
+            <span id="ratehawkStatus" style="font-size:.8rem"></span>
+            <button class="btn btn-ghost btn-sm" onclick="testApi('ratehawk')">اختبار الاتصال</button>
+          </div>
+        </div>
+        <div id="ratehawkFields">
+          <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- Stripe -->
+      <div class="card" style="margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h3 style="margin:0">💳 Stripe (مدفوعات)</h3>
+          <div style="display:flex;gap:8px">
+            <span id="stripeStatus" style="font-size:.8rem"></span>
+            <button class="btn btn-ghost btn-sm" onclick="testApi('stripe')">اختبار الاتصال</button>
+          </div>
+        </div>
+        <div id="stripeFields">
+          <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- WhatsApp -->
+      <div class="card" style="margin-bottom:20px">
+        <div style="margin-bottom:16px"><h3 style="margin:0">📱 WhatsApp API (إشعارات)</h3></div>
+        <div id="whatsappFields">
+          <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+      <!-- Email (SMTP) -->
+      <div class="card">
+        <div style="margin-bottom:16px"><h3 style="margin:0">📧 البريد الإلكتروني (SMTP)</h3></div>
+        <div id="smtpFields">
+          <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+Auth.requireAuth(true);
+
+var allSettings = [];
+var editingIds = {};
+
+var providerGroups = {
+  duffel:    ['api_key', 'environment'],
+  ratehawk:  ['api_key', 'api_secret', 'endpoint'],
+  stripe:    ['publishable_key', 'secret_key', 'webhook_secret'],
+  whatsapp:  ['api_url', 'token', 'phone_number_id'],
+  smtp:      ['host', 'port', 'username', 'password', 'from_email', 'from_name'],
+};
+
+var providerLabels = {
+  duffel:   { api_key: 'API Key', environment: 'البيئة (sandbox/production)' },
+  ratehawk: { api_key: 'API Key', api_secret: 'API Secret', endpoint: 'Endpoint URL' },
+  stripe:   { publishable_key: 'Publishable Key', secret_key: 'Secret Key', webhook_secret: 'Webhook Secret' },
+  whatsapp: { api_url: 'API URL', token: 'Token', phone_number_id: 'Phone Number ID' },
+  smtp:     { host: 'SMTP Host', port: 'Port', username: 'Username', password: 'Password', from_email: 'من البريد', from_name: 'اسم المرسل' },
+};
+
+var secretKeys = ['api_key','api_secret','secret_key','webhook_secret','token','password'];
+
+function loadSettings() {
+  Api.get('/api/admin/settings', true).then(function(res) {
+    allSettings = res.data || [];
+    renderProviderFields('duffel',   'duffelFields');
+    renderProviderFields('ratehawk', 'ratehawkFields');
+    renderProviderFields('stripe',   'stripeFields');
+    renderProviderFields('whatsapp', 'whatsappFields');
+    renderProviderFields('smtp',     'smtpFields');
+  }).catch(function() {
+    ['duffelFields','ratehawkFields','stripeFields','whatsappFields','smtpFields'].forEach(function(id) {
+      document.getElementById(id).innerHTML = '<p style="color:var(--danger)">خطأ في التحميل</p>';
+    });
+  });
+}
+
+function getSettingForProvider(provider, key) {
+  return allSettings.find(function(s) { return s.provider === provider && s.setting_key === key; }) || null;
+}
+
+function renderProviderFields(provider, containerId) {
+  var keys   = providerGroups[provider] || [];
+  var labels = providerLabels[provider] || {};
+  var html   = '';
+  keys.forEach(function(key) {
+    var s       = getSettingForProvider(provider, key);
+    var isSecret = secretKeys.indexOf(key) !== -1;
+    var val     = s ? s.setting_value : '';
+    var rowId   = 'row_' + provider + '_' + key;
+    html += '<div class="form-group" style="display:flex;align-items:flex-end;gap:10px" id="' + rowId + '">' +
+      '<div style="flex:1">' +
+        '<label class="form-label" style="font-size:.8rem">' + (labels[key] || key) + (isSecret ? ' 🔒' : '') + '</label>' +
+        '<input type="' + (isSecret ? 'password' : 'text') + '" class="form-control" id="input_' + provider + '_' + key + '" value="' + (val ? val : '') + '" placeholder="' + (val ? '' : 'لم يتم التعيين بعد') + '" style="direction:ltr">' +
+      '</div>' +
+      '<button class="btn btn-primary btn-sm" onclick="saveSetting(\'' + provider + '\',\'' + key + '\',' + (s ? s.id : 'null') + ',' + (isSecret ? 'true' : 'false') + ')">حفظ</button>' +
+    '</div>';
+  });
+  document.getElementById(containerId).innerHTML = html || '<p style="color:var(--text-muted)">لا توجد إعدادات</p>';
+}
+
+function saveSetting(provider, key, id, isSecret) {
+  var value = document.getElementById('input_' + provider + '_' + key).value;
+  var payload = { provider: provider, setting_key: key, setting_value: value, is_secret: isSecret ? 1 : 0 };
+  Api.post('/api/admin/settings/upsert', payload, true).then(function() {
+    loadSettings();
+  });
+}
+
+function testApi(provider) {
+  var statusEl = document.getElementById(provider + 'Status');
+  statusEl.innerHTML = '<span style="color:var(--text-muted)">جاري الاختبار...</span>';
+  Api.post('/api/admin/settings/test/' + provider, {}, true).then(function(res) {
+    if (res.success) {
+      statusEl.innerHTML = '<span style="color:var(--success,#22c55e)">✓ متصل</span>';
+    } else {
+      statusEl.innerHTML = '<span style="color:var(--danger)">✗ ' + (res.message || 'فشل الاتصال') + '</span>';
+    }
+  }).catch(function() {
+    statusEl.innerHTML = '<span style="color:var(--danger)">✗ خطأ في الاتصال</span>';
+  });
+}
+
+loadSettings();
+</script>
+</body>
+</html>

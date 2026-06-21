@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>المستخدمون — لوحة الإدارة</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar">
+    <div class="sidebar-header"><div class="sidebar-brand">✈️ Fly<span>Masar</span></div></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section-title">الرئيسية</div>
+      <a href="index.html"><span class="nav-icon">📊</span> لوحة التحكم</a>
+      <div class="sidebar-section-title">الإدارة</div>
+      <a href="users.html" class="active"><span class="nav-icon">👤</span> المستخدمون</a>
+      <a href="travelers.html"><span class="nav-icon">👥</span> المسافرون</a>
+      <a href="bookings.html"><span class="nav-icon">📋</span> الحجوزات</a>
+      <a href="payments.html"><span class="nav-icon">💳</span> المدفوعات</a>
+      <a href="support.html"><span class="nav-icon">🎧</span> الدعم</a>
+      <a href="coupons.html"><span class="nav-icon">🎟️</span> القسائم</a>
+      <a href="commissions.html"><span class="nav-icon">💰</span> العمولات</a>
+      <a href="currencies.html"><span class="nav-icon">💱</span> العملات</a>
+      <a href="api-settings.html"><span class="nav-icon">⚙️</span> إعدادات API</a>
+      <a href="cms.html"><span class="nav-icon">📝</span> إدارة المحتوى</a>
+      <a href="../index.html"><span class="nav-icon">🌐</span> الموقع الرئيسي</a>
+    </nav>
+    <div class="sidebar-footer">
+      <button onclick="Auth.logout()" class="btn btn-ghost btn-sm btn-block" style="border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)">🚪 تسجيل الخروج</button>
+    </div>
+  </aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>👤 إدارة المستخدمين</h1>
+      <span id="totalCount" style="font-size:.85rem;color:var(--text-muted)"></span>
+    </div>
+
+    <div class="admin-content">
+      <div class="card" style="margin-bottom:20px;padding:0">
+        <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:200px">
+            <label class="form-label" style="font-size:.78rem">البحث</label>
+            <input type="search" class="form-control" id="searchInput" placeholder="البحث بالاسم أو البريد الإلكتروني..." oninput="debouncedSearch()">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">الحالة</label>
+            <select class="form-control" id="statusFilter" onchange="loadUsers()" style="min-width:130px">
+              <option value="">الكل</option>
+              <option value="active">نشط</option>
+              <option value="inactive">غير نشط</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">الدور</label>
+            <select class="form-control" id="roleFilter" onchange="loadUsers()" style="min-width:120px">
+              <option value="">الكل</option>
+              <option value="user">مستخدم</option>
+              <option value="admin">مشرف</option>
+              <option value="super_admin">مشرف رئيسي</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">مسح</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div id="tableLoading" class="loading-state" style="padding:48px">
+          <div class="spinner"></div><p>جاري التحميل...</p>
+        </div>
+        <div id="tableWrapper" style="display:none;overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الاسم</th>
+                <th>البريد الإلكتروني</th>
+                <th>رقم الهاتف</th>
+                <th>الدور</th>
+                <th>الحالة</th>
+                <th>تاريخ التسجيل</th>
+                <th>آخر تسجيل دخول</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="usersTable"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty-state" style="display:none">
+          <div class="empty-icon">👤</div>
+          <h3>لا يوجد مستخدمون</h3>
+          <p>لم يتم العثور على نتائج</p>
+        </div>
+        <div id="paginationContainer"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3 id="modalTitle">تعديل المستخدم</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div class="form-group">
+        <label class="form-label">الاسم الأول</label>
+        <input type="text" class="form-control" id="editFirstName">
+      </div>
+      <div class="form-group">
+        <label class="form-label">الاسم الأخير</label>
+        <input type="text" class="form-control" id="editLastName">
+      </div>
+      <div class="form-group">
+        <label class="form-label">الدور</label>
+        <select class="form-control" id="editRole">
+          <option value="user">مستخدم</option>
+          <option value="admin">مشرف</option>
+          <option value="super_admin">مشرف رئيسي</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الحالة</label>
+        <select class="form-control" id="editStatus">
+          <option value="1">نشط</option>
+          <option value="0">غير نشط</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveUser()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../js/api.js"></script>
+<script src="../js/auth.js"></script>
+<script>
+Auth.requireAuth(true);
+
+var currentPage = 1;
+var searchTimer;
+
+function debouncedSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function() { currentPage = 1; loadUsers(); }, 400);
+}
+
+function clearFilters() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('statusFilter').value = '';
+  document.getElementById('roleFilter').value = '';
+  currentPage = 1;
+  loadUsers();
+}
+
+function loadUsers() {
+  var search = document.getElementById('searchInput').value;
+  var status = document.getElementById('statusFilter').value;
+  var role   = document.getElementById('roleFilter').value;
+  var params = new URLSearchParams({ page: currentPage, per_page: 20, search: search, status: status, role: role });
+
+  document.getElementById('tableLoading').style.display = 'block';
+  document.getElementById('tableWrapper').style.display = 'none';
+  document.getElementById('emptyState').style.display   = 'none';
+
+  Api.get('/api/admin/users?' + params, true).then(function(res) {
+    document.getElementById('tableLoading').style.display = 'none';
+    if (!res.data || res.data.length === 0) {
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('totalCount').textContent = 'لا يوجد مستخدمون';
+      return;
+    }
+    document.getElementById('totalCount').textContent = 'الإجمالي: ' + res.meta.total + ' مستخدم';
+    document.getElementById('tableWrapper').style.display = 'block';
+
+    var html = '';
+    res.data.forEach(function(u) {
+      var roleLabel = u.role === 'super_admin' ? '<span class="badge badge-warning">مشرف رئيسي</span>'
+                    : u.role === 'admin' ? '<span class="badge badge-info">مشرف</span>'
+                    : '<span class="badge">مستخدم</span>';
+      var statusBadge = u.is_active == 1
+        ? '<span class="badge badge-success">نشط</span>'
+        : '<span class="badge badge-danger">غير نشط</span>';
+      var phone = u.phone_country_code && u.phone_number ? u.phone_country_code + ' ' + u.phone_number : '—';
+      var lastLogin = u.last_login_at ? new Date(u.last_login_at).toLocaleDateString('ar-KW') : '—';
+      html += '<tr>' +
+        '<td style="color:var(--text-muted);font-size:.8rem">' + u.id + '</td>' +
+        '<td><strong>' + (u.first_name || '') + ' ' + (u.last_name || '') + '</strong></td>' +
+        '<td style="direction:ltr;text-align:right">' + u.email + '</td>' +
+        '<td style="direction:ltr;text-align:right">' + phone + '</td>' +
+        '<td>' + roleLabel + '</td>' +
+        '<td>' + statusBadge + '</td>' +
+        '<td>' + new Date(u.created_at).toLocaleDateString('ar-KW') + '</td>' +
+        '<td>' + lastLogin + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" onclick="openEdit(' + JSON.stringify(u).replace(/"/g,'&quot;') + ')">تعديل</button></td>' +
+        '</tr>';
+    });
+    document.getElementById('usersTable').innerHTML = html;
+    renderPagination(res.meta);
+  }).catch(function() {
+    document.getElementById('tableLoading').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
+  });
+}
+
+function renderPagination(meta) {
+  if (meta.last_page <= 1) { document.getElementById('paginationContainer').innerHTML = ''; return; }
+  var html = '<div style="display:flex;justify-content:center;gap:8px;padding:16px">';
+  if (meta.page > 1) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page-1) + ')">السابق</button>';
+  html += '<span style="padding:6px 12px;font-size:.85rem">' + meta.page + ' / ' + meta.last_page + '</span>';
+  if (meta.page < meta.last_page) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page+1) + ')">التالي</button>';
+  html += '</div>';
+  document.getElementById('paginationContainer').innerHTML = html;
+}
+
+function goPage(p) { currentPage = p; loadUsers(); }
+
+function openEdit(u) {
+  document.getElementById('editId').value        = u.id;
+  document.getElementById('editFirstName').value = u.first_name || '';
+  document.getElementById('editLastName').value  = u.last_name || '';
+  document.getElementById('editRole').value      = u.role || 'user';
+  document.getElementById('editStatus').value    = u.is_active == 1 ? '1' : '0';
+  document.getElementById('editModal').style.display = 'flex';
+}
+
+function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+
+function saveUser() {
+  var id = document.getElementById('editId').value;
+  var payload = {
+    first_name: document.getElementById('editFirstName').value,
+    last_name:  document.getElementById('editLastName').value,
+    role:       document.getElementById('editRole').value,
+    is_active:  parseInt(document.getElementById('editStatus').value),
+  };
+  Api.put('/api/admin/users/' + id, payload, true).then(function() {
+    closeModal();
+    loadUsers();
+  });
+}
+
+loadUsers();
+</script>
+</body>
+</html>
