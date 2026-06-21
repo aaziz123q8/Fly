@@ -142,9 +142,24 @@ $router->group('api/auth', function (Router $r): void {
 
 $router->group('api/flights', function (Router $r): void {
 
-    // Flight search — auth optional, rate-limited.
+    // Flight search — auth optional.
     $r->post('/search', function (Request $req): void {
         (new FlightController())->search($req);
+    });
+
+    // Airport autocomplete (public).
+    $r->get('/airports', function (Request $req): void {
+        (new FlightController())->searchAirports($req);
+    });
+
+    // Single offer detail + available services (bags, meals) — public.
+    $r->get('/offers/:id', function (Request $req): void {
+        (new FlightController())->getOffer($req);
+    });
+
+    // Seat maps for an offer — public.
+    $r->get('/seat-maps', function (Request $req): void {
+        (new FlightController())->getSeatMaps($req);
     });
 
     // Checkout: start (auth required).
@@ -157,17 +172,17 @@ $router->group('api/flights', function (Router $r): void {
         (new FlightController())->savePassengers($req);
     }, [AuthMiddleware::handle()]);
 
-    // Checkout: services (auth required).
+    // Checkout: services/ancillaries (auth required).
     $r->post('/checkout/services', function (Request $req): void {
         (new FlightController())->saveServices($req);
     }, [AuthMiddleware::handle()]);
 
-    // Checkout: review (auth required).
+    // Checkout: review pricing (auth required).
     $r->get('/checkout/review', function (Request $req): void {
         (new FlightController())->review($req);
     }, [AuthMiddleware::handle()]);
 
-    // Checkout: payment intent (auth required).
+    // Checkout: create Stripe payment intent (auth required).
     $r->post('/checkout/payment-intent', function (Request $req): void {
         (new FlightController())->createPaymentIntent($req);
     }, [AuthMiddleware::handle()]);
@@ -180,6 +195,16 @@ $router->group('api/flights', function (Router $r): void {
     // Single booking detail (auth required).
     $r->get('/bookings/:id', function (Request $req): void {
         (new FlightController())->getBooking($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Cancellation: Step 1 — get refund quote (auth required).
+    $r->post('/bookings/:id/cancel', function (Request $req): void {
+        (new FlightController())->cancelBooking($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Cancellation: Step 2 — confirm cancellation (auth required).
+    $r->post('/bookings/:id/cancel/confirm', function (Request $req): void {
+        (new FlightController())->confirmCancelBooking($req);
     }, [AuthMiddleware::handle()]);
 });
 

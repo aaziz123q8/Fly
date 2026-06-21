@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Adapters\Duffel;
 
 /**
- * DuffelAdapter
- *
- * Thin wrapper around the Duffel Flights REST API.
- * @see https://duffel.com/docs/api/v1
+ * DuffelAdapter — full Duffel Flights REST API v2 wrapper.
+ * @see https://duffel.com/docs/api/v2
  */
 class DuffelAdapter
 {
@@ -20,7 +18,7 @@ class DuffelAdapter
     {
         $this->apiKey  = $config['api_key']  ?? (getenv('DUFFEL_API_KEY')  ?: '');
         $this->baseUrl = $config['base_url'] ?? (getenv('DUFFEL_BASE_URL') ?: 'https://api.duffel.com');
-        $this->version = $config['version']  ?? 'v1';
+        $this->version = $config['version']  ?? 'v2';
     }
 
     // =========================================================================
@@ -30,33 +28,32 @@ class DuffelAdapter
     /**
      * Create an offer request (flight search).
      *
-     * @param  array $slices  Array of slice objects: [{origin, destination, departure_date}]
-     * @param  array $passengers  Array of passenger types: [{type: 'adult'|'child'|'infant_without_seat'}]
-     * @param  string $cabinClass  economy | premium_economy | business | first
-     * @return array  Duffel API response body (decoded).
+     * @param  array  $slices      [{origin, destination, departure_date}]
+     * @param  array  $passengers  [{type: 'adult'|'child'|'infant_without_seat'}]
+     * @param  string $cabinClass  economy|premium_economy|business|first
+     * @param  array  $options     Optional: private_fares, include_split_ticket
      */
-    public function searchOffers(array $slices, array $passengers, string $cabinClass = 'economy'): array
-    {
+    public function searchOffers(
+        array $slices,
+        array $passengers,
+        string $cabinClass = 'economy',
+        array $options = []
+    ): array {
         if ($this->apiKey === '') {
             throw new \RuntimeException('خدمة البحث عن الرحلات غير متاحة حالياً. الرجاء المحاولة لاحقاً.');
         }
 
-        $body = [
-            'data' => [
-                'slices'       => $slices,
-                'passengers'   => $passengers,
-                'cabin_class'  => $cabinClass,
-            ],
-        ];
+        $data = array_merge([
+            'slices'      => $slices,
+            'passengers'  => $passengers,
+            'cabin_class' => $cabinClass,
+        ], $options);
 
-        return $this->post('/air/offer_requests?return_offers=true', $body);
+        return $this->post('/air/offer_requests?return_offers=true', ['data' => $data]);
     }
 
     /**
      * List offers for a previously created offer request.
-     *
-     * @param  string $offerRequestId
-     * @param  array  $filters  Optional query parameters (max_connections, etc.)
      */
     public function listOffers(string $offerRequestId, array $filters = []): array
     {
@@ -65,11 +62,58 @@ class DuffelAdapter
     }
 
     /**
-     * Retrieve a single offer by ID.
+     * Retrieve a single offer by ID (basic info, no services).
      */
     public function getOffer(string $offerId): array
     {
         return $this->get('/air/offers/' . urlencode($offerId));
+    }
+
+    /**
+     * Retrieve a single offer by ID including all available services (bags, meals, etc.).
+     * Call this just before checkout to get fresh prices and ancillary options.
+     */
+    public function getOfferWithServices(string $offerId): array
+    {
+        return $this->get('/air/offers/' . urlencode($offerId), ['return_available_services' => 'true']);
+    }
+
+    /**
+     * Price an offer with intended payment methods and optional services.
+     * Returns the final amount including any surcharges.
+     */
+    public function priceOffer(string $offerId, array $intendedPaymentMethods = ['balance'], array $services = []): array
+    {
+        $data = ['intended_payment_methods' => array_map(fn($m) => ['type' => $m], $intendedPaymentMethods)];
+        if (!empty($services)) {
+            $data['services'] = $services;
+        }
+        return $this->post('/air/offers/' . urlencode($offerId) . '/actions/price', ['data' => $data]);
+    }
+
+    /**
+     * Update passenger loyalty programme accounts on an offer.
+     * Call this before creating the order to earn miles/points.
+     */
+    public function updateOfferPassenger(string $offerId, string $passengerId, array $data): array
+    {
+        return $this->patch(
+            '/air/offers/' . urlencode($offerId) . '/passengers/' . urlencode($passengerId),
+            ['data' => $data]
+        );
+    }
+
+    // =========================================================================
+    // Seat Maps
+    // =========================================================================
+
+    /**
+     * Get seat maps for an offer (one map per segment).
+     * Seats are booked via the services array in createOrder().
+     */
+    public function getSeatMaps(string $offerId): array
+    {
+        return $this->get('/air/seat_maps', ['offer_id' => $offerId]);
     }
 
     // =========================================================================
@@ -77,26 +121,26 @@ class DuffelAdapter
     // =========================================================================
 
     /**
-     * Create a Duffel order (confirmed booking).
+     * Create an instant Duffel order (confirmed immediately).
      *
-     * @param  string $selectedOfferId  Offer ID chosen by the passenger.
-     * @param  array  $passengers       Array of passenger objects with personal details.
-     * @param  array  $payments         Payment details (e.g. [{type: 'balance', amount, currency}]).
-     * @param  array  $services         Optional ancillary services (bags, seats).
-     * @param  string|null $metadata    Optional merchant metadata string.
+     * @param  string      $selectedOfferId  Offer ID to book.
+     * @param  array       $passengers       Passenger objects with personal details + id field from offer.
+     * @param  array       $payments         [{type: 'balance', amount, currency}]
+     * @param  array       $services         Optional ancillary services (bags, seats) selected by passenger.
+     * @param  array|null  $metadata         Optional key-value metadata.
      */
     public function createOrder(
         string $selectedOfferId,
         array $passengers,
         array $payments,
         array $services = [],
-        ?string $metadata = null
+        ?array $metadata = null
     ): array {
         $data = [
-            'type'               => 'instant',
-            'selected_offers'    => [$selectedOfferId],
-            'passengers'         => $passengers,
-            'payments'           => $payments,
+            'type'            => 'instant',
+            'selected_offers' => [$selectedOfferId],
+            'passengers'      => $passengers,
+            'payments'        => $payments,
         ];
 
         if (!empty($services)) {
@@ -111,6 +155,49 @@ class DuffelAdapter
     }
 
     /**
+     * Create a hold order (pay later, within payment_required_by deadline).
+     */
+    public function createHoldOrder(
+        string $selectedOfferId,
+        array $passengers,
+        array $services = [],
+        ?array $metadata = null
+    ): array {
+        $data = [
+            'type'            => 'hold',
+            'selected_offers' => [$selectedOfferId],
+            'passengers'      => $passengers,
+        ];
+
+        if (!empty($services)) {
+            $data['services'] = $services;
+        }
+
+        if ($metadata !== null) {
+            $data['metadata'] = $metadata;
+        }
+
+        return $this->post('/air/orders', ['data' => $data]);
+    }
+
+    /**
+     * Create a Duffel payment for a hold order.
+     */
+    public function createDuffelPayment(string $orderId, string $amount, string $currency, string $type = 'balance'): array
+    {
+        return $this->post('/air/payments', [
+            'data' => [
+                'order_id' => $orderId,
+                'payment'  => [
+                    'type'     => $type,
+                    'amount'   => $amount,
+                    'currency' => $currency,
+                ],
+            ],
+        ]);
+    }
+
+    /**
      * Retrieve an existing order by ID.
      */
     public function getOrder(string $orderId): array
@@ -119,7 +206,20 @@ class DuffelAdapter
     }
 
     /**
-     * Cancel an order (initiates cancellation quote).
+     * List all orders (paginated). Useful for admin sync.
+     */
+    public function listOrders(array $filters = []): array
+    {
+        return $this->get('/air/orders', $filters);
+    }
+
+    // =========================================================================
+    // Order Cancellations
+    // =========================================================================
+
+    /**
+     * Create a pending order cancellation (get refund quote).
+     * Returns refund_amount, refund_to before committing.
      */
     public function cancelOrder(string $orderId): array
     {
@@ -129,7 +229,25 @@ class DuffelAdapter
     }
 
     /**
-     * Confirm an order cancellation.
+     * Retrieve a single order cancellation (refund quote details).
+     */
+    public function getOrderCancellation(string $cancellationId): array
+    {
+        return $this->get('/air/order_cancellations/' . urlencode($cancellationId));
+    }
+
+    /**
+     * List order cancellations, optionally filtered by order_id.
+     */
+    public function listOrderCancellations(string $orderId = ''): array
+    {
+        $query = $orderId !== '' ? ['order_id' => $orderId] : [];
+        return $this->get('/air/order_cancellations', $query);
+    }
+
+    /**
+     * Confirm an order cancellation — this actually cancels the booking.
+     * The refund_amount is returned to your Duffel balance.
      */
     public function confirmCancellation(string $cancellationId): array
     {
@@ -137,12 +255,98 @@ class DuffelAdapter
     }
 
     // =========================================================================
-    // Seat Maps
+    // Order Changes (flight amendments)
     // =========================================================================
 
-    public function getSeatMaps(string $offerId): array
+    /**
+     * Create an order change request to find available change options.
+     *
+     * @param  string $orderId
+     * @param  array  $slices  ['add' => [...slices], 'remove' => [...sliceIds]]
+     */
+    public function createOrderChangeRequest(string $orderId, array $slices): array
     {
-        return $this->get('/air/seat_maps', ['offer_id' => $offerId]);
+        return $this->post('/air/order_change_requests', [
+            'data' => [
+                'order_id' => $orderId,
+                'slices'   => $slices,
+            ],
+        ]);
+    }
+
+    /**
+     * Get a single order change request (includes order_change_offers).
+     */
+    public function getOrderChangeRequest(string $orderChangeRequestId): array
+    {
+        return $this->get('/air/order_change_requests/' . urlencode($orderChangeRequestId));
+    }
+
+    /**
+     * Get a specific order change offer.
+     */
+    public function getOrderChangeOffer(string $orderChangeOfferId): array
+    {
+        return $this->get('/air/order_change_offers/' . urlencode($orderChangeOfferId));
+    }
+
+    /**
+     * Create a pending order change with a selected order change offer.
+     */
+    public function createOrderChange(string $orderChangeOfferId): array
+    {
+        return $this->post('/air/order_changes', [
+            'data' => ['selected_order_change_offer' => $orderChangeOfferId],
+        ]);
+    }
+
+    /**
+     * Confirm an order change — actually amends the booking.
+     * The change_total_amount is charged to your Duffel balance.
+     */
+    public function confirmOrderChange(string $orderChangeId): array
+    {
+        return $this->post('/air/order_changes/' . urlencode($orderChangeId) . '/actions/confirm', []);
+    }
+
+    /**
+     * Get a single order change.
+     */
+    public function getOrderChange(string $orderChangeId): array
+    {
+        return $this->get('/air/order_changes/' . urlencode($orderChangeId));
+    }
+
+    // =========================================================================
+    // Airports & Airlines (reference data for autocomplete)
+    // =========================================================================
+
+    /**
+     * Search airports by name, IATA code, or city.
+     */
+    public function searchAirports(string $query, int $limit = 20): array
+    {
+        return $this->get('/places/suggestions', ['query' => $query, 'limit' => $limit]);
+    }
+
+    /**
+     * List all airlines (or search by name/IATA).
+     */
+    public function searchAirlines(string $query = '', int $limit = 50): array
+    {
+        $params = ['limit' => $limit];
+        if ($query !== '') {
+            $params['name'] = $query;
+        }
+        return $this->get('/air/airlines', $params);
+    }
+
+    /**
+     * Get a single airline by IATA code.
+     */
+    public function getAirline(string $iataCode): array
+    {
+        return $this->get('/air/airlines/' . urlencode($iataCode));
     }
 
     // =========================================================================
@@ -155,13 +359,17 @@ class DuffelAdapter
         if (!empty($query)) {
             $url .= '?' . http_build_query($query);
         }
-
         return $this->request('GET', $url);
     }
 
     private function post(string $path, array $body): array
     {
         return $this->request('POST', $this->baseUrl . $path, $body);
+    }
+
+    private function patch(string $path, array $body): array
+    {
+        return $this->request('PATCH', $this->baseUrl . $path, $body);
     }
 
     private function request(string $method, string $url, ?array $body = null): array
@@ -201,8 +409,12 @@ class DuffelAdapter
         }
 
         if ($statusCode >= 400) {
-            $errorMsg = $decoded['errors'][0]['message'] ?? 'Unknown Duffel API error';
-            throw new \RuntimeException('Duffel API error (' . $statusCode . '): ' . $errorMsg, $statusCode);
+            $errorMsg = $decoded['errors'][0]['message'] ?? ($decoded['errors'][0]['title'] ?? 'Unknown Duffel API error');
+            $errorCode = $decoded['errors'][0]['code'] ?? '';
+            throw new \RuntimeException(
+                'Duffel API error (' . $statusCode . '): ' . $errorMsg . ($errorCode ? ' [' . $errorCode . ']' : ''),
+                $statusCode
+            );
         }
 
         return $decoded;

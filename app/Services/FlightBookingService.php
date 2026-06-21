@@ -542,6 +542,104 @@ class FlightBookingService
     }
 
     // =========================================================================
+    // cancelBooking — Step 1: get refund quote
+    // =========================================================================
+
+    public function cancelBooking(int $bookingId, int $userId): array
+    {
+        $booking = $this->getBookingById($bookingId, $userId);
+        if ($booking === null) {
+            throw new RuntimeException('Booking not found.', 404);
+        }
+
+        if ($booking['status'] === 'cancelled') {
+            throw new RuntimeException('Booking is already cancelled.', 422);
+        }
+
+        $providerOrderId = $booking['provider_order_id'] ?? '';
+        if (empty($providerOrderId)) {
+            throw new RuntimeException('Cannot cancel: no provider order ID found.', 422);
+        }
+
+        $cancellationResponse = $this->duffel->cancelOrder($providerOrderId);
+        $cancellation = $cancellationResponse['data'] ?? [];
+
+        // Store cancellation ID on the booking row for confirmation step.
+        $this->db->prepare(
+            'UPDATE flight_bookings SET pending_cancellation_id = :cid, updated_at = NOW() WHERE id = :id'
+        )->execute([':cid' => $cancellation['id'] ?? '', ':id' => $bookingId]);
+
+        return [
+            'cancellation_id' => $cancellation['id']            ?? null,
+            'refund_amount'   => $cancellation['refund_amount'] ?? '0.00',
+            'refund_currency' => $cancellation['refund_currency'] ?? ($booking['currency'] ?? 'GBP'),
+            'refund_to'       => $cancellation['refund_to']     ?? 'original_payment_method',
+            'expires_at'      => $cancellation['expires_at']    ?? null,
+        ];
+    }
+
+    // =========================================================================
+    // confirmCancelBooking — Step 2: commit the cancellation
+    // =========================================================================
+
+    public function confirmCancelBooking(int $bookingId, string $cancellationId, int $userId): array
+    {
+        $booking = $this->getBookingById($bookingId, $userId);
+        if ($booking === null) {
+            throw new RuntimeException('Booking not found.', 404);
+        }
+
+        if ($booking['status'] === 'cancelled') {
+            throw new RuntimeException('Booking is already cancelled.', 422);
+        }
+
+        // Confirm with Duffel — this actually cancels the airline booking.
+        $this->duffel->confirmCancellation($cancellationId);
+
+        // Update our booking record.
+        $this->db->prepare(
+            'UPDATE flight_bookings
+             SET status = :status, cancelled_at = NOW(), updated_at = NOW()
+             WHERE id = :id'
+        )->execute([':status' => 'cancelled', ':id' => $bookingId]);
+
+        // Issue Stripe refund if a payment record exists.
+        $payStmt = $this->db->prepare(
+            'SELECT stripe_payment_intent_id, amount, currency FROM payments
+             WHERE booking_type = :bt AND booking_id = :bid AND status = :status
+             LIMIT 1'
+        );
+        $payStmt->execute([':bt' => 'flight', ':bid' => $bookingId, ':status' => 'succeeded']);
+        $payment = $payStmt->fetch(\PDO::FETCH_ASSOC);
+
+        $refundId = null;
+        if ($payment && !empty($payment['stripe_payment_intent_id'])) {
+            try {
+                $refund  = $this->stripe->createRefund(
+                    $payment['stripe_payment_intent_id'],
+                    null,
+                    bin2hex(random_bytes(16)),
+                    'requested_by_customer'
+                );
+                $refundId = $refund['id'] ?? null;
+
+                $this->db->prepare(
+                    'UPDATE payments SET status = :status, updated_at = NOW()
+                     WHERE stripe_payment_intent_id = :pi'
+                )->execute([':status' => 'refunded', ':pi' => $payment['stripe_payment_intent_id']]);
+            } catch (\Throwable) {
+                // Stripe refund failed — log manually. Booking is still cancelled in Duffel.
+            }
+        }
+
+        return [
+            'booking_id'  => $bookingId,
+            'status'      => 'cancelled',
+            'refund_id'   => $refundId,
+        ];
+    }
+
+    // =========================================================================
     // Private helpers
     // =========================================================================
 

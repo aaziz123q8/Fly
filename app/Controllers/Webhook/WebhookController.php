@@ -254,42 +254,72 @@ class WebhookController
         $data = $payload['data'] ?? [];
 
         switch ($type) {
+            case 'ping':
+                return 'pong';
+
             case 'order.airline_initiated_change':
+            case 'order.airline_initiated_change.updated':
                 return $this->onDuffelOrderChanged($data);
+
+            case 'order.airline_initiated_change.accepted':
+                return $this->onDuffelChangeAccepted($data);
+
+            case 'order.airline_initiated_change.rejected':
+                return $this->onDuffelChangeRejected($data);
 
             case 'order.cancelled':
                 return $this->onDuffelOrderCancelled($data);
 
+            case 'order.payment_status_updated':
+                return $this->onDuffelPaymentStatusUpdated($data);
+
             default:
-                return 'unhandled_event_type';
+                return 'unhandled_event_type:' . $type;
         }
     }
 
     private function onDuffelOrderChanged(array $data): string
     {
         $orderId = $data['id'] ?? null;
-        if (!$orderId) {
-            return 'missing_order_id';
-        }
+        if (!$orderId) return 'missing_order_id';
 
         $this->db->prepare(
             'UPDATE flight_bookings SET status = :status, updated_at = NOW()
              WHERE provider_order_id = :oid AND status = :confirmed'
-        )->execute([
-            ':status'    => 'changed',
-            ':oid'       => $orderId,
-            ':confirmed' => 'confirmed',
-        ]);
+        )->execute([':status' => 'changed', ':oid' => $orderId, ':confirmed' => 'confirmed']);
+
+        // Queue notification job.
+        $this->queueNotificationJob($orderId, 'flight_schedule_changed');
 
         return 'booking_status_changed';
+    }
+
+    private function onDuffelChangeAccepted(array $data): string
+    {
+        $orderId = $data['id'] ?? null;
+        if (!$orderId) return 'missing_order_id';
+
+        $this->db->prepare(
+            'UPDATE flight_bookings SET status = :status, updated_at = NOW()
+             WHERE provider_order_id = :oid'
+        )->execute([':status' => 'confirmed', ':oid' => $orderId]);
+
+        return 'change_accepted';
+    }
+
+    private function onDuffelChangeRejected(array $data): string
+    {
+        $orderId = $data['id'] ?? null;
+        if (!$orderId) return 'missing_order_id';
+
+        $this->queueNotificationJob($orderId, 'flight_change_rejected');
+        return 'change_rejected_notified';
     }
 
     private function onDuffelOrderCancelled(array $data): string
     {
         $orderId = $data['id'] ?? null;
-        if (!$orderId) {
-            return 'missing_order_id';
-        }
+        if (!$orderId) return 'missing_order_id';
 
         $this->db->prepare(
             'UPDATE flight_bookings
@@ -301,7 +331,46 @@ class WebhookController
             ':cancelled' => 'cancelled',
         ]);
 
+        $this->queueNotificationJob($orderId, 'flight_cancelled_by_airline');
         return 'booking_cancelled';
+    }
+
+    private function onDuffelPaymentStatusUpdated(array $data): string
+    {
+        $orderId       = $data['id'] ?? null;
+        $paymentStatus = $data['payment_status'] ?? [];
+        if (!$orderId) return 'missing_order_id';
+
+        $awaitingPayment = (bool)($paymentStatus['awaiting_payment'] ?? false);
+        if ($awaitingPayment) {
+            $this->db->prepare(
+                'UPDATE flight_bookings SET status = :status, updated_at = NOW()
+                 WHERE provider_order_id = :oid'
+            )->execute([':status' => 'awaiting_payment', ':oid' => $orderId]);
+        }
+
+        return 'payment_status_updated';
+    }
+
+    private function queueNotificationJob(string $providerOrderId, string $jobType): void
+    {
+        try {
+            $booking = $this->db->prepare(
+                'SELECT id, user_id FROM flight_bookings WHERE provider_order_id = :oid LIMIT 1'
+            );
+            $booking->execute([':oid' => $providerOrderId]);
+            $row = $booking->fetch(PDO::FETCH_ASSOC);
+            if (!$row) return;
+
+            $this->db->prepare(
+                'INSERT INTO job_queue (job_type, payload) VALUES (:jt, :pl)'
+            )->execute([
+                ':jt' => $jobType,
+                ':pl' => json_encode(['booking_id' => $row['id'], 'user_id' => $row['user_id']]),
+            ]);
+        } catch (\Throwable) {
+            // Non-critical.
+        }
     }
 
     // =========================================================================
