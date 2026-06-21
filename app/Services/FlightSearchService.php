@@ -34,8 +34,9 @@ class FlightSearchService
     {
         $origin        = strtoupper(trim($params['origin']        ?? ''));
         $destination   = strtoupper(trim($params['destination']   ?? ''));
-        $departureDate = trim($params['departure_date'] ?? '');
-        $returnDate    = !empty($params['return_date']) ? trim($params['return_date']) : null;
+        $departureDate = $this->normalizeDate(trim($params['departure_date'] ?? ''));
+        $returnDateRaw = !empty($params['return_date']) ? trim($params['return_date']) : null;
+        $returnDate    = $returnDateRaw ? $this->normalizeDate($returnDateRaw) : null;
         $cabinClass    = $params['cabin_class'] ?? 'economy';
         $adults        = max(1, (int) ($params['adults'] ?? 1));
         $children      = is_array($params['children'] ?? null) ? $params['children'] : [];
@@ -212,6 +213,21 @@ class FlightSearchService
         } catch (\Throwable) {
             // Non-critical — swallow logging errors silently.
         }
+    }
+
+    /**
+     * Normalize a date string to YYYY-MM-DD for Duffel API.
+     * Handles display formats like "30 Jun 2026" or "30/06/2026".
+     */
+    private function normalizeDate(string $date): string
+    {
+        if (empty($date)) return $date;
+        // Already ISO
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) return $date;
+        // Try PHP date parsing
+        $ts = strtotime($date);
+        if ($ts !== false) return date('Y-m-d', $ts);
+        return $date;
     }
 
     private function resolveIp(): string

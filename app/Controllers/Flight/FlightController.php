@@ -43,10 +43,11 @@ class FlightController
             $offers = $this->searchService->search($request->json() ?: [], $userId);
             Response::json(['offers' => $offers, 'count' => count($offers)]);
         } catch (\RuntimeException $e) {
-            Response::error($e->getMessage(), 502);
+            $code = $e->getCode();
+            Response::error($e->getMessage(), ($code >= 400 && $code < 600) ? $code : 502);
         } catch (\Throwable $e) {
             $isDev = (getenv('APP_ENV') ?: 'production') === 'development';
-            Response::error($isDev ? $e->getMessage() : 'حدث خطأ أثناء البحث. الرجاء المحاولة لاحقاً.', 500);
+            Response::error($isDev ? $e->getMessage() : 'حدث خطأ في البحث، الرجاء المحاولة لاحقاً.', 500);
         }
     }
 

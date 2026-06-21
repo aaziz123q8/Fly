@@ -171,8 +171,8 @@
     <!-- Error -->
     <div id="errorState" style="display:none;text-align:center;padding:60px 20px">
       <div style="font-size:3rem;margin-bottom:12px">✈️</div>
-      <h3>لا توجد رحلات متاحة</h3>
-      <p style="color:var(--text-muted)">جرب تعديل معايير البحث</p>
+      <h3 id="errorTitle">لا توجد رحلات متاحة</h3>
+      <p id="errorMsg" style="color:var(--text-muted)">جرب تعديل معايير البحث</p>
     </div>
 
     <!-- Results list -->
@@ -188,15 +188,29 @@ var filteredOffers = [];
 var currentSort = 'price';
 var searchParams = {};
 
+function toISODate(val) {
+  if (!val) return '';
+  // Already ISO: YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+  // Try parsing display formats like "30 Jun 2026" or "30/06/2026"
+  var d = new Date(val);
+  if (!isNaN(d.getTime())) {
+    return d.toISOString().substring(0, 10);
+  }
+  return val;
+}
+
 function initPage() {
   // Parse URL params
   var p = new URLSearchParams(window.location.search);
   searchParams = {
-    origin:      p.get('from') || '',
-    destination: p.get('to')   || '',
-    departure:   p.get('dep')  || '',
-    return:      p.get('ret')  || '',
+    origin:      (p.get('from') || '').toUpperCase(),
+    destination: (p.get('to')   || '').toUpperCase(),
+    departure:   toISODate(p.get('dep')  || ''),
+    return:      toISODate(p.get('ret')  || ''),
     passengers:  parseInt(p.get('pax') || '1'),
+    children:    parseInt(p.get('children') || '0'),
+    infants:     parseInt(p.get('infants')  || '0'),
     cabin:       p.get('cabin') || 'economy',
     trip_type:   p.get('type') || 'one_way',
   };
@@ -242,18 +256,28 @@ function fetchFlights() {
   document.getElementById('errorState').style.display = 'none';
 
   var payload = {
-    origin:           searchParams.origin,
-    destination:      searchParams.destination,
-    departure_date:   searchParams.departure,
-    return_date:      searchParams.return || null,
-    adults:           searchParams.passengers,
-    cabin_class:      searchParams.cabin,
+    origin:         searchParams.origin,
+    destination:    searchParams.destination,
+    departure_date: searchParams.departure,
+    adults:         searchParams.passengers || 1,
+    cabin_class:    searchParams.cabin || 'economy',
   };
+  if (searchParams.return) {
+    payload.return_date = searchParams.return;
+  }
+  if (searchParams.children > 0) {
+    payload.children = searchParams.children;
+  }
+  if (searchParams.infants > 0) {
+    payload.infants = searchParams.infants;
+  }
 
   Api.post('/api/flights/search', payload, Auth.isLoggedIn()).then(function(res) {
     document.getElementById('loadingState').style.display = 'none';
     var offers = res.offers || res.data || [];
     if (offers.length === 0) {
+      document.getElementById('errorTitle').textContent = 'لا توجد رحلات متاحة';
+      document.getElementById('errorMsg').textContent   = 'جرب تعديل معايير البحث أو تواريخ السفر';
       document.getElementById('errorState').style.display = 'block';
       return;
     }
@@ -262,9 +286,11 @@ function fetchFlights() {
     applyFilters();
   }).catch(function(err) {
     document.getElementById('loadingState').style.display = 'none';
-    var msg = (err && err.message) || 'خدمة البحث غير متاحة حالياً';
+    var msg = (err && (err.message || err.error)) || 'خدمة البحث غير متاحة حالياً، الرجاء المحاولة لاحقاً';
+    // Show Arabic messages clearly
+    document.getElementById('errorTitle').textContent = 'تعذّر البحث';
+    document.getElementById('errorMsg').textContent   = msg;
     document.getElementById('errorState').style.display = 'block';
-    document.getElementById('errorState').querySelector('p').textContent = msg;
   });
 }
 
@@ -468,14 +494,15 @@ function selectFlight(offerId) {
 }
 
 function doSearch() {
-  var from    = document.getElementById('sFrom').value.trim().toUpperCase();
-  var to      = document.getElementById('sTo').value.trim().toUpperCase();
-  var dep     = document.getElementById('sDepDate').value;
-  var ret     = document.getElementById('sRetDate').value;
-  var pax     = document.getElementById('sPax').value;
-  var cabin   = document.getElementById('sCabin').value;
+  var from  = document.getElementById('sFrom').value.trim().toUpperCase();
+  var to    = document.getElementById('sTo').value.trim().toUpperCase();
+  var dep   = toISODate(document.getElementById('sDepDate').value);
+  var ret   = toISODate(document.getElementById('sRetDate').value);
+  var pax   = parseInt(document.getElementById('sPax').value) || 1;
+  var cabin = document.getElementById('sCabin').value;
   if (!from || !to || !dep) { alert('الرجاء تعبئة جميع الحقول المطلوبة'); return; }
-  var params = new URLSearchParams({ from: from, to: to, dep: dep, ret: ret, pax: pax, cabin: cabin, type: ret ? 'round_trip' : 'one_way' });
+  var params = new URLSearchParams({ from: from, to: to, dep: dep, pax: pax, cabin: cabin, type: ret ? 'round_trip' : 'one_way' });
+  if (ret) params.set('ret', ret);
   window.location.href = 'flights.html?' + params.toString();
 }
 
