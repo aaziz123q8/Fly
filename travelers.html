@@ -97,13 +97,25 @@
           <input type="date" class="form-control" id="tDob" required>
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">البريد الإلكتروني</label>
-        <input type="email" class="form-control" id="tEmail" placeholder="email@example.com">
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">الدولة</label>
+          <input type="text" class="form-control" id="tCountry" placeholder="مثال: Kuwait">
+        </div>
+        <div class="form-group">
+          <label class="form-label">البريد الإلكتروني</label>
+          <input type="email" class="form-control" id="tEmail" placeholder="email@example.com">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">رقم الهاتف</label>
-        <input type="tel" class="form-control" id="tPhone" placeholder="+965 XXXX XXXX">
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">كود الهاتف <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="tPhoneCode" placeholder="+965" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">رقم الهاتف <span style="color:red">*</span></label>
+          <input type="tel" class="form-control" id="tPhone" placeholder="XXXX XXXX" required>
+        </div>
       </div>
       <div style="border-top:1px solid #f0f2f5;margin:20px 0;padding-top:20px">
         <div style="font-weight:600;color:var(--text-muted);font-size:0.85rem;margin-bottom:12px">وثيقة السفر</div>
@@ -208,8 +220,10 @@
     document.getElementById('tGender').value = traveler?.gender || '';
     document.getElementById('tNationality').value = traveler?.nationality || '';
     document.getElementById('tDob').value = traveler?.date_of_birth || '';
+    document.getElementById('tCountry').value = traveler?.country || '';
     document.getElementById('tEmail').value = traveler?.email || '';
-    document.getElementById('tPhone').value = traveler?.phone || '';
+    document.getElementById('tPhoneCode').value = traveler?.phone_country_code || '+';
+    document.getElementById('tPhone').value = traveler?.phone_number || traveler?.phone || '';
     document.getElementById('tDocType').value = traveler?.document_type || 'passport';
     document.getElementById('tDocNum').value = traveler?.document_number || '';
     document.getElementById('tDocIssue').value = traveler?.document_issue || '';
@@ -232,10 +246,15 @@
       gender: document.getElementById('tGender').value,
       nationality: document.getElementById('tNationality').value.trim(),
       date_of_birth: document.getElementById('tDob').value,
+      country: document.getElementById('tCountry').value.trim(),
       email: document.getElementById('tEmail').value.trim(),
-      phone: document.getElementById('tPhone').value.trim(),
+      phone_country_code: document.getElementById('tPhoneCode').value.trim(),
+      phone_number: document.getElementById('tPhone').value.trim(),
+      phone: document.getElementById('tPhoneCode').value.trim() + ' ' + document.getElementById('tPhone').value.trim(),
       document_type: document.getElementById('tDocType').value,
       document_number: document.getElementById('tDocNum').value.trim(),
+      issue_date: document.getElementById('tDocIssue').value,
+      expiry_date: document.getElementById('tDocExp').value,
       document_issue: document.getElementById('tDocIssue').value,
       document_expiry: document.getElementById('tDocExp').value,
       document_country: document.getElementById('tDocCountry').value.trim(),

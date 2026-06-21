@@ -44,6 +44,11 @@ class Router
         return $this->addRoute('DELETE', $path, $handler, $middleware);
     }
 
+    public function patch(string $path, callable $handler, array $middleware = []): static
+    {
+        return $this->addRoute('PATCH', $path, $handler, $middleware);
+    }
+
     /**
      * Group routes under a shared prefix and optional middleware.
      *

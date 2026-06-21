@@ -100,6 +100,20 @@ class AdminTravelersController
             Response::notFound('Traveler not found.');
         }
 
+        // Traveler profiles with all blueprint fields.
+        $travelerStmt = $db->prepare(
+            'SELECT id, first_name, middle_name, last_name, gender, nationality,
+                    country, phone_country_code, phone_number, phone, email,
+                    document_type, document_number, issue_date, expiry_date,
+                    document_issue, document_expiry, document_country,
+                    date_of_birth, created_at
+             FROM travelers
+             WHERE user_id = ? AND archived_at IS NULL
+             ORDER BY is_default DESC, created_at ASC'
+        );
+        $travelerStmt->execute([$id]);
+        $travelerProfiles = $travelerStmt->fetchAll(\PDO::FETCH_ASSOC);
+
         // Last 5 flight bookings.
         $flightStmt = $db->prepare(
             'SELECT id, booking_reference, status, total_amount, currency,
@@ -135,10 +149,11 @@ class AdminTravelersController
         $totalSpent = number_format((float) $totalSpentStmt->fetchColumn(), 2, '.', '');
 
         Response::json([
-            'user'            => $user,
-            'flight_bookings' => $flightBookings,
-            'hotel_bookings'  => $hotelBookings,
-            'total_spent'     => $totalSpent,
+            'user'             => $user,
+            'travelers'        => $travelerProfiles,
+            'flight_bookings'  => $flightBookings,
+            'hotel_bookings'   => $hotelBookings,
+            'total_spent'      => $totalSpent,
         ]);
     }
 

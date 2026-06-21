@@ -333,6 +333,12 @@ $router->group('api/admin', function (Router $r): void {
     $r->get('/bookings', function (Request $req): void {
         (new AdminBookingsController())->index($req);
     }, [AdminMiddleware::handle()]);
+    $r->get('/bookings/:id', function (Request $req): void {
+        (new AdminBookingsController())->showById($req);
+    }, [AdminMiddleware::handle()]);
+    $r->patch('/bookings/:id/status', function (Request $req): void {
+        (new AdminBookingsController())->patchStatus($req);
+    }, [AdminMiddleware::handle()]);
     $r->get('/bookings/:type/:id', function (Request $req): void {
         (new AdminBookingsController())->show($req);
     }, [AdminMiddleware::handle()]);

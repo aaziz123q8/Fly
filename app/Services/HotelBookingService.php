@@ -346,8 +346,16 @@ class HotelBookingService
         $roomData  = $pricingSnapshot['room_data'] ?? [];
         $rooms     = is_array($roomData) && !empty($roomData) ? $roomData : [[]];
 
-        // ── Generate booking reference ────────────────────────────────────────
-        $bookingReference = 'FMH-' . strtoupper(bin2hex(random_bytes(4)));
+        // ── Generate booking reference in HM00000001 format ──────────────────
+        $db = \App\Helpers\Database::getInstance();
+        $lastRef = $db->query("SELECT booking_reference FROM hotel_bookings ORDER BY id DESC LIMIT 1")->fetchColumn();
+        if ($lastRef && preg_match('/^HM(\d+)$/', $lastRef, $m)) {
+            $nextNum = (int)$m[1] + 1;
+        } else {
+            $countStmt = $db->query("SELECT COUNT(*) FROM hotel_bookings");
+            $nextNum = (int)$countStmt->fetchColumn() + 1;
+        }
+        $bookingReference = 'HM' . str_pad((string)$nextNum, 8, '0', STR_PAD_LEFT);
 
         // ── Call RateHawk createBooking ───────────────────────────────────────
         $bookingResponse = $this->rateHawk->createBooking(

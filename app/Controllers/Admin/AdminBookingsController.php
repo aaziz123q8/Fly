@@ -235,6 +235,80 @@ class AdminBookingsController
     }
 
     // -------------------------------------------------------------------------
+    // GET /api/admin/bookings/:id  (lookup by numeric id — tries flight first)
+    // -------------------------------------------------------------------------
+
+    public function showById(Request $request): void
+    {
+        $id = (int) $request->param('id');
+        $db = Database::getInstance();
+
+        // Try flight booking.
+        $stmt = $db->prepare(
+            'SELECT fb.*, "flight" AS booking_type, u.email AS user_email, u.first_name, u.last_name
+             FROM flight_bookings fb JOIN users u ON u.id = fb.user_id
+             WHERE fb.id = ? LIMIT 1'
+        );
+        $stmt->execute([$id]);
+        $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $type = 'flight';
+
+        if (!$booking) {
+            // Try hotel booking.
+            $stmt = $db->prepare(
+                'SELECT hb.*, "hotel" AS booking_type, u.email AS user_email, u.first_name, u.last_name
+                 FROM hotel_bookings hb JOIN users u ON u.id = hb.user_id
+                 WHERE hb.id = ? LIMIT 1'
+            );
+            $stmt->execute([$id]);
+            $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $type = 'hotel';
+        }
+
+        if (!$booking) {
+            Response::notFound('Booking not found.');
+        }
+
+        Response::json(['booking' => $booking, 'type' => $type]);
+    }
+
+    // -------------------------------------------------------------------------
+    // PATCH /api/admin/bookings/:id/status  (used by admin bookings page)
+    // -------------------------------------------------------------------------
+
+    public function patchStatus(Request $request): void
+    {
+        $id        = (int) $request->param('id');
+        $newStatus = trim((string) ($request->input('status', '')));
+        $db        = Database::getInstance();
+
+        // Find booking in flight_bookings first.
+        $stmt = $db->prepare('SELECT id, status, user_id FROM flight_bookings WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $type = 'flight';
+        $table = 'flight_bookings';
+
+        if (!$booking) {
+            $stmt = $db->prepare('SELECT id, status, user_id FROM hotel_bookings WHERE id = ? LIMIT 1');
+            $stmt->execute([$id]);
+            $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $type = 'hotel';
+            $table = 'hotel_bookings';
+        }
+
+        if (!$booking) {
+            Response::notFound('Booking not found.');
+        }
+
+        $dbStatus = in_array($newStatus, ['pending','confirmed','completed','cancelled'], true) ? $newStatus : 'pending';
+        $setCancelled = $dbStatus === 'cancelled' ? ', cancelled_at = NOW()' : '';
+        $db->prepare("UPDATE $table SET status = ? $setCancelled WHERE id = ?")->execute([$dbStatus, $id]);
+
+        Response::json(['message' => 'Status updated.', 'status' => $dbStatus]);
+    }
+
+    // -------------------------------------------------------------------------
     // PUT /api/admin/bookings/:type/:id/status
     // -------------------------------------------------------------------------
 

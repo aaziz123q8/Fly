@@ -312,8 +312,16 @@ class FlightBookingService
         }
         $offerData = json_decode($offer['offer_data'], true);
 
-        // Generate unique booking reference.
-        $bookingReference = 'FM-' . strtoupper(bin2hex(random_bytes(4)));
+        // Generate unique booking reference in FM00000001 format.
+        $db = \App\Helpers\Database::getInstance();
+        $lastRef = $db->query("SELECT booking_reference FROM flight_bookings ORDER BY id DESC LIMIT 1")->fetchColumn();
+        if ($lastRef && preg_match('/^FM(\d+)$/', $lastRef, $m)) {
+            $nextNum = (int)$m[1] + 1;
+        } else {
+            $countStmt = $db->query("SELECT COUNT(*) FROM flight_bookings");
+            $nextNum = (int)$countStmt->fetchColumn() + 1;
+        }
+        $bookingReference = 'FM' . str_pad((string)$nextNum, 8, '0', STR_PAD_LEFT);
 
         // Map passengers for Duffel (add required Duffel fields).
         $duffelPassengers = $this->mapPassengersForDuffel($passengersData, $offerData);

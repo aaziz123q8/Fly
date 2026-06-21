@@ -174,7 +174,7 @@
       document.getElementById('tableWrapper').style.display = 'block';
       document.getElementById('bookingsTable').innerHTML = list.map(b => `
       <tr>
-        <td><span style="font-family:monospace;font-size:.82rem;color:var(--primary)">#${b.id || b.booking_ref || '—'}</span></td>
+        <td><span style="font-family:monospace;font-size:.82rem;color:var(--primary)">${b.booking_reference || b.booking_ref || ('#' + (b.id || '—'))}</span></td>
         <td>
           <div style="font-weight:600;font-size:.88rem">${b.user_name || b.first_name || '—'} ${b.last_name || ''}</div>
           <div style="color:var(--text-muted);font-size:.78rem">${b.email || ''}</div>
@@ -222,7 +222,7 @@
       const b = res.data || res.booking || res;
       el.innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">رقم الحجز</div><div style="font-weight:700;color:var(--primary)">#${b.id||'—'}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">رقم الحجز</div><div style="font-weight:700;color:var(--primary);font-family:monospace">${b.booking_reference||b.booking_ref||('#'+(b.id||'—'))}</div></div>
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الحالة</div>${Admin.renderStatusBadge(b.status)}</div>
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">المسافر</div><div style="font-weight:600">${b.first_name||''} ${b.last_name||''}</div></div>
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">البريد</div><div>${b.email||'—'}</div></div>

@@ -118,10 +118,11 @@
 
   async function loadStats() {
     try {
-      const res = await Api.get('/api/admin/stats', true);
-      const s = res.data || res;
+      const res = await Api.get('/api/admin/dashboard', true);
+      const s = res.stats || res.data || res;
       document.getElementById('statUsers').textContent = (s.total_users || s.users || 0).toLocaleString('ar');
-      document.getElementById('statBookings').textContent = (s.total_bookings || s.bookings || 0).toLocaleString('ar');
+      const totalBookings = (s.total_bookings || 0) || ((s.total_flight_bookings||0) + (s.total_hotel_bookings||0));
+      document.getElementById('statBookings').textContent = totalBookings.toLocaleString('ar');
       document.getElementById('statRevenue').textContent = (s.total_revenue || s.revenue || 0).toLocaleString('ar');
       document.getElementById('statPending').textContent = (s.pending_bookings || s.pending || 0).toLocaleString('ar');
     } catch {

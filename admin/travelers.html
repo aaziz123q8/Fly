@@ -206,14 +206,44 @@
     try {
       const res = await Api.get(`/api/admin/travelers/${userId}`, true);
       const u = res.data || res.user || res;
+      const travelers = res.travelers || [];
+      const travelerRows = travelers.length ? travelers.map(t => `
+        <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:10px">
+          <div style="font-weight:700;margin-bottom:8px;color:var(--primary)">${t.first_name||''} ${t.middle_name||''} ${t.last_name||''}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.82rem">
+            <div><span style="color:var(--text-muted)">الجنس:</span> ${t.gender==='male'?'ذكر':t.gender==='female'?'أنثى':'—'}</div>
+            <div><span style="color:var(--text-muted)">الجنسية:</span> ${t.nationality||'—'}</div>
+            <div><span style="color:var(--text-muted)">تاريخ الميلاد:</span> ${t.date_of_birth||'—'}</div>
+            <div><span style="color:var(--text-muted)">الدولة:</span> ${t.country||'—'}</div>
+            <div><span style="color:var(--text-muted)">كود الهاتف:</span> ${t.phone_country_code||'—'}</div>
+            <div><span style="color:var(--text-muted)">رقم الهاتف:</span> ${t.phone_number||t.phone||'—'}</div>
+            <div><span style="color:var(--text-muted)">البريد:</span> ${t.email||'—'}</div>
+            <div><span style="color:var(--text-muted)">نوع الوثيقة:</span> ${t.document_type||'—'}</div>
+            <div><span style="color:var(--text-muted)">رقم الوثيقة:</span> ${t.document_number||'—'}</div>
+            <div><span style="color:var(--text-muted)">تاريخ الإصدار:</span> ${t.issue_date||t.document_issue||'—'}</div>
+            <div><span style="color:var(--text-muted)">تاريخ الانتهاء:</span> ${t.expiry_date||t.document_expiry||'—'}</div>
+          </div>
+        </div>`).join('') : '<p style="color:var(--text-muted);font-size:.85rem">لا توجد بيانات مسافر مرتبطة</p>';
       el.innerHTML = `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الاسم الأول</div><div style="font-weight:600">${u.first_name || '—'}</div></div>
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الاسم الأخير</div><div style="font-weight:600">${u.last_name || '—'}</div></div>
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">البريد الإلكتروني</div><div style="font-weight:600">${u.email || '—'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الهاتف</div><div style="font-weight:600">${u.phone || '—'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الحالة</div><div>${Admin.renderStatusBadge(u.status || 'active')}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الهاتف</div><div style="font-weight:600">${(u.phone_country_code||'')+' '+(u.phone_number||u.phone||'—')}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الحجوزات</div><div style="font-weight:600">${u.bookings_count || 0}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">إجمالي الإنفاق</div><div style="font-weight:700;color:var(--primary)">${u.total_spent ? Number(u.total_spent).toLocaleString('ar') + ' £' : '—'}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الحالة</div><div>${Admin.renderStatusBadge(u.is_active ? 'active' : 'inactive')}</div></div>
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">تاريخ التسجيل</div><div style="font-weight:600">${u.created_at ? new Date(u.created_at).toLocaleDateString('ar-SA') : '—'}</div></div>
+        </div>
+        ${(res.flight_bookings||[]).length || (res.hotel_bookings||[]).length ? `
+        <div style="border-top:1px solid #f0f2f5;padding-top:14px;margin-bottom:14px">
+          <div style="font-weight:700;margin-bottom:10px;font-size:.9rem">آخر الحجوزات</div>
+          ${[...(res.flight_bookings||[]).map(b=>`<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:6px 0;border-bottom:1px solid #f5f5f5"><span>✈️ ${b.booking_reference||b.id} — ${b.origin_airport||''} → ${b.destination_airport||''}</span><span>${Admin.renderStatusBadge(b.status)}</span></div>`),
+            ...(res.hotel_bookings||[]).map(b=>`<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:6px 0;border-bottom:1px solid #f5f5f5"><span>🏨 ${b.booking_reference||b.id}</span><span>${Admin.renderStatusBadge(b.status)}</span></div>`)].join('')}
+        </div>` : ''}
+        <div style="border-top:1px solid #f0f2f5;padding-top:14px">
+          <div style="font-weight:700;margin-bottom:10px;font-size:.9rem">بيانات المسافرين المرفقة</div>
+          ${travelerRows}
         </div>`;
     } catch {
       el.innerHTML = '<div class="alert alert-error">تعذر تحميل بيانات المستخدم</div>';

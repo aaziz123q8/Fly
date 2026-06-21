@@ -41,10 +41,14 @@ class TravelerController
 
         $stmt = $this->pdo->prepare('
             INSERT INTO travelers (user_id, first_name, middle_name, last_name, gender, nationality,
-                date_of_birth, email, phone, document_type, document_number, document_issue,
-                document_expiry, document_country, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+                country, phone_country_code, phone_number, phone, email,
+                document_type, document_number, issue_date, expiry_date,
+                document_issue, document_expiry, document_country, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ');
+        $docIssue  = $b['issue_date'] ?? $b['document_issue'] ?? null;
+        $docExpiry = $b['expiry_date'] ?? $b['document_expiry'] ?? null;
+        $phoneNum  = $b['phone_number'] ?? $b['phone'] ?? null;
         $stmt->execute([
             $userId,
             $b['first_name'] ?? '',
@@ -52,13 +56,17 @@ class TravelerController
             $b['last_name'] ?? '',
             $b['gender'] ?? null,
             $b['nationality'] ?? null,
-            $b['date_of_birth'] ?? null,
+            $b['country'] ?? null,
+            $b['phone_country_code'] ?? '',
+            $phoneNum,
+            $b['phone'] ?? $phoneNum,
             $b['email'] ?? null,
-            $b['phone'] ?? null,
             $b['document_type'] ?? 'passport',
             $b['document_number'] ?? null,
-            $b['document_issue'] ?? null,
-            $b['document_expiry'] ?? null,
+            $docIssue,
+            $docExpiry,
+            $docIssue,
+            $docExpiry,
             $b['document_country'] ?? null,
         ]);
         $id = $this->pdo->lastInsertId();
@@ -74,11 +82,18 @@ class TravelerController
         $b = $request->json();
         if (!is_array($b)) $b = [];
 
+        $docIssue  = $b['issue_date'] ?? $b['document_issue'] ?? null;
+        $docExpiry = $b['expiry_date'] ?? $b['document_expiry'] ?? null;
+        $phoneNum  = $b['phone_number'] ?? $b['phone'] ?? null;
         $stmt = $this->pdo->prepare('
             UPDATE travelers SET
                 first_name = ?, middle_name = ?, last_name = ?, gender = ?, nationality = ?,
-                date_of_birth = ?, email = ?, phone = ?, document_type = ?, document_number = ?,
-                document_issue = ?, document_expiry = ?, document_country = ?, updated_at = NOW()
+                country = ?, phone_country_code = ?, phone_number = ?, phone = ?,
+                date_of_birth = ?, email = ?,
+                document_type = ?, document_number = ?,
+                issue_date = ?, expiry_date = ?,
+                document_issue = ?, document_expiry = ?, document_country = ?,
+                updated_at = NOW()
             WHERE id = ? AND user_id = ?
         ');
         $stmt->execute([
@@ -87,13 +102,18 @@ class TravelerController
             $b['last_name'] ?? '',
             $b['gender'] ?? null,
             $b['nationality'] ?? null,
+            $b['country'] ?? null,
+            $b['phone_country_code'] ?? '',
+            $phoneNum,
+            $b['phone'] ?? $phoneNum,
             $b['date_of_birth'] ?? null,
             $b['email'] ?? null,
-            $b['phone'] ?? null,
             $b['document_type'] ?? 'passport',
             $b['document_number'] ?? null,
-            $b['document_issue'] ?? null,
-            $b['document_expiry'] ?? null,
+            $docIssue,
+            $docExpiry,
+            $docIssue,
+            $docExpiry,
             $b['document_country'] ?? null,
             $id,
             $userId,
