@@ -52,7 +52,7 @@ class HotelBookingService
         int    $userId,
         string $checkIn,
         string $checkOut,
-        int    $hotelId,
+        string $hotelId,
         float  $displayedPrice = 0.0
     ): array {
         // ── Call RateHawk prebook ────────────────────────────────────────────
@@ -377,7 +377,7 @@ class HotelBookingService
                                ?? '';
 
         // ── Extract booking details from snapshot ─────────────────────────────
-        $hotelId     = (int) ($pricingSnapshot['hotel_id']  ?? 0);
+        $hotelId     = (string) ($pricingSnapshot['hotel_id']  ?? '');
         $checkIn     = $pricingSnapshot['check_in']  ?? '';
         $checkOut    = $pricingSnapshot['check_out'] ?? '';
         $currency    = strtoupper($pricingSnapshot['currency'] ?? 'GBP');

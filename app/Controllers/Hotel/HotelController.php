@@ -113,7 +113,7 @@ class HotelController
                 userId:         (int)    $user['id'],
                 checkIn:        (string) $request->input('check_in'),
                 checkOut:       (string) $request->input('check_out'),
-                hotelId:        (int)    $request->input('hotel_id'),
+                hotelId:        (string) $request->input('hotel_id'),
                 displayedPrice: (float)  $request->input('displayed_price')
             );
             Response::json($result);

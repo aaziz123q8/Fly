@@ -202,6 +202,7 @@
   let totalAmount  = priceRaw;
   let discountAmt  = 0;
   let sessionKey   = null;
+  let expiryTimer  = null;
 
   // Calculate nights
   function calcNights() {
@@ -272,6 +273,30 @@
     container.innerHTML = html;
   }
 
+  function startExpiryCountdown(expiresAt) {
+    if (expiryTimer) clearInterval(expiryTimer);
+    const bar = document.createElement('div');
+    bar.id = 'expiryBar';
+    bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:#fef3c7;border-bottom:2px solid #f59e0b;padding:8px 16px;text-align:center;font-size:0.88rem;font-weight:600;color:#92400e';
+    document.body.prepend(bar);
+
+    expiryTimer = setInterval(() => {
+      const remaining = Math.floor((expiresAt - Date.now()) / 1000);
+      if (remaining <= 0) {
+        clearInterval(expiryTimer);
+        bar.style.background = '#fee2e2';
+        bar.style.borderColor = '#ef4444';
+        bar.style.color = '#991b1b';
+        bar.textContent = '⏰ انتهت صلاحية جلسة الحجز. يرجى العودة واختيار الغرفة مجدداً.';
+        document.getElementById('bookBtn').disabled = true;
+        return;
+      }
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      bar.textContent = `⏰ السعر محجوز لمدة ${m}:${String(s).padStart(2,'0')} — أكمل الدفع قبل انتهاء الوقت`;
+    }, 1000);
+  }
+
   async function applyCoupon() {
     const code = document.getElementById('couponInput').value.trim();
     if (!code) return;
@@ -318,21 +343,41 @@
 
     try {
       // Step 1: Prebook (validates price & locks rate)
+      // hotel_id sent as string — backend must NOT cast to int (RateHawk IDs are strings)
       const prebookRes = await Api.post('/api/hotels/checkout/prebook', {
         book_hash:       bookHash || roomId,
         check_in:        checkIn,
         check_out:       checkOut,
-        hotel_id:        hotelId,
+        hotel_id:        String(hotelId),
         displayed_price: totalAmount,
       }, true);
       sessionKey = prebookRes.session_key || prebookRes.booking_session_key || prebookRes.id || '';
 
-      // Build guests array
-      const guests = [{ first_name: firstName, last_name: lastName, email, phone }];
+      // Warn user if price changed during prebook
+      if (prebookRes.price_changed) {
+        const newPrice = parseFloat(prebookRes.new_price || prebookRes.final_price || totalAmount);
+        const confirmed = confirm(
+          `⚠️ تغيّر سعر الغرفة!\n\nالسعر الجديد: £ ${newPrice.toFixed(2)}\n\nهل تريد المتابعة بالسعر الجديد؟`
+        );
+        if (!confirmed) {
+          btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+          return;
+        }
+        totalAmount = newPrice;
+      }
+
+      // Start 15-minute session expiry countdown
+      const expiresAt = prebookRes.offer_expires_at
+        ? new Date(prebookRes.offer_expires_at).getTime()
+        : Date.now() + 15 * 60 * 1000;
+      startExpiryCountdown(expiresAt);
+
+      // Build guests array — first guest MUST have is_lead: true (RateHawk requirement)
+      const guests = [{ first_name: firstName, last_name: lastName, email, phone, is_lead: true }];
       document.querySelectorAll('#extraGuestsForms > div').forEach(row => {
         const f = row.querySelector('.guest-first')?.value?.trim();
         const l = row.querySelector('.guest-last')?.value?.trim();
-        if (f && l) guests.push({ first_name: f, last_name: l });
+        if (f && l) guests.push({ first_name: f, last_name: l, is_lead: false });
       });
 
       // Step 2: Save guests
