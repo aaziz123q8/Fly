@@ -152,7 +152,7 @@ $router->group('api/flights', function (Router $r): void {
     // Flight search — auth optional, rate-limited.
     $r->post('/search', function (Request $req): void {
         (new FlightController())->search($req);
-    }, [fn() => (new RateLimitMiddleware())->handle('POST /api/search')]);
+    }, [function (Request $req, callable $next): void { (new RateLimitMiddleware())->handle('POST /api/search'); $next($req); }]);
 
     // Airport autocomplete (public).
     $r->get('/airports', function (Request $req): void {
@@ -229,7 +229,7 @@ $router->group('api/hotels', function (Router $r): void {
     // Hotel search — auth optional, rate-limited.
     $r->post('/search', function (Request $req): void {
         (new HotelController())->search($req);
-    }, [fn() => (new RateLimitMiddleware())->handle('POST /api/search')]);
+    }, [function (Request $req, callable $next): void { (new RateLimitMiddleware())->handle('POST /api/search'); $next($req); }]);
 
     // Checkout: prebook (auth required).
     $r->post('/checkout/prebook', function (Request $req): void {
