@@ -184,6 +184,11 @@ $router->group('api/flights', function (Router $r): void {
         (new FlightController())->saveServices($req);
     }, [AuthMiddleware::handle()]);
 
+    // Checkout: real-time price recalculation via Duffel (auth required).
+    $r->post('/checkout/price', function (Request $req): void {
+        (new FlightController())->priceOffer($req);
+    }, [AuthMiddleware::handle()]);
+
     // Checkout: review pricing (auth required).
     $r->get('/checkout/review', function (Request $req): void {
         (new FlightController())->review($req);

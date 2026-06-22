@@ -787,6 +787,32 @@ class FlightBookingService
             'slices'                            => $offerData['slices']                                  ?? [],
             'passengers_included'               => $offerData['passengers']                              ?? [],
             'passenger_identity_documents_required' => $offerData['passenger_identity_documents_required'] ?? false,
+            'payment_requirements'              => $offerData['payment_requirements']                    ?? null,
+        ];
+    }
+
+    public function priceOfferWithServices(string $sessionKey, array $services, int $userId): array
+    {
+        $session = $this->requireSession($sessionKey, $userId);
+        $offerId = $session['provider_offer_id'] ?? '';
+        if (empty($offerId)) {
+            throw new \RuntimeException('No offer in session.', 422);
+        }
+
+        $servicesData = array_map(fn($s) => [
+            'id'       => (string) ($s['id'] ?? ''),
+            'quantity' => (int)    ($s['quantity'] ?? 1),
+        ], $services);
+
+        $response = $this->duffel->priceOffer($offerId, ['balance'], $servicesData);
+        $priced   = $response['data'] ?? $response;
+
+        return [
+            'total_amount'         => $priced['total_amount']        ?? '0.00',
+            'currency'             => strtoupper($priced['total_currency'] ?? 'GBP'),
+            'base_amount'          => $priced['base_amount']         ?? null,
+            'tax_amount'           => $priced['tax_amount']          ?? null,
+            'payment_requirements' => $priced['payment_requirements'] ?? null,
         ];
     }
 

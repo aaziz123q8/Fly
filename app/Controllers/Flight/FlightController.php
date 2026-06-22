@@ -186,6 +186,25 @@ class FlightController
         }
     }
 
+    public function priceOffer(Request $request): void
+    {
+        $errors = $request->validate(['session_key' => 'required']);
+        if (!empty($errors)) Response::validationError($errors);
+
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
+        try {
+            $result = $this->bookingService->priceOfferWithServices(
+                (string) $request->input('session_key'),
+                (array)  ($request->input('services') ?? []),
+                (int)    $user['id']
+            );
+            Response::json($result);
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        }
+    }
+
     public function review(Request $request): void
     {
         $sessionKey = (string) ($request->input('session_key') ?? '');

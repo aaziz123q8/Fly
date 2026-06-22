@@ -586,6 +586,23 @@ function buildServicesPayload() {
   return services;
 }
 
+async function recalculateDuffelPrice(services) {
+  try {
+    const res = await Api.post('/api/flights/checkout/price', { session_key: sessionKey, services }, true);
+    if (res && res.total_amount) {
+      const confirmed = parseFloat(res.total_amount);
+      document.getElementById('sumTotal').textContent = fmt(confirmed) + ' ✓';
+      // Store payment_requirements for display
+      if (res.payment_requirements) {
+        const pr = res.payment_requirements;
+        if (pr.requires_instant_payment) showErr('تنبيه: هذه الرحلة تتطلب الدفع الفوري.');
+      }
+    }
+  } catch(e) {
+    // Non-critical — local estimate still shown
+  }
+}
+
 async function proceedToPayment() {
   const btn  = document.getElementById('btnProceed');
   const txt  = document.getElementById('proceedTxt');
@@ -593,6 +610,15 @@ async function proceedToPayment() {
   btn.disabled=true; txt.classList.add('hidden'); spin.classList.remove('hidden');
   try {
     const services = buildServicesPayload();
+
+    // Verify price with Duffel before proceeding (real-time check)
+    if (services.length > 0) {
+      txt.textContent = 'جاري التحقق من السعر…';
+      txt.classList.remove('hidden');
+      await recalculateDuffelPrice(services);
+      txt.textContent = 'متابعة للدفع';
+    }
+
     // Save services (even if empty — moves session to review step)
     await Api.post('/api/flights/checkout/services', { session_key: sessionKey, services }, true);
 

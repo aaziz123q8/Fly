@@ -34,6 +34,21 @@
     @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
     .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
     .bnav-icon { font-size:1.4rem; }
+
+    /* ── Offer Countdown Bar ─────────────────────────────────────────── */
+    #offerCountdown {
+      display:none; position:sticky; top:0; z-index:500;
+      padding:10px 16px; font-size:.88rem; font-weight:600;
+      display:none; align-items:center; justify-content:center; gap:10px;
+      flex-wrap:wrap; text-align:center;
+    }
+    #offerCountdown.urgent { background:#fef2f2; color:#b91c1c; border-bottom:2px solid #fca5a5; }
+    #offerCountdown.warning { background:#fffbeb; color:#92400e; border-bottom:2px solid #fcd34d; }
+    #offerCountdown.ok { background:#f0fdf4; color:#15803d; border-bottom:2px solid #86efac; }
+    #offerCountdown.expired { background:#fef2f2; color:#7f1d1d; border-bottom:2px solid #ef4444; }
+    #offerCountdown .cd-icon { font-size:1.1rem; }
+    #offerCountdown .cd-timer { font-size:1rem; font-weight:800; font-variant-numeric:tabular-nums; }
+    #payReqBadge { font-size:.78rem; background:rgba(0,0,0,.08); border-radius:20px; padding:2px 10px; }
   </style>
 </head>
 <body>
@@ -72,6 +87,14 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Offer expiry countdown (shown after offer loaded) -->
+<div id="offerCountdown">
+  <span class="cd-icon">⏱</span>
+  <span>سعر العرض محجوز لمدة:</span>
+  <span class="cd-timer" id="cdTimer">--:--</span>
+  <span id="payReqBadge"></span>
 </div>
 
 <div class="booking-page">
@@ -425,6 +448,66 @@
     return null;
   }
 
+  // ── Offer Countdown Timer ───────────────────────────────────────────────────
+
+  let _cdInterval = null;
+
+  function startOfferCountdown(expiresAt, payReq) {
+    const bar     = document.getElementById('offerCountdown');
+    const timerEl = document.getElementById('cdTimer');
+    const badgeEl = document.getElementById('payReqBadge');
+    const expMs   = new Date(expiresAt).getTime();
+
+    // Badge: show payment_required_by or price_guarantee_expires_at
+    const badges = [];
+    if (payReq) {
+      if (payReq.requires_instant_payment) badges.push('💳 الدفع الفوري مطلوب');
+      if (payReq.payment_required_by) {
+        try {
+          const d = new Date(payReq.payment_required_by);
+          badges.push('⏰ الدفع قبل: ' + d.toLocaleString('ar-KW', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}));
+        } catch(e) {}
+      }
+      if (payReq.price_guarantee_expires_at) {
+        try {
+          const d = new Date(payReq.price_guarantee_expires_at);
+          badges.push('🔒 ضمان السعر حتى: ' + d.toLocaleString('ar-KW', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}));
+        } catch(e) {}
+      }
+    }
+    if (badges.length) badgeEl.textContent = badges.join(' | ');
+
+    function tick() {
+      const now  = Date.now();
+      const diff = expMs - now;
+      if (diff <= 0) {
+        window._offerExpired = true;
+        clearInterval(_cdInterval);
+        timerEl.textContent = '00:00';
+        bar.className = 'expired';
+        bar.style.display = 'flex';
+        const btn = document.getElementById('bookBtn');
+        if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
+        return;
+      }
+      const totalSecs = Math.floor(diff / 1000);
+      const mins = Math.floor(totalSecs / 60);
+      const secs = totalSecs % 60;
+      timerEl.textContent = String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
+      if (totalSecs <= 120) {
+        bar.className = 'urgent';
+      } else if (totalSecs <= 300) {
+        bar.className = 'warning';
+      } else {
+        bar.className = 'ok';
+      }
+      bar.style.display = 'flex';
+    }
+    tick();
+    if (_cdInterval) clearInterval(_cdInterval);
+    _cdInterval = setInterval(tick, 1000);
+  }
+
   async function loadFlightInfo() {
     const el = document.getElementById('flightInfoContent');
     if (!flightId) { el.innerHTML = '<p style="color:var(--error)">لم يتم تحديد رحلة</p>'; return; }
@@ -433,6 +516,12 @@
       const res = await Api.post('/api/flights/checkout/start', { offer_id: flightId }, true);
       sessionKey = res.session_key;
       flightData = res.offer || res;
+
+      // ── payment_requirements ────────────────────────────────────────────
+      const payReq = flightData.payment_requirements || null;
+      window._requiresInstantPayment = !!(payReq && payReq.requires_instant_payment);
+      const offerExpiry = res.offer_expires_at || flightData.expires_at || null;
+      if (offerExpiry) startOfferCountdown(offerExpiry, payReq);
 
       // If airline requires identity documents, mark passport fields as mandatory
       if (flightData.passenger_identity_documents_required) {
@@ -698,6 +787,12 @@
     }
     if (!sessionKey) {
       alert('جاري تحميل تفاصيل الرحلة، يرجى الانتظار'); return;
+    }
+    // Block if offer has expired
+    if (window._offerExpired) {
+      alert('انتهت صلاحية هذا العرض. سيتم إعادة توجيهك للبحث عن رحلات جديدة.');
+      window.location.href = 'flights.html';
+      return;
     }
     const passengers = collectPassengers();
     for (let i=0;i<passengers.length;i++) {
