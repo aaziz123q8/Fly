@@ -54,6 +54,16 @@
     .next-day-badge { background: #fef3c7; color: #92400e; border-radius: 4px; font-size: .65rem; font-weight: 700; padding: 1px 5px; }
     .fc-return-label { font-size: .68rem; color: #7c3aed; font-weight: 700; background: #ede9fe; border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
 
+    /* Stop badge — prominent banner at top of card */
+    .stop-badge { display: flex; align-items: center; gap: 6px; padding: 6px 16px; font-size: .78rem; font-weight: 800; border-bottom: 1px solid; }
+    .stop-badge-direct { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
+    .stop-badge-one    { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .stop-badge-multi  { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
+    .stop-badge-dot    { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .stop-badge-direct .stop-badge-dot { background: #16a34a; }
+    .stop-badge-one    .stop-badge-dot { background: #d97706; }
+    .stop-badge-multi  .stop-badge-dot { background: #e11d48; }
+
     /* Price column */
     .fc-price { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 20px; border-right: 1px solid #f0f2f5; gap: 6px; min-width: 140px; }
     .fc-price .amount { font-size: 1.5rem; font-weight: 800; color: var(--primary); white-space: nowrap; }
@@ -772,16 +782,29 @@ function setSort(s) {
 function sortOffers() {
   filteredOffers.sort(function(a,b){
     if (currentSort==='direct') {
-      // Direct first, then by duration within same stop count
       var sa=getStops(a), sb=getStops(b);
       if (sa!==sb) return sa-sb;
-      return getDuration(a)-getDuration(b);
+      return effectiveDuration(a)-effectiveDuration(b);
     }
-    if (currentSort==='duration')  return getDuration(a)-getDuration(b);
+    if (currentSort==='duration')  return effectiveDuration(a)-effectiveDuration(b);
     if (currentSort==='price')     return parseFloat(a.total_amount||0)-parseFloat(b.total_amount||0);
     if (currentSort==='departure') return getDepHour(a)-getDepHour(b);
     return 0;
   });
+}
+
+// Real duration: if missing, compute from dep/arr datetimes; penalize unknown with large value
+function effectiveDuration(o) {
+  var d = getDuration(o);
+  if (d && d > 0) return d;
+  // Try computing from dep/arr of full trip
+  var dep = getDepDt(o), arr = getArrDt(o);
+  if (dep && arr) {
+    var diff = Math.round((new Date(arr) - new Date(dep)) / 60000);
+    if (diff > 0) return diff;
+  }
+  // Unknown duration — put at end of sort
+  return 99999;
 }
 
 // ─── Render ─────────────────────────────────────────────────────
@@ -872,7 +895,26 @@ function renderResults() {
     }
     routeHtml += '</div>';
 
+    // Prominent stop badge
+    var totalStops = stops + (isRoundTrip ? getSliceStops(o,1) : 0);
+    var stopBadgeClass, stopBadgeText;
+    if (stops === 0 && (!isRoundTrip || getSliceStops(o,1) === 0)) {
+      stopBadgeClass = 'stop-badge-direct';
+      stopBadgeText  = '✈ رحلة مباشرة' + (isRoundTrip ? ' — ذهاباً وعودةً' : '');
+    } else if (stops === 0 && isRoundTrip) {
+      stopBadgeClass = 'stop-badge-one';
+      stopBadgeText  = '✈ ذهاب مباشر · عودة ' + getSliceStops(o,1) + ' توقف';
+    } else {
+      var transitCodes0 = [];
+      var segs0 = getSegs(o,0);
+      for (var si=0;si<segs0.length-1;si++){var ar=segs0[si].arriving_airport; if(ar&&ar.iata_code) transitCodes0.push(ar.iata_code);}
+      var viaText = transitCodes0.length ? ' عبر ' + transitCodes0.join('،') : '';
+      stopBadgeClass = stops >= 2 ? 'stop-badge-multi' : 'stop-badge-one';
+      stopBadgeText  = (stops===1?'توقف واحد':'stops توقفات'.replace('stops',stops)) + viaText;
+    }
+
     html += '<div class="flight-card">'
+      + '<div class="stop-badge '+stopBadgeClass+'"><span class="stop-badge-dot"></span>'+stopBadgeText+'</div>'
       + '<div class="fc-main">'
 
         // Airline column
@@ -895,10 +937,9 @@ function renderResults() {
 
       + '</div>'
 
-      // Footer tags
+      // Footer tags (removed stops label — now shown in badge above)
       + '<div class="fc-footer">'
-        + stopsLabel
-        + returnStopsLabel
+        + (isRoundTrip && getSliceStops(o,1) > 0 ? '<span class="tag tag-gray">عودة: '+getSliceStops(o,1)+' توقف</span>' : '')
         + (bagText ? '<span class="tag tag-blue">'+bagText+'</span>' : '<span class="tag tag-gray">بدون أمتعة مسجلة</span>')
         + (refundTxt ? '<span class="tag tag-green">'+refundTxt+'</span>' : '<span class="tag tag-red">غير مسترد</span>')
         + (changeTxt ? '<span class="tag tag-blue">'+changeTxt+'</span>' : '')
