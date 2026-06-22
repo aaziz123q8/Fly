@@ -321,13 +321,14 @@ function getAirline(o){
   var seg = getFirstSeg(o);
   var mc  = seg.marketing_carrier||seg.operating_carrier||{};
   var code = mc.iata_code || o.airline_code || '';
-  // Logo priority: symbol_url > lockup_url > airhex CDN > ''
+  // Primary logo from Duffel; airhex used as secondary fallback in logoHtml
   var logo = mc.logo_symbol_url || mc.logo_lockup_url || '';
-  if (!logo && code) logo = 'https://content.airhex.com/content/logos/airlines_'+code+'_64_64_f.png';
+  var airhexLogo = code ? 'https://content.airhex.com/content/logos/airlines_'+code+'_64_64_f.png' : '';
   return {
     name: mc.name     || o.airline  || 'غير محدد',
     code: code,
     logo: logo,
+    airhex: airhexLogo,
   };
 }
 
@@ -351,21 +352,25 @@ function _offerBaggages(o) {
   return [];
 }
 
-function hasBaggage(o){
+function hasCheckedBaggage(o){
   if (o.baggage_included) return true;
   var bags = _offerBaggages(o);
   for (var i = 0; i < bags.length; i++) {
-    if ((bags[i].quantity || 0) > 0) return true;
+    if (bags[i].type === 'checked' && (bags[i].quantity || 0) > 0) return true;
   }
   // legacy segment passengers shape
   var segs = getSegs(o);
   for (var i = 0; i < segs.length; i++){
     var sp = segs[i].passengers || [];
     for (var j = 0; j < sp.length; j++){
-      if ((sp[j].checked_bags||0)>0||(sp[j].cabin_bags||0)>0) return true;
+      if ((sp[j].checked_bags||0)>0) return true;
     }
   }
   return false;
+}
+
+function hasBaggage(o){
+  return hasCheckedBaggage(o);
 }
 
 function getBaggageText(o){
@@ -801,14 +806,16 @@ function renderResults() {
       + '\n'+al.name+'\nالسعر: '+formatPrice(priceGBP)+'\nللحجز: https://flymasar.com';
     var waLink = 'https://api.whatsapp.com/send?text='+encodeURIComponent(shareText);
 
-    // Airline logo with airhex fallback
+    // Airline logo: Duffel URL → airhex CDN → initials fallback
     var fallbackInitials = al.code || al.name.substring(0,2).toUpperCase();
     var logoHtml;
-    if (al.logo) {
-      logoHtml = '<img src="'+al.logo+'" alt="'+al.name+'"'
-        + ' onerror="this.onerror=null;'
-          // on first error try airhex (already baked into al.logo, so we jump straight to fallback div)
-          + 'this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+    var primaryLogo = al.logo || al.airhex;
+    if (primaryLogo) {
+      var airhexFallback = al.airhex && al.airhex !== primaryLogo ? al.airhex : '';
+      var onerrorJs = airhexFallback
+        ? 'this.onerror=function(){this.onerror=null;this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'};this.src=\''+airhexFallback+'\''
+        : 'this.onerror=null;this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'';
+      logoHtml = '<img src="'+primaryLogo+'" alt="'+al.name+'" onerror="'+onerrorJs+'">'
         + '<div class="al-logo-fallback" style="display:none">'+fallbackInitials+'</div>';
     } else {
       logoHtml = '<div class="al-logo-fallback">'+fallbackInitials+'</div>';
@@ -849,7 +856,7 @@ function renderResults() {
       + '<div class="fc-footer">'
         + stopsLabel
         + returnStopsLabel
-        + (bagText ? '<span class="tag tag-blue">'+bagText+'</span>' : '<span class="tag tag-gray">بدون أمتعة</span>')
+        + (bagText ? '<span class="tag tag-blue">'+bagText+'</span>' : '<span class="tag tag-gray">بدون أمتعة مسجلة</span>')
         + (refundTxt ? '<span class="tag tag-green">'+refundTxt+'</span>' : '<span class="tag tag-red">غير مسترد</span>')
         + (changeTxt ? '<span class="tag tag-blue">'+changeTxt+'</span>' : '')
         + (nextDay ? '<span class="tag tag-orange">وصول اليوم التالي</span>' : '')

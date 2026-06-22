@@ -458,25 +458,74 @@
         } catch(e) { return dt.substring(0,16).replace('T',' '); }
       }
 
+      function fmtTime(dt) {
+        if (!dt) return '--:--';
+        try { return new Date(dt).toLocaleTimeString('ar-KW',{hour:'2-digit',minute:'2-digit',hour12:false}); } catch(e) { return dt.substring(11,16); }
+      }
+      function fmtDate(dt) {
+        if (!dt) return '';
+        try { return new Date(dt).toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'}); } catch(e) { return dt.substring(0,10); }
+      }
+      function durMins(dep, arr) {
+        if (!dep||!arr) return 0;
+        return Math.round((new Date(arr)-new Date(dep))/60000);
+      }
+      function fmtDur(mins) {
+        if (!mins) return '';
+        return Math.floor(mins/60)+'س ' + (mins%60) + 'د';
+      }
+
       let sliceHtml = '';
       slices.forEach((sl, idx) => {
-        const segs   = sl.segments || [];
-        const first  = segs[0] || {};
-        const last   = segs[segs.length-1] || {};
-        const orig   = airportLabel(first.departing_airport  || sl.origin);
-        const dest   = airportLabel(last.arriving_airport    || sl.destination);
-        const dep    = fmtDt(first.departing_at);
-        const arr    = fmtDt(last.arriving_at);
-        const al     = first.marketing_carrier?.name || first.operating_carrier?.name || '';
-        const stops  = Math.max(0, segs.length - 1);
-        const label  = idx === 0 ? '✈ ذهاب' : '↩ عودة';
+        const segs  = sl.segments || [];
+        const first = segs[0] || {};
+        const last  = segs[segs.length-1] || {};
+        const orig  = (first.departing_airport?.iata_code || first.departing_airport || sl.origin?.iata_code || sl.origin || '---');
+        const dest  = (last.arriving_airport?.iata_code  || last.arriving_airport  || sl.destination?.iata_code || sl.destination || '---');
+        const origCity = first.departing_airport?.city_name || first.departing_airport?.name || '';
+        const destCity = last.arriving_airport?.city_name  || last.arriving_airport?.name  || '';
+        const depDt = first.departing_at;
+        const arrDt = last.arriving_at;
+        const mc    = first.marketing_carrier || first.operating_carrier || {};
+        const alName = mc.name || '';
+        const alCode = mc.iata_code || '';
+        const alLogo = mc.logo_symbol_url || mc.logo_lockup_url || '';
+        const airhex = alCode ? `https://content.airhex.com/content/logos/airlines_${alCode}_64_64_f.png` : '';
+        const stops = Math.max(0, segs.length - 1);
+        const label = idx === 0 ? '✈ ذهاب' : '↩ عودة';
         const labelColor = idx === 0 ? '#1B4F8E' : '#7c3aed';
+        const mins  = durMins(depDt, arrDt);
+        const logoSrc = alLogo || airhex;
+        const logoEl = logoSrc
+          ? `<img src="${logoSrc}" alt="${alName}" style="width:32px;height:32px;object-fit:contain;border-radius:6px" onerror="this.onerror=null;this.style.display='none'">`
+          : '';
         sliceHtml += `
-          <div style="border:1.5px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:10px">
-            <div style="font-size:.72rem;font-weight:700;color:${labelColor};margin-bottom:6px">${label}</div>
-            <div style="font-size:.95rem;font-weight:700;margin-bottom:4px">${orig} → ${dest}</div>
-            <div style="font-size:.8rem;color:#6b7280">${al}${stops ? ' · ' + stops + ' توقف' : ' · مباشر'}</div>
-            <div style="font-size:.8rem;color:#6b7280;margin-top:2px">${dep}${arr ? ' – ' + arr : ''}</div>
+          <div style="border:1.5px solid #e5e7eb;border-radius:14px;padding:14px 16px;margin-bottom:10px;background:var(--bg-alt,#f8fafc)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+              <span style="font-size:.7rem;font-weight:700;color:${labelColor};background:${labelColor}18;padding:2px 8px;border-radius:20px">${label}</span>
+              ${logoEl}
+              <span style="font-size:.8rem;color:#6b7280">${alName}${alCode ? ' · ' + alCode : ''}</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="text-align:center">
+                <div style="font-size:1.5rem;font-weight:800;line-height:1;color:var(--text,#111)">${fmtTime(depDt)}</div>
+                <div style="font-size:.75rem;color:#6b7280;margin-top:2px">${orig}</div>
+                ${origCity ? `<div style="font-size:.7rem;color:#9ca3af">${origCity}</div>` : ''}
+                <div style="font-size:.7rem;color:#9ca3af">${fmtDate(depDt)}</div>
+              </div>
+              <div style="flex:1;text-align:center;padding:0 6px">
+                <div style="font-size:.72rem;color:#9ca3af;margin-bottom:4px">${fmtDur(mins)}</div>
+                <div style="height:2px;background:linear-gradient(90deg,${labelColor},${labelColor}55);border-radius:2px;position:relative">
+                  <span style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);font-size:.6rem;color:#9ca3af">${stops === 0 ? 'مباشر' : stops + ' توقف'}</span>
+                </div>
+              </div>
+              <div style="text-align:center">
+                <div style="font-size:1.5rem;font-weight:800;line-height:1;color:var(--text,#111)">${fmtTime(arrDt)}</div>
+                <div style="font-size:.75rem;color:#6b7280;margin-top:2px">${dest}</div>
+                ${destCity ? `<div style="font-size:.7rem;color:#9ca3af">${destCity}</div>` : ''}
+                <div style="font-size:.7rem;color:#9ca3af">${fmtDate(arrDt)}</div>
+              </div>
+            </div>
           </div>`;
       });
 
@@ -510,20 +559,31 @@
   }
 
   function loadSavedTraveler(idx) {
-    if (!savedTravelers.length) { alert('لا يوجد مسافرون محفوظون. يمكنك إضافتهم من صفحة حجوزاتي.'); return; }
+    if (!savedTravelers.length) {
+      alert('لا يوجد مسافرون محفوظون. يمكنك إضافتهم من صفحة حجوزاتي.');
+      return;
+    }
+    // Give the overlay a stable ID so we can remove it cleanly
+    const overlayId = 'traveler-overlay-' + idx;
+    const existing = document.getElementById(overlayId);
+    if (existing) existing.remove();
+
     const popup = document.createElement('div');
+    popup.id = overlayId;
     popup.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px';
     popup.innerHTML = `<div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:460px;max-height:80vh;overflow-y:auto">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
         <h3 style="margin:0;color:var(--primary)">اختر مسافراً</h3>
-        <button onclick="this.closest('div[style]').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer">✕</button>
+        <button onclick="document.getElementById('${overlayId}').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;line-height:1">✕</button>
       </div>
       ${savedTravelers.map((t,ti)=>`
-        <div style="padding:12px;border:2px solid #e5e7eb;border-radius:12px;margin-bottom:8px;cursor:pointer" onclick="fillTraveler(${idx},${ti});this.closest('div[style]').remove()">
-          <div style="font-weight:600">${t.first_name||''} ${t.last_name||''}</div>
-          <div style="font-size:0.82rem;color:var(--text-muted)">${t.nationality||''} · ${t.document_number||''}</div>
+        <div style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#1B4F8E'" onmouseout="this.style.borderColor='#e5e7eb'" onclick="fillTraveler(${idx},${ti});document.getElementById('${overlayId}').remove()">
+          <div style="font-weight:700;margin-bottom:2px">${t.first_name||''} ${t.last_name||''}</div>
+          <div style="font-size:0.82rem;color:var(--text-muted)">${t.nationality||''} · ${t.document_type||'جواز سفر'} · ${t.document_number||'—'}</div>
         </div>`).join('')}
     </div>`;
+    // Close on overlay click (outside the card)
+    popup.addEventListener('click', function(e) { if (e.target === popup) popup.remove(); });
     document.body.appendChild(popup);
   }
 
