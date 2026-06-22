@@ -461,7 +461,7 @@ function getRefundText(o){
   if (!rbf) return null;
   if (rbf.allowed===true || rbf.allowed==='true') {
     if (rbf.penalty_amount && parseFloat(rbf.penalty_amount)>0)
-      return 'استرداد (غرامة '+formatPrice(parseFloat(rbf.penalty_amount))+')';
+      return 'استرداد (رسوم '+formatPrice(parseFloat(rbf.penalty_amount))+')';
     return 'قابل للاسترداد';
   }
   return null;
@@ -473,7 +473,7 @@ function getChangeText(o){
   if (!cbc) return null;
   if (cbc.allowed===true || cbc.allowed==='true') {
     if (cbc.penalty_amount && parseFloat(cbc.penalty_amount)>0)
-      return 'تغيير (غرامة '+formatPrice(parseFloat(cbc.penalty_amount))+')';
+      return 'تغيير (رسوم '+formatPrice(parseFloat(cbc.penalty_amount))+')';
     return 'قابل للتغيير';
   }
   return null;
