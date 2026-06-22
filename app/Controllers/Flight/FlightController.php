@@ -273,14 +273,30 @@ class FlightController
 
     public function getBooking(Request $request): void
     {
+        $idParam = $request->param('id') ?? '';
+        $user    = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
+
+        // Support both numeric booking ID (e.g. 42) and FM reference (e.g. FM00000001)
+        $booking = is_numeric($idParam)
+            ? $this->bookingService->getBookingById((int) $idParam, (int) $user['id'])
+            : $this->bookingService->getBookingByReference((string) $idParam, (int) $user['id']);
+
+        if ($booking === null) Response::notFound('Booking not found.');
+        Response::json(['booking' => $booking]);
+    }
+
+    public function syncBooking(Request $request): void
+    {
         $id   = (int) $request->param('id');
         $user = AuthMiddleware::currentUser();
         if ($user === null) Response::unauthorized();
-        $booking = $this->bookingService->getBookingById($id, (int) $user['id']);
-
-        if ($booking === null) Response::notFound('Booking not found.');
-
-        Response::json(['booking' => $booking]);
+        try {
+            $result = $this->bookingService->syncFromDuffel($id, (int) $user['id']);
+            Response::json(['booking' => $result, 'synced' => true]);
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        }
     }
 
     // =========================================================================

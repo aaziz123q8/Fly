@@ -214,6 +214,11 @@ $router->group('api/flights', function (Router $r): void {
         (new FlightController())->confirmCheckout($req);
     }, [AuthMiddleware::handle()]);
 
+    // Sync booking from live Duffel order (auth required).
+    $r->post('/bookings/:id/sync', function (Request $req): void {
+        (new FlightController())->syncBooking($req);
+    }, [AuthMiddleware::handle()]);
+
     // Cancellation: Step 1 — get refund quote (auth required).
     $r->post('/bookings/:id/cancel', function (Request $req): void {
         (new FlightController())->cancelBooking($req);

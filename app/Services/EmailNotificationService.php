@@ -103,8 +103,18 @@ class EmailNotificationService
         $passengers->execute([':id' => $bookingId]);
         $pasRows = $passengers->fetchAll(PDO::FETCH_ASSOC);
 
+        // Documents (electronic tickets)
+        $docRows = [];
+        try {
+            $docs = $this->db->prepare(
+                'SELECT * FROM flight_booking_documents WHERE booking_id = :id ORDER BY id'
+            );
+            $docs->execute([':id' => $bookingId]);
+            $docRows = $docs->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\Throwable) { /* table may not exist yet */ }
+
         $subject = 'Your Flight Booking Confirmation — ' . $row['booking_reference'];
-        $body    = $this->buildFlightConfirmationHtml($row, $segRows, $pasRows);
+        $body    = $this->buildFlightConfirmationHtml($row, $segRows, $pasRows, $docRows);
 
         $this->sendHtmlMail($row['email'], $subject, $body);
     }
@@ -250,14 +260,88 @@ class EmailNotificationService
 HTML;
     }
 
-    private function buildFlightConfirmationHtml(array $booking, array $segments, array $passengers): string
+    private function buildFlightConfirmationHtml(array $booking, array $segments, array $passengers, array $documents = []): string
     {
         $year     = date('Y');
         $appName  = htmlspecialchars($this->fromName, ENT_QUOTES, 'UTF-8');
-        $ref      = htmlspecialchars($booking['booking_reference'], ENT_QUOTES, 'UTF-8');
+        $ref      = htmlspecialchars($booking['booking_reference'],        ENT_QUOTES, 'UTF-8');
+        $duffelRef= !empty($booking['duffel_booking_reference'])
+            ? htmlspecialchars($booking['duffel_booking_reference'], ENT_QUOTES, 'UTF-8') : '';
         $amount   = number_format((float)$booking['total_amount'], 2);
         $currency = htmlspecialchars(strtoupper($booking['currency']), ENT_QUOTES, 'UTF-8');
-        $status   = htmlspecialchars(ucfirst($booking['status']), ENT_QUOTES, 'UTF-8');
+        $status   = htmlspecialchars(ucfirst($booking['status']),     ENT_QUOTES, 'UTF-8');
+
+        // Airline PNR / Duffel booking reference block
+        $pnrBlock = $duffelRef
+            ? "<tr><td style=\"background:#fff8e1;padding:14px 40px;text-align:center;\">
+                 <p style=\"color:#92400e;font-size:12px;margin:0;\">Airline Booking Reference (PNR)</p>
+                 <p style=\"color:#78350f;font-size:22px;font-weight:bold;margin:4px 0 0;letter-spacing:3px;\">{$duffelRef}</p>
+               </td></tr>"
+            : '';
+
+        // Electronic tickets block
+        $ticketHtml = '';
+        if (!empty($documents)) {
+            $ticketHtml = '<h3 style="color:#0057a8;border-bottom:2px solid #e0e8f4;padding-bottom:8px;margin-top:28px;">Electronic Tickets</h3>
+                <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#555;">
+                  <tr style="background:#f0f5fb;">
+                    <th style="padding:8px;text-align:left;">Ticket Number</th>
+                    <th style="padding:8px;text-align:left;">Type</th>
+                  </tr>';
+            foreach ($documents as $doc) {
+                $ticketHtml .= sprintf(
+                    '<tr><td style="padding:8px;border-bottom:1px solid #eee;font-family:monospace;font-weight:bold;">%s</td>
+                         <td style="padding:8px;border-bottom:1px solid #eee;">%s</td></tr>',
+                    htmlspecialchars($doc['unique_identifier'] ?? '', ENT_QUOTES, 'UTF-8'),
+                    htmlspecialchars(ucwords(str_replace('_', ' ', $doc['document_type'] ?? '')), ENT_QUOTES, 'UTF-8')
+                );
+            }
+            $ticketHtml .= '</table>';
+        }
+
+        // Void window block
+        $voidBlock = '';
+        if (!empty($booking['void_window_ends_at'])) {
+            $voidDt = new \DateTime($booking['void_window_ends_at']);
+            $now    = new \DateTime();
+            if ($voidDt > $now) {
+                $voidFmt  = $voidDt->format('d M Y H:i');
+                $voidBlock = "<p style=\"background:#ecfdf5;border-radius:6px;padding:12px;font-size:13px;color:#065f46;margin-top:20px;\">
+                    ✅ <strong>Free Cancellation Available</strong> — You may cancel this booking at no charge until {$voidFmt} UTC.
+                  </p>";
+            }
+        }
+
+        // Refund conditions block
+        $condBlock = '';
+        $refundCond = !empty($booking['refund_conditions']) && is_string($booking['refund_conditions'])
+            ? json_decode($booking['refund_conditions'], true)
+            : ($booking['refund_conditions'] ?? null);
+        $changeCond = !empty($booking['change_conditions']) && is_string($booking['change_conditions'])
+            ? json_decode($booking['change_conditions'], true)
+            : ($booking['change_conditions'] ?? null);
+
+        if ($refundCond || $changeCond) {
+            $condBlock = '<h3 style="color:#0057a8;border-bottom:2px solid #e0e8f4;padding-bottom:8px;margin-top:28px;">Fare Conditions</h3>
+                <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#555;">';
+            if ($refundCond !== null) {
+                $allowed    = ($refundCond['allowed'] ?? false) ? 'Allowed' : 'Not Allowed';
+                $penaltyAmt = $refundCond['penalty_amount']   ?? null;
+                $penaltyCur = strtoupper($refundCond['penalty_currency'] ?? $booking['currency'] ?? '');
+                $penaltyStr = $penaltyAmt !== null ? " (Penalty: {$penaltyCur} {$penaltyAmt})" : '';
+                $condBlock .= "<tr><td style=\"padding:8px;border-bottom:1px solid #eee;\"><strong>Refund Before Departure</strong></td>
+                                   <td style=\"padding:8px;border-bottom:1px solid #eee;\">{$allowed}{$penaltyStr}</td></tr>";
+            }
+            if ($changeCond !== null) {
+                $allowed    = ($changeCond['allowed'] ?? false) ? 'Allowed' : 'Not Allowed';
+                $penaltyAmt = $changeCond['penalty_amount']   ?? null;
+                $penaltyCur = strtoupper($changeCond['penalty_currency'] ?? $booking['currency'] ?? '');
+                $penaltyStr = $penaltyAmt !== null ? " (Penalty: {$penaltyCur} {$penaltyAmt})" : '';
+                $condBlock .= "<tr><td style=\"padding:8px;border-bottom:1px solid #eee;\"><strong>Change Before Departure</strong></td>
+                                   <td style=\"padding:8px;border-bottom:1px solid #eee;\">{$allowed}{$penaltyStr}</td></tr>";
+            }
+            $condBlock .= '</table>';
+        }
 
         // Build segments HTML
         $segHtml = '';
@@ -271,25 +355,30 @@ HTML;
                    <td style="padding:10px;border-bottom:1px solid #eee;">%s</td>
                    <td style="padding:10px;border-bottom:1px solid #eee;">%s</td>
                  </tr>',
-                htmlspecialchars($s['origin_airport'], ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($s['origin_airport'],      ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars($s['destination_airport'], ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars($dep, ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars($arr, ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars($s['flight_number'], ENT_QUOTES, 'UTF-8')
+                htmlspecialchars($dep,                      ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($arr,                      ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($s['flight_number'],       ENT_QUOTES, 'UTF-8')
             );
         }
 
-        // Build passengers HTML
+        // Build passengers HTML (include ticket number if available)
         $pasHtml = '';
         foreach ($passengers as $p) {
+            $ticketCell = !empty($p['ticket_number'])
+                ? htmlspecialchars($p['ticket_number'], ENT_QUOTES, 'UTF-8')
+                : '—';
             $pasHtml .= sprintf(
                 '<tr>
                    <td style="padding:8px;border-bottom:1px solid #eee;">%s %s</td>
                    <td style="padding:8px;border-bottom:1px solid #eee;">%s</td>
+                   <td style="padding:8px;border-bottom:1px solid #eee;font-family:monospace;">%s</td>
                  </tr>',
-                htmlspecialchars($p['first_name'], ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars($p['last_name'], ENT_QUOTES, 'UTF-8'),
-                htmlspecialchars(ucfirst($p['passenger_type'] ?? 'adult'), ENT_QUOTES, 'UTF-8')
+                htmlspecialchars($p['first_name'],    ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars($p['last_name'],     ENT_QUOTES, 'UTF-8'),
+                htmlspecialchars(ucfirst($p['passenger_type'] ?? 'adult'), ENT_QUOTES, 'UTF-8'),
+                $ticketCell
             );
         }
 
@@ -308,17 +397,21 @@ HTML;
             <p style="color:#cde;margin:6px 0 0;font-size:14px;">Flight Booking Confirmation</p>
           </td>
         </tr>
-        <!-- Booking ref -->
+        <!-- FlyMasar Booking reference -->
         <tr>
           <td style="background:#e8f1fb;padding:20px 40px;text-align:center;">
-            <p style="color:#0057a8;font-size:13px;margin:0;">Booking Reference</p>
+            <p style="color:#0057a8;font-size:13px;margin:0;">Your Booking Reference</p>
             <p style="color:#003d75;font-size:28px;font-weight:bold;margin:6px 0 0;letter-spacing:2px;">{$ref}</p>
           </td>
         </tr>
+        <!-- Airline PNR (if available) -->
+        {$pnrBlock}
         <!-- Body -->
         <tr>
           <td style="padding:30px 40px;">
             <p style="color:#555;font-size:15px;">Status: <strong style="color:#27ae60;">{$status}</strong></p>
+
+            {$voidBlock}
 
             <h3 style="color:#0057a8;border-bottom:2px solid #e0e8f4;padding-bottom:8px;">Flight Itinerary</h3>
             <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#555;">
@@ -336,9 +429,12 @@ HTML;
               <tr style="background:#f0f5fb;">
                 <th style="padding:8px;text-align:left;">Name</th>
                 <th style="padding:8px;text-align:left;">Type</th>
+                <th style="padding:8px;text-align:left;">Ticket No.</th>
               </tr>
               {$pasHtml}
             </table>
+
+            {$ticketHtml}
 
             <h3 style="color:#0057a8;border-bottom:2px solid #e0e8f4;padding-bottom:8px;margin-top:28px;">Payment Summary</h3>
             <table width="100%" cellpadding="0" cellspacing="0" style="font-size:14px;color:#555;">
@@ -347,6 +443,8 @@ HTML;
                 <td style="padding:8px;text-align:right;font-weight:bold;color:#0057a8;">{$currency} {$amount}</td>
               </tr>
             </table>
+
+            {$condBlock}
 
             <p style="color:#888;font-size:13px;margin-top:28px;line-height:1.6;">
               Thank you for booking with {$appName}. If you have any questions, please contact our support team.

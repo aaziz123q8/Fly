@@ -372,8 +372,49 @@ class FlightBookingService
             $metadata
         );
 
-        $order        = $orderResponse['data'] ?? [];
+        $order           = $orderResponse['data'] ?? [];
         $providerOrderId = $order['id'] ?? '';
+
+        // ── Extract all critical Duffel Order fields ──────────────────────────
+        $duffelBookingRef = $order['booking_reference'] ?? null;
+        $liveMode         = isset($order['live_mode']) ? (int) $order['live_mode'] : 1;
+        $orderDocuments   = $order['documents']         ?? [];
+        $orderPassengers  = $order['passengers']        ?? [];
+        $availableActions = !empty($order['available_actions'])
+            ? json_encode($order['available_actions'], JSON_UNESCAPED_UNICODE)
+            : null;
+
+        // Payment status fields
+        $payStatus               = $order['payment_status'] ?? [];
+        $paidAt                  = !empty($payStatus['paid_at'])
+            ? date('Y-m-d H:i:s', strtotime($payStatus['paid_at'])) : null;
+        $paymentRequiredBy       = !empty($payStatus['payment_required_by'])
+            ? date('Y-m-d H:i:s', strtotime($payStatus['payment_required_by'])) : null;
+        $priceGuaranteeExpiresAt = !empty($payStatus['price_guarantee_expires_at'])
+            ? date('Y-m-d H:i:s', strtotime($payStatus['price_guarantee_expires_at'])) : null;
+
+        // Void window (free-cancellation deadline)
+        $voidWindowEndsAt = !empty($order['void_window_ends_at'])
+            ? date('Y-m-d H:i:s', strtotime($order['void_window_ends_at'])) : null;
+
+        // Refund / change conditions
+        $orderConditions  = $order['conditions'] ?? [];
+        $refundConditions = isset($orderConditions['refund_before_departure'])
+            ? json_encode($orderConditions['refund_before_departure'], JSON_UNESCAPED_UNICODE) : null;
+        $changeConditions = isset($orderConditions['change_before_departure'])
+            ? json_encode($orderConditions['change_before_departure'], JSON_UNESCAPED_UNICODE) : null;
+
+        // Build ticket-number map: duffel_passenger_id => ticket_number
+        $ticketMap = [];
+        foreach ($orderPassengers as $op) {
+            $opId = $op['id'] ?? '';
+            foreach (($op['documents'] ?? []) as $doc) {
+                if (($doc['type'] ?? '') === 'electronic_ticket' && !empty($doc['unique_identifier'])) {
+                    $ticketMap[$opId] = $doc['unique_identifier'];
+                    break;
+                }
+            }
+        }
 
         // Determine trip type.
         $slices    = $offerData['slices'] ?? [];
@@ -398,57 +439,87 @@ class FlightBookingService
         $totalAmount = $offer['total_amount'];
         $currency    = strtoupper($offer['currency'] ?? 'GBP');
 
-        // Insert flight_bookings row.
+        // Insert flight_bookings row (including all Sprint-1 Duffel order fields).
         $bStmt = $this->db->prepare(
             'INSERT INTO flight_bookings
                (user_id, provider_id, booking_reference, provider_order_id,
+                duffel_booking_reference,
                 trip_type, cabin_class, adults_count, children_count,
                 origin_airport, destination_airport, departure_at,
-                total_amount, currency, status)
+                total_amount, currency, status,
+                paid_at, payment_required_by, price_guarantee_expires_at,
+                void_window_ends_at, available_actions,
+                live_mode, refund_conditions, change_conditions,
+                synced_at)
              VALUES
                (:user_id, 1, :ref, :provider_order_id,
+                :duffel_booking_ref,
                 :trip_type, :cabin_class, :adults, :children,
                 :origin, :dest, :departure_at,
-                :amount, :currency, :status)'
+                :amount, :currency, :status,
+                :paid_at, :payment_required_by, :price_guarantee_expires_at,
+                :void_window_ends_at, :available_actions,
+                :live_mode, :refund_conditions, :change_conditions,
+                NOW())'
         );
         $bStmt->execute([
-            ':user_id'          => $userId,
-            ':ref'              => $bookingReference,
-            ':provider_order_id'=> $providerOrderId,
-            ':trip_type'        => $tripType,
-            ':cabin_class'      => $cabinClass,
-            ':adults'           => $adults,
-            ':children'         => $children,
-            ':origin'           => $origin,
-            ':dest'             => $dest,
-            ':departure_at'     => $departureAt,
-            ':amount'           => $totalAmount,
-            ':currency'         => $currency,
-            ':status'           => 'confirmed',
+            ':user_id'                    => $userId,
+            ':ref'                        => $bookingReference,
+            ':provider_order_id'          => $providerOrderId,
+            ':duffel_booking_ref'         => $duffelBookingRef,
+            ':trip_type'                  => $tripType,
+            ':cabin_class'                => $cabinClass,
+            ':adults'                     => $adults,
+            ':children'                   => $children,
+            ':origin'                     => $origin,
+            ':dest'                       => $dest,
+            ':departure_at'               => $departureAt,
+            ':amount'                     => $totalAmount,
+            ':currency'                   => $currency,
+            ':status'                     => 'confirmed',
+            ':paid_at'                    => $paidAt,
+            ':payment_required_by'        => $paymentRequiredBy,
+            ':price_guarantee_expires_at' => $priceGuaranteeExpiresAt,
+            ':void_window_ends_at'        => $voidWindowEndsAt,
+            ':available_actions'          => $availableActions,
+            ':live_mode'                  => $liveMode,
+            ':refund_conditions'          => $refundConditions,
+            ':change_conditions'          => $changeConditions,
         ]);
         $bookingId = (int) $this->db->lastInsertId();
 
-        // Insert flight_booking_passengers.
+        // Insert flight_booking_passengers (with Duffel passenger ID and ticket number).
         $pStmt = $this->db->prepare(
             'INSERT INTO flight_booking_passengers
                (booking_id, passenger_type, first_name, last_name, gender,
-                date_of_birth, nationality, passport_number, passport_expiry)
+                date_of_birth, nationality, passport_number, passport_expiry,
+                provider_passenger_id, ticket_number)
              VALUES
                (:booking_id, :passenger_type, :first_name, :last_name, :gender,
-                :dob, :nationality, :passport_number, :passport_expiry)'
+                :dob, :nationality, :passport_number, :passport_expiry,
+                :provider_passenger_id, :ticket_number)'
         );
-        foreach ($passengersData as $passenger) {
+        foreach ($passengersData as $idx => $passenger) {
+            $duffelPaxId  = $duffelPassengers[$idx]['id'] ?? null;
+            $ticketNumber = $duffelPaxId ? ($ticketMap[$duffelPaxId] ?? null) : null;
             $pStmt->execute([
-                ':booking_id'      => $bookingId,
-                ':passenger_type'  => $passenger['type'] ?? 'adult',
-                ':first_name'      => $passenger['first_name'],
-                ':last_name'       => $passenger['last_name'],
-                ':gender'          => $passenger['gender'],
-                ':dob'             => $passenger['date_of_birth'],
-                ':nationality'     => $passenger['nationality'],
-                ':passport_number' => $passenger['passport_number'] ?? null,
-                ':passport_expiry' => $passenger['passport_expiry'] ?? null,
+                ':booking_id'             => $bookingId,
+                ':passenger_type'         => $passenger['type'] ?? 'adult',
+                ':first_name'             => $passenger['first_name'],
+                ':last_name'              => $passenger['last_name'],
+                ':gender'                 => $passenger['gender'],
+                ':dob'                    => $passenger['date_of_birth'],
+                ':nationality'            => $passenger['nationality'],
+                ':passport_number'        => $passenger['passport_number'] ?? null,
+                ':passport_expiry'        => $passenger['passport_expiry'] ?? null,
+                ':provider_passenger_id'  => $duffelPaxId,
+                ':ticket_number'          => $ticketNumber,
             ]);
+        }
+
+        // Insert order-level documents (electronic tickets, itineraries).
+        if (!empty($orderDocuments)) {
+            $this->upsertDocuments($bookingId, $orderDocuments);
         }
 
         // Insert flight_booking_segments.
@@ -520,13 +591,15 @@ class FlightBookingService
         // If already complete, return booking reference
         if (($session['current_step'] ?? '') === 'complete') {
             $booking = $this->db->prepare(
-                'SELECT booking_reference, status FROM flight_bookings WHERE user_id = :uid ORDER BY id DESC LIMIT 1'
+                'SELECT id, booking_reference, duffel_booking_reference, status FROM flight_bookings WHERE user_id = :uid ORDER BY id DESC LIMIT 1'
             );
             $booking->execute([':uid' => $userId]);
             $row = $booking->fetch(\PDO::FETCH_ASSOC);
             return [
-                'status'            => 'confirmed',
-                'booking_reference' => $row['booking_reference'] ?? '',
+                'status'                  => 'confirmed',
+                'booking_reference'       => $row['booking_reference']        ?? '',
+                'booking_id'              => $row['id']                       ?? null,
+                'duffel_booking_reference'=> $row['duffel_booking_reference'] ?? null,
             ];
         }
 
@@ -579,32 +652,71 @@ class FlightBookingService
     public function getBookingById(int $bookingId, int $userId): ?array
     {
         $stmt = $this->db->prepare(
-            'SELECT * FROM flight_bookings
-             WHERE id = :id AND user_id = :uid
-             LIMIT 1'
+            'SELECT * FROM flight_bookings WHERE id = :id AND user_id = :uid LIMIT 1'
         );
         $stmt->execute([':id' => $bookingId, ':uid' => $userId]);
         $booking = $stmt->fetch(PDO::FETCH_ASSOC);
-
         if (!$booking) {
             return null;
+        }
+        return $this->enrichBooking($booking);
+    }
+
+    public function getBookingByReference(string $bookingRef, int $userId): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT * FROM flight_bookings WHERE booking_reference = :ref AND user_id = :uid LIMIT 1'
+        );
+        $stmt->execute([':ref' => $bookingRef, ':uid' => $userId]);
+        $booking = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$booking) {
+            return null;
+        }
+        return $this->enrichBooking($booking);
+    }
+
+    private function enrichBooking(array $booking): array
+    {
+        $bookingId = (int) $booking['id'];
+
+        // Decode JSON columns.
+        foreach (['available_actions', 'refund_conditions', 'change_conditions'] as $col) {
+            if (!empty($booking[$col]) && is_string($booking[$col])) {
+                $booking[$col] = json_decode($booking[$col], true);
+            }
         }
 
         // Segments.
         $segStmt = $this->db->prepare(
             'SELECT * FROM flight_booking_segments
-             WHERE booking_id = :id
-             ORDER BY slice_index ASC, segment_order ASC'
+             WHERE booking_id = :id ORDER BY slice_index ASC, segment_order ASC'
         );
         $segStmt->execute([':id' => $bookingId]);
         $booking['segments'] = $segStmt->fetchAll(PDO::FETCH_ASSOC);
 
         // Passengers.
         $pStmt = $this->db->prepare(
-            'SELECT * FROM flight_booking_passengers WHERE booking_id = :id'
+            'SELECT * FROM flight_booking_passengers WHERE booking_id = :id ORDER BY id'
         );
         $pStmt->execute([':id' => $bookingId]);
         $booking['passengers'] = $pStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Documents (electronic tickets, itineraries).
+        try {
+            $dStmt = $this->db->prepare(
+                'SELECT * FROM flight_booking_documents WHERE booking_id = :id ORDER BY id'
+            );
+            $dStmt->execute([':id' => $bookingId]);
+            $docs = $dStmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($docs as &$doc) {
+                if (!empty($doc['passenger_ids']) && is_string($doc['passenger_ids'])) {
+                    $doc['passenger_ids'] = json_decode($doc['passenger_ids'], true);
+                }
+            }
+            $booking['documents'] = $docs;
+        } catch (\Throwable) {
+            $booking['documents'] = [];
+        }
 
         return $booking;
     }
@@ -629,20 +741,47 @@ class FlightBookingService
             throw new RuntimeException('Cannot cancel: no provider order ID found.', 422);
         }
 
+        // Guard: verify 'cancel' is in available_actions (if populated from last sync).
+        $availableActions = $booking['available_actions'] ?? null;
+        if (is_array($availableActions) && !empty($availableActions)
+            && !in_array('cancel', $availableActions, true)) {
+            throw new RuntimeException('هذا الحجز لا يقبل الإلغاء وفق شروط الناقل.', 422);
+        }
+
+        // Inform frontend whether void (free-cancel) window is still open.
+        $voidWindowActive = false;
+        if (!empty($booking['void_window_ends_at'])) {
+            $voidWindowActive = new \DateTime($booking['void_window_ends_at']) > new \DateTime();
+        }
+
         $cancellationResponse = $this->duffel->cancelOrder($providerOrderId);
         $cancellation = $cancellationResponse['data'] ?? [];
 
-        // Store cancellation ID on the booking row for confirmation step.
+        $cancellationExpiresAt = !empty($cancellation['expires_at'])
+            ? date('Y-m-d H:i:s', strtotime($cancellation['expires_at'])) : null;
+
+        // Store cancellation ID, expires_at, and refund_to for the confirmation step.
         $this->db->prepare(
-            'UPDATE flight_bookings SET pending_cancellation_id = :cid, updated_at = NOW() WHERE id = :id'
-        )->execute([':cid' => $cancellation['id'] ?? '', ':id' => $bookingId]);
+            'UPDATE flight_bookings
+             SET pending_cancellation_id  = :cid,
+                 cancellation_expires_at  = :exp_at,
+                 cancellation_refund_to   = :refund_to,
+                 updated_at              = NOW()
+             WHERE id = :id'
+        )->execute([
+            ':cid'      => $cancellation['id']        ?? '',
+            ':exp_at'   => $cancellationExpiresAt,
+            ':refund_to'=> $cancellation['refund_to'] ?? 'original_payment_method',
+            ':id'       => $bookingId,
+        ]);
 
         return [
-            'cancellation_id' => $cancellation['id']            ?? null,
-            'refund_amount'   => $cancellation['refund_amount'] ?? '0.00',
-            'refund_currency' => $cancellation['refund_currency'] ?? ($booking['currency'] ?? 'GBP'),
-            'refund_to'       => $cancellation['refund_to']     ?? 'original_payment_method',
-            'expires_at'      => $cancellation['expires_at']    ?? null,
+            'cancellation_id'  => $cancellation['id']                  ?? null,
+            'refund_amount'    => $cancellation['refund_amount']        ?? '0.00',
+            'refund_currency'  => $cancellation['refund_currency']      ?? ($booking['currency'] ?? 'GBP'),
+            'refund_to'        => $cancellation['refund_to']            ?? 'original_payment_method',
+            'expires_at'       => $cancellation['expires_at']           ?? null,
+            'void_window_active' => $voidWindowActive,
         ];
     }
 
@@ -659,6 +798,13 @@ class FlightBookingService
 
         if ($booking['status'] === 'cancelled') {
             throw new RuntimeException('Booking is already cancelled.', 422);
+        }
+
+        // Guard: ensure the Duffel cancellation quote has not expired.
+        if (!empty($booking['cancellation_expires_at'])) {
+            if (new \DateTime($booking['cancellation_expires_at']) < new \DateTime()) {
+                throw new RuntimeException('انتهت صلاحية عرض الاسترداد. يرجى بدء طلب الإلغاء من جديد.', 410);
+            }
         }
 
         // Confirm with Duffel — this actually cancels the airline booking.
@@ -703,15 +849,159 @@ class FlightBookingService
 
         $this->db->prepare(
             'UPDATE flight_bookings
-             SET status = :status, cancelled_at = NOW(), updated_at = NOW()
+             SET status = :status, cancelled_at = NOW(), updated_at = NOW(),
+                 cancellation_refund_amount = :refund_amount
              WHERE id = :id'
-        )->execute([':status' => $finalStatus, ':id' => $bookingId]);
+        )->execute([
+            ':status'        => $finalStatus,
+            ':refund_amount' => $booking['cancellation_refund_amount'] ?? null,
+            ':id'            => $bookingId,
+        ]);
 
         return [
             'booking_id'  => $bookingId,
             'status'      => $finalStatus,
             'refund_id'   => $refundId,
         ];
+    }
+
+    // =========================================================================
+    // syncFromDuffel — refresh booking from live Duffel order
+    // =========================================================================
+
+    public function syncFromDuffel(int $bookingId, int $userId): array
+    {
+        $booking = $this->getBookingById($bookingId, $userId);
+        if ($booking === null) {
+            throw new \RuntimeException('Booking not found.', 404);
+        }
+
+        $providerOrderId = $booking['provider_order_id'] ?? '';
+        if (empty($providerOrderId)) {
+            throw new \RuntimeException('No Duffel order ID on this booking.', 422);
+        }
+
+        $response = $this->duffel->getOrder($providerOrderId);
+        $order    = $response['data'] ?? $response;
+
+        // Extract all live fields from Duffel.
+        $duffelBookingRef        = $order['booking_reference']  ?? null;
+        $liveMode                = isset($order['live_mode']) ? (int) $order['live_mode'] : 1;
+        $availableActions        = !empty($order['available_actions'])
+            ? json_encode($order['available_actions']) : null;
+        $payStatus               = $order['payment_status']     ?? [];
+        $paidAt                  = !empty($payStatus['paid_at'])
+            ? date('Y-m-d H:i:s', strtotime($payStatus['paid_at'])) : null;
+        $paymentRequiredBy       = !empty($payStatus['payment_required_by'])
+            ? date('Y-m-d H:i:s', strtotime($payStatus['payment_required_by'])) : null;
+        $priceGuaranteeExpiresAt = !empty($payStatus['price_guarantee_expires_at'])
+            ? date('Y-m-d H:i:s', strtotime($payStatus['price_guarantee_expires_at'])) : null;
+        $voidWindowEndsAt        = !empty($order['void_window_ends_at'])
+            ? date('Y-m-d H:i:s', strtotime($order['void_window_ends_at'])) : null;
+        $orderConditions         = $order['conditions'] ?? [];
+        $refundConditions        = isset($orderConditions['refund_before_departure'])
+            ? json_encode($orderConditions['refund_before_departure']) : null;
+        $changeConditions        = isset($orderConditions['change_before_departure'])
+            ? json_encode($orderConditions['change_before_departure']) : null;
+        $cancelledAt             = !empty($order['cancelled_at'])
+            ? date('Y-m-d H:i:s', strtotime($order['cancelled_at'])) : null;
+        $cancellation            = $order['cancellation']       ?? null;
+        $cancellationRefundAmt   = $cancellation['refund_amount'] ?? null;
+        $cancellationRefundTo    = $cancellation['refund_to']     ?? null;
+        $cancellationExpiresAt   = !empty($cancellation['expires_at'])
+            ? date('Y-m-d H:i:s', strtotime($cancellation['expires_at'])) : null;
+
+        // Determine status change.
+        $newStatus = $booking['status'];
+        if ($cancelledAt && $newStatus !== 'cancelled') {
+            $newStatus = 'cancelled';
+        }
+
+        $this->db->prepare(
+            'UPDATE flight_bookings SET
+                duffel_booking_reference      = COALESCE(:duffel_ref, duffel_booking_reference),
+                paid_at                       = COALESCE(:paid_at, paid_at),
+                payment_required_by           = :payment_required_by,
+                price_guarantee_expires_at    = :price_guarantee_expires_at,
+                void_window_ends_at           = :void_window_ends_at,
+                available_actions             = :available_actions,
+                live_mode                     = :live_mode,
+                refund_conditions             = COALESCE(:refund_conditions, refund_conditions),
+                change_conditions             = COALESCE(:change_conditions, change_conditions),
+                cancellation_refund_to        = COALESCE(:refund_to, cancellation_refund_to),
+                cancellation_expires_at       = COALESCE(:cancel_exp, cancellation_expires_at),
+                cancellation_refund_amount    = COALESCE(:refund_amount, cancellation_refund_amount),
+                status                        = :status,
+                synced_at                     = NOW(),
+                updated_at                    = NOW()
+             WHERE id = :id'
+        )->execute([
+            ':duffel_ref'                  => $duffelBookingRef,
+            ':paid_at'                     => $paidAt,
+            ':payment_required_by'         => $paymentRequiredBy,
+            ':price_guarantee_expires_at'  => $priceGuaranteeExpiresAt,
+            ':void_window_ends_at'         => $voidWindowEndsAt,
+            ':available_actions'           => $availableActions,
+            ':live_mode'                   => $liveMode,
+            ':refund_conditions'           => $refundConditions,
+            ':change_conditions'           => $changeConditions,
+            ':refund_to'                   => $cancellationRefundTo,
+            ':cancel_exp'                  => $cancellationExpiresAt,
+            ':refund_amount'               => $cancellationRefundAmt,
+            ':status'                      => $newStatus,
+            ':id'                          => $bookingId,
+        ]);
+
+        // Sync documents.
+        $documents = $order['documents'] ?? [];
+        if (!empty($documents)) {
+            $this->upsertDocuments($bookingId, $documents);
+        }
+
+        // Sync ticket numbers onto passengers from order passenger documents.
+        $orderPassengers = $order['passengers'] ?? [];
+        foreach ($orderPassengers as $op) {
+            $opId = $op['id'] ?? '';
+            foreach (($op['documents'] ?? []) as $doc) {
+                if (($doc['type'] ?? '') === 'electronic_ticket' && !empty($doc['unique_identifier'])) {
+                    try {
+                        $this->db->prepare(
+                            'UPDATE flight_booking_passengers
+                             SET ticket_number = :tn
+                             WHERE booking_id = :bid
+                               AND provider_passenger_id = :pid
+                               AND ticket_number IS NULL'
+                        )->execute([':tn' => $doc['unique_identifier'], ':bid' => $bookingId, ':pid' => $opId]);
+                    } catch (\Throwable) { /* non-critical */ }
+                    break;
+                }
+            }
+        }
+
+        return $this->getBookingById($bookingId, $userId) ?? $booking;
+    }
+
+    private function upsertDocuments(int $bookingId, array $documents): void
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'INSERT IGNORE INTO flight_booking_documents
+                   (booking_id, document_type, unique_identifier, passenger_ids)
+                 VALUES (:bid, :dtype, :uid, :pids)'
+            );
+            foreach ($documents as $doc) {
+                $uid = $doc['unique_identifier'] ?? '';
+                if (empty($uid)) {
+                    continue;
+                }
+                $stmt->execute([
+                    ':bid'   => $bookingId,
+                    ':dtype' => $doc['type']         ?? 'electronic_ticket',
+                    ':uid'   => $uid,
+                    ':pids'  => json_encode($doc['passenger_ids'] ?? []),
+                ]);
+            }
+        } catch (\Throwable) { /* non-critical if table not yet migrated */ }
     }
 
     // =========================================================================
@@ -779,6 +1069,7 @@ class FlightBookingService
 
     private function formatOffer(array $offerData): array
     {
+        $conditions = $offerData['conditions'] ?? [];
         return [
             'offer_id'                          => $offerData['id']                                     ?? '',
             'total_amount'                      => $offerData['total_amount']                            ?? '0.00',
@@ -788,6 +1079,9 @@ class FlightBookingService
             'passengers_included'               => $offerData['passengers']                              ?? [],
             'passenger_identity_documents_required' => $offerData['passenger_identity_documents_required'] ?? false,
             'payment_requirements'              => $offerData['payment_requirements']                    ?? null,
+            'conditions'                        => $conditions,
+            'refund_before_departure'           => $conditions['refund_before_departure']                ?? null,
+            'change_before_departure'           => $conditions['change_before_departure']                ?? null,
         ];
     }
 
