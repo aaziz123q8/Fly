@@ -488,6 +488,27 @@ function getBaggageText(o){
   return null;
 }
 
+/* ── Per-slice baggage (for round-trip display) ── */
+function getSliceBaggageText(o, sliceIdx) {
+  var sl = (o.slices || [])[sliceIdx];
+  if (!sl) return null;
+  var checked = 0;
+  var segs = sl.segments || [];
+  for (var si = 0; si < segs.length; si++) {
+    var paxArr = segs[si].passengers || [];
+    for (var pi = 0; pi < paxArr.length; pi++) {
+      var bags = paxArr[pi].baggages || [];
+      for (var bi = 0; bi < bags.length; bi++) {
+        if (bags[bi].type === 'checked') checked += (bags[bi].quantity || 0);
+      }
+      // legacy field
+      checked += paxArr[pi].checked_bags || 0;
+    }
+  }
+  if (checked > 0) return checked + '×أمتعة مسجلة';
+  return null;
+}
+
 function getAircraftType(o){
   var seg = getFirstSeg(o);
   return (seg.aircraft&&seg.aircraft.name)||'';
@@ -1068,14 +1089,29 @@ function renderResults() {
       + '</div>'
 
       // Footer tags (removed stops label — now shown in badge above)
-      + '<div class="fc-footer">'
-        + (isRoundTrip && getSliceStops(o,1) > 0 ? '<span class="tag tag-gray">عودة: '+getSliceStops(o,1)+' توقف</span>' : '')
-        + (bagText ? '<span class="tag tag-blue">'+bagText+'</span>' : '<span class="tag tag-gray">بدون أمتعة مسجلة</span>')
-        + (refundTxt ? '<span class="tag tag-green">'+refundTxt+'</span>' : '<span class="tag tag-red">غير مسترد</span>')
-        + (changeTxt ? '<span class="tag tag-blue">'+changeTxt+'</span>' : '')
-        + (nextDay ? '<span class="tag tag-orange">وصول اليوم التالي</span>' : '')
-        + '<a href="'+waLink+'" target="_blank" rel="noopener" style="margin-right:auto;color:#25d366;text-decoration:none;font-size:.78rem;display:flex;align-items:center;gap:4px">📲 واتساب</a>'
-      + '</div>'
+      + (function(){
+          var f = '<div class="fc-footer">';
+          f += (isRoundTrip && getSliceStops(o,1) > 0 ? '<span class="tag tag-gray">عودة: '+getSliceStops(o,1)+' توقف</span>' : '');
+          if (isRoundTrip) {
+            // Per-slice baggage
+            var bt0 = getSliceBaggageText(o, 0) || getBaggageText(o);
+            var bt1 = getSliceBaggageText(o, 1) || getBaggageText(o);
+            if (bt0 || bt1) {
+              f += '<span class="tag tag-blue" title="أمتعة رحلة الذهاب">ذهاب: '+(bt0||'بدون أمتعة')+'</span>';
+              f += '<span class="tag tag-blue" title="أمتعة رحلة العودة">عودة: '+(bt1||'بدون أمتعة')+'</span>';
+            } else {
+              f += '<span class="tag tag-gray">بدون أمتعة مسجلة</span>';
+            }
+          } else {
+            f += (bagText ? '<span class="tag tag-blue">'+bagText+'</span>' : '<span class="tag tag-gray">بدون أمتعة مسجلة</span>');
+          }
+          f += (refundTxt ? '<span class="tag tag-green">'+refundTxt+'</span>' : '<span class="tag tag-red">غير مسترد</span>');
+          f += (changeTxt ? '<span class="tag tag-blue">'+changeTxt+'</span>' : '');
+          f += (nextDay ? '<span class="tag tag-orange">وصول اليوم التالي</span>' : '');
+          f += '<a href="'+waLink+'" target="_blank" rel="noopener" style="margin-right:auto;color:#25d366;text-decoration:none;font-size:.78rem;display:flex;align-items:center;gap:4px">📲 واتساب</a>';
+          f += '</div>';
+          return f;
+        })()
 
     + '</div>';
   });
