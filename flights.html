@@ -43,7 +43,7 @@
     .fc-point { text-align: center; min-width: 64px; }
     .fc-point .time { font-size: 1.35rem; font-weight: 800; color: #111827; line-height: 1; }
     .fc-point .iata { font-size: .8rem; font-weight: 700; color: var(--primary); margin-top: 2px; }
-    .fc-point .apt-name { font-size: .68rem; color: #9ca3af; margin-top: 2px; max-width: 80px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fc-point .apt-name { font-size: .82rem; font-weight: 600; color: #374151; margin-top: 3px; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .fc-point .date-lbl { font-size: .68rem; color: #6b7280; margin-top: 3px; }
     .fc-mid { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
     .fc-duration { font-size: .72rem; color: #6b7280; font-weight: 600; }
@@ -356,16 +356,14 @@ function getAirline(o){
   var seg = getFirstSeg(o);
   var mc  = seg.marketing_carrier||seg.operating_carrier||{};
   var code = mc.iata_code || o.airline_code || '';
-  // Logo chain: Kiwi CDN → avs.io → Duffel CDN
-  var kiwi   = code ? 'https://images.kiwi.com/airlines/64/'+code+'.png' : '';
-  var avsio  = code ? 'https://pics.avs.io/200/200/'+code+'.png' : '';
-  var duffel = code ? 'https://assets.duffel.com/img/airlines/for-light-background/'+code+'.svg' : '';
+  // Use server-side proxy — fetches from Kiwi/avs.io/Duffel and caches result
+  var logo = code ? 'airline-logo.php?code='+code : '';
   return {
-    name:      mc.name || o.airline || 'غير محدد',
-    code:      code,
-    logo:      kiwi,
-    fallback1: avsio,
-    fallback2: duffel,
+    name: mc.name || o.airline || 'غير محدد',
+    code: code,
+    logo: logo,
+    fallback1: '',
+    fallback2: '',
   };
 }
 

@@ -504,8 +504,8 @@
         const mc    = first.marketing_carrier || first.operating_carrier || {};
         const alName = mc.name || '';
         const alCode = mc.iata_code || '';
-        const googleLogo = alCode ? `https://images.kiwi.com/airlines/64/${alCode}.png` : '';
-        const duffelLogo = alCode ? `https://pics.avs.io/200/200/${alCode}.png` : '';
+        const googleLogo = alCode ? `airline-logo.php?code=${alCode}` : '';
+        const duffelLogo = '';
         const stops = Math.max(0, segs.length - 1);
         const label = idx === 0 ? '✈ ذهاب' : '↩ عودة';
         const labelColor = idx === 0 ? '#1B4F8E' : '#7c3aed';
