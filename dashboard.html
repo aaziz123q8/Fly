@@ -5,6 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>حجوزاتي — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
+  <style>
+    .app-overlay{display:none;position:fixed!important;inset:0;background:rgba(0,0,0,.5);z-index:1200;opacity:0;transition:opacity .25s}
+    .app-overlay.open{display:block!important;opacity:1}
+    .app-drawer{position:fixed!important;top:0;right:-320px;width:300px;max-width:86vw;height:100%;background:#fff;z-index:1201;transition:right .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;display:flex;flex-direction:column;box-shadow:-4px 0 24px rgba(0,0,0,.18)}
+    .app-drawer.open{right:0!important}
+    .app-drawer-head{background:linear-gradient(135deg,#0f2444,#1B4F8E);padding:20px 18px 16px;display:flex;justify-content:space-between;align-items:center}
+    .app-drawer-brand{font-size:1.2rem;font-weight:800;color:#fff}
+    .app-drawer-brand em{color:#E8A020;font-style:normal}
+    .app-drawer-close{background:none;border:none;color:rgba(255,255,255,.8);font-size:1.5rem;cursor:pointer;line-height:1;padding:4px 8px}
+    .app-drawer-body{padding:14px;flex:1}
+    .app-drawer-sec{margin-bottom:18px}
+    .app-drawer-sec-title{font-size:.68rem;font-weight:800;color:#9ca3af;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #f0f2f5}
+    .app-drawer-links{display:flex;flex-direction:column;gap:2px}
+    .app-drawer-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#374151;font-size:.9rem;font-weight:600;text-decoration:none}
+    .app-drawer-link:hover{background:#f0f5ff;color:#1B4F8E}
+    .app-drawer-link .dl-ico{width:22px;text-align:center}
+    .app-drawer-auth{background:#f0f5ff;border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .app-drawer-avatar{width:38px;height:38px;border-radius:50%;background:#1B4F8E;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;flex-shrink:0}
+    .app-drawer-footer-copy{padding:12px 14px;border-top:1px solid #f0f2f5;font-size:.72rem;color:#9ca3af;text-align:center}
+  </style>
 </head>
 <body>
 
