@@ -354,14 +354,6 @@ $router->get('api/config/stripe-key', function (Request $req): void {
 });
 
 // ---------------------------------------------------------------------------
-// Routes — Checkout confirm (polls booking status after payment)
-// ---------------------------------------------------------------------------
-
-$router->post('api/flights/checkout/confirm', function (Request $req): void {
-    (new FlightController())->confirmCheckout($req);
-}, [AuthMiddleware::handle()]);
-
-// ---------------------------------------------------------------------------
 // Routes — Public Coupon Validation (traveler auth)
 // ---------------------------------------------------------------------------
 

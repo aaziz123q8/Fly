@@ -227,6 +227,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
+<script src="js/datepicker.js"></script>
 <script>
 var allOffers     = [];
 var filteredOffers = [];
@@ -897,7 +898,7 @@ function doSearch() {
 function clearFilters() {
   var max = document.getElementById('priceRange').max;
   document.getElementById('priceRange').value = max;
-  document.getElementById('priceMax').textContent = parseFloat(max).toLocaleString();
+  document.getElementById('priceMax').textContent = formatPrice(parseFloat(max));
   ['stop0','stop1','stop2','t0006','t0612','t1218','t1824','baggageIncl'].forEach(function(id){
     document.getElementById(id).checked=false;
   });

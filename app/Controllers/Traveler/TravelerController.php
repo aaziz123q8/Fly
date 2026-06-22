@@ -41,10 +41,10 @@ class TravelerController
 
         $stmt = $this->pdo->prepare('
             INSERT INTO travelers (user_id, first_name, middle_name, last_name, gender, nationality,
-                country, phone_country_code, phone_number, phone, email,
+                date_of_birth, country, phone_country_code, phone_number, phone, email,
                 document_type, document_number, issue_date, expiry_date,
                 document_issue, document_expiry, document_country, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
         ');
         $docIssue  = $b['issue_date'] ?? $b['document_issue'] ?? null;
         $docExpiry = $b['expiry_date'] ?? $b['document_expiry'] ?? null;
@@ -56,6 +56,7 @@ class TravelerController
             $b['last_name'] ?? '',
             $b['gender'] ?? null,
             $b['nationality'] ?? null,
+            $b['date_of_birth'] ?? null,
             $b['country'] ?? null,
             $b['phone_country_code'] ?? '',
             $phoneNum,
@@ -147,13 +148,14 @@ class TravelerController
                        'flight' AS type
                 FROM flight_bookings fb
                 LEFT JOIN flights f ON f.id = fb.flight_id
-                WHERE fb.booking_number = ?
+                WHERE fb.booking_number = ? AND LOWER(fb.passenger_last_name) = ?
                 LIMIT 1
             ");
-            $stmt->execute([$pnr]);
+            $stmt->execute([$pnr, $lastName]);
             $row = $stmt->fetch();
             if ($row) {
                 Response::json(['success' => true, 'booking' => $row]);
+                return;
             }
         } catch (\Throwable $e) { /* table may not exist */ }
 
@@ -162,13 +164,14 @@ class TravelerController
             $stmt = $this->pdo->prepare("
                 SELECT hb.*, 'hotel' AS type
                 FROM hotel_bookings hb
-                WHERE hb.booking_number = ?
+                WHERE hb.booking_number = ? AND LOWER(hb.guest_last_name) = ?
                 LIMIT 1
             ");
-            $stmt->execute([$pnr]);
+            $stmt->execute([$pnr, $lastName]);
             $row = $stmt->fetch();
             if ($row) {
                 Response::json(['success' => true, 'booking' => $row]);
+                return;
             }
         } catch (\Throwable $e) { /* table may not exist */ }
 
