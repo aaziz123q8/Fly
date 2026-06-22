@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>حجز الفندق — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .booking-page { background:var(--bg); min-height:100vh; padding:32px 0 80px; }
+    .booking-grid { display:grid; grid-template-columns:1fr 360px; gap:24px; }
+    @media(max-width:900px) { .booking-grid { grid-template-columns:1fr; } }
+    .booking-card { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:28px; margin-bottom:20px; }
+    .booking-card h2 { font-size:1.1rem; font-weight:700; color:var(--primary); margin:0 0 20px; display:flex; align-items:center; gap:8px; }
+    .form-row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:600px) { .form-row2 { grid-template-columns:1fr; } }
+    .price-summary { position:sticky; top:20px; }
+    .price-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f0f2f5; font-size:0.92rem; }
+    .price-row:last-child { border-bottom:none; }
+    .price-total { display:flex; justify-content:space-between; padding:16px 0 0; font-size:1.1rem; font-weight:800; color:var(--primary); border-top:2px solid var(--primary); margin-top:8px; }
+    .hotel-summary-img { width:100%; height:140px; object-fit:cover; border-radius:10px; margin-bottom:14px; background:linear-gradient(135deg,#1a2e5a,#0056b3); display:flex; align-items:center; justify-content:center; font-size:3rem; overflow:hidden; }
+    .hotel-summary-img img { width:100%; height:100%; object-fit:cover; }
+    .info-chip { display:inline-flex; align-items:center; gap:4px; background:#f0f5ff; color:var(--primary); border-radius:20px; padding:4px 10px; font-size:0.8rem; font-weight:600; margin:3px; }
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
+    .bnav-icon { font-size:1.4rem; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
+    <div style="display:flex;gap:8px">
+      <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
+      <button onclick="Auth.logout()" class="btn btn-outline btn-sm">خروج</button>
+    </div>
+  </div>
+</nav>
+
+<!-- Steps -->
+<div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:16px 0">
+  <div class="container">
+    <div style="display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:28px;height:28px;background:var(--primary);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700">١</div>
+        <span style="font-size:0.82rem;font-weight:600;color:var(--primary)">بيانات الضيوف</span>
+      </div>
+      <div style="width:28px;height:2px;background:#e5e7eb"></div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:28px;height:28px;background:#e5e7eb;color:#9ca3af;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700">٢</div>
+        <span style="font-size:0.82rem;color:var(--text-muted)">الدفع</span>
+      </div>
+      <div style="width:28px;height:2px;background:#e5e7eb"></div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:28px;height:28px;background:#e5e7eb;color:#9ca3af;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700">٣</div>
+        <span style="font-size:0.82rem;color:var(--text-muted)">التأكيد</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="booking-page">
+  <div class="container">
+    <div class="booking-grid">
+
+      <!-- Left: Guest Forms -->
+      <div>
+        <!-- Hotel Summary -->
+        <div class="booking-card" id="hotelSummaryCard">
+          <h2>🏨 تفاصيل الفندق</h2>
+          <div id="hotelSummaryContent" style="color:var(--text-muted);text-align:center;padding:20px">
+            <div class="spinner"></div>
+          </div>
+        </div>
+
+        <!-- Guest Details -->
+        <div class="booking-card">
+          <h2><span style="width:28px;height:28px;background:var(--primary);color:#fff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;margin-left:8px">١</span> بيانات الضيف الرئيسي</h2>
+          <p style="font-size:0.85rem;color:var(--text-muted);margin:-10px 0 18px">يجب أن يكون أحد الضيوف موجوداً عند تسجيل الوصول</p>
+          <div class="form-row2">
+            <div class="form-group">
+              <label class="form-label">الاسم الأول <span style="color:red">*</span></label>
+              <input type="text" class="form-control" id="guestFirst" placeholder="بالإنجليزي" required autocomplete="given-name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">الاسم الأخير <span style="color:red">*</span></label>
+              <input type="text" class="form-control" id="guestLast" placeholder="بالإنجليزي" required autocomplete="family-name">
+            </div>
+          </div>
+          <div id="extraGuestsSection" style="display:none">
+            <div style="border-top:1px solid #f0f2f5;margin:16px 0;padding-top:16px;font-size:0.88rem;font-weight:600;color:var(--text-muted)">الضيوف الإضافيون (اختياري)</div>
+            <div id="extraGuestsForms"></div>
+          </div>
+        </div>
+
+        <!-- Contact & Special Requests -->
+        <div class="booking-card">
+          <h2><span style="width:28px;height:28px;background:var(--primary);color:#fff;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;margin-left:8px">٢</span> معلومات التواصل</h2>
+          <div class="form-row2">
+            <div class="form-group">
+              <label class="form-label">البريد الإلكتروني <span style="color:red">*</span></label>
+              <input type="email" class="form-control" id="contactEmail" placeholder="email@example.com" required autocomplete="email">
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم الهاتف <span style="color:red">*</span></label>
+              <input type="tel" class="form-control" id="contactPhone" placeholder="+965 XXXX XXXX" required autocomplete="tel">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">طلبات خاصة <small style="color:var(--text-muted)">(اختياري)</small></label>
+            <textarea class="form-control" id="specialRequests" rows="3" placeholder="مثال: غرفة في طابق عالٍ، سرير إضافي، وصول مبكر..."></textarea>
+          </div>
+          <div class="form-group">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="agreeTerms" required style="accent-color:var(--primary)">
+              <span style="font-size:0.9rem">أوافق على <a href="terms.html" target="_blank" style="color:var(--primary)">الشروط والأحكام</a> و<a href="privacy.html" target="_blank" style="color:var(--primary)">سياسة الخصوصية</a></span>
+            </label>
+          </div>
+          <div id="bookingError" class="alert alert-error" style="display:none;margin-bottom:12px"></div>
+          <button class="btn btn-primary btn-lg btn-block" onclick="submitBooking()" id="bookBtn" style="margin-top:8px">
+            <span id="bookBtnTxt">المتابعة للدفع ←</span>
+            <div class="spinner spinner-sm hidden" id="bookSpinner" style="border-top-color:white"></div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Right: Price Summary -->
+      <div class="price-summary">
+        <div class="booking-card">
+          <h2>ملخص الحجز</h2>
+          <div id="priceSummaryContent">
+            <div class="price-row"><span>سعر الغرفة لليلة</span><span id="pricePerNight">—</span></div>
+            <div class="price-row"><span>عدد الليالي</span><span id="priceNights">—</span></div>
+            <div class="price-row"><span>الضرائب والرسوم</span><span id="priceTax">—</span></div>
+            <div class="price-total"><span>الإجمالي</span><span id="priceTotal">—</span></div>
+          </div>
+          <div style="margin-top:16px">
+            <div class="coupon-row" style="display:flex;gap:8px">
+              <input type="text" class="form-control" id="couponInput" placeholder="كود الخصم">
+              <button class="btn btn-outline btn-sm" onclick="applyCoupon()">تطبيق</button>
+            </div>
+            <div id="couponMsg" style="font-size:0.82rem;margin-top:6px"></div>
+          </div>
+        </div>
+
+        <div class="booking-card" style="background:#f0f5ff;border:2px solid #c5d5e8">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="font-size:1.5rem">🔒</span>
+            <div>
+              <div style="font-weight:700;color:var(--primary);margin-bottom:4px">حجز آمن ومضمون</div>
+              <div style="font-size:0.82rem;color:var(--text-muted)">بياناتك محمية بتشفير SSL. لا نخزن بيانات بطاقتك.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="booking-card" style="background:#f0fdf4;border:2px solid #bbf7d0">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="font-size:1.5rem">✅</span>
+            <div>
+              <div style="font-weight:700;color:#15803d;margin-bottom:4px">تأكيد فوري</div>
+              <div style="font-size:0.82rem;color:#166534">تأكيد الحجز يصلك فوراً على بريدك الإلكتروني</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
+  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
+  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
+</nav>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/currency.js"></script>
+<script>
+  if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+
+  if (typeof formatPrice === 'undefined') window.formatPrice = a => '£ ' + parseFloat(a||0).toFixed(2);
+  if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
+
+  const p          = new URLSearchParams(window.location.search);
+  const hotelId    = p.get('hotel_id')   || '';
+  const hotelName  = p.get('hotel_name') || 'فندق';
+  const roomId     = p.get('room_id')    || '';
+  const bookHash   = p.get('book_hash')  || '';
+  const checkIn    = p.get('check_in')   || '';
+  const checkOut   = p.get('check_out')  || '';
+  const adults     = parseInt(p.get('adults')   || '2');
+  const children   = parseInt(p.get('children') || '0');
+  const rooms      = parseInt(p.get('rooms')    || '1');
+  const priceRaw   = parseFloat(p.get('price')  || '0');
+  const currency   = p.get('currency')   || 'GBP';
+  const hotelImg   = p.get('img')        || '';
+
+  let totalAmount  = priceRaw;
+  let discountAmt  = 0;
+  let sessionKey   = null;
+
+  // Calculate nights
+  function calcNights() {
+    if (!checkIn || !checkOut) return 1;
+    return Math.max(1, Math.round((new Date(checkOut) - new Date(checkIn)) / 86400000));
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    try {
+      return new Date(iso).toLocaleDateString('ar-KW', {year:'numeric', month:'long', day:'numeric'});
+    } catch(e) { return iso; }
+  }
+
+  function buildHotelSummary() {
+    const nights = calcNights();
+    const perNight = priceRaw > 0 ? (priceRaw / nights) : 0;
+    const tax = totalAmount * 0.10;
+
+    const el = document.getElementById('hotelSummaryContent');
+    el.innerHTML = `
+      <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+        <div style="width:80px;height:80px;border-radius:10px;background:linear-gradient(135deg,#1a2e5a,#0056b3);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:2rem">
+          ${hotelImg ? `<img src="${hotelImg}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : '🏨'}
+        </div>
+        <div style="flex:1">
+          <div style="font-size:1.05rem;font-weight:700;margin-bottom:6px">${hotelName}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px">
+            <span class="info-chip">📅 ${fmtDate(checkIn)}</span>
+            <span class="info-chip">📅 ${fmtDate(checkOut)}</span>
+            <span class="info-chip">🌙 ${nights} ليلة</span>
+            <span class="info-chip">👤 ${adults} بالغ${adults > 1 ? 'ين' : ''}${children ? ` + ${children} طفل` : ''}</span>
+            <span class="info-chip">🛏️ ${rooms} غرفة</span>
+          </div>
+        </div>
+      </div>`;
+
+    document.getElementById('pricePerNight').textContent = formatPrice(perNight);
+    document.getElementById('priceNights').textContent   = nights + ' ليلة';
+    document.getElementById('priceTax').textContent      = formatPrice(tax);
+    document.getElementById('priceTotal').textContent    = formatPrice(totalAmount + tax);
+  }
+
+  // Build extra guest forms for additional guests beyond 1
+  function buildExtraGuestForms() {
+    const total = adults + children - 1; // minus main guest
+    if (total <= 0) return;
+    const sec = document.getElementById('extraGuestsSection');
+    const container = document.getElementById('extraGuestsForms');
+    sec.style.display = 'block';
+    let html = '';
+    for (let i = 0; i < total; i++) {
+      const label = i < adults - 1 ? `بالغ ${i + 2}` : `طفل ${i - (adults - 2)}`;
+      html += `<div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:12px">
+        <div style="font-size:0.82rem;font-weight:600;color:var(--text-muted);margin-bottom:10px">${label}</div>
+        <div class="form-row2">
+          <div class="form-group">
+            <label class="form-label">الاسم الأول</label>
+            <input type="text" class="form-control guest-first" placeholder="بالإنجليزي" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label">الاسم الأخير</label>
+            <input type="text" class="form-control guest-last" placeholder="بالإنجليزي" autocomplete="off">
+          </div>
+        </div>
+      </div>`;
+    }
+    container.innerHTML = html;
+  }
+
+  async function applyCoupon() {
+    const code = document.getElementById('couponInput').value.trim();
+    if (!code) return;
+    const msg = document.getElementById('couponMsg');
+    try {
+      const res = await Api.post('/api/coupons/validate', { code, amount: totalAmount });
+      discountAmt = parseFloat(res.discount_amount || res.discount || 0);
+      msg.style.color = '#16a34a';
+      msg.textContent = '✅ تم تطبيق الكوبون — خصم ' + formatPrice(discountAmt);
+    } catch(err) {
+      discountAmt = 0;
+      msg.style.color = 'var(--error)';
+      msg.textContent = '⚠️ ' + (err.message || 'كوبون غير صالح');
+    }
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('bookingError');
+    el.textContent = '⚠️ ' + msg;
+    el.style.display = 'flex';
+    el.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+
+  async function submitBooking() {
+    if (!document.getElementById('agreeTerms').checked) {
+      showError('يرجى الموافقة على الشروط والأحكام'); return;
+    }
+    const firstName = document.getElementById('guestFirst').value.trim();
+    const lastName  = document.getElementById('guestLast').value.trim();
+    const email     = document.getElementById('contactEmail').value.trim();
+    const phone     = document.getElementById('contactPhone').value.trim();
+    if (!firstName || !lastName) { showError('يرجى إدخال اسم الضيف الرئيسي'); return; }
+    if (!/^[a-zA-Z\s\-]+$/.test(firstName) || !/^[a-zA-Z\s\-]+$/.test(lastName)) {
+      showError('يجب إدخال الاسم بالحروف الإنجليزية فقط'); return;
+    }
+    if (!email) { showError('يرجى إدخال البريد الإلكتروني'); return; }
+    if (!phone) { showError('يرجى إدخال رقم الهاتف'); return; }
+
+    const btn = document.getElementById('bookBtn');
+    const sp  = document.getElementById('bookSpinner');
+    const tx  = document.getElementById('bookBtnTxt');
+    btn.disabled = true; sp.classList.remove('hidden'); tx.classList.add('hidden');
+    document.getElementById('bookingError').style.display = 'none';
+
+    try {
+      // Step 1: Prebook (validates price & locks rate)
+      const prebookRes = await Api.post('/api/hotels/checkout/prebook', {
+        book_hash:       bookHash || roomId,
+        check_in:        checkIn,
+        check_out:       checkOut,
+        hotel_id:        hotelId,
+        displayed_price: totalAmount,
+      }, true);
+      sessionKey = prebookRes.session_key || prebookRes.booking_session_key || prebookRes.id || '';
+
+      // Build guests array
+      const guests = [{ first_name: firstName, last_name: lastName, email, phone }];
+      document.querySelectorAll('#extraGuestsForms > div').forEach(row => {
+        const f = row.querySelector('.guest-first')?.value?.trim();
+        const l = row.querySelector('.guest-last')?.value?.trim();
+        if (f && l) guests.push({ first_name: f, last_name: l });
+      });
+
+      // Step 2: Save guests
+      await Api.post('/api/hotels/checkout/guests', {
+        session_key:      sessionKey,
+        guests,
+        special_requests: document.getElementById('specialRequests').value.trim() || null,
+      }, true);
+
+      // Step 3: Create payment intent
+      const piRes = await Api.post('/api/hotels/checkout/payment-intent', {
+        session_key: sessionKey,
+        coupon_code: document.getElementById('couponInput').value.trim() || null,
+      }, true);
+
+      window.location.href = 'hotel-payment.html'
+        + '?session='  + encodeURIComponent(sessionKey)
+        + '&pi='       + encodeURIComponent(piRes.payment_intent_id || '')
+        + '&secret='   + encodeURIComponent(piRes.client_secret     || '')
+        + '&amount='   + encodeURIComponent(piRes.amount            || totalAmount)
+        + '&hotel='    + encodeURIComponent(hotelName)
+        + '&nights='   + encodeURIComponent(calcNights());
+
+    } catch(err) {
+      btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+      showError(err.message || 'حدث خطأ أثناء الحجز، يرجى المحاولة مجدداً');
+    }
+  }
+
+  // Init
+  initCurrency();
+  const user = Auth.getUser();
+  if (user) {
+    document.getElementById('contactEmail').value = user.email  || '';
+    document.getElementById('contactPhone').value = user.phone  || '';
+    document.getElementById('guestFirst').value   = user.first_name || '';
+    document.getElementById('guestLast').value    = user.last_name  || '';
+  }
+  buildHotelSummary();
+  buildExtraGuestForms();
+</script>
+</body>
+</html>

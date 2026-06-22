@@ -331,16 +331,20 @@ function bookRoom() {
   if (!inVal || !outVal) { alert('الرجاء تحديد تواريخ الإقامة'); return; }
 
   var params = new URLSearchParams({
-    type:         'hotel',
-    hotel_id:     hotelData.id || hotelData.provider_hotel_id || '',
-    room_id:      room.id || room.room_id || '',
-    check_in:     inVal,
-    check_out:    outVal,
-    adults:       document.getElementById('adults').value,
-    children:     document.getElementById('children').value,
-    rooms:        document.getElementById('roomCount').value,
+    hotel_id:   hotelData.id || hotelData.provider_hotel_id || '',
+    hotel_name: hotelData.name || 'فندق',
+    room_id:    room.id || room.room_id || '',
+    book_hash:  room.book_hash || room.id || '',
+    check_in:   inVal,
+    check_out:  outVal,
+    adults:     document.getElementById('adults').value,
+    children:   document.getElementById('children').value,
+    rooms:      document.getElementById('roomCount').value,
+    price:      room.price || room.rate || room.total_price || 0,
+    currency:   room.currency || 'GBP',
+    img:        (hotelData.images && hotelData.images[0]) ? (hotelData.images[0].url || hotelData.images[0]) : '',
   });
-  window.location.href = 'booking.html?' + params.toString();
+  window.location.href = 'hotel-booking.html?' + params.toString();
 }
 
 document.getElementById('checkIn').addEventListener('change', updatePriceSummary);

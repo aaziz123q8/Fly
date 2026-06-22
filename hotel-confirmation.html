@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تم الحجز — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    .confirm-page { background:var(--bg); min-height:100vh; padding:60px 0 80px; }
+    .confirm-card { background:#fff; border-radius:20px; box-shadow:var(--shadow); padding:48px 40px; max-width:600px; margin:0 auto; text-align:center; }
+    @media(max-width:600px) { .confirm-card { padding:32px 20px; } }
+    .success-icon { width:90px; height:90px; background:linear-gradient(135deg,#16a34a,#22c55e); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.5rem; margin:0 auto 24px; box-shadow:0 8px 24px rgba(22,163,74,0.3); }
+    .booking-ref { background:#f0f5ff; border:2px solid #c5d5e8; border-radius:12px; padding:20px; margin:24px 0; }
+    .ref-num { font-size:2rem; font-weight:800; color:var(--primary); letter-spacing:2px; }
+    .info-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f0f2f5; font-size:0.92rem; text-align:right; }
+    .info-row:last-child { border-bottom:none; }
+    .info-label { color:var(--text-muted); }
+    .actions { display:flex; gap:12px; margin-top:28px; flex-wrap:wrap; }
+    .actions .btn { flex:1; min-width:140px; }
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
+    .bnav-icon { font-size:1.4rem; }
+  </style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
+    <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
+  </div>
+</nav>
+
+<div class="confirm-page">
+  <div class="container">
+    <div class="confirm-card">
+      <div class="success-icon">✅</div>
+      <h1 style="color:var(--primary);font-size:1.8rem;margin:0 0 8px">تم حجز الفندق بنجاح!</h1>
+      <p style="color:var(--text-muted);margin:0 0 24px">سيصلك تأكيد الحجز على بريدك الإلكتروني خلال دقائق</p>
+
+      <div class="booking-ref">
+        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">رقم الحجز</div>
+        <div class="ref-num" id="confirmRef">—</div>
+      </div>
+
+      <div style="background:#f8fafc;border-radius:12px;padding:16px;text-align:right">
+        <div class="info-row"><span class="info-label">الحالة</span><span style="color:#16a34a;font-weight:600">مؤكد ✅</span></div>
+        <div class="info-row" id="rowHotel" style="display:none"><span class="info-label">الفندق</span><span id="valHotel">—</span></div>
+        <div class="info-row" id="rowNights" style="display:none"><span class="info-label">مدة الإقامة</span><span id="valNights">—</span></div>
+        <div class="info-row" id="rowAmount" style="display:none"><span class="info-label">المبلغ المدفوع</span><span id="valAmount">—</span></div>
+      </div>
+
+      <div style="background:#fef3c7;border-radius:12px;padding:16px;margin-top:20px;text-align:right">
+        <div style="font-weight:700;color:#92400e;margin-bottom:4px">📧 تحقق من بريدك الإلكتروني</div>
+        <div style="font-size:0.85rem;color:#92400e">أُرسل إليك تأكيد حجز الفندق مع كافة التفاصيل. إذا لم تجده تحقق من مجلد البريد غير المرغوب فيه.</div>
+      </div>
+
+      <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin-top:12px;text-align:right">
+        <div style="font-weight:700;color:#15803d;margin-bottom:4px">🏨 معلومات الوصول</div>
+        <div style="font-size:0.85rem;color:#166534">تذكر إحضار رقم الحجز وبطاقة هوية سارية عند تسجيل الوصول في الفندق.</div>
+      </div>
+
+      <div class="actions">
+        <a href="dashboard.html" class="btn btn-primary">📋 حجوزاتي</a>
+        <button class="btn btn-outline" onclick="shareWhatsApp()">💬 مشاركة واتساب</button>
+        <a href="hotels.html" class="btn btn-ghost">🏨 المزيد من الفنادق</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
+  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
+  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
+</nav>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  const p      = new URLSearchParams(window.location.search);
+  const ref    = p.get('ref')    || '';
+  const hotel  = p.get('hotel')  || '';
+  const nights = p.get('nights') || '';
+  const amount = parseFloat(p.get('amount') || '0');
+
+  if (ref) document.getElementById('confirmRef').textContent = ref;
+
+  if (hotel)  { document.getElementById('rowHotel').style.display  = 'flex'; document.getElementById('valHotel').textContent  = hotel; }
+  if (nights) { document.getElementById('rowNights').style.display = 'flex'; document.getElementById('valNights').textContent = nights + ' ليلة'; }
+  if (amount) { document.getElementById('rowAmount').style.display = 'flex'; document.getElementById('valAmount').textContent = '£ ' + amount.toFixed(2); }
+
+  // Try to load full booking details if logged in
+  async function loadBooking() {
+    if (!ref || !Auth.isLoggedIn()) return;
+    try {
+      const res = await Api.get('/api/bookings/' + ref, true);
+      const b = res.booking || res;
+      if (b.hotel_name && !hotel) {
+        document.getElementById('rowHotel').style.display = 'flex';
+        document.getElementById('valHotel').textContent   = b.hotel_name;
+      }
+      if (b.check_in && b.check_out) {
+        const inDate  = new Date(b.check_in).toLocaleDateString('ar-KW', {year:'numeric',month:'long',day:'numeric'});
+        const outDate = new Date(b.check_out).toLocaleDateString('ar-KW', {year:'numeric',month:'long',day:'numeric'});
+        if (!nights) {
+          document.getElementById('rowNights').style.display = 'flex';
+          document.getElementById('valNights').textContent   = inDate + ' — ' + outDate;
+        }
+      }
+    } catch {}
+  }
+
+  function shareWhatsApp() {
+    const msg = `🏨 تم حجز فندقي عبر فلاي مسار!\nالفندق: ${hotel}\nرقم الحجز: ${ref}\nاحجز فندقك الآن: https://flymasar.com`;
+    window.open('https://wa.me/?text=' + encodeURIComponent(msg));
+  }
+
+  loadBooking();
+</script>
+</body>
+</html>
