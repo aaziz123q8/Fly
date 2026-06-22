@@ -169,10 +169,23 @@
   }
 
   function renderBooking(b) {
-    // PNR
+    // Primary airline PNR
     if (b.duffel_booking_reference) {
       document.getElementById('confirmPnr').textContent = b.duffel_booking_reference;
       document.getElementById('pnrBox').style.display = 'block';
+    }
+
+    // Additional per-airline PNRs (multi-carrier itineraries)
+    const refs = Array.isArray(b.booking_references) ? b.booking_references : [];
+    const extraRefs = refs.filter(r => r.value && r.value !== b.duffel_booking_reference);
+    if (extraRefs.length) {
+      const container = document.getElementById('pnrBox');
+      extraRefs.forEach(r => {
+        const row = document.createElement('div');
+        row.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin-top:4px';
+        row.textContent   = (r.airline_iata_code ? r.airline_iata_code + ' • ' : '') + r.value;
+        container.appendChild(row);
+      });
     }
 
     // Route

@@ -416,8 +416,12 @@ class FlightBookingService
         $providerOrderId = $order['id'] ?? '';
 
         // ── Extract all critical Duffel Order fields ──────────────────────────
-        $duffelBookingRef = $order['booking_reference'] ?? null;
-        $liveMode         = isset($order['live_mode']) ? (int) $order['live_mode'] : 1;
+        $duffelBookingRef   = $order['booking_reference']    ?? null;
+        // booking_references[] is an array of per-airline PNR objects (multi-carrier itineraries).
+        // Stored as JSON; kept distinct from the single duffel_booking_reference string.
+        $bookingReferences  = !empty($order['booking_references'])
+            ? json_encode($order['booking_references'], JSON_UNESCAPED_UNICODE) : null;
+        $liveMode           = isset($order['live_mode']) ? (int) $order['live_mode'] : 1;
         $orderDocuments   = $order['documents']         ?? [];
         $orderPassengers  = $order['passengers']        ?? [];
         $availableActions = !empty($order['available_actions'])
@@ -486,7 +490,7 @@ class FlightBookingService
         $bStmt = $this->db->prepare(
             'INSERT INTO flight_bookings
                (user_id, provider_id, booking_reference, provider_order_id,
-                duffel_booking_reference,
+                duffel_booking_reference, booking_references,
                 trip_type, cabin_class, adults_count, children_count,
                 origin_airport, destination_airport, departure_at,
                 total_amount, currency, status,
@@ -497,7 +501,7 @@ class FlightBookingService
                 synced_at)
              VALUES
                (:user_id, 1, :ref, :provider_order_id,
-                :duffel_booking_ref,
+                :duffel_booking_ref, :booking_references,
                 :trip_type, :cabin_class, :adults, :children,
                 :origin, :dest, :departure_at,
                 :amount, :currency, :status,
@@ -512,6 +516,7 @@ class FlightBookingService
             ':ref'                        => $bookingReference,
             ':provider_order_id'          => $providerOrderId,
             ':duffel_booking_ref'         => $duffelBookingRef,
+            ':booking_references'         => $bookingReferences,
             ':trip_type'                  => $tripType,
             ':cabin_class'                => $cabinClass,
             ':adults'                     => $adults,
@@ -727,7 +732,7 @@ class FlightBookingService
         $bookingId = (int) $booking['id'];
 
         // Decode JSON columns.
-        foreach (['available_actions', 'refund_conditions', 'change_conditions'] as $col) {
+        foreach (['available_actions', 'refund_conditions', 'change_conditions', 'booking_references'] as $col) {
             if (!empty($booking[$col]) && is_string($booking[$col])) {
                 $booking[$col] = json_decode($booking[$col], true);
             }
@@ -963,7 +968,9 @@ class FlightBookingService
         $order    = $response['data'] ?? $response;
 
         // Extract all live fields from Duffel.
-        $duffelBookingRef        = $order['booking_reference']  ?? null;
+        $duffelBookingRef        = $order['booking_reference']   ?? null;
+        $bookingReferencesSync   = !empty($order['booking_references'])
+            ? json_encode($order['booking_references'], JSON_UNESCAPED_UNICODE) : null;
         $liveMode                = isset($order['live_mode']) ? (int) $order['live_mode'] : 1;
         $availableActions        = !empty($order['available_actions'])
             ? json_encode($order['available_actions']) : null;
@@ -998,6 +1005,7 @@ class FlightBookingService
         $this->db->prepare(
             'UPDATE flight_bookings SET
                 duffel_booking_reference      = COALESCE(:duffel_ref, duffel_booking_reference),
+                booking_references            = COALESCE(:booking_references, booking_references),
                 paid_at                       = COALESCE(:paid_at, paid_at),
                 payment_required_by           = :payment_required_by,
                 price_guarantee_expires_at    = :price_guarantee_expires_at,
@@ -1015,6 +1023,7 @@ class FlightBookingService
              WHERE id = :id'
         )->execute([
             ':duffel_ref'                  => $duffelBookingRef,
+            ':booking_references'          => $bookingReferencesSync,
             ':paid_at'                     => $paidAt,
             ':payment_required_by'         => $paymentRequiredBy,
             ':price_guarantee_expires_at'  => $priceGuaranteeExpiresAt,

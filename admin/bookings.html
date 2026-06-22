@@ -227,15 +227,47 @@
     try {
       const res = await Api.get(`/api/admin/bookings/${id}`, true);
       const b = res.data || res.booking || res;
+
+      // Airline PNR(s)
+      const pnrMain = b.duffel_booking_reference || '';
+      const refs = Array.isArray(b.booking_references) ? b.booking_references : [];
+      const extraRefs = refs.filter(r => r.value && r.value !== pnrMain);
+      const pnrHtml = pnrMain
+        ? `<div style="background:#fff8e1;border-radius:8px;padding:10px 14px;margin-bottom:12px">
+             <div style="font-size:.72rem;color:#92400e;margin-bottom:2px">رقم حجز الناقل (PNR)</div>
+             <div style="font-family:monospace;font-size:1.1rem;font-weight:700;color:#78350f;letter-spacing:2px">${pnrMain}</div>
+             ${extraRefs.map(r=>`<div style="font-size:.78rem;color:#92400e;margin-top:4px">${r.airline_iata_code||''} • ${r.value}</div>`).join('')}
+           </div>` : '';
+
+      // Documents (electronic tickets)
+      const eDocs = (b.documents||[]).filter(d=>d.document_type==='electronic_ticket');
+      const docsHtml = eDocs.length
+        ? `<div style="margin-bottom:12px">
+             <div style="font-size:.75rem;font-weight:700;color:var(--primary);margin-bottom:6px">🎫 التذاكر الإلكترونية</div>
+             ${eDocs.map(d=>`<div style="font-family:monospace;font-size:.88rem;background:#f0f5fb;border-radius:6px;padding:6px 10px;margin-bottom:4px">${d.unique_identifier}</div>`).join('')}
+           </div>` : '';
+
+      // Passenger ticket numbers
+      const pasWithTickets = (b.passengers||[]).filter(p=>p.ticket_number);
+      const paxTicketHtml = pasWithTickets.length && !eDocs.length
+        ? `<div style="margin-bottom:12px">
+             <div style="font-size:.75rem;font-weight:700;color:var(--primary);margin-bottom:6px">🎟️ أرقام التذاكر</div>
+             ${pasWithTickets.map(p=>`<div style="font-size:.85rem;margin-bottom:4px"><span style="color:var(--text-muted)">${p.first_name} ${p.last_name}:</span> <span style="font-family:monospace;font-weight:600">${p.ticket_number}</span></div>`).join('')}
+           </div>` : '';
+
       el.innerHTML = `
+        ${pnrHtml}
+        ${docsHtml}
+        ${paxTicketHtml}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">رقم الحجز</div><div style="font-weight:700;color:var(--primary);font-family:monospace">${b.booking_reference||b.booking_ref||('#'+(b.id||'—'))}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">رقم حجز فلاي مسار</div><div style="font-weight:700;color:var(--primary);font-family:monospace">${b.booking_reference||b.booking_ref||('#'+(b.id||'—'))}</div></div>
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الحالة</div>${Admin.renderStatusBadge(b.status)}</div>
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">المسافر</div><div style="font-weight:600">${b.first_name||''} ${b.last_name||''}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">البريد</div><div>${b.email||'—'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">النوع</div><div>${b.type==='flight'?'✈️ رحلة':'🏨 فندق'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">المبلغ</div><div style="font-weight:700;font-size:1.1rem;color:var(--primary)">${b.total_price?Number(b.total_price).toLocaleString('ar')+' ر.س':'—'}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">البريد</div><div>${b.user_email||b.email||'—'}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">النوع</div><div>${b.booking_type==='flight'?'✈️ رحلة':'🏨 فندق'}</div></div>
+          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">المبلغ</div><div style="font-weight:700;font-size:1.1rem;color:var(--primary)">${b.total_amount?Number(b.total_amount).toLocaleString('ar')+' '+b.currency:'—'}</div></div>
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">تاريخ الحجز</div><div>${b.created_at?new Date(b.created_at).toLocaleDateString('ar-SA'):'—'}</div></div>
+          ${b.provider_order_id?`<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">Duffel Order ID</div><div style="font-family:monospace;font-size:.8rem">${b.provider_order_id}</div></div>`:''}
           ${b.coupon_code?`<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">كود الخصم</div><div style="font-weight:600;color:var(--success)">${b.coupon_code}</div></div>`:''}
         </div>`;
     } catch {

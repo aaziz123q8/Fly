@@ -272,10 +272,26 @@ HTML;
         $status   = htmlspecialchars(ucfirst($booking['status']),     ENT_QUOTES, 'UTF-8');
 
         // Airline PNR / Duffel booking reference block
+        // Also show per-airline PNRs from booking_references[] (multi-carrier itineraries)
+        $extraRefsHtml = '';
+        $bookingRefs = !empty($booking['booking_references'])
+            ? (is_array($booking['booking_references'])
+                ? $booking['booking_references']
+                : json_decode($booking['booking_references'], true) ?? [])
+            : [];
+        foreach ($bookingRefs as $bref) {
+            $refVal = htmlspecialchars((string)($bref['value'] ?? ''), ENT_QUOTES, 'UTF-8');
+            $refAirline = htmlspecialchars((string)($bref['airline_iata_code'] ?? ''), ENT_QUOTES, 'UTF-8');
+            if ($refVal && $refVal !== $duffelRef) {
+                $label = $refAirline ? "{$refAirline} PNR" : 'Additional PNR';
+                $extraRefsHtml .= "<p style=\"color:#92400e;font-size:13px;margin:4px 0 0;\">{$label}: <strong style=\"letter-spacing:2px\">{$refVal}</strong></p>";
+            }
+        }
         $pnrBlock = $duffelRef
             ? "<tr><td style=\"background:#fff8e1;padding:14px 40px;text-align:center;\">
                  <p style=\"color:#92400e;font-size:12px;margin:0;\">Airline Booking Reference (PNR)</p>
                  <p style=\"color:#78350f;font-size:22px;font-weight:bold;margin:4px 0 0;letter-spacing:3px;\">{$duffelRef}</p>
+                 {$extraRefsHtml}
                </td></tr>"
             : '';
 

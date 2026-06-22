@@ -180,17 +180,41 @@ class AdminBookingsController
 
             // Passengers.
             $passengerStmt = $db->prepare(
-                'SELECT * FROM flight_booking_passengers WHERE flight_booking_id = ?'
+                'SELECT * FROM flight_booking_passengers WHERE booking_id = ? ORDER BY id'
             );
             $passengerStmt->execute([$id]);
             $booking['passengers'] = $passengerStmt->fetchAll(\PDO::FETCH_ASSOC);
 
             // Segments.
             $segmentStmt = $db->prepare(
-                'SELECT * FROM flight_booking_segments WHERE flight_booking_id = ? ORDER BY segment_order'
+                'SELECT * FROM flight_booking_segments WHERE booking_id = ? ORDER BY slice_index, segment_order'
             );
             $segmentStmt->execute([$id]);
             $booking['segments'] = $segmentStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            // Documents (electronic tickets / itineraries).
+            try {
+                $docStmt = $db->prepare(
+                    'SELECT * FROM flight_booking_documents WHERE booking_id = ? ORDER BY id'
+                );
+                $docStmt->execute([$id]);
+                $docs = $docStmt->fetchAll(\PDO::FETCH_ASSOC);
+                foreach ($docs as &$doc) {
+                    if (!empty($doc['passenger_ids']) && is_string($doc['passenger_ids'])) {
+                        $doc['passenger_ids'] = json_decode($doc['passenger_ids'], true);
+                    }
+                }
+                $booking['documents'] = $docs;
+            } catch (\Throwable) {
+                $booking['documents'] = [];
+            }
+
+            // Decode JSON columns.
+            foreach (['available_actions', 'refund_conditions', 'change_conditions', 'booking_references'] as $col) {
+                if (!empty($booking[$col]) && is_string($booking[$col])) {
+                    $booking[$col] = json_decode($booking[$col], true);
+                }
+            }
 
         } elseif ($type === 'hotel') {
             $stmt = $db->prepare(
