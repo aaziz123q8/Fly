@@ -356,16 +356,16 @@ function getAirline(o){
   var seg = getFirstSeg(o);
   var mc  = seg.marketing_carrier||seg.operating_carrier||{};
   var code = mc.iata_code || o.airline_code || '';
-  // Logo chain: Google Flights CDN (most reliable) → Duffel public CDN → airhex
-  var google  = code ? 'https://www.gstatic.com/flights/airline_logos/70px/'+code+'.png' : '';
-  var duffel  = code ? 'https://assets.duffel.com/img/airlines/for-light-background/'+code+'.svg' : '';
-  var airhex  = code ? 'https://content.airhex.com/content/logos/airlines_'+code+'_64_64_f.png' : '';
+  // Logo chain: Kiwi CDN → avs.io → Duffel CDN
+  var kiwi   = code ? 'https://images.kiwi.com/airlines/64/'+code+'.png' : '';
+  var avsio  = code ? 'https://pics.avs.io/200/200/'+code+'.png' : '';
+  var duffel = code ? 'https://assets.duffel.com/img/airlines/for-light-background/'+code+'.svg' : '';
   return {
     name:      mc.name || o.airline || 'غير محدد',
     code:      code,
-    logo:      google,
-    fallback1: duffel,
-    fallback2: airhex,
+    logo:      kiwi,
+    fallback1: avsio,
+    fallback2: duffel,
   };
 }
 
