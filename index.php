@@ -60,6 +60,7 @@ use App\Core\Response;
 use App\Core\Router;
 use App\Middleware\AdminMiddleware;
 use App\Middleware\AuthMiddleware;
+use App\Middleware\RateLimitMiddleware;
 
 // ---------------------------------------------------------------------------
 // Bootstrap core objects
@@ -148,10 +149,10 @@ $router->group('api/auth', function (Router $r): void {
 
 $router->group('api/flights', function (Router $r): void {
 
-    // Flight search — auth optional.
+    // Flight search — auth optional, rate-limited.
     $r->post('/search', function (Request $req): void {
         (new FlightController())->search($req);
-    });
+    }, [fn() => (new RateLimitMiddleware())->handle('POST /api/search')]);
 
     // Airport autocomplete (public).
     $r->get('/airports', function (Request $req): void {
@@ -228,7 +229,7 @@ $router->group('api/hotels', function (Router $r): void {
     // Hotel search — auth optional, rate-limited.
     $r->post('/search', function (Request $req): void {
         (new HotelController())->search($req);
-    });
+    }, [fn() => (new RateLimitMiddleware())->handle('POST /api/search')]);
 
     // Checkout: prebook (auth required).
     $r->post('/checkout/prebook', function (Request $req): void {

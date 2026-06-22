@@ -43,6 +43,45 @@
 }
 
 /* ====================================
+   Dark Mode
+   ==================================== */
+[data-theme="dark"] {
+  --primary: #4d8dd4;
+  --primary-dark: #3a7bc2;
+  --bg: #0f172a;
+  --bg-alt: #1e293b;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-light: #64748b;
+  --white: #1e293b;
+  --border: #334155;
+  --shadow: 0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+}
+[data-theme="dark"] .navbar,
+[data-theme="dark"] .bottom-nav { background:#1e293b; border-color:#334155; }
+[data-theme="dark"] .hotel-card,
+[data-theme="dark"] .pay-card,
+[data-theme="dark"] .booking-card { background:#1e293b; }
+[data-theme="dark"] .form-control { background:#0f172a; color:#f1f5f9; border-color:#334155; }
+[data-theme="dark"] .form-control::placeholder { color:#64748b; }
+[data-theme="dark"] .btn-outline { color:#4d8dd4; border-color:#4d8dd4; }
+
+/* Dark toggle button */
+.dark-toggle {
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: var(--transition);
+  line-height: 1;
+}
+.dark-toggle:hover { border-color: var(--primary); color: var(--primary); }
+
+/* ====================================
    Reset & Base
    ==================================== */
 *, *::before, *::after {

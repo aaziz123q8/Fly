@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>الفنادق — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
+  <script src="js/dark-mode.js"></script>
   <style>
     .hotel-hero { background:linear-gradient(135deg,#0f2444,#1a5276); padding:60px 0 100px; text-align:center; color:#fff; }
     .hotel-hero h1 { font-size:clamp(1.8rem,4vw,2.8rem); font-weight:800; margin:0 0 12px; }
@@ -146,12 +147,47 @@
 
 <section id="hotelsSection" class="hotels-section hidden">
   <div class="container">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-      <div>
-        <h2 style="font-size:1.2rem;font-weight:700;margin:0 0 4px">نتائج البحث</h2>
-        <p style="color:var(--text-muted);margin:0;font-size:0.9rem" id="hotelsCount"></p>
+    <!-- Sort & Filter Bar -->
+    <div style="background:#fff;border-radius:14px;box-shadow:var(--shadow);padding:16px 20px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center">
+      <div style="font-weight:700;font-size:0.95rem;margin-left:auto">
+        <span id="hotelsCount" style="color:var(--text-muted);font-weight:400"></span>
+      </div>
+      <!-- Sort -->
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:0.82rem;color:var(--text-muted)">ترتيب:</span>
+        <select id="hotelSort" onchange="applyFilters()" style="padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.85rem;font-family:inherit;background:#fff;cursor:pointer">
+          <option value="price_asc">السعر: الأقل أولاً</option>
+          <option value="price_desc">السعر: الأعلى أولاً</option>
+          <option value="rating_desc">التقييم: الأعلى أولاً</option>
+          <option value="stars_desc">النجوم: الأعلى أولاً</option>
+        </select>
+      </div>
+      <!-- Stars Filter -->
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+        <span style="font-size:0.82rem;color:var(--text-muted)">النجوم:</span>
+        <div id="starsFilter" style="display:flex;gap:4px">
+          <button onclick="toggleStar(0)" id="star0" class="star-btn star-active" title="الكل">الكل</button>
+          <button onclick="toggleStar(3)" id="star3" class="star-btn">3★</button>
+          <button onclick="toggleStar(4)" id="star4" class="star-btn">4★</button>
+          <button onclick="toggleStar(5)" id="star5" class="star-btn">5★</button>
+        </div>
+      </div>
+      <!-- Max Price -->
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="font-size:0.82rem;color:var(--text-muted)">حتى:</span>
+        <select id="priceFilter" onchange="applyFilters()" style="padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:0.85rem;font-family:inherit;background:#fff;cursor:pointer">
+          <option value="0">أي سعر</option>
+          <option value="100">£ 100</option>
+          <option value="200">£ 200</option>
+          <option value="300">£ 300</option>
+          <option value="500">£ 500</option>
+        </select>
       </div>
     </div>
+    <style>
+      .star-btn{padding:5px 10px;border:1.5px solid #e5e7eb;border-radius:8px;background:#fff;font-size:0.82rem;cursor:pointer;font-family:inherit;transition:.15s}
+      .star-btn:hover,.star-btn.star-active{background:var(--primary);color:#fff;border-color:var(--primary)}
+    </style>
     <div class="hotels-grid" id="hotelsGrid"></div>
   </div>
 </section>
@@ -245,6 +281,45 @@
     document.getElementById('hGuests').value = lbl;
   }
 
+  let allHotels = [];
+  let selectedStars = 0;
+
+  function toggleStar(stars) {
+    selectedStars = stars;
+    document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('star-active'));
+    document.getElementById('star' + stars).classList.add('star-active');
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const sort    = document.getElementById('hotelSort').value;
+    const maxPrice = parseFloat(document.getElementById('priceFilter').value) || 0;
+
+    let filtered = allHotels.filter(h => {
+      const price = parseFloat(h.min_price||h.price||h.total_amount||0);
+      const stars = parseInt(h.stars||0);
+      if (selectedStars > 0 && stars !== selectedStars) return false;
+      if (maxPrice > 0 && price > maxPrice) return false;
+      return true;
+    });
+
+    filtered.sort((a, b) => {
+      const pa = parseFloat(a.min_price||a.price||a.total_amount||0);
+      const pb = parseFloat(b.min_price||b.price||b.total_amount||0);
+      const ra = parseFloat(a.rating||a.review_score||0);
+      const rb = parseFloat(b.rating||b.review_score||0);
+      const sa = parseInt(a.stars||0), sb = parseInt(b.stars||0);
+      if (sort==='price_asc')   return pa - pb;
+      if (sort==='price_desc')  return pb - pa;
+      if (sort==='rating_desc') return rb - ra;
+      if (sort==='stars_desc')  return sb - sa;
+      return 0;
+    });
+
+    document.getElementById('hotelsCount').textContent = filtered.length + ' فندق متاح';
+    renderHotels(filtered);
+  }
+
   async function doSearch() {
     const dest = document.getElementById('hDest').value.trim();
     if(!dest) { showToast('يرجى إدخال الوجهة', 'error'); return; }
@@ -263,10 +338,9 @@
         children: guestState.children,
       };
       const res = await Api.post('/api/hotels/search', params);
-      const hotels = res.data || res.hotels || (Array.isArray(res)?res:[]);
+      allHotels = res.data || res.hotels || (Array.isArray(res)?res:[]);
       document.getElementById('hotelsSection').classList.remove('hidden');
-      document.getElementById('hotelsCount').textContent = hotels.length + ' فندق متاح';
-      renderHotels(hotels);
+      applyFilters();
     } catch(err) {
       document.getElementById('hotelsSection').classList.remove('hidden');
       document.getElementById('hotelsGrid').innerHTML = `<div class="alert alert-error" style="grid-column:1/-1">${err.message||'حدث خطأ في البحث'}</div>`;

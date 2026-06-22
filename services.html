@@ -131,6 +131,12 @@
         <div id="baggageContent"><div class="loading-msg">جاري تحميل الخدمات المتاحة…</div></div>
       </div>
 
+      <!-- Meal Services Section -->
+      <div class="card" id="mealCard" style="display:none">
+        <div class="card-title">🍽️ وجبات الطعام</div>
+        <div id="mealContent"></div>
+      </div>
+
       <!-- Seat Selection Section -->
       <div class="card" id="seatCard" style="display:none">
         <div class="card-title">💺 اختيار المقعد</div>
@@ -152,6 +158,7 @@
         <div class="card-title">ملخص الحجز</div>
         <div class="summary-row"><span>سعر التذكرة</span><span id="sumBase">—</span></div>
         <div class="summary-row" id="sumBagRow" style="display:none"><span>أمتعة إضافية</span><span id="sumBag">—</span></div>
+        <div class="summary-row" id="sumMealRow" style="display:none"><span>وجبات الطعام</span><span id="sumMeal">—</span></div>
         <div class="summary-row" id="sumSeatRow" style="display:none"><span>اختيار المقعد</span><span id="sumSeat">—</span></div>
         <div class="summary-row" id="sumDiscRow" style="display:none"><span>خصم</span><span id="sumDisc" style="color:#16a34a">—</span></div>
         <div class="summary-row"><span>الإجمالي</span><span id="sumTotal">—</span></div>
@@ -180,8 +187,9 @@ if (!sessionKey) window.location.href = 'index.html';
 
 // State
 let basePriceGBP   = 0;
-let selectedBagSvcs = {}; // { service_id: { svc, qty } }
-let selectedSeats   = {}; // { `${paxIdx}_${segIdx}`: { svc } }
+let selectedBagSvcs  = {}; // { service_id: { svc, qty } }
+let selectedMealSvcs = {}; // { service_id: { svc, qty } }
+let selectedSeats    = {}; // { `${paxIdx}_${segIdx}`: { svc } }
 let seatMaps        = [];
 let availableServices = [];
 let currentPaxIdx   = 0;
@@ -202,22 +210,29 @@ function showErr(msg) {
 
 function updateSummary() {
   let bagTotal  = 0;
+  let mealTotal = 0;
   let seatTotal = 0;
   Object.values(selectedBagSvcs).forEach(({svc, qty}) => {
     bagTotal += parseFloat(svc.total_amount || svc.unit_amount || 0) * qty;
+  });
+  Object.values(selectedMealSvcs).forEach(({svc, qty}) => {
+    mealTotal += parseFloat(svc.total_amount || svc.unit_amount || 0) * qty;
   });
   Object.values(selectedSeats).forEach(({svc}) => {
     seatTotal += parseFloat(svc.total_amount || svc.unit_amount || 0);
   });
 
-  const total = basePriceGBP + bagTotal + seatTotal;
+  const total = basePriceGBP + bagTotal + mealTotal + seatTotal;
   document.getElementById('sumBase').textContent  = fmt(basePriceGBP);
   document.getElementById('sumTotal').textContent = fmt(total);
 
   const bagRow  = document.getElementById('sumBagRow');
+  const mealRow = document.getElementById('sumMealRow');
   const seatRow = document.getElementById('sumSeatRow');
-  if (bagTotal > 0) { bagRow.style.display='flex'; document.getElementById('sumBag').textContent=fmt(bagTotal); }
+  if (bagTotal > 0)  { bagRow.style.display='flex';  document.getElementById('sumBag').textContent=fmt(bagTotal); }
   else bagRow.style.display='none';
+  if (mealTotal > 0) { mealRow.style.display='flex'; document.getElementById('sumMeal').textContent=fmt(mealTotal); }
+  else mealRow.style.display='none';
   if (seatTotal > 0) { seatRow.style.display='flex'; document.getElementById('sumSeat').textContent=fmt(seatTotal); }
   else seatRow.style.display='none';
 }
@@ -250,6 +265,7 @@ async function loadAll() {
 
       availableServices = offer.available_services || [];
       renderBaggage(availableServices, offer.passengers || []);
+      renderMeals(availableServices, offer.passengers || []);
     } else {
       document.getElementById('baggageContent').innerHTML = '<div class="empty-msg">تعذر تحميل الخدمات المتاحة.</div>';
     }
@@ -362,6 +378,84 @@ function changeBagQty(svcId, delta) {
     selectedBagSvcs[svcId] = { svc, qty: current };
     document.getElementById('svc_' + svcId).classList.add('selected');
     document.getElementById('qty_' + svcId).textContent = String(current);
+  }
+  updateSummary();
+}
+
+// ── Meals ─────────────────────────────────────────────────────────────────────
+
+function renderMeals(services, passengers) {
+  const mealServices = services.filter(s => s.type === 'meal');
+  const card = document.getElementById('mealCard');
+  const el   = document.getElementById('mealContent');
+  if (!mealServices.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  const byPax = {};
+  mealServices.forEach(svc => {
+    const paxId = svc.passenger_id || 'all';
+    if (!byPax[paxId]) byPax[paxId] = [];
+    byPax[paxId].push(svc);
+  });
+
+  let html = '';
+  Object.entries(byPax).forEach(([paxId, svcs]) => {
+    const paxObj   = passengers.find(p => p.id === paxId);
+    const paxLabel = paxObj ? (paxObj.type === 'adult' ? 'بالغ' : 'طفل') : '';
+    if (paxLabel) html += `<div style="font-weight:700;font-size:.85rem;color:#6b7280;margin:12px 0 8px"><span class="badge-pax">${paxLabel}</span></div>`;
+    html += '<div class="service-grid">';
+    svcs.forEach(svc => {
+      const meta     = svc.metadata || {};
+      const name     = meta.name || svc.name || 'وجبة';
+      const desc     = meta.description || meta.meal_type || '';
+      const price    = parseFloat(svc.total_amount || 0);
+      const priceStr = price > 0 ? price.toFixed(2) + ' ' + (svc.total_currency || 'GBP') : 'مجاني';
+      html += `
+        <div class="service-card" id="meal_${svc.id}" onclick="toggleMeal('${svc.id}')">
+          <div class="svc-check">✓</div>
+          <div class="svc-icon">🍽️</div>
+          <div class="svc-name">${name}</div>
+          <div class="svc-desc">${desc || 'وجبة طعام'}</div>
+          <div class="svc-price">${priceStr}</div>
+          <div class="svc-per">لكل شخص</div>
+          <div class="svc-qty" onclick="event.stopPropagation()">
+            <button onclick="changeMealQty('${svc.id}',-1)">−</button>
+            <span id="mealqty_${svc.id}">0</span>
+            <button onclick="changeMealQty('${svc.id}',1)">+</button>
+          </div>
+        </div>`;
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+}
+
+function toggleMeal(svcId) {
+  const svc = availableServices.find(s => s.id === svcId);
+  if (!svc) return;
+  if (selectedMealSvcs[svcId]) {
+    delete selectedMealSvcs[svcId];
+    document.getElementById('mealqty_' + svcId).textContent = '0';
+  } else {
+    selectedMealSvcs[svcId] = { svc, qty: 1 };
+    document.getElementById('mealqty_' + svcId).textContent = '1';
+  }
+  document.getElementById('meal_' + svcId).classList.toggle('selected', !!selectedMealSvcs[svcId]);
+  updateSummary();
+}
+
+function changeMealQty(svcId, delta) {
+  const svc = availableServices.find(s => s.id === svcId);
+  if (!svc) return;
+  const current = (selectedMealSvcs[svcId]?.qty || 0) + delta;
+  if (current <= 0) {
+    delete selectedMealSvcs[svcId];
+    document.getElementById('meal_' + svcId).classList.remove('selected');
+    document.getElementById('mealqty_' + svcId).textContent = '0';
+  } else {
+    selectedMealSvcs[svcId] = { svc, qty: current };
+    document.getElementById('meal_' + svcId).classList.add('selected');
+    document.getElementById('mealqty_' + svcId).textContent = String(current);
   }
   updateSummary();
 }
@@ -481,6 +575,9 @@ function selectSeat(designator, isAvailable, svcJson) {
 function buildServicesPayload() {
   const services = [];
   Object.entries(selectedBagSvcs).forEach(([id, {svc, qty}]) => {
+    services.push({ id, quantity: qty });
+  });
+  Object.entries(selectedMealSvcs).forEach(([id, {svc, qty}]) => {
     services.push({ id, quantity: qty });
   });
   Object.values(selectedSeats).forEach(({svc}) => {
