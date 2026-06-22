@@ -316,21 +316,25 @@ function getDestCode(o){
   return (sl.destination&&(sl.destination.iata_code||sl.destination))||getLastSeg(o).arriving_airport?.iata_code||'—';
 }
 var AIRPORT_AR = {
-  KWI:'مطار الكويت الدولي',AUH:'مطار أبوظبي الدولي',DXB:'مطار دبي الدولي',DOH:'مطار حمد الدولي',
-  RUH:'مطار الملك خالد',JED:'مطار الملك عبدالعزيز',DMM:'مطار الملك فهد',BAH:'مطار البحرين الدولي',
-  MCT:'مطار مسقط الدولي',AMM:'مطار الملكة علياء',BEY:'مطار رفيق الحريري',CAI:'مطار القاهرة',
-  LHR:'مطار لندن هيثرو',LGW:'مطار لندن غاتويك',CDG:'مطار شارل ديغول',FRA:'مطار فرانكفورت',
-  IST:'مطار إسطنبول',MUC:'مطار ميونيخ',FCO:'مطار روما فيوميتشينو',MAD:'مطار مدريد',
-  BKK:'مطار سوفارنابهومي بانكوك',SIN:'مطار شنغهاي',KUL:'مطار كوالالمبور',
-  DEL:'مطار إنديرا غاندي',BOM:'مطار مومباي',HYD:'مطار حيدر آباد',CMB:'مطار كولومبو',
-  NBO:'مطار نيروبي',ADD:'مطار أديس أبابا',JFK:'مطار جون كينيدي',LAX:'مطار لوس أنجلوس',
-  ORD:'مطار أوهير شيكاغو',SYD:'مطار سيدني',TXL:'مطار برلين',VIE:'مطار فيينا',
-  ZRH:'مطار زيورخ',AMS:'مطار أمستردام',MAN:'مطار مانشستر',DUB:'مطار دبلن',
-  GVA:'مطار جنيف',BCN:'مطار برشلونة',ATH:'مطار أثينا',HKG:'مطار هونغ كونغ',
-  NRT:'مطار نيريتا طوكيو',ICN:'مطار إنشيون سيول',PEK:'مطار بيجين',PVG:'مطار شنغهاي بودونغ',
-  CGK:'مطار سوكارنو هاتا جاكرتا',MNL:'مطار مانيلا',TBS:'مطار تفليس',GYD:'مطار باكو',
-  EVN:'مطار يريفان',TAS:'مطار طشقند',NJF:'مطار النجف الدولي',BGW:'مطار بغداد',
-  KHI:'مطار كراتشي',LHE:'مطار لاهور',ISB:'مطار إسلام آباد',
+  KWI:'الكويت',AUH:'أبوظبي',DXB:'دبي',DOH:'الدوحة',
+  RUH:'الرياض',JED:'جدة',DMM:'الدمام',BAH:'البحرين',
+  MCT:'مسقط',AMM:'عمّان',BEY:'بيروت',CAI:'القاهرة',
+  LHR:'لندن هيثرو',LGW:'لندن غاتويك',CDG:'باريس',FRA:'فرانكفورت',
+  IST:'إسطنبول',MUC:'ميونيخ',FCO:'روما',MAD:'مدريد',
+  BKK:'بانكوك',SIN:'سنغافورة',KUL:'كوالالمبور',
+  DEL:'دلهي',BOM:'مومباي',HYD:'حيدر آباد',CMB:'كولومبو',
+  NBO:'نيروبي',ADD:'أديس أبابا',JFK:'نيويورك',LAX:'لوس أنجلوس',
+  ORD:'شيكاغو',SYD:'سيدني',VIE:'فيينا',ZRH:'زيورخ',
+  AMS:'أمستردام',MAN:'مانشستر',DUB:'دبلن',GVA:'جنيف',
+  BCN:'برشلونة',ATH:'أثينا',HKG:'هونغ كونغ',NRT:'طوكيو',
+  ICN:'سيول',PEK:'بيجين',PVG:'شنغهاي',CGK:'جاكرتا',
+  MNL:'مانيلا',TBS:'تبليسي',GYD:'باكو',EVN:'يريفان',
+  TAS:'طشقند',NJF:'النجف',BGW:'بغداد',KHI:'كراتشي',
+  LHE:'لاهور',ISB:'إسلام آباد',TLV:'تل أبيب',SKG:'سالونيك',
+  MXP:'ميلانو',LIN:'ميلانو لينات',BRU:'بروكسل',CPH:'كوبنهاغن',
+  ARN:'ستوكهولم',OSL:'أوسلو',HEL:'هلسنكي',WAW:'وارسو',
+  PRG:'براغ',BUD:'بودابست',SOF:'صوفيا',OTP:'بوخارست',
+  KBP:'كييف',SVO:'موسكو',LED:'سانت بطرسبرغ',
 };
 
 function arAirportName(code) {
@@ -352,15 +356,15 @@ function getAirline(o){
   var seg = getFirstSeg(o);
   var mc  = seg.marketing_carrier||seg.operating_carrier||{};
   var code = mc.iata_code || o.airline_code || '';
-  // Logo chain: Duffel public CDN → API logo_symbol_url → airhex
-  var duffelCdn = code ? 'https://assets.duffel.com/img/airlines/for-light-background/'+code+'.svg' : '';
-  var apiLogo   = mc.logo_symbol_url || mc.logo_lockup_url || '';
-  var airhex    = code ? 'https://content.airhex.com/content/logos/airlines_'+code+'_64_64_f.png' : '';
+  // Logo chain: Google Flights CDN (most reliable) → Duffel public CDN → airhex
+  var google  = code ? 'https://www.gstatic.com/flights/airline_logos/70px/'+code+'.png' : '';
+  var duffel  = code ? 'https://assets.duffel.com/img/airlines/for-light-background/'+code+'.svg' : '';
+  var airhex  = code ? 'https://content.airhex.com/content/logos/airlines_'+code+'_64_64_f.png' : '';
   return {
-    name:     mc.name || o.airline || 'غير محدد',
-    code:     code,
-    logo:     duffelCdn || apiLogo,
-    fallback1: apiLogo && apiLogo !== duffelCdn ? apiLogo : airhex,
+    name:      mc.name || o.airline || 'غير محدد',
+    code:      code,
+    logo:      google,
+    fallback1: duffel,
     fallback2: airhex,
   };
 }

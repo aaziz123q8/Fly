@@ -445,10 +445,21 @@
       // Build display from ALL slices (outbound + return)
       const slices = flightData.slices || [];
 
+      const CITY_AR = {
+        KWI:'الكويت',AUH:'أبوظبي',DXB:'دبي',DOH:'الدوحة',RUH:'الرياض',JED:'جدة',
+        DMM:'الدمام',BAH:'البحرين',MCT:'مسقط',AMM:'عمّان',BEY:'بيروت',CAI:'القاهرة',
+        LHR:'لندن',LGW:'لندن',CDG:'باريس',FRA:'فرانكفورت',IST:'إسطنبول',MUC:'ميونيخ',
+        FCO:'روما',MAD:'مدريد',BKK:'بانكوك',SIN:'سنغافورة',KUL:'كوالالمبور',
+        DEL:'دلهي',BOM:'مومباي',CMB:'كولومبو',NBO:'نيروبي',JFK:'نيويورك',
+        LAX:'لوس أنجلوس',SYD:'سيدني',HKG:'هونغ كونغ',NRT:'طوكيو',ICN:'سيول',
+        PEK:'بيجين',PVG:'شنغهاي',CGK:'جاكرتا',MNL:'مانيلا',BGW:'بغداد',NJF:'النجف',
+      };
       function airportLabel(ap) {
         if (!ap) return '---';
-        const code = ap.iata_code || ap;
-        const name = ap.name || ap.city_name || '';
+        const code = typeof ap === 'string' ? ap : (ap.iata_code || '');
+        const ar = CITY_AR[code];
+        if (ar) return code + ' — ' + ar;
+        const name = (typeof ap === 'object') ? (ap.name || ap.city_name || '') : '';
         return name ? `${code} — ${name}` : code;
       }
       function fmtDt(dt) {
@@ -460,7 +471,11 @@
 
       function fmtTime(dt) {
         if (!dt) return '--:--';
-        try { return new Date(dt).toLocaleTimeString('ar-KW',{hour:'2-digit',minute:'2-digit',hour12:false}); } catch(e) { return dt.substring(11,16); }
+        var t = dt.substring(11,16);
+        if (!t || t.length < 5) return '--:--';
+        var h = parseInt(t.substring(0,2));
+        var m = t.substring(3,5);
+        return (h%12||12) + ':' + m + ' ' + (h<12?'ص':'م');
       }
       function fmtDate(dt) {
         if (!dt) return '';
@@ -480,24 +495,23 @@
         const segs  = sl.segments || [];
         const first = segs[0] || {};
         const last  = segs[segs.length-1] || {};
-        const orig  = (first.departing_airport?.iata_code || first.departing_airport || sl.origin?.iata_code || sl.origin || '---');
-        const dest  = (last.arriving_airport?.iata_code  || last.arriving_airport  || sl.destination?.iata_code || sl.destination || '---');
-        const origCity = first.departing_airport?.city_name || first.departing_airport?.name || '';
-        const destCity = last.arriving_airport?.city_name  || last.arriving_airport?.name  || '';
+        const orig  = (first.departing_airport?.iata_code || (typeof sl.origin==='string'?sl.origin:sl.origin?.iata_code) || '---');
+        const dest  = (last.arriving_airport?.iata_code  || (typeof sl.destination==='string'?sl.destination:sl.destination?.iata_code) || '---');
+        const origCity = CITY_AR[orig] || first.departing_airport?.city_name || first.departing_airport?.name || '';
+        const destCity = CITY_AR[dest] || last.arriving_airport?.city_name  || last.arriving_airport?.name  || '';
         const depDt = first.departing_at;
         const arrDt = last.arriving_at;
         const mc    = first.marketing_carrier || first.operating_carrier || {};
         const alName = mc.name || '';
         const alCode = mc.iata_code || '';
-        const alLogo = mc.logo_symbol_url || mc.logo_lockup_url || '';
-        const airhex = alCode ? `https://content.airhex.com/content/logos/airlines_${alCode}_64_64_f.png` : '';
+        const googleLogo = alCode ? `https://www.gstatic.com/flights/airline_logos/70px/${alCode}.png` : '';
+        const duffelLogo = alCode ? `https://assets.duffel.com/img/airlines/for-light-background/${alCode}.svg` : '';
         const stops = Math.max(0, segs.length - 1);
         const label = idx === 0 ? '✈ ذهاب' : '↩ عودة';
         const labelColor = idx === 0 ? '#1B4F8E' : '#7c3aed';
         const mins  = durMins(depDt, arrDt);
-        const logoSrc = alLogo || airhex;
-        const logoEl = logoSrc
-          ? `<img src="${logoSrc}" alt="${alName}" style="width:32px;height:32px;object-fit:contain;border-radius:6px" onerror="this.onerror=null;this.style.display='none'">`
+        const logoEl = googleLogo
+          ? `<img src="${googleLogo}" alt="${alName}" style="width:32px;height:32px;object-fit:contain;border-radius:6px" onerror="this.src='${duffelLogo}';this.onerror=function(){this.onerror=null;this.style.display='none'}">`
           : '';
         sliceHtml += `
           <div style="border:1.5px solid #e5e7eb;border-radius:14px;padding:14px 16px;margin-bottom:10px;background:var(--bg-alt,#f8fafc)">
