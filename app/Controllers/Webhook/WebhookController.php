@@ -341,15 +341,58 @@ class WebhookController
         $paymentStatus = $data['payment_status'] ?? [];
         if (!$orderId) return 'missing_order_id';
 
-        $awaitingPayment = (bool)($paymentStatus['awaiting_payment'] ?? false);
+        $awaitingPayment         = (bool)($paymentStatus['awaiting_payment'] ?? false);
+        $paidAt                  = !empty($paymentStatus['paid_at'])
+            ? date('Y-m-d H:i:s', strtotime($paymentStatus['paid_at'])) : null;
+        $paymentRequiredBy       = !empty($paymentStatus['payment_required_by'])
+            ? date('Y-m-d H:i:s', strtotime($paymentStatus['payment_required_by'])) : null;
+        $priceGuaranteeExpiresAt = !empty($paymentStatus['price_guarantee_expires_at'])
+            ? date('Y-m-d H:i:s', strtotime($paymentStatus['price_guarantee_expires_at'])) : null;
+        $failureReason           = !empty($paymentStatus['failure_reason'])
+            ? substr((string)$paymentStatus['failure_reason'], 0, 500) : null;
+
+        // Build status: only change to awaiting_payment if the flag is set.
+        // Do not override terminal statuses (cancelled, failed).
+        $statusClause = $awaitingPayment
+            ? ", status = CASE WHEN status NOT IN ('cancelled','failed') THEN 'awaiting_payment' ELSE status END"
+            : '';
+
+        $this->db->prepare(
+            "UPDATE flight_bookings
+             SET awaiting_payment            = :awaiting,
+                 paid_at                     = COALESCE(:paid_at, paid_at),
+                 payment_required_by         = COALESCE(:prb, payment_required_by),
+                 price_guarantee_expires_at  = COALESCE(:pge, price_guarantee_expires_at),
+                 duffel_payment_failure      = :failure,
+                 updated_at                  = NOW()
+                 {$statusClause}
+             WHERE provider_order_id = :oid"
+        )->execute([
+            ':awaiting' => (int)$awaitingPayment,
+            ':paid_at'  => $paidAt,
+            ':prb'      => $paymentRequiredBy,
+            ':pge'      => $priceGuaranteeExpiresAt,
+            ':failure'  => $failureReason,
+            ':oid'      => $orderId,
+        ]);
+
+        // Structured log for operations visibility
+        error_log(sprintf(
+            '[Duffel|payment_status_updated] order=%s awaiting=%s paid_at=%s prb=%s failure=%s',
+            $orderId,
+            $awaitingPayment ? 'true' : 'false',
+            $paidAt           ?? 'null',
+            $paymentRequiredBy ?? 'null',
+            $failureReason     ?? 'none'
+        ));
+
+        // Queue an operations notification if the booking is now awaiting payment
         if ($awaitingPayment) {
-            $this->db->prepare(
-                'UPDATE flight_bookings SET status = :status, updated_at = NOW()
-                 WHERE provider_order_id = :oid'
-            )->execute([':status' => 'awaiting_payment', ':oid' => $orderId]);
+            $this->queueNotificationJob($orderId, 'flight_awaiting_payment');
         }
 
-        return 'payment_status_updated';
+        return 'payment_status_updated:awaiting=' . ($awaitingPayment ? '1' : '0')
+            . ':failure=' . ($failureReason ? 'yes' : 'no');
     }
 
     private function queueNotificationJob(string $providerOrderId, string $jobType): void

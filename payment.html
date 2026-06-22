@@ -33,6 +33,13 @@
     .price-total { display:flex; justify-content:space-between; padding:16px 0 0; font-size:1.15rem; font-weight:800; color:var(--primary); border-top:2px solid var(--primary); margin-top:8px; }
     .price-currency-note { font-size:0.75rem; color:var(--text-muted); margin-top:6px; text-align:center; }
     #payError { color:var(--error,#ef4444); font-size:0.88rem; margin-top:12px; display:none; }
+    #deadlineBanner { display:none; background:#fff7ed; border:2px solid #f59e0b; border-radius:12px; padding:14px 18px; margin-bottom:18px; }
+    #deadlineBanner.expired { background:#fef2f2; border-color:#ef4444; }
+    #deadlineBanner .dl-row { display:flex; align-items:center; gap:10px; }
+    #deadlineBanner .dl-label { font-size:0.85rem; color:#92400e; font-weight:600; }
+    #deadlineBanner.expired .dl-label { color:#991b1b; }
+    #deadlineCountdown { font-size:1.05rem; font-weight:800; color:#b45309; font-variant-numeric:tabular-nums; }
+    #deadlineBanner.expired #deadlineCountdown { color:#dc2626; }
     .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
     @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
     .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
@@ -90,6 +97,19 @@
           <div class="payment-method-tabs">
             <button class="pm-tab active" id="tabCard" onclick="switchTab('card')">💳 بطاقة ائتمان / خصم</button>
             <button class="pm-tab" id="tabLink" onclick="switchTab('link')" style="display:none">🔗 Stripe Link</button>
+          </div>
+
+          <!-- Payment deadline banner — shown when offer has a payment_required_by or expires_at -->
+          <div id="deadlineBanner">
+            <div class="dl-row">
+              <span style="font-size:1.4rem">⏰</span>
+              <div>
+                <div class="dl-label">يجب إتمام الدفع قبل: <span id="deadlineCountdown">—</span></div>
+                <div id="deadlineExpiredMsg" style="display:none;font-size:0.82rem;color:#dc2626;margin-top:4px">
+                  انتهت مهلة الدفع لهذا الحجز. يرجى البحث من جديد.
+                </div>
+              </div>
+            </div>
           </div>
 
           <div id="cardSection">
@@ -294,6 +314,47 @@
       btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
     }
   }
+
+  // ── Payment deadline countdown ────────────────────────────────────────────────
+  // `deadline` URL param is populated by services.html from payment_requirements.
+  // Also honours `offer_expires` for offer-level expiry.
+  // The backend enforces the deadline independently — this is a UX aid only.
+  (function startDeadlineCountdown() {
+    const deadlineParam = params.get('deadline') || params.get('offer_expires') || '';
+    if (!deadlineParam) return;
+
+    const deadlineTs   = new Date(deadlineParam).getTime();
+    if (isNaN(deadlineTs)) return;
+
+    const banner      = document.getElementById('deadlineBanner');
+    const countdown   = document.getElementById('deadlineCountdown');
+    const expiredMsg  = document.getElementById('deadlineExpiredMsg');
+    const payBtn      = document.getElementById('payBtn');
+
+    banner.style.display = 'block';
+
+    function tick() {
+      const remaining = deadlineTs - Date.now();
+      if (remaining <= 0) {
+        countdown.textContent = 'منتهية';
+        banner.classList.add('expired');
+        expiredMsg.style.display = 'block';
+        payBtn.disabled = true;
+        payBtn.title = 'انتهت مهلة الدفع';
+        clearInterval(timer);
+        return;
+      }
+      const totalSecs = Math.floor(remaining / 1000);
+      const hrs  = Math.floor(totalSecs / 3600);
+      const mins = Math.floor((totalSecs % 3600) / 60);
+      const secs = totalSecs % 60;
+      countdown.textContent = hrs > 0
+        ? `${hrs}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`
+        : `${mins}:${String(secs).padStart(2,'0')}`;
+    }
+    tick();
+    const timer = setInterval(tick, 1000);
+  })();
 
   // Guard against currency.js load failure
   if (typeof initCurrency === 'undefined') window.initCurrency = function(){};

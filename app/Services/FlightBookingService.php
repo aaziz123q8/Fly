@@ -10,6 +10,8 @@ use App\Helpers\Database;
 use PDO;
 use RuntimeException;
 
+// DuffelErrorMapper loaded via autoloader (PSR-4: App\Services)
+
 class FlightBookingService
 {
     private PDO $db;
@@ -174,6 +176,10 @@ class FlightBookingService
         if (!in_array($session['current_step'], ['payment', 'services'], true)) {
             throw new RuntimeException('Session is not at the payment step.', 422);
         }
+
+        // ── Payment deadline enforcement (backend guard — frontend countdown is supplementary) ──
+        // Block payment if the offer has expired or if the payment/price window has closed.
+        $this->enforcePaymentDeadlines($session);
 
         // Get pricing snapshot (may already exist from review step).
         $pricingSnapshot = is_string($session['pricing_snapshot'])
@@ -363,14 +369,32 @@ class FlightBookingService
             'platform'          => 'flymasar',
         ];
 
-        // Create Duffel order.
-        $orderResponse = $this->duffel->createOrder(
-            $offerId,
-            $duffelPassengers,
-            $duffelPayments,
-            $servicesData ?: [],
-            $metadata
-        );
+        // Create Duffel order. On failure: auto-refund Stripe before re-throwing.
+        try {
+            $orderResponse = $this->duffel->createOrder(
+                $offerId,
+                $duffelPassengers,
+                $duffelPayments,
+                $servicesData ?: [],
+                $metadata
+            );
+        } catch (\Throwable $duffelEx) {
+            // Map to a structured, Arabic-ready exception
+            $mapped   = DuffelErrorMapper::fromDuffelException($duffelEx);
+            $parts    = DuffelErrorMapper::split($mapped->getMessage());
+
+            // Log the internal detail for operations visibility
+            error_log('[DUFFEL_ORDER_FAIL] ref=' . $bookingReference . ' | ' . $parts['internal']);
+
+            // Auto-refund the Stripe charge — deterministic idempotency key prevents duplicates
+            $this->autoRefundStripeOnDuffelFailure(
+                $paymentIntentId,
+                'auto_refund_' . md5($paymentIntentId),
+                $parts['internal']
+            );
+
+            throw new RuntimeException($parts['customer'], $mapped->getCode() ?: 502);
+        }
 
         $order           = $orderResponse['data'] ?? [];
         $providerOrderId = $order['id'] ?? '';
@@ -392,6 +416,9 @@ class FlightBookingService
             ? date('Y-m-d H:i:s', strtotime($payStatus['payment_required_by'])) : null;
         $priceGuaranteeExpiresAt = !empty($payStatus['price_guarantee_expires_at'])
             ? date('Y-m-d H:i:s', strtotime($payStatus['price_guarantee_expires_at'])) : null;
+        $awaitingPayment         = (int)(bool)($payStatus['awaiting_payment'] ?? false);
+        $duffelPaymentFailure    = !empty($payStatus['failure_reason'])
+            ? substr((string)$payStatus['failure_reason'], 0, 500) : null;
 
         // Void window (free-cancellation deadline)
         $voidWindowEndsAt = !empty($order['void_window_ends_at'])
@@ -450,6 +477,7 @@ class FlightBookingService
                 paid_at, payment_required_by, price_guarantee_expires_at,
                 void_window_ends_at, available_actions,
                 live_mode, refund_conditions, change_conditions,
+                awaiting_payment, duffel_payment_failure,
                 synced_at)
              VALUES
                (:user_id, 1, :ref, :provider_order_id,
@@ -460,6 +488,7 @@ class FlightBookingService
                 :paid_at, :payment_required_by, :price_guarantee_expires_at,
                 :void_window_ends_at, :available_actions,
                 :live_mode, :refund_conditions, :change_conditions,
+                :awaiting_payment, :duffel_payment_failure,
                 NOW())'
         );
         $bStmt->execute([
@@ -485,6 +514,8 @@ class FlightBookingService
             ':live_mode'                  => $liveMode,
             ':refund_conditions'          => $refundConditions,
             ':change_conditions'          => $changeConditions,
+            ':awaiting_payment'           => $awaitingPayment,
+            ':duffel_payment_failure'     => $duffelPaymentFailure,
         ]);
         $bookingId = (int) $this->db->lastInsertId();
 
@@ -760,19 +791,24 @@ class FlightBookingService
         $cancellationExpiresAt = !empty($cancellation['expires_at'])
             ? date('Y-m-d H:i:s', strtotime($cancellation['expires_at'])) : null;
 
-        // Store cancellation ID, expires_at, and refund_to for the confirmation step.
+        // Store cancellation details for the confirmation step.
+        // refund_amount and refund_currency are critical for aligned Stripe partial refund.
         $this->db->prepare(
             'UPDATE flight_bookings
-             SET pending_cancellation_id  = :cid,
-                 cancellation_expires_at  = :exp_at,
-                 cancellation_refund_to   = :refund_to,
-                 updated_at              = NOW()
+             SET pending_cancellation_id      = :cid,
+                 cancellation_expires_at      = :exp_at,
+                 cancellation_refund_to       = :refund_to,
+                 cancellation_refund_amount   = :refund_amount,
+                 cancellation_refund_currency = :refund_currency,
+                 updated_at                  = NOW()
              WHERE id = :id'
         )->execute([
-            ':cid'      => $cancellation['id']        ?? '',
-            ':exp_at'   => $cancellationExpiresAt,
-            ':refund_to'=> $cancellation['refund_to'] ?? 'original_payment_method',
-            ':id'       => $bookingId,
+            ':cid'            => $cancellation['id']             ?? '',
+            ':exp_at'         => $cancellationExpiresAt,
+            ':refund_to'      => $cancellation['refund_to']      ?? 'original_payment_method',
+            ':refund_amount'  => $cancellation['refund_amount']  ?? null,
+            ':refund_currency'=> strtoupper($cancellation['refund_currency'] ?? ($booking['currency'] ?? 'GBP')),
+            ':id'             => $bookingId,
         ]);
 
         return [
@@ -820,42 +856,68 @@ class FlightBookingService
         $payStmt->execute([':bt' => 'flight', ':bid' => $bookingId, ':status' => 'succeeded']);
         $payment = $payStmt->fetch(\PDO::FETCH_ASSOC);
 
-        $refundId     = null;
-        $finalStatus  = 'cancelled';
+        $refundId    = null;
+        $finalStatus = 'cancelled';
 
         if ($payment && !empty($payment['stripe_payment_intent_id'])) {
-            try {
-                $refund   = $this->stripe->createRefund(
-                    $payment['stripe_payment_intent_id'],
-                    null,
-                    bin2hex(random_bytes(16)),
-                    'requested_by_customer'
-                );
-                $refundId = $refund['id'] ?? null;
+            // Determine the exact refund amount using Duffel's refund_amount.
+            // If Duffel only refunds part (airline penalty), Stripe must match.
+            $duffelRefundAmount   = $booking['cancellation_refund_amount']   ?? null;
+            $duffelRefundCurrency = strtoupper($booking['cancellation_refund_currency'] ?? $booking['currency'] ?? 'GBP');
+            $stripeChargeCurrency = strtoupper($payment['currency'] ?? 'GBP');
 
+            // Currency mismatch: cannot safely convert — flag for manual processing.
+            if ($duffelRefundAmount !== null && $duffelRefundCurrency !== $stripeChargeCurrency) {
+                error_log(sprintf(
+                    '[MANUAL_REFUND_REQUIRED] BookingID=%d DuffelRefund=%s %s StripeCharge=%s %s',
+                    $bookingId,
+                    $duffelRefundAmount, $duffelRefundCurrency,
+                    $payment['amount'], $stripeChargeCurrency
+                ));
                 $this->db->prepare(
-                    'UPDATE payments SET status = :status, stripe_refund_id = :rid, updated_at = NOW()
-                     WHERE id = :id'
-                )->execute([':status' => 'refunded', ':rid' => $refundId, ':id' => $payment['id']]);
-            } catch (\Throwable $e) {
-                // Duffel cancellation succeeded but Stripe refund failed.
-                // Keep booking in a holding status — ops team must manually refund.
-                $finalStatus = 'cancellation_pending_refund';
-                $this->db->prepare(
-                    'UPDATE payments SET status = :status, updated_at = NOW() WHERE id = :id'
-                )->execute([':status' => 'refund_failed', ':id' => $payment['id']]);
+                    'UPDATE payments SET status = :s, updated_at = NOW() WHERE id = :id'
+                )->execute([':s' => 'refund_pending_manual', ':id' => $payment['id']]);
+                $finalStatus = 'cancellation_pending_manual_refund';
+            } else {
+                // Convert Duffel refund_amount (decimal) to Stripe minor units (pence/cents).
+                // null → full refund (e.g. void window / fee-free cancellation).
+                $refundAmountMinor = $duffelRefundAmount !== null
+                    ? (int) round((float) $duffelRefundAmount * 100)
+                    : null;
+
+                try {
+                    $refund   = $this->stripe->createRefund(
+                        $payment['stripe_payment_intent_id'],
+                        $refundAmountMinor,
+                        bin2hex(random_bytes(16)),
+                        'requested_by_customer'
+                    );
+                    $refundId = $refund['id'] ?? null;
+
+                    $this->db->prepare(
+                        'UPDATE payments
+                         SET status = :status, stripe_refund_id = :rid, updated_at = NOW()
+                         WHERE id = :id'
+                    )->execute([':status' => 'refunded', ':rid' => $refundId, ':id' => $payment['id']]);
+                } catch (\Throwable $e) {
+                    // Duffel cancellation succeeded but Stripe refund failed.
+                    // Ops team must manually refund.
+                    error_log('[REFUND_FAILED] BookingID=' . $bookingId . ' | ' . $e->getMessage());
+                    $finalStatus = 'cancellation_pending_refund';
+                    $this->db->prepare(
+                        'UPDATE payments SET status = :s, updated_at = NOW() WHERE id = :id'
+                    )->execute([':s' => 'refund_failed', ':id' => $payment['id']]);
+                }
             }
         }
 
         $this->db->prepare(
             'UPDATE flight_bookings
-             SET status = :status, cancelled_at = NOW(), updated_at = NOW(),
-                 cancellation_refund_amount = :refund_amount
+             SET status = :status, cancelled_at = NOW(), updated_at = NOW()
              WHERE id = :id'
         )->execute([
-            ':status'        => $finalStatus,
-            ':refund_amount' => $booking['cancellation_refund_amount'] ?? null,
-            ':id'            => $bookingId,
+            ':status' => $finalStatus,
+            ':id'     => $bookingId,
         ]);
 
         return [
@@ -979,6 +1041,107 @@ class FlightBookingService
         }
 
         return $this->getBookingById($bookingId, $userId) ?? $booking;
+    }
+
+    /**
+     * Enforce payment and price-guarantee deadlines before creating a Stripe PaymentIntent.
+     * Backend guard — the frontend countdown is supplementary UX only.
+     *
+     * @throws RuntimeException 422 if any deadline has passed
+     */
+    private function enforcePaymentDeadlines(array $session): void
+    {
+        $deadlineMsg = 'انتهت مهلة الدفع لهذا الحجز. يرجى البحث من جديد لأن السعر أو المقعد لم يعد مضموناً.';
+        $now         = new \DateTime();
+
+        // 1. Offer expiry from session
+        $offerExpiresAt = $session['offer_expires_at'] ?? null;
+        if (!empty($offerExpiresAt) && new \DateTime($offerExpiresAt) < $now) {
+            throw new RuntimeException($deadlineMsg, 422);
+        }
+
+        // 2. payment_required_by and price_guarantee_expires_at from the offer's payment_requirements
+        $offerId = $session['provider_offer_id'] ?? '';
+        if (!empty($offerId)) {
+            $offer = $this->fetchOffer($offerId);
+            if ($offer !== null) {
+                $offerData = json_decode($offer['offer_data'], true);
+                $payReqs   = $offerData['payment_requirements'] ?? [];
+
+                $paymentRequiredBy = $payReqs['payment_required_by'] ?? null;
+                if (!empty($paymentRequiredBy) && new \DateTime($paymentRequiredBy) < $now) {
+                    throw new RuntimeException($deadlineMsg, 422);
+                }
+
+                $priceGuaranteeExpiresAt = $payReqs['price_guarantee_expires_at'] ?? null;
+                if (!empty($priceGuaranteeExpiresAt) && new \DateTime($priceGuaranteeExpiresAt) < $now) {
+                    throw new RuntimeException($deadlineMsg, 422);
+                }
+            }
+        }
+    }
+
+    /**
+     * Auto-refund the Stripe charge when Duffel order creation fails after payment succeeded.
+     * Uses a deterministic idempotency key to prevent duplicate refunds on retry.
+     * Updates the payments row with the outcome.
+     */
+    private function autoRefundStripeOnDuffelFailure(
+        string $paymentIntentId,
+        string $idempotencyKey,
+        string $internalReason
+    ): void {
+        // Mark payment as pending refund immediately so ops can see it even if refund fails
+        try {
+            $this->db->prepare(
+                'UPDATE payments
+                 SET status = :s, duffel_payment_failure = :reason, updated_at = NOW()
+                 WHERE stripe_payment_intent_id = :pi'
+            )->execute([
+                ':s'      => 'refund_pending',
+                ':reason' => substr($internalReason, 0, 500),
+                ':pi'     => $paymentIntentId,
+            ]);
+        } catch (\Throwable) { /* non-critical if column not yet migrated */ }
+
+        try {
+            $refund = $this->stripe->createRefund(
+                $paymentIntentId,
+                null,  // full refund — customer never received a booking
+                $idempotencyKey,
+                'requested_by_customer'
+            );
+
+            $this->db->prepare(
+                'UPDATE payments
+                 SET status = :s, stripe_refund_id = :rid, auto_refund_reason = :ar,
+                     auto_refunded_at = NOW(), updated_at = NOW()
+                 WHERE stripe_payment_intent_id = :pi'
+            )->execute([
+                ':s'   => 'refunded',
+                ':rid' => $refund['id'] ?? null,
+                ':ar'  => 'duffel_order_creation_failed',
+                ':pi'  => $paymentIntentId,
+            ]);
+
+            error_log('[AUTO_REFUND_SUCCESS] PI=' . $paymentIntentId . ' RefundID=' . ($refund['id'] ?? 'n/a'));
+        } catch (\Throwable $refundEx) {
+            // Refund also failed — mark for urgent manual processing
+            try {
+                $this->db->prepare(
+                    'UPDATE payments
+                     SET status = :s, auto_refund_reason = :ar, updated_at = NOW()
+                     WHERE stripe_payment_intent_id = :pi'
+                )->execute([
+                    ':s'  => 'refund_failed',
+                    ':ar' => 'duffel_order_creation_failed_refund_also_failed',
+                    ':pi' => $paymentIntentId,
+                ]);
+            } catch (\Throwable) {}
+
+            error_log('[CRITICAL][AUTO_REFUND_FAILED] PI=' . $paymentIntentId
+                . ' | Refund error: ' . $refundEx->getMessage());
+        }
     }
 
     private function upsertDocuments(int $bookingId, array $documents): void
