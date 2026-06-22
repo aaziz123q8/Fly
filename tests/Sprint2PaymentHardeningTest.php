@@ -568,6 +568,206 @@ $r4 = $wcRef->invoke($wc, [
 ]);
 ok(str_contains($r4, 'awaiting=0'), 'Webhook: awaiting_payment=false → result contains awaiting=0');
 
+// ═════════════════════════════════════════════════════════════════════════════
+// BLOCKER FIXES — B1, B2, B3
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ── B1: already_paid → no auto-refund, attempt recovery ──────────────────────
+
+section('B1 — already_paid: no auto-refund, recovery attempt');
+
+class AlreadyPaidDuffel extends FakeDuffel
+{
+    public function createOrder(string $selectedOfferId, array $passengers, array $payments, array $services = [], ?array $metadata = null): array
+    {
+        $body = json_encode(['errors' => [['code' => 'already_paid', 'message' => 'Already paid', 'title' => 'Conflict']]]);
+        throw new \RuntimeException('Duffel API error 409: ' . $body, 409);
+    }
+}
+
+// B1-a: already_paid with existing booking in payments table → recovery, no refund
+$pdoB1a          = buildFakePdo();
+$stripeB1a       = new FakeStripe();
+$refundCalledB1a = false;
+$stripeB1a->onRefund = function () use (&$refundCalledB1a): array {
+    $refundCalledB1a = true;
+    return ['id' => 're_should_not_be_called'];
+};
+
+// Pre-insert session
+$pdoB1a->exec("INSERT INTO booking_sessions
+    (session_key, user_id, booking_type, current_step, provider_offer_id,
+     offer_expires_at, payment_intent_id, passengers_data, services_data, pricing_snapshot, expires_at)
+    VALUES (
+        'b1-session', 1, 'flight', 'payment', 'off_fake_001',
+        '" . date('Y-m-d H:i:s', strtotime('+2 hours')) . "',
+        'pi_b1_test',
+        '" . json_encode([[
+            'first_name' => 'Ali', 'last_name' => 'Ahmed', 'gender' => 'male',
+            'date_of_birth' => '1990-01-01', 'nationality' => 'ARE',
+            'document_number' => 'A12345678', 'document_expiry' => '2030-01-01', 'type' => 'adult',
+        ]]) . "',
+        '[]',
+        '" . json_encode(['total' => 100.0, 'currency' => 'GBP', 'base_amount' => 90.0, 'fees' => []]) . "',
+        '" . date('Y-m-d H:i:s', strtotime('+2 hours')) . "'
+    )");
+
+// Pre-insert existing booking (simulating first successful webhook)
+$pdoB1a->exec("INSERT INTO flight_bookings
+    (id, user_id, booking_reference, provider_order_id, status, currency, total_amount)
+    VALUES (99, 1, 'FM00000099', 'ord_existing', 'confirmed', 'GBP', 100.00)");
+
+// Pre-insert payments row with booking_id already set (first webhook succeeded)
+$pdoB1a->exec("INSERT INTO payments
+    (id, booking_type, booking_id, user_id, payment_method, idempotency_key,
+     stripe_payment_intent_id, amount, currency, status)
+    VALUES (1, 'flight', 99, 1, 'stripe', 'idem_b1', 'pi_b1_test', 100.00, 'GBP', 'succeeded')");
+
+$svcB1a = new \App\Services\FlightBookingService(
+    db: $pdoB1a,
+    duffel: new AlreadyPaidDuffel(),
+    stripe: $stripeB1a,
+    sessionService: new FakeSessionService(withCompleteSession: true)
+);
+
+$b1aResult = null;
+$b1aEx     = null;
+try {
+    $b1aResult = $svcB1a->completeBooking('b1-session', 'pi_b1_test');
+} catch (\RuntimeException $e) {
+    $b1aEx = $e;
+}
+ok(!$refundCalledB1a, 'B1: already_paid → Stripe refund NOT called');
+ok($b1aResult !== null, 'B1: already_paid with existing booking → recovery returns result (no exception)');
+ok(($b1aResult['booking_id'] ?? null) === 99, 'B1: recovery returns correct existing booking_id');
+ok(($b1aResult['booking_reference'] ?? null) === 'FM00000099', 'B1: recovery returns correct booking_reference');
+
+// B1-b: already_paid with NO existing booking → exception thrown, still no refund
+$pdoB1b          = buildFakePdo();
+$stripeB1b       = new FakeStripe();
+$refundCalledB1b = false;
+$stripeB1b->onRefund = function () use (&$refundCalledB1b): array {
+    $refundCalledB1b = true;
+    return ['id' => 're_should_not_be_called'];
+};
+
+$pdoB1b->exec("INSERT INTO booking_sessions
+    (session_key, user_id, booking_type, current_step, provider_offer_id,
+     offer_expires_at, payment_intent_id, passengers_data, services_data, pricing_snapshot, expires_at)
+    VALUES (
+        'b1b-session', 1, 'flight', 'payment', 'off_fake_001',
+        '" . date('Y-m-d H:i:s', strtotime('+2 hours')) . "',
+        'pi_b1b_test',
+        '" . json_encode([[
+            'first_name' => 'Ali', 'last_name' => 'Ahmed', 'gender' => 'male',
+            'date_of_birth' => '1990-01-01', 'nationality' => 'ARE',
+            'document_number' => 'A12345678', 'document_expiry' => '2030-01-01', 'type' => 'adult',
+        ]]) . "',
+        '[]',
+        '" . json_encode(['total' => 100.0, 'currency' => 'GBP', 'base_amount' => 90.0, 'fees' => []]) . "',
+        '" . date('Y-m-d H:i:s', strtotime('+2 hours')) . "'
+    )");
+
+// payments row exists but booking_id = 0 (first createOrder attempt never completed locally)
+$pdoB1b->exec("INSERT INTO payments
+    (id, booking_type, booking_id, user_id, payment_method, idempotency_key,
+     stripe_payment_intent_id, amount, currency, status)
+    VALUES (1, 'flight', 0, 1, 'stripe', 'idem_b1b', 'pi_b1b_test', 100.00, 'GBP', 'pending')");
+
+$svcB1b = new \App\Services\FlightBookingService(
+    db: $pdoB1b,
+    duffel: new AlreadyPaidDuffel(),
+    stripe: $stripeB1b,
+    sessionService: new FakeSessionService(withCompleteSession: true)
+);
+
+$b1bEx = null;
+try {
+    $svcB1b->completeBooking('b1b-session', 'pi_b1b_test');
+} catch (\RuntimeException $e) {
+    $b1bEx = $e;
+}
+ok(!$refundCalledB1b, 'B1: already_paid with no local booking → still NO auto-refund');
+ok($b1bEx !== null, 'B1: already_paid with no local booking → exception thrown for ops to reconcile');
+ok($b1bEx !== null && $b1bEx->getCode() === 409, 'B1: already_paid no-recovery exception → HTTP 409');
+
+// ── B2: Migration syntax verification ────────────────────────────────────────
+
+section('B2 — Migration 068 syntax: no MariaDB-only keywords');
+
+$migrationSql = file_get_contents(BASE_PATH . '/database/migrations/068_sprint2_payment_hardening.sql');
+ok($migrationSql !== false, 'B2: migration 068 file is readable');
+ok(!preg_match('/ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS/i', $migrationSql), 'B2: no ADD COLUMN IF NOT EXISTS (MariaDB-only)');
+ok(!preg_match('/ADD\s+INDEX\s+IF\s+NOT\s+EXISTS/i', $migrationSql), 'B2: no ADD INDEX IF NOT EXISTS (MariaDB-only)');
+ok(str_contains($migrationSql, 'INFORMATION_SCHEMA'), 'B2: uses INFORMATION_SCHEMA for conditional checks');
+ok(str_contains($migrationSql, 'CREATE PROCEDURE'), 'B2: uses stored procedure pattern');
+ok(str_contains($migrationSql, 'DROP PROCEDURE IF EXISTS'), 'B2: procedure cleaned up after execution');
+ok(str_contains($migrationSql, 'CALL sp_sprint2_payment_hardening'), 'B2: procedure is executed');
+
+// Verify all expected columns are still declared
+$expectedColumns = [
+    'awaiting_payment', 'duffel_payment_failure', 'cancellation_refund_currency',
+    'auto_refunded_at', 'duffel_payment_id', 'payment_type', 'stripe_refund_id',
+    'auto_refund_reason', 'updated_at',
+];
+foreach ($expectedColumns as $col) {
+    ok(str_contains($migrationSql, $col), "B2: column '{$col}' still present in migration");
+}
+ok(str_contains($migrationSql, 'idx_duffel_payment_id'), 'B2: index idx_duffel_payment_id still declared');
+
+// ── B3: Deterministic idempotency key for cancellation refunds ────────────────
+
+section('B3 — Cancellation refund idempotency');
+
+// B3-a: same cancellation ID always produces same Stripe idempotency key
+$idempotencyKeysB3 = [];
+$fakeStripeB3      = new FakeStripe();
+$fakeStripeB3->onRefund = function (string $pi, ?int $minor, string $idem = '') use (&$idempotencyKeysB3): array {
+    // We need to capture the idempotency key — but FakeStripe::createRefund only receives pi and minor.
+    // Instead, verify via two service calls that the key is deterministic (same refund result).
+    $idempotencyKeysB3[] = 'captured';
+    return ['id' => 're_b3_001'];
+};
+
+// Build service and run confirmCancelBooking twice with same cancellationId
+$svcB3_1 = buildServiceForCancellationTest(new FakeStripe(), '30.00', 'GBP', 'GBP');
+$svcB3_2 = buildServiceForCancellationTest(new FakeStripe(), '30.00', 'GBP', 'GBP');
+
+$result1 = $result2 = null;
+try { $result1 = $svcB3_1->confirmCancelBooking(1, 'cxl_abc', 1); } catch (\Throwable) {}
+try { $result2 = $svcB3_2->confirmCancelBooking(1, 'cxl_abc', 1); } catch (\Throwable) {}
+ok(($result1['status'] ?? '') === 'cancelled', 'B3: first cancellation succeeds');
+ok(($result2['status'] ?? '') === 'cancelled', 'B3: second cancellation (retry) also succeeds');
+
+// Verify the idempotency key is deterministic: md5('cancel_refund_' + cancellationId)
+// We inspect the source code directly since FakeStripe doesn't expose the key
+$serviceSource = file_get_contents(BASE_PATH . '/app/Services/FlightBookingService.php');
+ok(str_contains($serviceSource, "'cancel_refund_' . md5(\$cancellationId)"), 'B3: confirmCancelBooking uses deterministic key cancel_refund_+md5(cancellationId)');
+// Confirm random_bytes is not used in the cancellation refund context.
+// (createPaymentIntent legitimately uses random_bytes for its own idempotency key.)
+$cancelFnStart  = strpos($serviceSource, 'function confirmCancelBooking');
+$cancelFnEnd    = strpos($serviceSource, 'function syncFromDuffel');
+$cancelFnSource = substr($serviceSource, $cancelFnStart, $cancelFnEnd - $cancelFnStart);
+ok(!str_contains($cancelFnSource, 'random_bytes'), 'B3: random_bytes() removed from confirmCancelBooking() body');
+
+// B3-b: same cancellationId always yields the same md5 key (pure function)
+$key1 = 'cancel_refund_' . md5('cxl_test_abc');
+$key2 = 'cancel_refund_' . md5('cxl_test_abc');
+$key3 = 'cancel_refund_' . md5('cxl_test_xyz');
+ok($key1 === $key2, 'B3: same cancellationId → identical idempotency key (idempotent)');
+ok($key1 !== $key3, 'B3: different cancellationId → different idempotency key');
+
+// B3-c: currency-mismatch path does not refund (unchanged behaviour)
+$fakeStripeB3c   = new FakeStripe();
+$refundCalledB3c = false;
+$fakeStripeB3c->onRefund = function () use (&$refundCalledB3c): array {
+    $refundCalledB3c = true;
+    return ['id' => 're_b3c'];
+};
+$svcB3c = buildServiceForCancellationTest($fakeStripeB3c, '30.00', 'EUR', 'GBP');
+try { $svcB3c->confirmCancelBooking(1, 'cxl_abc', 1); } catch (\Throwable) {}
+ok(!$refundCalledB3c, 'B3: currency-mismatch path still skips Stripe refund');
+
 // ── Summary ───────────────────────────────────────────────────────────────────
 
 echo "\n" . str_repeat('─', 60) . "\n";

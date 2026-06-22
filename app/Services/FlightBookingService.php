@@ -386,7 +386,23 @@ class FlightBookingService
             // Log the internal detail for operations visibility
             error_log('[DUFFEL_ORDER_FAIL] ref=' . $bookingReference . ' | ' . $parts['internal']);
 
-            // Auto-refund the Stripe charge — deterministic idempotency key prevents duplicates
+            // already_paid: the Duffel order already exists (duplicate webhook / retry).
+            // Do NOT auto-refund — the booking is valid. Attempt to return the existing booking.
+            if (str_contains($parts['internal'], '[Duffel:already_paid]')) {
+                $recovered = $this->recoverExistingBooking($paymentIntentId, $userId);
+                if ($recovered !== null) {
+                    error_log('[ALREADY_PAID_RECOVERY] ref=' . $bookingReference
+                        . ' found existing booking_id=' . $recovered['booking_id']);
+                    return $recovered;
+                }
+                // Order exists in Duffel but we can't locate it locally yet — no refund.
+                error_log('[ALREADY_PAID_NO_RECOVERY] ref=' . $bookingReference
+                    . ' — no local booking found; no auto-refund issued; ops must reconcile');
+                throw new RuntimeException($parts['customer'], $mapped->getCode() ?: 409);
+            }
+
+            // All other Duffel failures: auto-refund the Stripe charge.
+            // Deterministic idempotency key prevents duplicate refunds on retry.
             $this->autoRefundStripeOnDuffelFailure(
                 $paymentIntentId,
                 'auto_refund_' . md5($paymentIntentId),
@@ -889,7 +905,7 @@ class FlightBookingService
                     $refund   = $this->stripe->createRefund(
                         $payment['stripe_payment_intent_id'],
                         $refundAmountMinor,
-                        bin2hex(random_bytes(16)),
+                        'cancel_refund_' . md5($cancellationId),
                         'requested_by_customer'
                     );
                     $refundId = $refund['id'] ?? null;
@@ -1079,6 +1095,38 @@ class FlightBookingService
                 }
             }
         }
+    }
+
+    /**
+     * Recovery path for Duffel "already_paid" errors.
+     *
+     * Looks up an existing booking by matching the payments row that already has a
+     * non-zero booking_id for the given payment intent. Returns the minimal booking
+     * response array if found, or null if the local row cannot be located yet.
+     */
+    private function recoverExistingBooking(string $paymentIntentId, int $userId): ?array
+    {
+        try {
+            $stmt = $this->db->prepare(
+                'SELECT booking_id FROM payments
+                 WHERE stripe_payment_intent_id = :pi AND booking_id > 0
+                 LIMIT 1'
+            );
+            $stmt->execute([':pi' => $paymentIntentId]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if ($row && (int) $row['booking_id'] > 0) {
+                $booking = $this->getBookingById((int) $row['booking_id'], $userId);
+                if ($booking !== null) {
+                    return [
+                        'booking_id'        => (int) $booking['id'],
+                        'booking_reference' => $booking['booking_reference'],
+                    ];
+                }
+            }
+        } catch (\Throwable) {}
+
+        return null;
     }
 
     /**
