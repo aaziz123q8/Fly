@@ -576,6 +576,38 @@ class HotelBookingService
     }
 
     // =========================================================================
+    // confirmCheckout — called by hotel-payment.html after Stripe confirms
+    // =========================================================================
+
+    public function confirmCheckout(string $sessionKey, string $paymentIntentId, int $userId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT * FROM booking_sessions WHERE session_key = :sk AND user_id = :uid LIMIT 1'
+        );
+        $stmt->execute([':sk' => $sessionKey, ':uid' => $userId]);
+        $session = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$session) {
+            throw new \RuntimeException('جلسة الحجز غير موجودة', 404);
+        }
+
+        // If webhook already completed the booking
+        if (($session['current_step'] ?? '') === 'complete') {
+            $bStmt = $this->db->prepare(
+                'SELECT booking_reference, status FROM hotel_bookings WHERE user_id = :uid ORDER BY id DESC LIMIT 1'
+            );
+            $bStmt->execute([':uid' => $userId]);
+            $row = $bStmt->fetch(\PDO::FETCH_ASSOC);
+            return [
+                'status'            => 'confirmed',
+                'booking_reference' => $row['booking_reference'] ?? '',
+            ];
+        }
+
+        return ['status' => 'pending', 'message' => 'جارٍ تأكيد الحجز…'];
+    }
+
+    // =========================================================================
     // Private helpers
     // =========================================================================
 

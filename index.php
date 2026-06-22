@@ -245,6 +245,11 @@ $router->group('api/hotels', function (Router $r): void {
         (new HotelController())->createPaymentIntent($req);
     }, [AuthMiddleware::handle()]);
 
+    // Checkout: confirm after Stripe payment (auth required).
+    $r->post('/checkout/confirm', function (Request $req): void {
+        (new HotelController())->confirmCheckout($req);
+    }, [AuthMiddleware::handle()]);
+
     // User bookings list (auth required) — must come before /:provider_hotel_id
     $r->get('/bookings', function (Request $req): void {
         (new HotelController())->listBookings($req);
