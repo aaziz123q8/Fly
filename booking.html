@@ -434,6 +434,16 @@
       sessionKey = res.session_key;
       flightData = res.offer || res;
 
+      // If airline requires identity documents, mark passport fields as mandatory
+      if (flightData.passenger_identity_documents_required) {
+        window._passportRequired = true;
+        document.querySelectorAll('.passport-note').forEach(n => {
+          n.textContent = '* جواز السفر مطلوب إلزامياً لهذه الرحلة';
+          n.style.color = '#dc2626';
+          n.style.fontWeight = '700';
+        });
+      }
+
       // Price from checkout response
       const offerObj   = res.offer || {};
       const totalAmount = parseFloat(offerObj.total_amount || res.total_amount || 0);
@@ -695,6 +705,11 @@
       if (!p.first_name || !p.last_name || !p.gender || !p.nationality || !p.date_of_birth || !p.document_number || !p.document_expiry) {
         switchPax(i, document.querySelectorAll('.pax-tab')[i]);
         alert('يرجى إكمال بيانات ' + paxTypes[i].label); return;
+      }
+      // Airline requires identity documents — passport mandatory
+      if (window._passportRequired && (!p.document_number || !p.document_expiry)) {
+        switchPax(i, document.querySelectorAll('.pax-tab')[i]);
+        alert('هذه الرحلة تستلزم جواز سفر ساري المفعول لكل مسافر — ' + paxTypes[i].label); return;
       }
       if (!/^[a-zA-Z\s\-]+$/.test(p.first_name) || !/^[a-zA-Z\s\-]+$/.test(p.last_name)) {
         switchPax(i, document.querySelectorAll('.pax-tab')[i]);

@@ -35,6 +35,8 @@
     .fc-airline .al-logo-fallback { width: 44px; height: 44px; border-radius: 8px; background: #e8f0fe; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 800; color: #1a2e5a; }
     .fc-airline .al-name { font-size: .78rem; font-weight: 600; color: #1a2e5a; text-align: center; line-height: 1.2; }
     .fc-airline .al-code { font-size: .7rem; color: #9ca3af; }
+    .fc-airline .al-operated { font-size: .65rem; color: #6b7280; text-align: center; margin-top: 2px; }
+    .terminal-lbl { font-size: .68rem; color: #2563eb; font-weight: 600; margin-top: 2px; }
 
     /* Route section — supports stacked slices for round-trips */
     .fc-routes { flex: 1; display: flex; flex-direction: column; }
@@ -425,16 +427,19 @@ function getDestName(o){
 
 function getAirline(o){
   var seg = getFirstSeg(o);
-  var mc  = seg.marketing_carrier||seg.operating_carrier||{};
+  var mc  = seg.marketing_carrier || seg.operating_carrier || o.owner || {};
+  var oc  = seg.operating_carrier || mc;
   var code = mc.iata_code || o.airline_code || '';
-  // Use server-side proxy — fetches from Kiwi/avs.io/Duffel and caches result
-  var logo = code ? 'airline-logo.php?code='+code : '';
+  // Priority: Duffel CDN logo (direct, no auth needed for SVG assets) → PHP proxy fallback
+  var duffelLogo = mc.logo_symbol_url || oc.logo_symbol_url || '';
+  var proxyLogo  = code ? 'airline-logo.php?code='+code : '';
   return {
-    name: mc.name || o.airline || 'غير محدد',
-    code: code,
-    logo: logo,
-    fallback1: '',
-    fallback2: '',
+    name:          mc.name || o.airline || 'غير محدد',
+    code:          code,
+    logo:          duffelLogo || proxyLogo,
+    fallback1:     duffelLogo ? proxyLogo : '',
+    fallback2:     '',
+    operatedBy:    (oc.iata_code && oc.iata_code !== mc.iata_code) ? (oc.name || '') : '',
   };
 }
 
@@ -672,8 +677,12 @@ function getSliceRow(o, sliceIdx, isReturn) {
   var stops    = getSliceStops(o, sliceIdx);
   var nextDay  = isNextDay(depDt, arrDt);
 
-  // Transit airports for this slice
+  // Terminals from first/last segment
   var segs = getSegs(o, sliceIdx);
+  var depTerminal = segs.length ? (segs[0].origin_terminal || '') : '';
+  var arrTerminal = segs.length ? (segs[segs.length-1].destination_terminal || '') : '';
+
+  // Transit airports for this slice
   var transitCodes = [];
   for (var i = 0; i < segs.length - 1; i++) {
     var ar = segs[i].arriving_airport;
@@ -691,6 +700,7 @@ function getSliceRow(o, sliceIdx, isReturn) {
       + '<div class="time">'+fmtTime(depDt)+'</div>'
       + '<div class="iata">'+origCode+'</div>'
       + (origName ? '<div class="apt-name" title="'+origName+'">'+origName+'</div>' : '')
+      + (depTerminal ? '<div class="terminal-lbl">صالة '+depTerminal+'</div>' : '')
       + '<div class="date-lbl">'+fmtDate(depDt)+'</div>'
     + '</div>'
     + '<div class="fc-mid">'
@@ -702,6 +712,7 @@ function getSliceRow(o, sliceIdx, isReturn) {
       + '<div class="time">'+fmtTime(arrDt)+(nextDay?'<sup class="next-day-badge">+1</sup>':'')+'</div>'
       + '<div class="iata">'+destCode+'</div>'
       + (destName ? '<div class="apt-name" title="'+destName+'">'+destName+'</div>' : '')
+      + (arrTerminal ? '<div class="terminal-lbl">صالة '+arrTerminal+'</div>' : '')
       + '<div class="date-lbl">'+fmtDate(arrDt)+'</div>'
     + '</div>'
   + '</div>';
@@ -991,13 +1002,15 @@ function renderResults() {
     var durMins  = getSliceDuration(o, 0);
     var origCode = getSliceOriginCode(o, 0);
     var destCode = getSliceDestCode(o, 0);
-    var aircraft  = getAircraftType(o);
-    var bagText   = getBaggageText(o);
-    var refundTxt = getRefundText(o);
-    var changeTxt = getChangeText(o);
-    var nextDay   = isNextDay(depDt, arrDt);
-    var priceGBP  = parseFloat(o.total_amount || 0);
-    var offerId   = o.offer_id || o.id || '';
+    var aircraft       = getAircraftType(o);
+    var bagText        = getBaggageText(o);
+    var refundTxt      = getRefundText(o);
+    var changeTxt      = getChangeText(o);
+    var nextDay        = isNextDay(depDt, arrDt);
+    var priceGBP       = parseFloat(o.total_amount || 0);
+    var offerId        = o.offer_id || o.id || '';
+    var fareBrand      = o.fare_brand_name || '';
+    var cocUrl         = o.conditions_of_carriage_url || '';
 
     // Stops label (outbound)
     var stopsLabel = stops===0
@@ -1123,6 +1136,7 @@ function renderResults() {
           + logoHtml
           + '<div class="al-name">'+al.name+'</div>'
           + (al.code ? '<div class="al-code">'+al.code+'</div>' : '')
+          + (al.operatedBy ? '<div class="al-operated">تُشغّلها '+al.operatedBy+'</div>' : '')
           + (aircraft ? '<div class="al-code" style="margin-top:2px">✈ '+aircraft+'</div>' : '')
         + '</div>'
 
@@ -1149,9 +1163,11 @@ function renderResults() {
       // Footer tags
       + '<div class="fc-footer">'
         + (isRoundTrip && getSliceStops(o,1) > 0 ? '<span class="tag tag-gray">عودة: '+getSliceStops(o,1)+' توقف</span>' : '')
+        + (fareBrand ? '<span class="tag tag-gray" style="background:#f0f9ff;color:#0369a1">🎫 '+fareBrand+'</span>' : '')
         + (refundTxt ? '<span class="tag tag-green">'+refundTxt+'</span>' : '<span class="tag tag-red">غير مسترد</span>')
         + (changeTxt ? '<span class="tag tag-blue">'+changeTxt+'</span>' : '')
         + (nextDay ? '<span class="tag tag-orange">وصول اليوم التالي</span>' : '')
+        + (cocUrl ? '<a href="'+cocUrl+'" target="_blank" rel="noopener" class="tag tag-gray" style="text-decoration:none;font-size:.68rem">📋 شروط النقل</a>' : '')
         + '<a href="'+waLink+'" target="_blank" rel="noopener" style="margin-right:auto;color:#25d366;text-decoration:none;font-size:.78rem;display:flex;align-items:center;gap:4px">📲 واتساب</a>'
       + '</div>'
 

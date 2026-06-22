@@ -171,15 +171,24 @@ class FlightSearchService
 
     private function formatOffer(array $offer): array
     {
+        // Extract fare_brand_name and conditions_of_carriage_url from first slice/segment
+        $firstSlice   = $offer['slices'][0]               ?? [];
+        $firstSeg     = $firstSlice['segments'][0]        ?? [];
+        $marketingCarrier = $firstSeg['marketing_carrier'] ?? $firstSeg['operating_carrier'] ?? [];
+
         return [
-            'offer_id'               => $offer['id']                      ?? '',
-            'total_amount'           => $offer['total_amount']             ?? '0.00',
-            'currency'               => strtoupper($offer['total_currency'] ?? 'GBP'),
-            'expires_at'             => $offer['expires_at']               ?? null,
-            'slices'                 => $offer['slices']                   ?? [],
-            'passengers'             => $offer['passengers']               ?? [],  // contains baggages per passenger
-            'conditions'             => $offer['conditions']               ?? [],  // refund_before_departure / change_before_departure
-            'partial_offer_requests' => $offer['partial_offer_requests']   ?? [],
+            'offer_id'                          => $offer['id']                                     ?? '',
+            'total_amount'                      => $offer['total_amount']                            ?? '0.00',
+            'currency'                          => strtoupper($offer['total_currency']              ?? 'GBP'),
+            'expires_at'                        => $offer['expires_at']                              ?? null,
+            'slices'                            => $offer['slices']                                  ?? [],
+            'passengers'                        => $offer['passengers']                              ?? [],
+            'conditions'                        => $offer['conditions']                              ?? [],
+            'passenger_identity_documents_required' => $offer['passenger_identity_documents_required'] ?? false,
+            'owner'                             => $offer['owner']                                   ?? [],
+            'fare_brand_name'                   => $firstSlice['fare_brand_name']                    ?? null,
+            'conditions_of_carriage_url'        => $marketingCarrier['conditions_of_carriage_url']   ?? null,
+            'partial_offer_requests'            => $offer['partial_offer_requests']                  ?? [],
         ];
     }
 

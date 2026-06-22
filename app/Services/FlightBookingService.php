@@ -780,12 +780,13 @@ class FlightBookingService
     private function formatOffer(array $offerData): array
     {
         return [
-            'offer_id'            => $offerData['id']             ?? '',
-            'total_amount'        => $offerData['total_amount']   ?? '0.00',
-            'currency'            => strtoupper($offerData['total_currency'] ?? 'GBP'),
-            'expires_at'          => $offerData['expires_at']     ?? null,
-            'slices'              => $offerData['slices']          ?? [],
-            'passengers_included' => $offerData['passengers']      ?? [],
+            'offer_id'                          => $offerData['id']                                     ?? '',
+            'total_amount'                      => $offerData['total_amount']                            ?? '0.00',
+            'currency'                          => strtoupper($offerData['total_currency']              ?? 'GBP'),
+            'expires_at'                        => $offerData['expires_at']                              ?? null,
+            'slices'                            => $offerData['slices']                                  ?? [],
+            'passengers_included'               => $offerData['passengers']                              ?? [],
+            'passenger_identity_documents_required' => $offerData['passenger_identity_documents_required'] ?? false,
         ];
     }
 
@@ -889,7 +890,9 @@ class FlightBookingService
         // Normalise our type labels to Duffel's
         $typeMap = ['adult' => 'adult', 'child' => 'child', 'infant' => 'infant_without_seat'];
 
-        $mapped = [];
+        $mapped    = [];
+        $adultIds  = [];   // track assigned adult IDs for infant_passenger_id assignment
+
         foreach ($passengers as $p) {
             $ourType    = $p['type'] ?? 'adult';
             $duffelType = $typeMap[$ourType] ?? 'adult';
@@ -919,12 +922,47 @@ class FlightBookingService
 
             if ($duffelId !== null) {
                 $entry['id'] = $duffelId;
+                if ($duffelType === 'adult') {
+                    $adultIds[] = $duffelId;
+                }
             }
 
             $mapped[] = $entry;
         }
 
+        // Assign infant_passenger_id: each infant must reference a unique adult.
+        // Duffel requires this field on the adult passenger, not the infant.
+        $infantCount = 0;
+        foreach ($mapped as &$entry) {
+            if (!isset($entry['id'])) continue;
+            // Identify infant entries by matching their Duffel ID to the infant queue
+            $isInfantId = in_array($entry['id'], $queues['infant_without_seat'] ?? [], true)
+                || (isset($offerPassengers) && $this->isInfantPassenger($entry['id'], $offerPassengers));
+            if ($isInfantId && isset($adultIds[$infantCount])) {
+                // Find the adult entry and attach the infant id
+                foreach ($mapped as &$adultEntry) {
+                    if (($adultEntry['id'] ?? '') === $adultIds[$infantCount]) {
+                        $adultEntry['infant_passenger_id'] = $entry['id'];
+                        break;
+                    }
+                }
+                unset($adultEntry);
+                $infantCount++;
+            }
+        }
+        unset($entry);
+
         return $mapped;
+    }
+
+    private function isInfantPassenger(string $duffelId, array $offerPassengers): bool
+    {
+        foreach ($offerPassengers as $op) {
+            if (($op['id'] ?? '') === $duffelId) {
+                return ($op['type'] ?? '') === 'infant_without_seat';
+            }
+        }
+        return false;
     }
 
     private function toIso3Nationality(string $name): string
