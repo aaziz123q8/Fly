@@ -93,6 +93,19 @@
     .sort-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid #e5e7eb; background: #fff; font-size: .8rem; cursor: pointer; transition: all .15s; font-family: inherit; }
     .sort-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
+    /* Airport autocomplete dropdown */
+    .ac-wrap { position: relative; }
+    .ac-drop { display: none; position: absolute; top: calc(100% + 4px); right: 0; left: 0; background: #fff; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.18); z-index: 2000; max-height: 320px; overflow-y: auto; }
+    .ac-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; cursor: pointer; transition: background .1s; border-bottom: 1px solid #f3f4f6; }
+    .ac-item:last-child { border-bottom: none; }
+    .ac-item:hover, .ac-item.ac-hover { background: #f0f4ff; }
+    .ac-type { font-size: 1rem; flex-shrink: 0; }
+    .ac-info { flex: 1; min-width: 0; }
+    .ac-name { font-size: .84rem; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ac-city { font-weight: 400; color: #6b7280; }
+    .ac-meta { font-size: .72rem; color: #9ca3af; margin-top: 1px; }
+    .ac-loading { padding: 14px 16px; font-size: .82rem; color: #9ca3af; text-align: center; }
+
     /* Currency bar */
     .currency-bar { display: flex; gap: 6px; align-items: center; padding: 8px 0 0; }
     .currency-btn { padding: 3px 10px; border-radius: 14px; border: 1px solid rgba(255,255,255,.4); background: transparent; color: rgba(255,255,255,.75); font-size: .75rem; cursor: pointer; transition: all .15s; font-family: inherit; }
@@ -136,13 +149,15 @@
 
       <!-- Edit fields (hidden by default) -->
       <div id="searchEditFields" style="display:none;flex-wrap:wrap;gap:10px;align-items:flex-end;width:100%">
-        <div style="flex:1;min-width:90px">
+        <div style="flex:1;min-width:90px" class="ac-wrap">
           <div class="form-label">من</div>
-          <input type="text" class="form-control" id="sFrom" style="text-transform:uppercase">
+          <input type="text" class="form-control" id="sFrom" placeholder="مدينة أو مطار" autocomplete="off">
+          <div class="ac-drop" id="sFrom_drop"></div>
         </div>
-        <div style="flex:1;min-width:90px">
+        <div style="flex:1;min-width:90px" class="ac-wrap">
           <div class="form-label">إلى</div>
-          <input type="text" class="form-control" id="sTo" style="text-transform:uppercase">
+          <input type="text" class="form-control" id="sTo" placeholder="مدينة أو مطار" autocomplete="off">
+          <div class="ac-drop" id="sTo_drop"></div>
         </div>
         <div>
           <div class="form-label">ذهاب</div>
@@ -1118,6 +1133,33 @@ function toggleFilters() {
 }
 
 initPage();
+
+// Wire airport autocomplete after page init
+(function() {
+  function pickCode(inputId) {
+    return function(code, label) {
+      // Extract IATA code from label like "Kuwait International Airport — Kuwait (KWI)"
+      var m = label.match(/\(([A-Z]{3})\)\s*$/);
+      document.getElementById(inputId).dataset.code = m ? m[1] : code;
+    };
+  }
+  // Init after slight delay so DOM is ready
+  setTimeout(function() {
+    initAirportAC('sFrom', 'sFrom_drop', { onSelect: pickCode('sFrom') });
+    initAirportAC('sTo',   'sTo_drop',   { onSelect: pickCode('sTo') });
+  }, 100);
+
+  // Override doSearch to use data-code attribute when available
+  var _origDoSearch = window.doSearch;
+  window.doSearch = function() {
+    var fromEl = document.getElementById('sFrom');
+    var toEl   = document.getElementById('sTo');
+    if (fromEl.dataset.code) fromEl.value = fromEl.dataset.code;
+    if (toEl.dataset.code)   toEl.value   = toEl.dataset.code;
+    _origDoSearch();
+  };
+})();
 </script>
+<script src="js/airport-ac.js"></script>
 </body>
 </html>

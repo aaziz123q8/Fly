@@ -754,23 +754,60 @@ document.addEventListener('click', e => {
 });
 
 /* ── AIRPORT AUTOCOMPLETE ── */
+var _acCache = {}, _acTimers = {};
 function showDrop(inputId, dropId) {
-  const q = document.getElementById(inputId).value.toLowerCase().trim();
+  const q = document.getElementById(inputId).value.trim();
   const drop = document.getElementById(dropId);
-  if (!q) { drop.classList.remove('open'); return; }
-  const matches = AIRPORTS.filter(a =>
-    a.code.toLowerCase().includes(q) ||
-    a.name.toLowerCase().includes(q) ||
-    a.nameEn.toLowerCase().includes(q) ||
-    a.city.toLowerCase().includes(q) ||
-    a.cityEn.toLowerCase().includes(q)
-  ).slice(0,8);
-  if (!matches.length) { drop.classList.remove('open'); return; }
-  drop.innerHTML = matches.map(a => `
-    <div class="aitem" onclick="pickAirport('${inputId}','${dropId}','${a.code}','${a.name} (${a.code})')">
-      <span class="acode">${a.code}</span>
-      <div><div class="aname">${a.name}</div><div class="acountry">${a.country}</div></div>
-    </div>`).join('');
+  if (q.length < 2) { drop.classList.remove('open'); return; }
+
+  // Local filter first (instant)
+  const ql = q.toLowerCase();
+  const local = AIRPORTS.filter(a =>
+    a.code.toLowerCase().includes(ql) ||
+    a.name.toLowerCase().includes(ql) ||
+    (a.nameEn||'').toLowerCase().includes(ql) ||
+    a.city.toLowerCase().includes(ql) ||
+    (a.cityEn||'').toLowerCase().includes(ql)
+  ).slice(0, 6);
+
+  if (local.length) {
+    drop.innerHTML = local.map(a => `
+      <div class="aitem" onclick="pickAirport('${inputId}','${dropId}','${a.code}','${a.name} (${a.code})')">
+        <span class="acode">${a.code}</span>
+        <div><div class="aname">${a.name}</div><div class="acountry">${a.country}</div></div>
+      </div>`).join('');
+    drop.classList.add('open');
+  }
+
+  // Then enrich with Duffel API results
+  clearTimeout(_acTimers[inputId]);
+  _acTimers[inputId] = setTimeout(function() {
+    const key = q.toLowerCase();
+    if (_acCache[key]) { renderApiDrop(inputId, dropId, _acCache[key]); return; }
+    fetch('/api/flights/airports?q=' + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(res => {
+        _acCache[key] = res.data || res.airports || [];
+        renderApiDrop(inputId, dropId, _acCache[key]);
+      }).catch(() => {});
+  }, 300);
+}
+
+function renderApiDrop(inputId, dropId, items) {
+  const drop = document.getElementById(dropId);
+  if (!items || !items.length) return;
+  drop.innerHTML = items.slice(0, 10).map(p => {
+    const code = p.iata_code || p.code || '';
+    const name = p.name || p.city_name || code;
+    const city = p.city_name || '';
+    const country = p.iata_country_code || '';
+    const display = name + (city && city !== name ? ' — ' + city : '') + ' (' + code + ')';
+    const type = p.type === 'airport' ? '✈' : '🏙';
+    return `<div class="aitem" onclick="pickAirport('${inputId}','${dropId}','${code}','${display.replace(/'/g,"\\'")}')">
+      <span class="acode">${type} ${code}</span>
+      <div><div class="aname">${name}${city && city !== name ? '<span style="color:#9ca3af"> — ' + city + '</span>' : ''}</div><div class="acountry">${country}</div></div>
+    </div>`;
+  }).join('');
   drop.classList.add('open');
 }
 function pickAirport(inputId, dropId, code, label) {
