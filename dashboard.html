@@ -26,17 +26,19 @@
     .app-drawer-avatar{width:38px;height:38px;border-radius:50%;background:#1B4F8E;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;flex-shrink:0}
     .app-drawer-footer-copy{padding:12px 14px;border-top:1px solid #f0f2f5;font-size:.72rem;color:#9ca3af;text-align:center}
     /* Dashboard mobile fixes */
-    body{overflow-x:hidden}
-    .stats-row>div{padding:8px 4px}
-    .stats-row>div>div:first-child{font-size:1.3rem!important}
-    .stats-row>div>div:last-child{font-size:.72rem!important}
-    .tabs{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:4px;padding-bottom:4px}
-    .tabs::-webkit-scrollbar{display:none}
-    .tab{white-space:nowrap;flex-shrink:0;font-size:.82rem!important;padding:8px 12px!important}
+    html,body{overflow-x:hidden;max-width:100%}
     @media(max-width:768px){
-      .stats-row{grid-template-columns:repeat(2,1fr)!important}
-      .dashboard-header h1{font-size:1.4rem}
+      .stats-row{grid-template-columns:repeat(2,1fr)!important;gap:0!important}
+      .stats-row>div{padding:10px 6px!important}
+      .stats-row>div>div:first-child{font-size:1.2rem!important}
+      .stats-row>div>div:last-child{font-size:.72rem!important}
+      .dashboard-header{padding:16px 0!important}
+      .dashboard-header h1{font-size:1.2rem!important;margin:0 0 4px!important}
+      .dashboard-header p{font-size:.82rem!important;margin:0!important}
     }
+    .tabs{display:flex!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important;gap:4px;padding:12px 0 8px}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{white-space:nowrap!important;flex-shrink:0!important;font-size:.82rem!important;padding:8px 12px!important}
   </style>
 </head>
 <body>
@@ -95,7 +97,7 @@
 </div>
 
 <!-- Quick Stats -->
-<div style="background:white;border-bottom:1px solid var(--border);padding:20px 0">
+<div style="background:white;border-bottom:1px solid var(--border);padding:8px 0">
   <div class="container">
     <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" class="stats-row">
       <div style="text-align:center;padding:12px">
