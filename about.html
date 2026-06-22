@@ -118,5 +118,36 @@
   <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
   <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
 </nav>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+(function(){
+  const area = document.getElementById('navAuthArea');
+  if(Auth.isLoggedIn()){
+    const u = Auth.getUser();
+    const name = u.first_name || u.email || 'مستخدم';
+    area.innerHTML = `<span style="font-weight:600;font-size:.88rem">${name}</span><button onclick="Auth.logout()" class="btn btn-ghost btn-sm">خروج</button>`;
+  }
+})();
+function openAppDrawer(){
+  document.getElementById('appDrawer').classList.add('open');
+  document.getElementById('appOverlay').classList.add('open');
+  document.body.style.overflow='hidden';
+  const sec=document.getElementById('drawerAuthSection');
+  if(Auth.isLoggedIn()){
+    const u=Auth.getUser(); const name=u.first_name||u.email||'مستخدم';
+    sec.innerHTML=`<div class="app-drawer-auth"><div class="app-drawer-avatar">${name[0].toUpperCase()}</div><div><div style="font-weight:700;font-size:.88rem">${name}</div><div style="font-size:.74rem;color:#6b7280">${u.email||''}</div></div></div><div class="app-drawer-links"><a href="dashboard.html" class="app-drawer-link"><span class="dl-ico">📋</span> حجوزاتي</a><a href="#" class="app-drawer-link" onclick="Auth.logout()"><span class="dl-ico">🚪</span> تسجيل الخروج</a></div>`;
+  } else {
+    sec.innerHTML=`<div style="display:flex;gap:8px;margin-bottom:4px"><a href="login.html" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:.88rem;font-weight:700;border:1.5px solid #1B4F8E;color:#1B4F8E;background:none;text-decoration:none">دخول</a><a href="register.html" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:.88rem;font-weight:700;background:#1B4F8E;color:#fff;text-decoration:none">تسجيل</a></div>`;
+  }
+}
+function closeAppDrawer(){
+  document.getElementById('appDrawer').classList.remove('open');
+  document.getElementById('appOverlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAppDrawer();});
+</script>
 </body>
 </html>
