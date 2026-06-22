@@ -854,13 +854,53 @@ function renderResults() {
         : '<span class="tag tag-gray">عودة: '+rs+' توقف</span>';
     }
 
-    // WhatsApp share text
-    var shareText = 'رحلة ✈ '+origCode+' → '+destCode
-      + ' | '+fmtTime(depDt)+' – '+fmtTime(arrDt)+(nextDay?' (+1)':'')
-      + ' | '+fmtDuration(durMins)
-      + ' | '+(stops===0?'مباشر':stops+' توقف')
-      + (isRoundTrip ? '\nعودة: '+getSliceOriginCode(o,1)+' → '+getSliceDestCode(o,1)+' | '+fmtTime(getSliceDepDt(o,1))+' – '+fmtTime(getSliceArrDt(o,1)) : '')
-      + '\n'+al.name+'\nالسعر: '+formatPrice(priceGBP)+'\nللحجز: https://flymasar.com';
+    // WhatsApp share text — structured format
+    function waSliceText(sliceIdx, label) {
+      var sDepDt   = getSliceDepDt(o, sliceIdx);
+      var sArrDt   = getSliceArrDt(o, sliceIdx);
+      var sOrig    = getSliceOriginCode(o, sliceIdx);
+      var sDest    = getSliceDestCode(o, sliceIdx);
+      var sOrigName = getSliceOriginName(o, sliceIdx) || sOrig;
+      var sDestName = getSliceDestName(o, sliceIdx) || sDest;
+      var sStops   = getSliceStops(o, sliceIdx);
+      var sNextDay = isNextDay(sDepDt, sArrDt);
+      var segsArr  = getSegs(o, sliceIdx);
+      var txt = label + ':-\n';
+      txt += 'من مطار ' + sOrigName + ' (' + sOrig + ') | الإقلاع ' + fmtTime(sDepDt) + '\n';
+      txt += 'إلى مطار ' + sDestName + ' (' + sDest + ') | الهبوط ' + fmtTime(sArrDt) + (sNextDay ? ' (اليوم التالي)' : '') + '\n';
+      if (sStops > 0) {
+        for (var si = 0; si < segsArr.length - 1; si++) {
+          var stopAp   = segsArr[si].arriving_airport;
+          var stopCode = (stopAp && stopAp.iata_code) || '';
+          var stopName = (stopCode && AIRPORT_AR[stopCode]) || (stopAp && stopAp.name) || stopCode;
+          // Layover duration = next seg departure - this seg arrival
+          var layArr   = segsArr[si].arriving_at;
+          var layDep   = segsArr[si+1] && segsArr[si+1].departing_at;
+          var layMins  = (layArr && layDep) ? Math.round((new Date(layDep)-new Date(layArr))/60000) : 0;
+          var layText  = layMins > 0 ? fmtDuration(layMins) : '';
+          txt += 'توقف في: ' + stopName + (stopCode ? ' (' + stopCode + ')' : '') + (layText ? ' — ' + layText : '') + '\n';
+        }
+      }
+      return txt;
+    }
+
+    var stopsLabel0 = stops===0 ? 'مباشر' : stops===1 ? 'توقف واحد' : stops+' توقفات';
+    var shareText = '✈ تفاصيل الرحلة\n';
+    shareText += '━━━━━━━━━━━━━━\n';
+    shareText += 'نوع الرحلة: ' + (isRoundTrip ? 'ذهاب وعودة' : 'ذهاب فقط') + '\n';
+    shareText += 'شركة الطيران: ' + al.name + '\n';
+    shareText += 'الاتجاه: ' + stopsLabel0 + '\n';
+    shareText += '━━━━━━━━━━━━━━\n';
+    shareText += waSliceText(0, 'الذهاب');
+    if (isRoundTrip) {
+      shareText += '━━━━━━━━━━━━━━\n';
+      var rs1 = getSliceStops(o,1);
+      shareText += 'العودة ('+( rs1===0?'مباشر':rs1+' توقف')+')\n'.replace('\n','') + ':\n';
+      shareText += waSliceText(1, 'العودة').replace('العودة:-\n','');
+    }
+    shareText += '━━━━━━━━━━━━━━\n';
+    shareText += 'السعر: ' + formatPrice(priceGBP) + '\n';
+    shareText += '🔗 للحجز: https://flymasar.com';
     var waLink = 'https://api.whatsapp.com/send?text='+encodeURIComponent(shareText);
 
     // Airline logo: Duffel public CDN → API logo URL → airhex → initials
