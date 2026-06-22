@@ -149,8 +149,7 @@
   const hotelLabel = p.get('hotel')  || 'فندق';
   const nights     = parseInt(p.get('nights') || '1');
 
-  let stripe      = null;
-  let cardElement = null;
+  let stripe = null;
 
   function showError(msg) {
     const el = document.getElementById('payError');
@@ -168,22 +167,18 @@
     document.getElementById('sumTotal').textContent = '£ ' + amountGBP.toFixed(2);
   }
 
+  let elements = null;
+
   async function initStripe() {
     try {
       const cfg = await Api.get('/api/config/stripe-key');
       const key = cfg.publishable_key || cfg.key || '';
       if (!key) throw new Error('no key');
       stripe = Stripe(key);
-      const elements = stripe.elements({ locale: 'ar' });
-      cardElement = elements.create('card', {
-        style: {
-          base: { fontFamily:'inherit', fontSize:'16px', color:'#1a2744', '::placeholder':{ color:'#9ca3af' } },
-          invalid: { color:'#ef4444' },
-        },
-        hidePostalCode: true,
-      });
-      cardElement.mount('#stripe-element');
-      cardElement.on('change', e => {
+      elements = stripe.elements({ locale: 'ar', clientSecret });
+      const card = elements.create('payment', { fields: { billingDetails: { name: 'never' } } });
+      card.mount('#stripe-element');
+      card.on('change', e => {
         const err = document.getElementById('payError');
         if (e.error) { err.textContent = e.error.message; err.style.display = 'block'; }
         else { err.style.display = 'none'; }
@@ -194,7 +189,7 @@
   }
 
   async function submitPayment() {
-    if (!stripe || !cardElement) { showError('جاري تحميل نظام الدفع...'); return; }
+    if (!stripe || !elements) { showError('جاري تحميل نظام الدفع...'); return; }
     if (!clientSecret) { showError('بيانات الدفع غير متوفرة. يرجى العودة وإعادة المحاولة.'); return; }
 
     const cardName = document.getElementById('cardName').value.trim();
@@ -207,8 +202,10 @@
     document.getElementById('payError').style.display = 'none';
 
     try {
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card: cardElement, billing_details: { name: cardName } },
+      const result = await stripe.confirmPayment({
+        elements,
+        confirmParams: { payment_method_data: { billing_details: { name: cardName } } },
+        redirect: 'if_required',
       });
 
       if (result.error) {
@@ -218,9 +215,11 @@
       }
 
       if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-        // Poll for booking confirmation
+        // Poll for booking confirmation with exponential backoff
         let bookingRef = '';
-        for (let attempt = 0; attempt < 6; attempt++) {
+        const delays = [2000, 4000, 8000, 16000, 16000, 16000];
+        for (let attempt = 0; attempt < delays.length; attempt++) {
+          await new Promise(r => setTimeout(r, delays[attempt]));
           try {
             const confirmRes = await Api.post('/api/hotels/checkout/confirm', {
               session_key: sessionKey,
@@ -231,7 +230,6 @@
               break;
             }
           } catch(e) { break; }
-          await new Promise(r => setTimeout(r, 2000));
         }
         window.location.href = 'hotel-confirmation.html'
           + '?ref='     + encodeURIComponent(bookingRef)

@@ -271,6 +271,9 @@ class FlightBookingService
             'client_secret'     => $stripeResult['client_secret'],
             'payment_intent_id' => $paymentIntentId,
             'amount'            => $totalAmount,
+            'base'              => round($totalAmount / 1.1, 2),
+            'tax'               => round($totalAmount - ($totalAmount / 1.1), 2),
+            'discount'          => $discountAmount,
             'currency'          => strtoupper($currency),
         ];
     }
@@ -334,19 +337,39 @@ class FlightBookingService
         // Map passengers for Duffel (add required Duffel fields).
         $duffelPassengers = $this->mapPassengersForDuffel($passengersData, $offerData);
 
-        // Build Duffel payment payload.
+        // Pre-price the offer with selected services to get the authoritative amount.
+        // This catches any price changes since the user last viewed the offer.
+        try {
+            $priceResponse  = $this->duffel->priceOffer($offerId, ['balance'], $servicesData ?: []);
+            $pricedAmount   = $priceResponse['data']['total_amount']   ?? $offer['total_amount'];
+            $pricedCurrency = strtoupper($priceResponse['data']['total_currency'] ?? $offer['currency']);
+        } catch (\Throwable) {
+            // Fall back to cached offer amount if pricing endpoint fails
+            $pricedAmount   = $offer['total_amount'];
+            $pricedCurrency = strtoupper($offer['currency'] ?? 'GBP');
+        }
+
+        // Build Duffel payment payload using priced amount.
         $duffelPayments = [[
             'type'     => 'balance',
-            'amount'   => $offer['total_amount'],
-            'currency' => $offer['currency'],
+            'amount'   => (string) $pricedAmount,
+            'currency' => $pricedCurrency,
         ]];
+
+        // Attach metadata for traceability in Duffel dashboard.
+        $metadata = [
+            'booking_reference' => $bookingReference,
+            'user_id'           => (string) $userId,
+            'platform'          => 'flymasar',
+        ];
 
         // Create Duffel order.
         $orderResponse = $this->duffel->createOrder(
             $offerId,
             $duffelPassengers,
             $duffelPayments,
-            $servicesData ?: []
+            $servicesData ?: [],
+            $metadata
         );
 
         $order        = $orderResponse['data'] ?? [];
@@ -641,26 +664,22 @@ class FlightBookingService
         // Confirm with Duffel — this actually cancels the airline booking.
         $this->duffel->confirmCancellation($cancellationId);
 
-        // Update our booking record.
-        $this->db->prepare(
-            'UPDATE flight_bookings
-             SET status = :status, cancelled_at = NOW(), updated_at = NOW()
-             WHERE id = :id'
-        )->execute([':status' => 'cancelled', ':id' => $bookingId]);
-
-        // Issue Stripe refund if a payment record exists.
+        // Attempt Stripe refund before marking the booking as cancelled.
+        // If the refund fails, we set status to 'cancellation_pending_refund' so staff can retry.
         $payStmt = $this->db->prepare(
-            'SELECT stripe_payment_intent_id, amount, currency FROM payments
+            'SELECT id, stripe_payment_intent_id, amount, currency FROM payments
              WHERE booking_type = :bt AND booking_id = :bid AND status = :status
              LIMIT 1'
         );
         $payStmt->execute([':bt' => 'flight', ':bid' => $bookingId, ':status' => 'succeeded']);
         $payment = $payStmt->fetch(\PDO::FETCH_ASSOC);
 
-        $refundId = null;
+        $refundId     = null;
+        $finalStatus  = 'cancelled';
+
         if ($payment && !empty($payment['stripe_payment_intent_id'])) {
             try {
-                $refund  = $this->stripe->createRefund(
+                $refund   = $this->stripe->createRefund(
                     $payment['stripe_payment_intent_id'],
                     null,
                     bin2hex(random_bytes(16)),
@@ -669,17 +688,28 @@ class FlightBookingService
                 $refundId = $refund['id'] ?? null;
 
                 $this->db->prepare(
-                    'UPDATE payments SET status = :status, updated_at = NOW()
-                     WHERE stripe_payment_intent_id = :pi'
-                )->execute([':status' => 'refunded', ':pi' => $payment['stripe_payment_intent_id']]);
-            } catch (\Throwable) {
-                // Stripe refund failed — log manually. Booking is still cancelled in Duffel.
+                    'UPDATE payments SET status = :status, stripe_refund_id = :rid, updated_at = NOW()
+                     WHERE id = :id'
+                )->execute([':status' => 'refunded', ':rid' => $refundId, ':id' => $payment['id']]);
+            } catch (\Throwable $e) {
+                // Duffel cancellation succeeded but Stripe refund failed.
+                // Keep booking in a holding status — ops team must manually refund.
+                $finalStatus = 'cancellation_pending_refund';
+                $this->db->prepare(
+                    'UPDATE payments SET status = :status, updated_at = NOW() WHERE id = :id'
+                )->execute([':status' => 'refund_failed', ':id' => $payment['id']]);
             }
         }
 
+        $this->db->prepare(
+            'UPDATE flight_bookings
+             SET status = :status, cancelled_at = NOW(), updated_at = NOW()
+             WHERE id = :id'
+        )->execute([':status' => $finalStatus, ':id' => $bookingId]);
+
         return [
             'booking_id'  => $bookingId,
-            'status'      => 'cancelled',
+            'status'      => $finalStatus,
             'refund_id'   => $refundId,
         ];
     }
@@ -843,24 +873,49 @@ class FlightBookingService
 
     /**
      * Map internal passenger data to the format Duffel expects for order creation.
+     * Passengers are matched to offer passenger IDs by type (adult/child/infant) order.
      */
     private function mapPassengersForDuffel(array $passengers, array $offerData): array
     {
         $offerPassengers = $offerData['passengers'] ?? [];
-        $mapped = [];
 
-        foreach ($passengers as $idx => $p) {
-            $duffelId = $offerPassengers[$idx]['id'] ?? null;
+        // Build type-indexed queues to match by type, not by position
+        $queues = ['adult' => [], 'child' => [], 'infant_without_seat' => []];
+        foreach ($offerPassengers as $op) {
+            $type = $op['type'] ?? 'adult';
+            $queues[$type][] = $op['id'];
+        }
+
+        // Normalise our type labels to Duffel's
+        $typeMap = ['adult' => 'adult', 'child' => 'child', 'infant' => 'infant_without_seat'];
+
+        $mapped = [];
+        foreach ($passengers as $p) {
+            $ourType    = $p['type'] ?? 'adult';
+            $duffelType = $typeMap[$ourType] ?? 'adult';
+            $duffelId   = array_shift($queues[$duffelType]);
+
+            // Nationality: accept both ISO alpha-3 codes and legacy display names.
+            // If it looks like a 3-letter code already, pass through; otherwise try mapping.
+            $nationality = (string) ($p['nationality'] ?? '');
+            if (strlen($nationality) !== 3) {
+                $nationality = $this->toIso3Nationality($nationality);
+            }
 
             $entry = [
-                'given_name'         => $p['first_name'],
-                'family_name'        => $p['last_name'],
-                'gender'             => strtolower($p['gender']) === 'female' ? 'f' : 'm',
-                'born_on'            => $p['date_of_birth'],
-                'nationality'        => $p['nationality'],
-                'passport_number'    => $p['passport_number'] ?? null,
-                'passport_expiry_date' => $p['passport_expiry'] ?? null,
+                'given_name'  => $p['first_name'],
+                'family_name' => $p['last_name'],
+                'gender'      => strtolower($p['gender'] ?? '') === 'female' ? 'f' : 'm',
+                'born_on'     => $p['date_of_birth'],
+                'nationality' => $nationality,
             ];
+
+            if (!empty($p['passport_number'])) {
+                $entry['passport_number'] = $p['passport_number'];
+            }
+            if (!empty($p['passport_expiry'])) {
+                $entry['passport_expiry_date'] = $p['passport_expiry'];
+            }
 
             if ($duffelId !== null) {
                 $entry['id'] = $duffelId;
@@ -870,6 +925,24 @@ class FlightBookingService
         }
 
         return $mapped;
+    }
+
+    private function toIso3Nationality(string $name): string
+    {
+        $map = [
+            'algerian'=>'DZA','bahraini'=>'BHR','egyptian'=>'EGY','emirati'=>'ARE',
+            'jordanian'=>'JOR','kuwaiti'=>'KWT','lebanese'=>'LBN','libyan'=>'LBY',
+            'mauritanian'=>'MRT','moroccan'=>'MAR','omani'=>'OMN','palestinian'=>'PSE',
+            'qatari'=>'QAT','saudi'=>'SAU','sudanese'=>'SDN','syrian'=>'SYR',
+            'tunisian'=>'TUN','yemeni'=>'YEM','american'=>'USA','british'=>'GBR',
+            'french'=>'FRA','german'=>'DEU','indian'=>'IND','pakistani'=>'PAK',
+            'filipino'=>'PHL','turkish'=>'TUR','iranian'=>'IRN','indonesian'=>'IDN',
+            'malaysian'=>'MYS','bangladeshi'=>'BGD','ethiopian'=>'ETH','kenyan'=>'KEN',
+            'nigerian'=>'NGA','south african'=>'ZAF','canadian'=>'CAN','australian'=>'AUS',
+            'chinese'=>'CHN','japanese'=>'JPN','korean'=>'KOR','russian'=>'RUS',
+            'spanish'=>'ESP','italian'=>'ITA','dutch'=>'NLD','swedish'=>'SWE',
+        ];
+        return $map[strtolower(trim($name))] ?? 'OTH';
     }
 
     private function queueJobs(int $bookingId, int $userId): void

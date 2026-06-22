@@ -167,36 +167,26 @@
   const clientSecret = params.get('secret') || '';
   const amountGBP  = parseFloat(params.get('amount') || '0');
 
-  let stripe = null;
-  let cardElement = null;
-  let stripePublicKey = '';
+  let stripe   = null;
+  let elements = null;
 
   async function initStripe() {
     try {
       const cfg = await Api.get('/api/config/stripe-key');
-      stripePublicKey = cfg.publishable_key || cfg.key || '';
-      if (!stripePublicKey) throw new Error('no key');
+      const key = cfg.publishable_key || cfg.key || '';
+      if (!key) throw new Error('no key');
+      stripe = Stripe(key);
     } catch {
       showError('تعذر تحميل إعدادات الدفع. يرجى المحاولة مجدداً.');
       return;
     }
 
-    stripe = Stripe(stripePublicKey);
-    const elements = stripe.elements({ locale: 'ar' });
-    cardElement = elements.create('card', {
-      style: {
-        base: {
-          fontFamily: 'inherit',
-          fontSize: '16px',
-          color: '#1a2744',
-          '::placeholder': { color: '#9ca3af' },
-        },
-        invalid: { color: '#ef4444' },
-      },
-      hidePostalCode: true,
+    elements = stripe.elements({ locale: 'ar', clientSecret });
+    const card = elements.create('payment', {
+      fields: { billingDetails: { name: 'never' } },
     });
-    cardElement.mount('#stripe-element');
-    cardElement.on('change', e => {
+    card.mount('#stripe-element');
+    card.on('change', e => {
       const err = document.getElementById('payError');
       if (e.error) { err.textContent = e.error.message; err.style.display='block'; }
       else { err.style.display='none'; }
@@ -214,27 +204,39 @@
     document.getElementById('tabLink').classList.toggle('active', tab==='link');
   }
 
+  // breakdown passed from services.html via URL (base + tax from server pricing)
+  const baseAmount = parseFloat(params.get('base') || '0') || (amountGBP * 0.9);
+  const taxAmount  = parseFloat(params.get('tax')  || '0') || (amountGBP * 0.1);
+  const discountAmount = parseFloat(params.get('discount') || '0');
+
   function loadOrderSummary() {
     const el = document.getElementById('orderSummary');
     if (!amountGBP) {
       el.innerHTML = '<p style="color:var(--error)">تعذر تحميل ملخص الطلب</p>';
       return;
     }
-    el.innerHTML = `
+    let rows = `
       <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:0.92rem">
         <span>سعر الرحلة</span>
-        <span>£ ${(amountGBP * 0.9).toFixed(2)}</span>
+        <span>£ ${baseAmount.toFixed(2)}</span>
       </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.92rem">
+      <div style="display:flex;justify-content:space-between;padding:8px 0;${discountAmount > 0 ? 'border-bottom:1px solid #f0f2f5;' : ''}font-size:0.92rem">
         <span>الضرائب والرسوم</span>
-        <span>£ ${(amountGBP * 0.1).toFixed(2)}</span>
+        <span>£ ${taxAmount.toFixed(2)}</span>
       </div>`;
+    if (discountAmount > 0) {
+      rows += `<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.92rem;color:#16a34a">
+        <span>خصم الكوبون</span>
+        <span>−£ ${discountAmount.toFixed(2)}</span>
+      </div>`;
+    }
+    el.innerHTML = rows;
     document.getElementById('totalRow').style.display = 'flex';
     document.getElementById('totalDisplay').textContent = '£ ' + amountGBP.toFixed(2);
   }
 
   async function submitPayment() {
-    if (!stripe || !cardElement) { showError('جاري تحميل نظام الدفع...'); return; }
+    if (!stripe || !elements) { showError('جاري تحميل نظام الدفع...'); return; }
     if (!clientSecret) { showError('بيانات الدفع غير متوفرة. يرجى العودة وإعادة المحاولة.'); return; }
 
     const cardName = document.getElementById('cardName').value.trim();
@@ -247,11 +249,13 @@
     document.getElementById('payError').style.display = 'none';
 
     try {
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: cardElement,
-          billing_details: { name: cardName },
+      // confirmPayment is the current Stripe.js API (replaces deprecated confirmCardPayment)
+      const result = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          payment_method_data: { billing_details: { name: cardName } },
         },
+        redirect: 'if_required',
       });
 
       if (result.error) {
@@ -261,9 +265,11 @@
       }
 
       if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-        // Poll backend for booking confirmation (webhook may arrive slightly after)
+        // Poll with exponential backoff (2s, 4s, 8s, 16s, 16s, 16s)
         let bookingRef = '';
-        for (let attempt = 0; attempt < 6; attempt++) {
+        const delays = [2000, 4000, 8000, 16000, 16000, 16000];
+        for (let attempt = 0; attempt < delays.length; attempt++) {
+          await new Promise(r => setTimeout(r, delays[attempt]));
           try {
             const confirmRes = await Api.post('/api/flights/checkout/confirm', {
               session_key: sessionKey,
@@ -273,8 +279,7 @@
               bookingRef = confirmRes.booking_reference || '';
               break;
             }
-          } catch (e) { /* ignore, redirect anyway */ break; }
-          await new Promise(r => setTimeout(r, 2000));
+          } catch (e) { break; }
         }
         window.location.href = 'confirmation.html?session=' + encodeURIComponent(sessionKey)
           + '&pi=' + encodeURIComponent(piId)

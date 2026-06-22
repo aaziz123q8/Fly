@@ -202,20 +202,21 @@
     const tabs = document.getElementById('paxTabs');
     const forms = document.getElementById('paxForms');
     tabs.innerHTML = paxTypes.map((p,i)=>`<button class="pax-tab ${i===0?'active':''}" onclick="switchPax(${i},this)">${p.label}</button>`).join('');
+    // Values are ISO 3166-1 alpha-3 codes — required by Duffel API
     const nationalities = [
       ['','اختر الجنسية'],
-      ['Algerian','جزائري'],['Bahraini','بحريني'],['Egyptian','مصري'],['Emirati','إماراتي'],
-      ['Jordanian','أردني'],['Kuwaiti','كويتي'],['Lebanese','لبناني'],['Libyan','ليبي'],
-      ['Mauritanian','موريتاني'],['Moroccan','مغربي'],['Omani','عماني'],['Palestinian','فلسطيني'],
-      ['Qatari','قطري'],['Saudi','سعودي'],['Sudanese','سوداني'],['Syrian','سوري'],
-      ['Tunisian','تونسي'],['Yemeni','يمني'],['American','أمريكي'],['British','بريطاني'],
-      ['French','فرنسي'],['German','ألماني'],['Indian','هندي'],['Pakistani','باكستاني'],
-      ['Filipino','فلبيني'],['Turkish','تركي'],['Iranian','إيراني'],['Indonesian','إندونيسي'],
-      ['Malaysian','ماليزي'],['Bangladeshi','بنغلاديشي'],['Ethiopian','إثيوبي'],['Kenyan','كيني'],
-      ['Nigerian','نيجيري'],['South African','جنوب أفريقي'],['Canadian','كندي'],['Australian','أسترالي'],
-      ['Chinese','صيني'],['Japanese','ياباني'],['Korean','كوري'],['Russian','روسي'],
-      ['Spanish','إسباني'],['Italian','إيطالي'],['Dutch','هولندي'],['Swedish','سويدي'],
-      ['Other','أخرى'],
+      ['DZA','جزائري'],['BHR','بحريني'],['EGY','مصري'],['ARE','إماراتي'],
+      ['JOR','أردني'],['KWT','كويتي'],['LBN','لبناني'],['LBY','ليبي'],
+      ['MRT','موريتاني'],['MAR','مغربي'],['OMN','عماني'],['PSE','فلسطيني'],
+      ['QAT','قطري'],['SAU','سعودي'],['SDN','سوداني'],['SYR','سوري'],
+      ['TUN','تونسي'],['YEM','يمني'],['USA','أمريكي'],['GBR','بريطاني'],
+      ['FRA','فرنسي'],['DEU','ألماني'],['IND','هندي'],['PAK','باكستاني'],
+      ['PHL','فلبيني'],['TUR','تركي'],['IRN','إيراني'],['IDN','إندونيسي'],
+      ['MYS','ماليزي'],['BGD','بنغلاديشي'],['ETH','إثيوبي'],['KEN','كيني'],
+      ['NGA','نيجيري'],['ZAF','جنوب أفريقي'],['CAN','كندي'],['AUS','أسترالي'],
+      ['CHN','صيني'],['JPN','ياباني'],['KOR','كوري'],['RUS','روسي'],
+      ['ESP','إسباني'],['ITA','إيطالي'],['NLD','هولندي'],['SWE','سويدي'],
+      ['OTH','أخرى'],
     ];
     const natOptions = nationalities.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
 
@@ -573,10 +574,11 @@
     if (!code) return;
     const msg = document.getElementById('couponMsg');
     try {
+      // Preview only — actual discount calculated server-side in createPaymentIntent
       const res = await Api.post('/api/coupons/validate', { code, amount: priceGBP + taxGBP });
       discountGBP = parseFloat(res.discount_amount || res.discount || 0);
       msg.style.color = '#16a34a';
-      msg.textContent = '✅ تم تطبيق الكوبون — خصم ' + formatPrice(discountGBP);
+      msg.textContent = '✅ سيُطبَّق الخصم عند الدفع — ' + formatPrice(discountGBP);
       document.getElementById('discountRow').style.display = 'flex';
       document.getElementById('priceDiscount').textContent = '−' + formatPrice(discountGBP);
       updateTotal();

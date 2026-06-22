@@ -506,9 +506,12 @@ async function proceedToPayment() {
     }, true);
 
     window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey)
-      + '&pi='     + encodeURIComponent(piRes.payment_intent_id || '')
-      + '&secret=' + encodeURIComponent(piRes.client_secret     || '')
-      + '&amount=' + encodeURIComponent(piRes.amount            || '');
+      + '&pi='       + encodeURIComponent(piRes.payment_intent_id || '')
+      + '&secret='   + encodeURIComponent(piRes.client_secret     || '')
+      + '&amount='   + encodeURIComponent(piRes.amount            || '')
+      + '&base='     + encodeURIComponent(piRes.base              || '')
+      + '&tax='      + encodeURIComponent(piRes.tax               || '')
+      + '&discount=' + encodeURIComponent(piRes.discount          || '');
   } catch(e) {
     btn.disabled=false; txt.classList.remove('hidden'); spin.classList.add('hidden');
     showErr('حدث خطأ: ' + (e.message || 'يرجى المحاولة مجدداً'));
@@ -525,9 +528,12 @@ async function skipServices() {
       coupon_code: couponCode || null,
     }, true);
     window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey)
-      + '&pi='     + encodeURIComponent(piRes.payment_intent_id || '')
-      + '&secret=' + encodeURIComponent(piRes.client_secret     || '')
-      + '&amount=' + encodeURIComponent(piRes.amount            || '');
+      + '&pi='       + encodeURIComponent(piRes.payment_intent_id || '')
+      + '&secret='   + encodeURIComponent(piRes.client_secret     || '')
+      + '&amount='   + encodeURIComponent(piRes.amount            || '')
+      + '&base='     + encodeURIComponent(piRes.base              || '')
+      + '&tax='      + encodeURIComponent(piRes.tax               || '')
+      + '&discount=' + encodeURIComponent(piRes.discount          || '');
   } catch(e) {
     btn.disabled=false;
     showErr('حدث خطأ: ' + (e.message || ''));
