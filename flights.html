@@ -246,7 +246,14 @@ function toISODate(val) {
 
 function fmtTime(dt) {
   if (!dt) return '—';
-  try { return new Date(dt).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false}); } catch(e) { return dt.substring(11,16)||'—'; }
+  // Extract time directly from ISO string to avoid timezone conversion
+  var timePart = dt.substring(11, 16); // "HH:MM"
+  if (!timePart || timePart.length < 5) return '—';
+  var h = parseInt(timePart.substring(0,2));
+  var m = timePart.substring(3,5);
+  var suffix = h < 12 ? 'ص' : 'م';
+  var h12 = h % 12 || 12;
+  return h12 + ':' + m + ' ' + suffix;
 }
 
 function fmtDate(dt) {
@@ -308,27 +315,53 @@ function getDestCode(o){
   var sl=getSlice(o);
   return (sl.destination&&(sl.destination.iata_code||sl.destination))||getLastSeg(o).arriving_airport?.iata_code||'—';
 }
+var AIRPORT_AR = {
+  KWI:'مطار الكويت الدولي',AUH:'مطار أبوظبي الدولي',DXB:'مطار دبي الدولي',DOH:'مطار حمد الدولي',
+  RUH:'مطار الملك خالد',JED:'مطار الملك عبدالعزيز',DMM:'مطار الملك فهد',BAH:'مطار البحرين الدولي',
+  MCT:'مطار مسقط الدولي',AMM:'مطار الملكة علياء',BEY:'مطار رفيق الحريري',CAI:'مطار القاهرة',
+  LHR:'مطار لندن هيثرو',LGW:'مطار لندن غاتويك',CDG:'مطار شارل ديغول',FRA:'مطار فرانكفورت',
+  IST:'مطار إسطنبول',MUC:'مطار ميونيخ',FCO:'مطار روما فيوميتشينو',MAD:'مطار مدريد',
+  BKK:'مطار سوفارنابهومي بانكوك',SIN:'مطار شنغهاي',KUL:'مطار كوالالمبور',
+  DEL:'مطار إنديرا غاندي',BOM:'مطار مومباي',HYD:'مطار حيدر آباد',CMB:'مطار كولومبو',
+  NBO:'مطار نيروبي',ADD:'مطار أديس أبابا',JFK:'مطار جون كينيدي',LAX:'مطار لوس أنجلوس',
+  ORD:'مطار أوهير شيكاغو',SYD:'مطار سيدني',TXL:'مطار برلين',VIE:'مطار فيينا',
+  ZRH:'مطار زيورخ',AMS:'مطار أمستردام',MAN:'مطار مانشستر',DUB:'مطار دبلن',
+  GVA:'مطار جنيف',BCN:'مطار برشلونة',ATH:'مطار أثينا',HKG:'مطار هونغ كونغ',
+  NRT:'مطار نيريتا طوكيو',ICN:'مطار إنشيون سيول',PEK:'مطار بيجين',PVG:'مطار شنغهاي بودونغ',
+  CGK:'مطار سوكارنو هاتا جاكرتا',MNL:'مطار مانيلا',TBS:'مطار تفليس',GYD:'مطار باكو',
+  EVN:'مطار يريفان',TAS:'مطار طشقند',NJF:'مطار النجف الدولي',BGW:'مطار بغداد',
+  KHI:'مطار كراتشي',LHE:'مطار لاهور',ISB:'مطار إسلام آباد',
+};
+
+function arAirportName(code) {
+  return code ? (AIRPORT_AR[code] || '') : '';
+}
+
 function getOriginName(o){
   var sl=getSlice(o);
-  return (sl.origin&&sl.origin.name)||(getFirstSeg(o).departing_airport&&getFirstSeg(o).departing_airport.name)||'';
+  var code = getOriginCode(o);
+  return arAirportName(code) || (sl.origin&&sl.origin.name)||(getFirstSeg(o).departing_airport&&getFirstSeg(o).departing_airport.name)||'';
 }
 function getDestName(o){
   var sl=getSlice(o);
-  return (sl.destination&&sl.destination.name)||(getLastSeg(o).arriving_airport&&getLastSeg(o).arriving_airport.name)||'';
+  var code = getDestCode(o);
+  return arAirportName(code) || (sl.destination&&sl.destination.name)||(getLastSeg(o).arriving_airport&&getLastSeg(o).arriving_airport.name)||'';
 }
 
 function getAirline(o){
   var seg = getFirstSeg(o);
   var mc  = seg.marketing_carrier||seg.operating_carrier||{};
   var code = mc.iata_code || o.airline_code || '';
-  // Primary logo from Duffel; airhex used as secondary fallback in logoHtml
-  var logo = mc.logo_symbol_url || mc.logo_lockup_url || '';
-  var airhexLogo = code ? 'https://content.airhex.com/content/logos/airlines_'+code+'_64_64_f.png' : '';
+  // Logo chain: Duffel public CDN → API logo_symbol_url → airhex
+  var duffelCdn = code ? 'https://assets.duffel.com/img/airlines/for-light-background/'+code+'.svg' : '';
+  var apiLogo   = mc.logo_symbol_url || mc.logo_lockup_url || '';
+  var airhex    = code ? 'https://content.airhex.com/content/logos/airlines_'+code+'_64_64_f.png' : '';
   return {
-    name: mc.name     || o.airline  || 'غير محدد',
-    code: code,
-    logo: logo,
-    airhex: airhexLogo,
+    name:     mc.name || o.airline || 'غير محدد',
+    code:     code,
+    logo:     duffelCdn || apiLogo,
+    fallback1: apiLogo && apiLogo !== duffelCdn ? apiLogo : airhex,
+    fallback2: airhex,
   };
 }
 
@@ -374,25 +407,20 @@ function hasBaggage(o){
 }
 
 function getBaggageText(o){
+  // Only show checked baggage — carry-on is included in almost all fares and is not meaningful to highlight
   var bags = _offerBaggages(o);
-  var checked = 0, carry = 0;
+  var checked = 0;
   for (var i = 0; i < bags.length; i++) {
-    var q = bags[i].quantity || 0;
-    if (bags[i].type === 'checked') checked += q;
-    if (bags[i].type === 'carry_on') carry += q;
+    if (bags[i].type === 'checked') checked += (bags[i].quantity || 0);
   }
-  if (checked > 0 && carry > 0) return checked+'×أمتعة + '+carry+'×مقصورة';
   if (checked > 0) return checked+'×أمتعة مسجلة';
-  if (carry  > 0) return carry+'×حقيبة مقصورة';
-  // legacy shape fallback
+  // legacy shape fallback (checked bags only)
   var segs = getSegs(o);
   for(var i=0;i<segs.length;i++){
     var pax = (segs[i].passengers||[]);
     for(var j=0;j<pax.length;j++){
       var cb = pax[j].checked_bags||0;
-      var ca = pax[j].cabin_bags||0;
       if(cb>0) return cb+'×أمتعة مسجلة';
-      if(ca>0) return ca+'×حقيبة مقصورة';
     }
   }
   return null;
@@ -478,12 +506,16 @@ function getSliceDestCode(o, sliceIdx) {
 }
 
 function getSliceOriginName(o, sliceIdx) {
+  var code = getSliceOriginCode(o, sliceIdx);
+  if (AIRPORT_AR[code]) return AIRPORT_AR[code];
   var sl = getSlice(o, sliceIdx);
   var segs = getSegs(o, sliceIdx);
   return (sl.origin && sl.origin.name) || ((segs[0] || {}).departing_airport && segs[0].departing_airport.name) || '';
 }
 
 function getSliceDestName(o, sliceIdx) {
+  var code = getSliceDestCode(o, sliceIdx);
+  if (AIRPORT_AR[code]) return AIRPORT_AR[code];
   var sl = getSlice(o, sliceIdx);
   var segs = getSegs(o, sliceIdx);
   var last = segs[segs.length-1] || {};
@@ -806,16 +838,25 @@ function renderResults() {
       + '\n'+al.name+'\nالسعر: '+formatPrice(priceGBP)+'\nللحجز: https://flymasar.com';
     var waLink = 'https://api.whatsapp.com/send?text='+encodeURIComponent(shareText);
 
-    // Airline logo: Duffel URL → airhex CDN → initials fallback
+    // Airline logo: Duffel public CDN → API logo URL → airhex → initials
     var fallbackInitials = al.code || al.name.substring(0,2).toUpperCase();
     var logoHtml;
-    var primaryLogo = al.logo || al.airhex;
-    if (primaryLogo) {
-      var airhexFallback = al.airhex && al.airhex !== primaryLogo ? al.airhex : '';
-      var onerrorJs = airhexFallback
-        ? 'this.onerror=function(){this.onerror=null;this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'};this.src=\''+airhexFallback+'\''
-        : 'this.onerror=null;this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'';
-      logoHtml = '<img src="'+primaryLogo+'" alt="'+al.name+'" onerror="'+onerrorJs+'">'
+    if (al.logo) {
+      var fb1 = al.fallback1 || '';
+      var fb2 = al.fallback2 || '';
+      // Build a chain: img tries logo, on error tries fb1, on error tries fb2, on error shows initials div
+      var onerrorJs;
+      if (fb1 && fb2 && fb1 !== fb2) {
+        onerrorJs = 'this.src=\''+fb1+'\';this.onerror=function(){'
+          + 'this.src=\''+fb2+'\';this.onerror=function(){'
+          + 'this.onerror=null;this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\''
+          + '}}';
+      } else if (fb1) {
+        onerrorJs = 'this.src=\''+fb1+'\';this.onerror=function(){this.onerror=null;this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'}';
+      } else {
+        onerrorJs = 'this.onerror=null;this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'';
+      }
+      logoHtml = '<img src="'+al.logo+'" alt="'+al.name+'" onerror="'+onerrorJs+'">'
         + '<div class="al-logo-fallback" style="display:none">'+fallbackInitials+'</div>';
     } else {
       logoHtml = '<div class="al-logo-fallback">'+fallbackInitials+'</div>';
