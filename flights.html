@@ -64,6 +64,15 @@
     .stop-badge-one    .stop-badge-dot { background: #d97706; }
     .stop-badge-multi  .stop-badge-dot { background: #e11d48; }
 
+    /* Search summary cards */
+    .sscard { background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.2); border-radius:10px; padding:6px 12px; display:flex; flex-direction:column; gap:1px; cursor:default; }
+    .sscard-lbl { font-size:.65rem; color:rgba(255,255,255,.55); font-weight:600; }
+    .sscard-val { font-size:.88rem; color:#fff; font-weight:700; white-space:nowrap; }
+
+    /* Currency dropdown option */
+    .curr-opt { padding:10px 16px; font-size:.82rem; color:#1a2e5a; cursor:pointer; transition:background .12s; white-space:nowrap; }
+    .curr-opt:hover { background:#f0f4ff; }
+
     /* Price column */
     .fc-price { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 20px; border-right: 1px solid #f0f2f5; gap: 6px; min-width: 140px; }
     .fc-price .amount { font-size: 1.5rem; font-weight: 800; color: var(--primary); white-space: nowrap; }
@@ -110,50 +119,76 @@
       </div>
     </div>
 
-    <!-- Compact Search -->
-    <div class="search-bar-compact">
-      <div style="flex:1;min-width:100px">
-        <div class="form-label">من</div>
-        <input type="text" class="form-control" id="sFrom" style="text-transform:uppercase">
+    <!-- Compact Search — summary cards + edit mode -->
+    <div class="search-bar-compact" id="searchBarView">
+      <!-- Summary display (default) -->
+      <div id="searchSummaryCards" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%">
+        <div class="sscard" id="ss_from"><span class="sscard-lbl">من</span><span class="sscard-val" id="ss_from_val">—</span></div>
+        <div style="color:rgba(255,255,255,.5);font-size:1.1rem">→</div>
+        <div class="sscard" id="ss_to"><span class="sscard-lbl">إلى</span><span class="sscard-val" id="ss_to_val">—</span></div>
+        <div class="sscard"><span class="sscard-lbl">ذهاب</span><span class="sscard-val" id="ss_dep_val">—</span></div>
+        <div class="sscard" id="ss_ret_wrap"><span class="sscard-lbl">عودة</span><span class="sscard-val" id="ss_ret_val">—</span></div>
+        <div class="sscard"><span class="sscard-lbl">المسافرون</span><span class="sscard-val" id="ss_pax_val">—</span></div>
+        <div class="sscard"><span class="sscard-lbl">الدرجة</span><span class="sscard-val" id="ss_cabin_val">—</span></div>
+        <button class="btn btn-sm" onclick="toggleSearchEdit(true)"
+          style="background:rgba(255,255,255,.18);color:#fff;border:1.5px solid rgba(255,255,255,.4);margin-right:auto;white-space:nowrap">✏️ تعديل</button>
       </div>
-      <div style="flex:1;min-width:100px">
-        <div class="form-label">إلى</div>
-        <input type="text" class="form-control" id="sTo" style="text-transform:uppercase">
+
+      <!-- Edit fields (hidden by default) -->
+      <div id="searchEditFields" style="display:none;flex-wrap:wrap;gap:10px;align-items:flex-end;width:100%">
+        <div style="flex:1;min-width:90px">
+          <div class="form-label">من</div>
+          <input type="text" class="form-control" id="sFrom" style="text-transform:uppercase">
+        </div>
+        <div style="flex:1;min-width:90px">
+          <div class="form-label">إلى</div>
+          <input type="text" class="form-control" id="sTo" style="text-transform:uppercase">
+        </div>
+        <div>
+          <div class="form-label">ذهاب</div>
+          <input type="text" class="form-control" id="sDepDate" style="min-width:110px;direction:ltr" readonly>
+        </div>
+        <div>
+          <div class="form-label">عودة</div>
+          <input type="text" class="form-control" id="sRetDate" style="min-width:110px;direction:ltr" readonly>
+        </div>
+        <div>
+          <div class="form-label">المسافرون</div>
+          <input type="text" class="form-control" id="sPaxDisplay" readonly style="min-width:90px;cursor:default">
+          <input type="hidden" id="sPax">
+        </div>
+        <div>
+          <div class="form-label">الدرجة</div>
+          <select class="form-control" id="sCabin" style="min-width:100px">
+            <option value="economy">اقتصادية</option>
+            <option value="premium_economy">اقتصادية مميزة</option>
+            <option value="business">رجال أعمال</option>
+            <option value="first">أولى</option>
+          </select>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-primary btn-sm" onclick="doSearch()">🔍 بحث</button>
+          <button class="btn btn-sm" onclick="toggleSearchEdit(false)"
+            style="background:rgba(255,255,255,.18);color:#fff;border:1.5px solid rgba(255,255,255,.4)">✕</button>
+        </div>
       </div>
-      <div>
-        <div class="form-label">ذهاب</div>
-        <input type="text" class="form-control" id="sDepDate" style="min-width:110px;direction:ltr" readonly>
-      </div>
-      <div>
-        <div class="form-label">عودة</div>
-        <input type="text" class="form-control" id="sRetDate" style="min-width:110px;direction:ltr" readonly>
-      </div>
-      <div>
-        <div class="form-label">المسافرون</div>
-        <input type="text" class="form-control" id="sPaxDisplay" readonly style="min-width:100px;cursor:default">
-        <input type="hidden" id="sPax">
-      </div>
-      <div>
-        <div class="form-label">الدرجة</div>
-        <select class="form-control" id="sCabin" style="min-width:100px">
-          <option value="economy">اقتصادية</option>
-          <option value="premium_economy">اقتصادية مميزة</option>
-          <option value="business">رجال أعمال</option>
-          <option value="first">أولى</option>
-        </select>
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="doSearch()">🔍 بحث</button>
     </div>
 
-    <!-- Currency selector + search summary -->
+    <!-- Currency dropdown + search summary -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0 12px;flex-wrap:wrap;gap:8px">
       <div style="font-size:.82rem;color:rgba(255,255,255,.7)" id="searchSummary"></div>
-      <div class="currency-bar">
-        <span style="font-size:.72rem;color:rgba(255,255,255,.5)">العملة:</span>
-        <button class="currency-btn" data-currency="KWD" onclick="setCurrency('KWD')">KWD</button>
-        <button class="currency-btn" data-currency="SAR" onclick="setCurrency('SAR')">SAR</button>
-        <button class="currency-btn" data-currency="USD" onclick="setCurrency('USD')">USD</button>
-        <button class="currency-btn" data-currency="GBP" onclick="setCurrency('GBP')">GBP</button>
+      <!-- Currency dropdown -->
+      <div style="position:relative" id="currencyDropdownWrap">
+        <button onclick="toggleCurrencyDropdown()"
+          style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.35);color:#fff;border-radius:20px;padding:5px 14px;font-size:.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">
+          💱 <span id="currencyLabel">KWD</span> ▾
+        </button>
+        <div id="currencyDropdown" style="display:none;position:absolute;left:0;top:calc(100% + 6px);background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.18);overflow:hidden;min-width:130px;z-index:999">
+          <div onclick="setCurrency('KWD');toggleCurrencyDropdown()" class="curr-opt">🇰🇼 دينار كويتي (KWD)</div>
+          <div onclick="setCurrency('SAR');toggleCurrencyDropdown()" class="curr-opt">🇸🇦 ريال سعودي (SAR)</div>
+          <div onclick="setCurrency('USD');toggleCurrencyDropdown()" class="curr-opt">🇺🇸 دولار أمريكي (USD)</div>
+          <div onclick="setCurrency('GBP');toggleCurrencyDropdown()" class="curr-opt">🇬🇧 جنيه إسترليني (GBP)</div>
+        </div>
       </div>
     </div>
   </div>
@@ -587,6 +622,55 @@ function getSliceRow(o, sliceIdx, isReturn) {
 }
 
 // ─── Init ───────────────────────────────────────────────────────
+function toggleSearchEdit(show) {
+  document.getElementById('searchSummaryCards').style.display = show ? 'none' : 'flex';
+  document.getElementById('searchEditFields').style.display   = show ? 'flex' : 'none';
+}
+
+function updateSearchSummaryCards() {
+  var orig    = searchParams.origin      || '—';
+  var dest    = searchParams.destination || '—';
+  var origName = AIRPORT_AR[orig] || orig;
+  var destName = AIRPORT_AR[dest] || dest;
+  var dep     = searchParams.departure   || '—';
+  var ret     = searchParams.return      || '';
+  var pax     = searchParams.passengers  || 1;
+  var children= searchParams.children   || 0;
+  var infants = searchParams.infants    || 0;
+  var cabin   = searchParams.cabin      || 'economy';
+  var cabinNames = {economy:'اقتصادية',premium_economy:'اقتصادية مميزة',business:'رجال أعمال',first:'الدرجة الأولى'};
+  var paxStr  = pax + ' بالغ' + (children>0?' + '+children+' طفل':'') + (infants>0?' + '+infants+' رضيع':'');
+  var depFmt  = dep !== '—' ? fmtDateShort(dep) : '—';
+  var retFmt  = ret ? fmtDateShort(ret) : null;
+
+  document.getElementById('ss_from_val').textContent  = orig + (origName !== orig ? ' — ' + origName : '');
+  document.getElementById('ss_to_val').textContent    = dest + (destName !== dest ? ' — ' + destName : '');
+  document.getElementById('ss_dep_val').textContent   = depFmt;
+  document.getElementById('ss_ret_val').textContent   = retFmt || '—';
+  document.getElementById('ss_ret_wrap').style.display = retFmt ? '' : 'none';
+  document.getElementById('ss_pax_val').textContent   = paxStr;
+  document.getElementById('ss_cabin_val').textContent = cabinNames[cabin] || cabin;
+}
+
+function fmtDateShort(iso) {
+  if (!iso) return '—';
+  try { return new Date(iso).toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'}); }
+  catch(e) { return iso; }
+}
+
+function toggleCurrencyDropdown() {
+  var dd = document.getElementById('currencyDropdown');
+  dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  var wrap = document.getElementById('currencyDropdownWrap');
+  if (wrap && !wrap.contains(e.target)) {
+    document.getElementById('currencyDropdown').style.display = 'none';
+  }
+});
+
 function initPage() {
   var p = new URLSearchParams(window.location.search);
   searchParams = {
@@ -614,17 +698,8 @@ function initPage() {
   if (searchParams.infants  > 0) paxParts.push(searchParams.infants  + ' رضيع');
   document.getElementById('sPaxDisplay').value = paxParts.join('، ');
 
-  if (searchParams.departure) {
-    var paxSummary = searchParams.passengers + ' بالغ';
-    if (searchParams.children > 0) paxSummary += '، ' + searchParams.children + ' طفل';
-    if (searchParams.infants  > 0) paxSummary += '، ' + searchParams.infants  + ' رضيع';
-    var tripType = searchParams.return ? 'ذهاب وعودة' : 'ذهاب فقط';
-    document.getElementById('searchSummary').textContent =
-      tripType + ' | ' +
-      searchParams.origin + ' ← → ' + searchParams.destination + ' | ' +
-      searchParams.departure + (searchParams.return ? ' – ' + searchParams.return : '') + ' | ' +
-      paxSummary + ' | ' + cabinLabel(searchParams.cabin);
-  }
+  // Populate summary cards
+  updateSearchSummaryCards();
 
   // Nav
   document.getElementById('navAuth').innerHTML = Auth.isLoggedIn()

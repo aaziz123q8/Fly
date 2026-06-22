@@ -18,6 +18,9 @@ function setCurrency(code) {
   document.querySelectorAll('.currency-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.currency === code);
   });
+  // Update dropdown button label if present
+  const lbl = document.getElementById('currencyLabel');
+  if (lbl) lbl.textContent = code;
   document.querySelectorAll('[data-price-gbp]').forEach(el => {
     const gbp = parseFloat(el.dataset.priceGbp);
     if (!isNaN(gbp)) el.textContent = formatPrice(gbp);
