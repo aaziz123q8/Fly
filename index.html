@@ -801,8 +801,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('fDep').classList.add('ok');
       const y = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0');
       document.getElementById('fDepISO').value = `${y}-${mo}-${dy}`;
-      // Update return datepicker min date to departure date
-      if (dpRet) dpRet.setMinDate(new Date(d));
+      // Update return datepicker min date to departure+1 (same-day return not valid)
+      if (dpRet) { const next = new Date(d); next.setDate(next.getDate() + 1); dpRet.setMinDate(next); }
     }
   });
   dpRet = new DatePicker(document.getElementById('fRet'), {

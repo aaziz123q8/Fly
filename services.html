@@ -441,9 +441,11 @@ function renderSeatMap() {
           const price = seatSvc ? parseFloat(seatSvc.total_amount||0) : 0;
           const label = designator.replace(/^\d+/, ''); // just the letter
           const svcJson = seatSvc ? encodeURIComponent(JSON.stringify(seatSvc)) : '';
+          // Sanitize designator: only alphanumeric chars are valid seat labels
+          const safeDesignator = designator.replace(/[^A-Z0-9]/gi, '');
 
-          html += `<div class="${cls}" title="${designator}${isExtraLeg?' · مساحة أرجل':''} ${isAvailable?(price===0?'· مجاني':'· +'+price.toFixed(0)):' · محجوز'}"
-            onclick="selectSeat('${designator}', ${isAvailable}, '${svcJson}')">${label||designator}</div>`;
+          html += `<div class="${cls}" title="${safeDesignator}${isExtraLeg?' · مساحة أرجل':''} ${isAvailable?(price===0?'· مجاني':'· +'+price.toFixed(0)):' · محجوز'}"
+            onclick="selectSeat('${safeDesignator}', ${isAvailable}, '${svcJson}')">${label||safeDesignator}</div>`;
         });
       });
       html += `</div>`;
@@ -455,7 +457,9 @@ function renderSeatMap() {
 
 function selectSeat(designator, isAvailable, svcJson) {
   if (!isAvailable) return;
-  const key = `${currentPaxIdx}_${currentSegIdx}_${designator}`;
+  // Sanitize to prevent any injection from onclick attribute
+  const safeDesig = String(designator).replace(/[^A-Z0-9]/gi, '');
+  const key = `${currentPaxIdx}_${currentSegIdx}_${safeDesig}`;
   // Deselect any previously selected seat for this pax+seg
   Object.keys(selectedSeats).forEach(k => {
     if (k.startsWith(`${currentPaxIdx}_${currentSegIdx}_`)) delete selectedSeats[k];
@@ -466,7 +470,7 @@ function selectSeat(designator, isAvailable, svcJson) {
     svc = JSON.parse(decoded);
   } catch(e) {}
   if (svc) {
-    selectedSeats[key] = { svc, designator };
+    selectedSeats[key] = { svc, designator: safeDesig };
   }
   renderSeatMap();
   updateSummary();
