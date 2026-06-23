@@ -548,19 +548,28 @@ function buildMinimalFlightCard() {
 }
 
 // ── Price breakdown ────────────────────────────────────────────────────────
-function loadPriceRows() {
+let extraServicesGBP = 0; // populated from review API
+
+function renderPriceRows() {
   const cur   = (typeof currentCurrency !== 'undefined' && currentCurrency) ? currentCurrency : 'GBP';
   const isGBP = cur === 'GBP';
 
   let html = `
     <div class="price-row">
-      <span>✈️ سعر الرحلة</span>
+      <span>✈️ سعر الرحلة الأساسي</span>
       <span>${fmt(baseAmountGBP)}</span>
     </div>
     <div class="price-row">
       <span>🧾 الضرائب والرسوم</span>
       <span>${fmt(taxAmountGBP)}</span>
     </div>`;
+
+  if (extraServicesGBP > 0) {
+    html += `<div class="price-row" style="color:#0369a1">
+      <span>🧳 الخدمات الإضافية</span>
+      <span>${fmt(extraServicesGBP)}</span>
+    </div>`;
+  }
 
   if (discountGBP > 0) {
     html += `<div class="price-row" style="color:#16a34a">
@@ -577,7 +586,6 @@ function loadPriceRows() {
 
   document.getElementById('priceRows').innerHTML = html;
 
-  // Footer amount
   document.getElementById('footerAmount').textContent = fmt(net);
 
   if (!isGBP) {
@@ -587,6 +595,20 @@ function loadPriceRows() {
     note.textContent = '💳 سيتم تحصيل £' + net.toFixed(2) + ' (GBP) من بطاقتك. المبالغ بـ ' + cur + ' للعرض فقط.';
     note.style.display = 'block';
   }
+}
+
+async function loadPriceRows() {
+  renderPriceRows(); // render immediately with URL params
+
+  if (!sessionKey) return;
+  try {
+    const res      = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey));
+    const cost     = parseFloat(res.services_cost_gbp ?? 0);
+    if (cost > 0) {
+      extraServicesGBP = cost;
+      renderPriceRows();
+    }
+  } catch(e) { /* non-fatal — URL params already rendered */ }
 }
 
 // ── Coupon ─────────────────────────────────────────────────────────────────
@@ -709,9 +731,9 @@ async function submitPayment() {
 // ── Boot ───────────────────────────────────────────────────────────────────
 if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
 initCurrency();
-loadPriceRows();
-loadFlightSummary();
-initStripe();
+loadPriceRows();      // async — shows URL data first, then refines from API
+loadFlightSummary();  // async
+initStripe();         // async — loads Stripe.js then mounts
 </script>
 </body>
 </html>

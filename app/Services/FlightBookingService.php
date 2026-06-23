@@ -222,6 +222,14 @@ class FlightBookingService
             ? json_decode($session['passengers_data'], true)
             : ($session['passengers_data'] ?? []);
 
+        $servicesData = is_string($session['services_data'])
+            ? json_decode($session['services_data'], true)
+            : ($session['services_data'] ?? []);
+
+        // Compute services cost = session total_amount minus base offer amount
+        $sessionTotal    = (float) ($session['total_amount'] ?? 0);
+        $servicesCostGBP = max(0.0, round($sessionTotal - $baseAmount, 2));
+
         return [
             'session'          => [
                 'session_key'  => $session['session_key'],
@@ -231,6 +239,8 @@ class FlightBookingService
             'offer'            => $this->formatOffer($offerData),
             'passengers_data'  => $passengersData ?? [],
             'pricing_snapshot' => $pricingSnapshot,
+            'selected_services' => $servicesData ?? [],
+            'services_cost_gbp' => $servicesCostGBP,
         ];
     }
 
