@@ -287,7 +287,7 @@ section('TASK 4: Passport validation hardening');
         $svc->savePassengers('sess_t4', [$expired], 1);
         ok(false, 'Expired passport rejected');
     } catch (\RuntimeException $e) {
-        ok(str_contains($e->getMessage(), 'expired'), 'Expired passport rejected — ' . $e->getMessage());
+        ok(str_contains($e->getMessage(), 'منتهي') || str_contains($e->getMessage(), 'انتهاء'), 'Expired passport rejected (Arabic message) — ' . $e->getMessage());
     }
 
     // Passport expiring within 6 months rejected.
@@ -297,7 +297,7 @@ section('TASK 4: Passport validation hardening');
         $svc->savePassengers('sess_t4', [$soonExpiry], 1);
         ok(false, '<6 month passport rejected');
     } catch (\RuntimeException $e) {
-        ok(str_contains($e->getMessage(), '6 months') || str_contains($e->getMessage(), 'valid for'), '<6 month passport rejected');
+        ok(str_contains($e->getMessage(), 'ستة أشهر'), '<6 month passport rejected (Arabic message) — ' . $e->getMessage());
     }
 
     // Future DOB rejected.
@@ -307,17 +307,176 @@ section('TASK 4: Passport validation hardening');
         $svc->savePassengers('sess_t4', [$futureDob], 1);
         ok(false, 'Future DOB rejected');
     } catch (\RuntimeException $e) {
-        ok(str_contains($e->getMessage(), 'date_of_birth') || str_contains($e->getMessage(), 'past'), 'Future DOB rejected');
+        ok(str_contains($e->getMessage(), 'الميلاد') || str_contains($e->getMessage(), 'الماضي'), 'Future DOB rejected (Arabic message) — ' . $e->getMessage());
     }
 
-    // Empty nationality rejected.
+    // Empty nationality rejected — now triggers ISO-3 check.
     $noNat = array_merge($validBase, ['nationality' => '']);
     try {
         $db->exec("UPDATE booking_sessions SET current_step='passengers',expires_at='" . date('Y-m-d H:i:s', strtotime('+1 hour')) . "' WHERE session_key='sess_t4'");
         $svc->savePassengers('sess_t4', [$noNat], 1);
         ok(false, 'Empty nationality rejected');
     } catch (\RuntimeException $e) {
-        ok(str_contains($e->getMessage(), 'nationality') || str_contains($e->getMessage(), 'required'), 'Empty nationality rejected');
+        // Empty value triggers the required-field check first (Arabic label مطلوب).
+        ok(str_contains($e->getMessage(), 'مطلوب') || str_contains($e->getMessage(), 'الجنسية'), 'Empty nationality rejected (Arabic message) — ' . $e->getMessage());
+    }
+})();
+
+// ── W2: ISO-3 nationality validation ─────────────────────────────────────────
+
+section('W2: ISO-3 nationality validation');
+
+(function () {
+    $db  = makeDb();
+    $svc = makeService($db);
+    $exp = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+    $base = [
+        'first_name'      => 'Test',
+        'last_name'       => 'User',
+        'gender'          => 'male',
+        'date_of_birth'   => '1990-06-01',
+        'passport_number' => 'Z999999',
+        'passport_expiry' => date('Y-m-d', strtotime('+2 years')),
+        'type'            => 'adult',
+    ];
+
+    // Valid codes accepted.
+    foreach (['KWT', 'BHR', 'SAU', 'ARE', 'USA', 'GBR', 'IND'] as $code) {
+        $db->prepare("INSERT INTO booking_sessions (session_key,user_id,provider_offer_id,current_step,expires_at) VALUES (:sk,'1','o','passengers',:exp)")
+           ->execute([':sk' => "sess_w2_{$code}", ':exp' => $exp]);
+        try {
+            $svc->savePassengers("sess_w2_{$code}", [array_merge($base, ['nationality' => $code])], 1);
+            ok(true, "Valid ISO-3 code '{$code}' accepted");
+        } catch (\Throwable $e) {
+            ok(false, "Valid ISO-3 code '{$code}' accepted — error: " . $e->getMessage());
+        }
+    }
+
+    // Invalid codes rejected.
+    foreach (['XYZ', 'AAA', 'TEST', '123', 'OTH', ''] as $code) {
+        $sk = 'sess_w2_inv_' . md5($code);
+        $db->prepare("INSERT INTO booking_sessions (session_key,user_id,provider_offer_id,current_step,expires_at) VALUES (:sk,'1','o','passengers',:exp)")
+           ->execute([':sk' => $sk, ':exp' => $exp]);
+        try {
+            $svc->savePassengers($sk, [array_merge($base, ['nationality' => $code])], 1);
+            ok(false, "Invalid code '{$code}' rejected");
+        } catch (\RuntimeException $e) {
+            $isArabicMsg = str_contains($e->getMessage(), 'الجنسية') || str_contains($e->getMessage(), 'مطلوب');
+            ok($isArabicMsg, "Invalid code '{$code}' rejected with Arabic message — " . $e->getMessage());
+        }
+    }
+
+    // OTH explicitly blocked (would crash Duffel).
+    $sk = 'sess_w2_oth';
+    $db->prepare("INSERT INTO booking_sessions (session_key,user_id,provider_offer_id,current_step,expires_at) VALUES (:sk,'1','o','passengers',:exp)")
+       ->execute([':sk' => $sk, ':exp' => $exp]);
+    try {
+        $svc->savePassengers($sk, [array_merge($base, ['nationality' => 'OTH'])], 1);
+        ok(false, 'OTH nationality blocked');
+    } catch (\RuntimeException $e) {
+        ok(str_contains($e->getMessage(), 'الجنسية'), 'OTH nationality blocked with Arabic message');
+    }
+})();
+
+// ── W3: Age-type consistency ──────────────────────────────────────────────────
+
+section('W3: Age-type consistency');
+
+(function () {
+    $db  = makeDb();
+    $svc = makeService($db);
+    $exp = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+    $base = [
+        'first_name'      => 'Test',
+        'last_name'       => 'User',
+        'gender'          => 'male',
+        'nationality'     => 'SAU',
+        'passport_number' => 'Z888888',
+        'passport_expiry' => date('Y-m-d', strtotime('+2 years')),
+    ];
+
+    $cases = [
+        // [type, dob_offset, should_pass, label]
+        ['adult',  '-30 years', true,  'Adult age 30 — accepted'],
+        ['adult',  '-12 years', true,  'Adult age 12 (boundary) — accepted'],
+        ['adult',  '-11 years', false, 'Adult age 11 — rejected'],
+        ['adult',  '-1 year',   false, 'Adult age 1 — rejected'],
+        ['child',  '-5 years',  true,  'Child age 5 — accepted'],
+        ['child',  '-2 years',  true,  'Child age 2 (boundary) — accepted'],
+        ['child',  '-11 years', true,  'Child age 11 (boundary) — accepted'],
+        ['child',  '-12 years', false, 'Child age 12 — rejected'],
+        ['child',  '-18 years', false, 'Child age 18 — rejected'],
+        ['child',  '-1 year',   false, 'Child age 1 — rejected'],
+        ['infant', '-6 months', true,  'Infant age 6 months — accepted'],
+        ['infant', '-1 year',   true,  'Infant age 1 — accepted'],
+        ['infant', '-2 years',  false, 'Infant age 2 — rejected'],
+        ['infant', '-10 years', false, 'Infant age 10 — rejected'],
+    ];
+
+    foreach ($cases as [$type, $dobOffset, $pass, $label]) {
+        $dob = date('Y-m-d', strtotime($dobOffset));
+        $sk  = 'sess_w3_' . md5($label);
+        $db->prepare("INSERT INTO booking_sessions (session_key,user_id,provider_offer_id,current_step,expires_at) VALUES (:sk,'1','o','passengers',:exp)")
+           ->execute([':sk' => $sk, ':exp' => $exp]);
+        $passenger = array_merge($base, ['type' => $type, 'date_of_birth' => $dob]);
+        try {
+            $svc->savePassengers($sk, [$passenger], 1);
+            ok($pass, $label . ($pass ? '' : ' (should have thrown)'));
+        } catch (\RuntimeException $e) {
+            $isArabicMsg = str_contains($e->getMessage(), 'المسافر') || str_contains($e->getMessage(), 'سن');
+            ok(!$pass && $isArabicMsg, $label . ' — ' . $e->getMessage());
+        }
+    }
+})();
+
+// ── W4: Arabic validation messages ───────────────────────────────────────────
+
+section('W4: Arabic validation messages — no internal field names exposed');
+
+(function () {
+    $db  = makeDb();
+    $svc = makeService($db);
+    $exp = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+    $base = [
+        'first_name'      => 'Ali',
+        'last_name'       => 'Ahmed',
+        'gender'          => 'male',
+        'date_of_birth'   => '1990-01-15',
+        'nationality'     => 'SAU',
+        'passport_number' => 'A123456',
+        'passport_expiry' => date('Y-m-d', strtotime('+2 years')),
+        'type'            => 'adult',
+    ];
+
+    $internalFieldNames = ['passport_number', 'passport_expiry', 'document_number', 'document_expiry',
+                           'date_of_birth', 'first_name', 'last_name'];
+
+    $errorCases = [
+        array_merge($base, ['passport_number' => '']),
+        array_merge($base, ['passport_expiry' => date('Y-m-d', strtotime('-1 day'))]),
+        array_merge($base, ['passport_expiry' => date('Y-m-d', strtotime('+3 months'))]),
+        array_merge($base, ['date_of_birth'   => date('Y-m-d', strtotime('+1 year'))]),
+        array_merge($base, ['nationality'      => 'XYZ']),
+    ];
+
+    foreach ($errorCases as $i => $passenger) {
+        $sk = "sess_w4_{$i}";
+        $db->prepare("INSERT INTO booking_sessions (session_key,user_id,provider_offer_id,current_step,expires_at) VALUES (:sk,'1','o','passengers',:exp)")
+           ->execute([':sk' => $sk, ':exp' => $exp]);
+        try {
+            $svc->savePassengers($sk, [$passenger], 1);
+            ok(false, "W4 case {$i}: should have thrown");
+        } catch (\RuntimeException $e) {
+            $msg = $e->getMessage();
+            $hasInternal = false;
+            foreach ($internalFieldNames as $fn) {
+                if (str_contains($msg, $fn)) { $hasInternal = true; break; }
+            }
+            ok(!$hasInternal, "W4 case {$i}: no internal field names in message — \"{$msg}\"");
+        }
     }
 })();
 
@@ -427,22 +586,58 @@ section('TASK 5: FlightBookingService::syncFromDuffelByBookingId');
     }
 })();
 
-// ── TASK 1: dashboard.html UI checks ─────────────────────────────────────────
+// ── W9: order.updated webhook event ──────────────────────────────────────────
 
-section('TASK 1: dashboard.html cancellation UI');
+section('W9: order.updated Duffel event handled');
+
+(function () {
+    $src = file_get_contents(BASE_PATH . '/app/Controllers/Webhook/WebhookController.php');
+    ok(str_contains($src, "case 'order.updated':"), "order.updated case present in switch");
+
+    // Verify it routes to the same handler as order.airline_initiated_change.
+    // Both must precede the same line (the return call).
+    $posChanged = strpos($src, "case 'order.airline_initiated_change':");
+    $posUpdated = strpos($src, "case 'order.updated':");
+    $posHandler = strpos($src, 'return $this->onDuffelOrderChanged($data)', max($posChanged, $posUpdated));
+    ok($posHandler !== false && $posHandler > max($posChanged, $posUpdated),
+        'order.updated falls through to onDuffelOrderChanged');
+
+    // Verify existing events are still present (no regression).
+    ok(str_contains($src, "case 'order.airline_initiated_change':"), 'order.airline_initiated_change still present');
+    ok(str_contains($src, "case 'order.airline_initiated_change.updated':"), 'order.airline_initiated_change.updated still present');
+    ok(str_contains($src, "case 'order.cancelled':"), 'order.cancelled still present');
+    ok(str_contains($src, "case 'order.payment_status_updated':"), 'order.payment_status_updated still present');
+})();
+
+// ── B1: dashboard.html — expires_at field name fix ───────────────────────────
+
+section('B1: dashboard.html cancellation UI + expiry field fix');
 
 (function () {
     $src = file_get_contents(BASE_PATH . '/dashboard.html');
+
+    // Core functions present.
     ok(str_contains($src, 'initiateCancel'), 'initiateCancel function present');
     ok(str_contains($src, 'confirmCancel'),  'confirmCancel function present');
     ok(str_contains($src, 'closeCancelModal'), 'closeCancelModal function present');
     ok(str_contains($src, 'cancelModal'),    'cancelModal element present');
     ok(str_contains($src, 'cancel/confirm'), 'API endpoint /cancel/confirm wired');
-    ok(str_contains($src, 'cancelExpiryCountdown'), 'expiry countdown present');
-    ok(str_contains($src, 'origin_airport'), 'field name origin_airport used (fixed bug)');
-    ok(str_contains($src, 'destination_airport'), 'field name destination_airport used (fixed bug)');
-    ok(str_contains($src, 'booking_reference'), 'field name booking_reference used (fixed bug)');
-    ok(str_contains($src, 'total_amount'), 'field name total_amount used (fixed bug)');
+
+    // B1 FIX: reads backend key 'd.expires_at', NOT the wrong 'd.cancellation_expires_at'.
+    ok(str_contains($src, 'd.expires_at'),  'B1: reads d.expires_at (correct backend key)');
+    ok(!str_contains($src, 'd.cancellation_expires_at'), 'B1: does NOT read d.cancellation_expires_at (bug eliminated)');
+
+    // Countdown and disable wiring.
+    ok(str_contains($src, 'cancelExpiryCountdown'), 'expiry countdown element present');
+    ok(str_contains($src, "document.getElementById('confirmCancelBtn').disabled = true"), 'confirm button disabled when countdown reaches zero');
+    ok(str_contains($src, "setInterval"), 'countdown uses setInterval');
+    ok(str_contains($src, "rem === 0"), 'countdown zero-check present');
+
+    // Field name fixes.
+    ok(str_contains($src, 'origin_airport'), 'origin_airport field name used');
+    ok(str_contains($src, 'destination_airport'), 'destination_airport field name used');
+    ok(str_contains($src, 'booking_reference'), 'booking_reference field name used');
+    ok(str_contains($src, 'total_amount'), 'total_amount field name used');
 })();
 
 // ── TASK 2: admin/bookings.html cancellation fields ──────────────────────────

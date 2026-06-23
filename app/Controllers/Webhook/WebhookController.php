@@ -259,6 +259,7 @@ class WebhookController
 
             case 'order.airline_initiated_change':
             case 'order.airline_initiated_change.updated':
+            case 'order.updated':
                 return $this->onDuffelOrderChanged($data);
 
             case 'order.airline_initiated_change.accepted':

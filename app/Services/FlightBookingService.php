@@ -92,42 +92,76 @@ class FlightBookingService
         }
         unset($p);
 
-        // Validate each passenger record.
-        $required = ['first_name', 'last_name', 'gender', 'date_of_birth',
-                     'nationality', 'passport_number', 'passport_expiry'];
+        // W4: Arabic labels for required fields (no internal field names exposed).
+        $requiredLabels = [
+            'first_name'      => 'الاسم الأول',
+            'last_name'       => 'اسم العائلة',
+            'gender'          => 'الجنس',
+            'date_of_birth'   => 'تاريخ الميلاد',
+            'nationality'     => 'الجنسية',
+            'passport_number' => 'رقم جواز السفر',
+            'passport_expiry' => 'تاريخ انتهاء الجواز',
+        ];
 
-        $today        = new \DateTime('today');
-        $sixMonths    = (new \DateTime('today'))->modify('+6 months');
+        $today     = new \DateTime('today');
+        $sixMonths = (new \DateTime('today'))->modify('+6 months');
+
+        // W3: age boundaries per passenger type.
+        $ageRules = [
+            'adult'  => ['min' => 12,  'max' => null, 'label' => 'يجب أن يكون المسافر البالغ في عمر 12 سنة أو أكثر'],
+            'child'  => ['min' => 2,   'max' => 11,   'label' => 'يجب أن يكون المسافر الطفل بين سنتين و11 سنة'],
+            'infant' => ['min' => 0,   'max' => 1,    'label' => 'يجب أن يكون الرضيع أقل من سنتين'],
+        ];
 
         foreach ($passengers as $idx => $p) {
-            foreach ($required as $field) {
+            $num = $idx + 1;
+
+            // Required fields — Arabic messages.
+            foreach ($requiredLabels as $field => $label) {
                 if (empty($p[$field])) {
-                    throw new RuntimeException("Passenger {$idx}: {$field} is required.", 422);
+                    throw new RuntimeException("المسافر {$num}: {$label} مطلوب.", 422);
                 }
             }
 
-            // DOB must be in the past.
+            // DOB — must be a valid past date.
             $dob = \DateTime::createFromFormat('Y-m-d', $p['date_of_birth']);
             if (!$dob || $dob >= $today) {
-                throw new RuntimeException("Passenger {$idx}: date_of_birth must be a past date.", 422);
+                throw new RuntimeException("المسافر {$num}: تاريخ الميلاد يجب أن يكون في الماضي.", 422);
             }
 
-            // Passport must not expire within 6 months of today.
+            // W3: age-type consistency.
+            // DateInterval::y has boundary-day quirks; Ymd integer method is exact.
+            $pType    = strtolower(trim($p['type'] ?? 'adult'));
+            $ageYears = (int) (((int)$today->format('Ymd') - (int)$dob->format('Ymd')) / 10000);
+            if (isset($ageRules[$pType])) {
+                $rule = $ageRules[$pType];
+                $tooYoung = $rule['min'] !== null && $ageYears < $rule['min'];
+                $tooOld   = $rule['max'] !== null && $ageYears > $rule['max'];
+                if ($tooYoung || $tooOld) {
+                    throw new RuntimeException("المسافر {$num}: {$rule['label']}.", 422);
+                }
+            }
+
+            // Passport expiry — valid date required.
             $expiry = \DateTime::createFromFormat('Y-m-d', $p['passport_expiry']);
             if (!$expiry) {
-                throw new RuntimeException("Passenger {$idx}: passport_expiry is not a valid date (YYYY-MM-DD).", 422);
+                throw new RuntimeException("المسافر {$num}: تاريخ انتهاء الجواز غير صحيح (YYYY-MM-DD).", 422);
             }
             if ($expiry <= $today) {
-                throw new RuntimeException("Passenger {$idx}: passport is expired.", 422);
+                throw new RuntimeException("المسافر {$num}: جواز السفر منتهي الصلاحية.", 422);
             }
             if ($expiry < $sixMonths) {
-                throw new RuntimeException("Passenger {$idx}: passport must be valid for at least 6 months.", 422);
+                throw new RuntimeException("المسافر {$num}: تاريخ انتهاء الجواز يجب أن يكون بعد ستة أشهر على الأقل.", 422);
             }
 
-            // Nationality must not be empty (already checked above, but extra guard).
-            if (trim((string)($p['nationality'] ?? '')) === '') {
-                throw new RuntimeException("Passenger {$idx}: nationality is required.", 422);
+            // W2: nationality must be a recognised ISO-3166-1 alpha-3 code.
+            $nat = strtoupper(trim((string)($p['nationality'] ?? '')));
+            if (!$this->isValidIso3Nationality($nat)) {
+                throw new RuntimeException("المسافر {$num}: الجنسية غير صحيحة.", 422);
             }
+            // Normalise to uppercase so mapPassengersForDuffel receives a clean value.
+            $p['nationality'] = $nat;
+            $passengers[$idx] = $p;
         }
 
         return $this->sessionService->update($sessionKey, [
@@ -1569,6 +1603,36 @@ class FlightBookingService
             }
         }
         return false;
+    }
+
+    // W2: validates that a nationality code is a known ISO-3166-1 alpha-3 code.
+    // 'OTH' is explicitly excluded — it is not a valid Duffel nationality.
+    private function isValidIso3Nationality(string $code): bool
+    {
+        // Full UN ISO-3166-1 alpha-3 list (249 entries as of 2024).
+        static $codes = [
+            'AFG','ALA','ALB','DZA','ASM','AND','AGO','AIA','ATA','ATG','ARG','ARM','ABW',
+            'AUS','AUT','AZE','BHS','BHR','BGD','BRB','BLR','BEL','BLZ','BEN','BMU','BTN',
+            'BOL','BES','BIH','BWA','BVT','BRA','IOT','BRN','BGR','BFA','BDI','CPV','KHM',
+            'CMR','CAN','CYM','CAF','TCD','CHL','CHN','CXR','CCK','COL','COM','COD','COG',
+            'COK','CRI','CIV','HRV','CUB','CUW','CYP','CZE','DNK','DJI','DMA','DOM','ECU',
+            'EGY','SLV','GNQ','ERI','EST','SWZ','ETH','FLK','FRO','FJI','FIN','FRA','GUF',
+            'PYF','ATF','GAB','GMB','GEO','DEU','GHA','GIB','GRC','GRL','GRD','GLP','GUM',
+            'GTM','GGY','GIN','GNB','GUY','HTI','HMD','VAT','HND','HKG','HUN','ISL','IND',
+            'IDN','IRN','IRQ','IRL','IMN','ISR','ITA','JAM','JPN','JEY','JOR','KAZ','KEN',
+            'KIR','PRK','KOR','KWT','KGZ','LAO','LVA','LBN','LSO','LBR','LBY','LIE','LTU',
+            'LUX','MAC','MDG','MWI','MYS','MDV','MLI','MLT','MHL','MTQ','MRT','MUS','MYT',
+            'MEX','FSM','MDA','MCO','MNG','MNE','MSR','MAR','MOZ','MMR','NAM','NRU','NPL',
+            'NLD','NCL','NZL','NIC','NER','NGA','NIU','NFK','MKD','MNP','NOR','OMN','PAK',
+            'PLW','PSE','PAN','PNG','PRY','PER','PHL','PCN','POL','PRT','PRI','QAT','REU',
+            'ROU','RUS','RWA','BLM','SHN','KNA','LCA','MAF','SPM','VCT','WSM','SMR','STP',
+            'SAU','SEN','SRB','SYC','SLE','SGP','SXM','SVK','SVN','SLB','SOM','ZAF','SGS',
+            'SSD','ESP','LKA','SDN','SUR','SJM','SWE','CHE','SYR','TWN','TJK','TZA','THA',
+            'TLS','TGO','TKL','TON','TTO','TUN','TUR','TKM','TCA','TUV','UGA','UKR','ARE',
+            'GBR','UMI','USA','URY','UZB','VUT','VEN','VNM','VGB','VIR','WLF','ESH','YEM',
+            'ZMB','ZWE',
+        ];
+        return in_array($code, $codes, true);
     }
 
     private function toIso3Nationality(string $name): string
