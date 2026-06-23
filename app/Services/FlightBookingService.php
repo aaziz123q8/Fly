@@ -94,6 +94,7 @@ class FlightBookingService
 
         // W4: Arabic labels for required fields (no internal field names exposed).
         $requiredLabels = [
+            'title'           => 'اللقب (Mr/Ms/Mrs)',
             'first_name'      => 'الاسم الأول',
             'last_name'       => 'اسم العائلة',
             'gender'          => 'الجنس',
@@ -123,6 +124,14 @@ class FlightBookingService
                     throw new RuntimeException("المسافر {$num}: {$label} مطلوب.", 422);
                 }
             }
+
+            // Title must be a Duffel-accepted value.
+            $validTitles = ['mr', 'ms', 'mrs', 'miss', 'dr'];
+            if (!in_array(strtolower(trim($p['title'] ?? '')), $validTitles, true)) {
+                throw new RuntimeException("المسافر {$num}: اللقب يجب أن يكون أحد: Mr, Ms, Mrs, Miss, Dr.", 422);
+            }
+            $p['title'] = strtolower(trim($p['title']));
+            $passengers[$idx] = $p;
 
             // Email format validation.
             if (!filter_var($p['email'], FILTER_VALIDATE_EMAIL)) {
@@ -1705,6 +1714,7 @@ class FlightBookingService
             $nationalityAlpha2 = $this->toAlpha2($nationality);
 
             $entry = [
+                'title'        => strtolower(trim($p['title'] ?? 'mr')),
                 'given_name'   => $p['first_name'],
                 'family_name'  => $p['last_name'],
                 'gender'       => strtolower($p['gender'] ?? '') === 'female' ? 'f' : 'm',
@@ -1786,6 +1796,7 @@ class FlightBookingService
         foreach ($duffelPassengers as $i => $p) {
             $num = $i + 1;
             $required = [
+                'title'        => 'اللقب',
                 'given_name'   => 'الاسم الأول',
                 'family_name'  => 'اسم العائلة',
                 'born_on'      => 'تاريخ الميلاد',

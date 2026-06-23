@@ -78,6 +78,7 @@ $svc = new \App\Services\FlightBookingService(new StubPDO());
 
 $goodPassenger = [
     'type'            => 'adult',
+    'title'           => 'mr',
     'first_name'      => 'Ahmed',
     'last_name'       => 'AlKuwaiti',
     'gender'          => 'male',
@@ -116,6 +117,7 @@ section('2. mapPassengersForDuffel — complete payload');
 $mapped = callPrivate($svc, 'mapPassengersForDuffel', [[$goodPassenger], $offerData]);
 $p = $mapped[0];
 
+ok(($p['title'] ?? '') === 'mr',        'title present and lowercase');
 ok($p['given_name']  === 'Ahmed',       'given_name');
 ok($p['family_name'] === 'AlKuwaiti',   'family_name');
 ok($p['gender']      === 'm',           'gender mapped to m');
@@ -142,6 +144,12 @@ section('3. Pre-flight validator');
 $goodMapped = callPrivate($svc, 'mapPassengersForDuffel', [[$goodPassenger], $offerData]);
 $ex = throws(fn() => callPrivate($svc, 'validateDuffelPassengers', [$goodMapped]));
 ok($ex === null, 'valid payload passes validator without exception');
+
+// Missing title
+$noTitle = $goodMapped;
+$noTitle[0]['title'] = '';
+$ex = throws(fn() => callPrivate($svc, 'validateDuffelPassengers', [$noTitle]), 422);
+ok($ex !== null && str_contains($ex->getMessage(), 'اللقب'), 'missing title → Arabic 422');
 
 // Missing email
 $noEmail = $goodMapped;
