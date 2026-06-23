@@ -106,6 +106,26 @@ class DuffelErrorMapper
             'status' => 410,
             'action' => 'new_search',
         ],
+        'invalid_email' => [
+            'ar'     => 'البريد الإلكتروني المدخل غير صحيح. يرجى التحقق من البيانات.',
+            'status' => 422,
+            'action' => 'fix_passengers',
+        ],
+        'invalid_phone_number' => [
+            'ar'     => 'رقم الهاتف غير صحيح. يرجى إدخاله بصيغة دولية (+XXXXXXXX).',
+            'status' => 422,
+            'action' => 'fix_passengers',
+        ],
+        'invalid_identity_document' => [
+            'ar'     => 'بيانات وثيقة سفر أحد المسافرين غير صحيحة. يرجى المراجعة.',
+            'status' => 422,
+            'action' => 'fix_passengers',
+        ],
+        'passenger_already_flying' => [
+            'ar'     => 'أحد المسافرين محجوز بالفعل على هذه الرحلة.',
+            'status' => 409,
+            'action' => 'check_existing',
+        ],
     ];
 
     /**

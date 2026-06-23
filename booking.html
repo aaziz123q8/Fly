@@ -771,8 +771,10 @@
   }
 
   function collectPassengers() {
+    const contactEmail = document.getElementById('contactEmail')?.value?.trim() || '';
     return paxTypes.map((p,i)=>({
       type: p.type,
+      email: contactEmail,
       first_name: document.getElementById(`p${i}_first`)?.value?.trim(),
       middle_name: document.getElementById(`p${i}_middle`)?.value?.trim(),
       last_name: document.getElementById(`p${i}_last`)?.value?.trim(),
@@ -799,6 +801,12 @@
       alert('انتهت صلاحية هذا العرض. سيتم إعادة توجيهك للبحث عن رحلات جديدة.');
       window.location.href = 'flights.html';
       return;
+    }
+    // Validate contact email before proceeding
+    const _cemail = document.getElementById('contactEmail')?.value?.trim() || '';
+    if (!_cemail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(_cemail)) {
+      document.getElementById('contactEmail')?.focus();
+      alert('يرجى إدخال بريد إلكتروني صحيح في قسم معلومات التواصل'); return;
     }
     const passengers = collectPassengers();
     for (let i=0;i<passengers.length;i++) {
