@@ -684,23 +684,47 @@ class HotelBookingService
 
         // If webhook already completed the booking
         if (($session['current_step'] ?? '') === 'complete') {
-            $bStmt = $this->db->prepare(
-                'SELECT booking_reference, status FROM hotel_bookings WHERE user_id = :uid ORDER BY id DESC LIMIT 1'
-            );
-            $bStmt->execute([':uid' => $userId]);
-            $row = $bStmt->fetch(\PDO::FETCH_ASSOC);
-            return [
-                'status'            => 'confirmed',
-                'booking_reference' => $row['booking_reference'] ?? '',
-            ];
+            return $this->fetchCompletedBookingResult($userId);
         }
 
-        return ['status' => 'pending', 'message' => 'جارٍ تأكيد الحجز…'];
+        // Verify payment with Stripe directly — don't wait for webhook
+        try {
+            $intent = $this->stripe->getPaymentIntent($paymentIntentId);
+        } catch (\Throwable $e) {
+            return ['status' => 'pending', 'message' => 'جارٍ التحقق من الدفع…'];
+        }
+
+        if (($intent['status'] ?? '') !== 'succeeded') {
+            return ['status' => 'pending', 'message' => 'جارٍ معالجة الدفع…'];
+        }
+
+        // Payment confirmed — complete booking synchronously
+        try {
+            $this->completeBooking($sessionKey, $paymentIntentId);
+            return $this->fetchCompletedBookingResult($userId);
+        } catch (\Throwable $e) {
+            error_log('[HOTEL_CONFIRM_CHECKOUT_FAIL] sk=' . $sessionKey . ' pi=' . $paymentIntentId . ' err=' . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), $e->getCode() ?: 500);
+        }
     }
 
     // =========================================================================
     // Private helpers
     // =========================================================================
+
+    private function fetchCompletedBookingResult(int $userId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT id, booking_reference, status FROM hotel_bookings WHERE user_id = :uid ORDER BY id DESC LIMIT 1'
+        );
+        $stmt->execute([':uid' => $userId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        return [
+            'status'            => 'confirmed',
+            'booking_reference' => $row['booking_reference'] ?? '',
+            'booking_id'        => $row['id']               ?? null,
+        ];
+    }
 
     private function requireSession(string $sessionKey, int $userId): array
     {

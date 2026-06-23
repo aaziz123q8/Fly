@@ -1652,8 +1652,8 @@ class FlightBookingService
             $stmt = $this->db->prepare(
                 "SELECT * FROM pricing_rules
                  WHERE is_active = 1
-                   AND (applies_to = 'flight' OR applies_to = 'all')
-                 ORDER BY sort_order ASC"
+                   AND (applies_to = 'flight' OR applies_to = 'both')
+                 ORDER BY priority DESC"
             );
             $stmt->execute();
             $rules = $stmt->fetchAll(PDO::FETCH_ASSOC);
