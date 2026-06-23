@@ -462,19 +462,35 @@ class FlightBookingService
         // before hitting the API. Throws 422 with Arabic message on failure.
         $this->validateDuffelPassengers($duffelPassengers);
 
-        // Pre-price the offer with selected services to get the authoritative amount.
-        // This catches any price changes since the user last viewed the offer.
-        try {
-            $priceResponse  = $this->duffel->priceOffer($offerId, ['balance'], $servicesData ?: []);
-            $pricedAmount   = $priceResponse['data']['total_amount']   ?? $offer['total_amount'];
-            $pricedCurrency = strtoupper($priceResponse['data']['total_currency'] ?? $offer['currency']);
-        } catch (\Throwable) {
-            // Fall back to cached offer amount if pricing endpoint fails
-            $pricedAmount   = $offer['total_amount'];
-            $pricedCurrency = strtoupper($offer['currency'] ?? 'GBP');
+        // Build clean services list first (needed for priceOffer AND createOrder).
+        $cleanServices = [];
+        foreach (($servicesData ?: []) as $svc) {
+            $sid = trim((string)($svc['id'] ?? ''));
+            $qty = (int)($svc['quantity'] ?? 1);
+            if ($sid !== '') {
+                $cleanServices[] = ['id' => $sid, 'quantity' => max(1, $qty)];
+            }
         }
 
-        // Build Duffel payment payload using priced amount.
+        // Pre-price the offer with selected services to get the authoritative amount.
+        // The amount sent to Duffel in payments[] MUST exactly match priceOffer's total_amount.
+        try {
+            $priceResponse  = $this->duffel->priceOffer($offerId, ['balance'], $cleanServices);
+            $pricedAmount   = $priceResponse['data']['total_amount']   ?? null;
+            $pricedCurrency = strtoupper($priceResponse['data']['total_currency'] ?? $offer['currency']);
+            if ($pricedAmount === null) {
+                throw new \RuntimeException('لم يتم الحصول على سعر الرحلة من Duffel.', 409);
+            }
+        } catch (\RuntimeException $priceEx) {
+            // Log the pricing failure for ops visibility
+            error_log('[PRICE_OFFER_FAIL] offer=' . $offerId . ' error=' . $priceEx->getMessage());
+            // Re-map through DuffelErrorMapper so the user gets a proper Arabic message
+            $mapped = DuffelErrorMapper::fromDuffelException($priceEx);
+            $parts  = DuffelErrorMapper::split($mapped->getMessage());
+            throw new \RuntimeException($parts['customer'], $mapped->getCode() ?: 409);
+        }
+
+        // Build Duffel payment payload using the freshly priced amount.
         $duffelPayments = [[
             'type'     => 'balance',
             'amount'   => (string) $pricedAmount,
@@ -487,16 +503,6 @@ class FlightBookingService
             'user_id'           => (string) $userId,
             'platform'          => 'flymasar',
         ];
-
-        // Validate services payload — each item must have id (string) and quantity (int)
-        $cleanServices = [];
-        foreach (($servicesData ?: []) as $svc) {
-            $sid = trim((string)($svc['id'] ?? ''));
-            $qty = (int)($svc['quantity'] ?? 1);
-            if ($sid !== '') {
-                $cleanServices[] = ['id' => $sid, 'quantity' => max(1, $qty)];
-            }
-        }
 
         // Forensic pre-flight log: everything sent to Duffel
         $preFlightLog = [
