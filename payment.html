@@ -438,6 +438,7 @@ async function initStripe() {
     const card = elements.create('payment', {
       fields: { billingDetails: { name: 'never' } },
       layout: { type: 'tabs', defaultCollapsed: false },
+      wallets: { link: 'never', applePay: 'never', googlePay: 'never' },
     });
 
     card.on('ready', () => {
@@ -693,14 +694,12 @@ async function submitPayment() {
             break;
           }
         } catch(e) {
-          // 500 = booking completion error (Duffel failure) — show message
-          if (e && (e.status >= 500 || (e.message && e.message.includes('خطأ')))) {
-            showError('⚠️ تم خصم المبلغ بنجاح لكن حدث خطأ في إنشاء الحجز. سيتواصل معك فريق الدعم.');
-            btn.disabled = false; sp.classList.add('hidden');
-            tx.textContent = 'ادفع الآن 🔒'; tx.classList.remove('hidden');
-            return;
-          }
-          break;
+          // Any error from confirmCheckout = show the real server message
+          const msg = (e && (e.message || e.error || '')) || 'حدث خطأ أثناء إنشاء الحجز';
+          showError('⚠️ ' + msg);
+          btn.disabled = false; sp.classList.add('hidden');
+          tx.textContent = 'ادفع الآن 🔒'; tx.classList.remove('hidden');
+          return;
         }
       }
 

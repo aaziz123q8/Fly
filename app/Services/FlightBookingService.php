@@ -782,19 +782,15 @@ class FlightBookingService
             $this->completeBooking($sessionKey, $paymentIntentId);
             return $this->fetchCompletedBookingResult($userId);
         } catch (\Throwable $e) {
-            // Log and surface the error so the user knows what failed
             try {
                 $this->db->prepare(
                     'INSERT INTO error_logs (level, message, context, created_at) VALUES (?,?,?,NOW())'
                 )->execute(['error', 'confirmCheckout: completeBooking failed: ' . $e->getMessage(),
-                    json_encode(['session_key' => $sessionKey, 'pi' => $paymentIntentId])]);
+                    json_encode(['session_key' => $sessionKey, 'pi' => $paymentIntentId, 'trace' => substr($e->getTraceAsString(), 0, 800)])]);
             } catch (\Throwable) {}
 
-            throw new \RuntimeException(
-                'تم خصم المبلغ بنجاح لكن حدث خطأ أثناء إنشاء الحجز. سيتواصل معك فريق الدعم قريباً. ' .
-                'خطأ: ' . $e->getMessage(),
-                500
-            );
+            // Throw with full detail so frontend can display the real reason
+            throw new \RuntimeException($e->getMessage(), $e->getCode() ?: 500);
         }
     }
 
