@@ -144,11 +144,10 @@ class TravelerController
         // Try flight bookings
         try {
             $stmt = $this->pdo->prepare("
-                SELECT fb.*, f.origin, f.destination, f.departure_date, f.departure_time,
-                       'flight' AS type
+                SELECT fb.*, 'flight' AS type
                 FROM flight_bookings fb
-                LEFT JOIN flights f ON f.id = fb.flight_id
-                WHERE fb.booking_number = ? AND LOWER(fb.passenger_last_name) = ?
+                JOIN flight_booking_passengers fbp ON fbp.booking_id = fb.id
+                WHERE fb.booking_reference = ? AND LOWER(fbp.last_name) = LOWER(?)
                 LIMIT 1
             ");
             $stmt->execute([$pnr, $lastName]);
@@ -157,14 +156,17 @@ class TravelerController
                 Response::json(['success' => true, 'booking' => $row]);
                 return;
             }
-        } catch (\Throwable $e) { /* table may not exist */ }
+        } catch (\PDOException $e) {
+            throw $e;
+        }
 
         // Try hotel bookings
         try {
             $stmt = $this->pdo->prepare("
                 SELECT hb.*, 'hotel' AS type
                 FROM hotel_bookings hb
-                WHERE hb.booking_number = ? AND LOWER(hb.guest_last_name) = ?
+                JOIN hotel_booking_guests hbg ON hbg.booking_id = hb.id
+                WHERE hb.booking_reference = ? AND LOWER(hbg.last_name) = LOWER(?)
                 LIMIT 1
             ");
             $stmt->execute([$pnr, $lastName]);
@@ -173,7 +175,9 @@ class TravelerController
                 Response::json(['success' => true, 'booking' => $row]);
                 return;
             }
-        } catch (\Throwable $e) { /* table may not exist */ }
+        } catch (\PDOException $e) {
+            throw $e;
+        }
 
         Response::json(['error' => 'not_found', 'message' => 'لم يتم العثور على حجز بهذه البيانات.'], 404);
     }
@@ -191,15 +195,15 @@ class TravelerController
         }
 
         // Verify current password
-        $stmt = $this->pdo->prepare('SELECT password_hash FROM users WHERE id = ?');
+        $stmt = $this->pdo->prepare('SELECT password FROM users WHERE id = ?');
         $stmt->execute([$userId]);
         $row = $stmt->fetch();
-        if (!$row || !password_verify($currentPassword, $row['password_hash'] ?? '')) {
+        if (!$row || !password_verify($currentPassword, $row['password'] ?? '')) {
             Response::json(['error' => 'unauthorized', 'message' => 'كلمة المرور الحالية غير صحيحة.'], 401);
         }
 
-        $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
-        $stmt2 = $this->pdo->prepare('UPDATE users SET password_hash = ?, updated_at = NOW() WHERE id = ?');
+        $newHash = password_hash($newPassword, PASSWORD_ARGON2ID);
+        $stmt2 = $this->pdo->prepare('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?');
         $stmt2->execute([$newHash, $userId]);
 
         Response::json(['success' => true, 'message' => 'تم تغيير كلمة المرور بنجاح.']);

@@ -131,7 +131,7 @@ class AdminAnalyticsController
 
         // Active users (those with a session active in period)
         $activeUsersStmt = $db->prepare(
-            'SELECT COUNT(DISTINCT user_id) FROM sessions WHERE created_at >= ?'
+            'SELECT COUNT(DISTINCT user_id) FROM user_sessions WHERE created_at >= ?'
         );
         $activeUsersStmt->execute([$start]);
         $activeUsers = (int)$activeUsersStmt->fetchColumn();

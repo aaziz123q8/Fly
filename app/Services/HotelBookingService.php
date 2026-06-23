@@ -48,12 +48,13 @@ class HotelBookingService
      * @return array
      */
     public function prebook(
-        string $bookHash,
-        int    $userId,
-        string $checkIn,
-        string $checkOut,
-        string $hotelId,
-        float  $displayedPrice = 0.0
+        string  $bookHash,
+        int     $userId,
+        string  $checkIn,
+        string  $checkOut,
+        string  $hotelId,
+        float   $displayedPrice = 0.0,
+        ?string $hotelName = null
     ): array {
         // ── Call RateHawk prebook ────────────────────────────────────────────
         $prebookResponse = $this->rateHawk->prebook($bookHash);
@@ -81,6 +82,7 @@ class HotelBookingService
             'check_in'            => $checkIn,
             'check_out'           => $checkOut,
             'hotel_id'            => $hotelId,
+            'hotel_name'          => $hotelName ?? ($prebookData['hotel_name'] ?? ''),
             'room_data'           => $roomData,
             'book_hash'           => $bookHash,
         ];
@@ -363,13 +365,59 @@ class HotelBookingService
         }
 
         // ── Call RateHawk createBooking ───────────────────────────────────────
-        $bookingResponse = $this->rateHawk->createBooking(
-            $prebookSessionId,
-            $rateHawkLeadGuest,
-            $rooms,
-            $bookingReference,
-            $specialReqs
-        );
+        try {
+            $bookingResponse = $this->rateHawk->createBooking(
+                $prebookSessionId,
+                $rateHawkLeadGuest,
+                $rooms,
+                $bookingReference,
+                $specialReqs
+            );
+        } catch (\Throwable $rateHawkEx) {
+            $this->db->prepare(
+                'UPDATE payments SET status = :s, updated_at = NOW()
+                 WHERE stripe_payment_intent_id = :pi'
+            )->execute([':s' => 'failed', ':pi' => $paymentIntentId]);
+
+            try {
+                $refund = $this->stripe->createRefund(
+                    $paymentIntentId,
+                    null,
+                    'hotel_fail_refund_' . md5($paymentIntentId),
+                    'requested_by_customer'
+                );
+                $this->db->prepare(
+                    'UPDATE payments
+                     SET status = :s, auto_refund_reason = :ar, auto_refunded_at = NOW(), updated_at = NOW()
+                     WHERE stripe_payment_intent_id = :pi'
+                )->execute([
+                    ':s'  => 'auto_refunded',
+                    ':ar' => 'ratehawk_booking_failed',
+                    ':pi' => $paymentIntentId,
+                ]);
+            } catch (\Throwable $refundEx) {
+                $this->db->prepare(
+                    'UPDATE payments SET status = :s, updated_at = NOW()
+                     WHERE stripe_payment_intent_id = :pi'
+                )->execute([':s' => 'cancellation_pending_refund', ':pi' => $paymentIntentId]);
+                try {
+                    $this->db->prepare(
+                        'INSERT INTO error_logs (level, message, context, created_at)
+                         VALUES (?, ?, ?, NOW())'
+                    )->execute([
+                        'critical',
+                        'Hotel auto-refund failed after RateHawk booking failure',
+                        json_encode([
+                            'payment_intent_id' => $paymentIntentId,
+                            'ratehawk_error'    => $rateHawkEx->getMessage(),
+                            'refund_error'      => $refundEx->getMessage(),
+                        ]),
+                    ]);
+                } catch (\Throwable) {}
+            }
+
+            throw new RuntimeException('Hotel booking failed: ' . $rateHawkEx->getMessage(), 502, $rateHawkEx);
+        }
 
         $bookingResponseData = $bookingResponse['data'] ?? $bookingResponse;
         $providerBookingId   = $bookingResponseData['order_id']
@@ -377,7 +425,9 @@ class HotelBookingService
                                ?? '';
 
         // ── Extract booking details from snapshot ─────────────────────────────
-        $hotelId     = (string) ($pricingSnapshot['hotel_id']  ?? '');
+        $hotelId          = (string) ($pricingSnapshot['hotel_id']  ?? '');
+        $hotelName        = $pricingSnapshot['hotel_name'] ?? '';
+        $providerHotelId  = $hotelId;
         $checkIn     = $pricingSnapshot['check_in']  ?? '';
         $checkOut    = $pricingSnapshot['check_out'] ?? '';
         $currency    = strtoupper($pricingSnapshot['currency'] ?? 'GBP');
@@ -405,12 +455,12 @@ class HotelBookingService
         $bStmt = $this->db->prepare(
             'INSERT INTO hotel_bookings
                (user_id, provider_id, booking_reference, provider_booking_id,
-                hotel_id, check_in_date, check_out_date, nights_count,
+                hotel_id, hotel_name, provider_hotel_id, check_in_date, check_out_date, nights_count,
                 rooms_count, adults_count, children_count,
                 total_amount, currency, status, cancellation_policy, special_requests)
              VALUES
                (:user_id, :provider_id, :ref, :provider_booking_id,
-                :hotel_id, :check_in, :check_out, :nights,
+                :hotel_id, :hotel_name, :provider_hotel_id, :check_in, :check_out, :nights,
                 :rooms, :adults, :children,
                 :amount, :currency, :status, :cancellation_policy, :special_requests)'
         );
@@ -420,6 +470,8 @@ class HotelBookingService
             ':ref'                  => $bookingReference,
             ':provider_booking_id'  => $providerBookingId,
             ':hotel_id'             => $hotelId,
+            ':hotel_name'           => $hotelName !== '' ? $hotelName : null,
+            ':provider_hotel_id'    => $providerHotelId,
             ':check_in'             => $checkIn,
             ':check_out'            => $checkOut,
             ':nights'               => $nightsCount,
@@ -480,6 +532,45 @@ class HotelBookingService
         // ── Advance session ───────────────────────────────────────────────────
         $this->sessionService->update($session['session_key'], ['current_step' => 'complete']);
 
+        // ── Record coupon usage ───────────────────────────────────────────────
+        $couponCode     = $pricingSnapshot['coupon_code']     ?? null;
+        $discountAmount = $pricingSnapshot['discount_amount'] ?? 0;
+        if (!empty($couponCode)) {
+            try {
+                $couponStmt = $this->db->prepare('SELECT id FROM coupons WHERE code = ? LIMIT 1');
+                $couponStmt->execute([$couponCode]);
+                $couponRow = $couponStmt->fetch(PDO::FETCH_ASSOC);
+                if ($couponRow) {
+                    $this->db->prepare(
+                        'INSERT INTO coupon_usages
+                           (coupon_id, user_id, booking_type, booking_id, discount_amount, used_at)
+                         VALUES (?, ?, ?, ?, ?, NOW())'
+                    )->execute([
+                        $couponRow['id'],
+                        $userId,
+                        'hotel',
+                        $hotelBookingId,
+                        $discountAmount,
+                    ]);
+                }
+            } catch (\Throwable $couponEx) {
+                try {
+                    $this->db->prepare(
+                        'INSERT INTO error_logs (level, message, context, created_at)
+                         VALUES (?, ?, ?, NOW())'
+                    )->execute([
+                        'error',
+                        'Failed to record coupon usage for hotel booking',
+                        json_encode([
+                            'booking_id'  => $hotelBookingId,
+                            'coupon_code' => $couponCode,
+                            'error'       => $couponEx->getMessage(),
+                        ]),
+                    ]);
+                } catch (\Throwable) {}
+            }
+        }
+
         // ── Queue jobs ────────────────────────────────────────────────────────
         $this->queueJobs($hotelBookingId, $userId);
 
@@ -507,7 +598,7 @@ class HotelBookingService
                     hc.name_ar      AS hotel_name_ar,
                     hc.main_image_url
              FROM hotel_bookings hb
-             LEFT JOIN hotels_content hc ON hc.id = hb.hotel_id
+             LEFT JOIN hotels_content hc ON hc.provider_hotel_id = hb.provider_hotel_id
              WHERE hb.user_id = :uid
              ORDER BY hb.created_at DESC'
         );
@@ -543,7 +634,7 @@ class HotelBookingService
                     hc.star_rating,
                     hc.guest_rating
              FROM hotel_bookings hb
-             LEFT JOIN hotels_content hc ON hc.id = hb.hotel_id
+             LEFT JOIN hotels_content hc ON hc.provider_hotel_id = hb.provider_hotel_id
              WHERE hb.id = :id AND hb.user_id = :uid
              LIMIT 1'
         );

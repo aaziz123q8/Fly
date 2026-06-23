@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Adapters\Stripe\StripeAdapter;
 use App\Core\Request;
 use App\Core\Response;
 use App\Helpers\Database;
@@ -93,9 +94,32 @@ class AdminPaymentsController
         $payment = $stmt->fetch(\PDO::FETCH_ASSOC);
         if (!$payment) { Response::notFound('Payment not found.'); }
 
-        // Mark as refunded — actual Stripe refund would be triggered here
-        $db->prepare('UPDATE payments SET status = "refunded", updated_at = NOW() WHERE id = ?')->execute([$id]);
+        $paymentIntentId = $payment['stripe_payment_intent_id'] ?? '';
+        if (empty($paymentIntentId)) {
+            Response::error('No Stripe payment intent ID on this payment.', 422);
+        }
 
-        Response::json(['success' => true, 'message' => 'Payment marked as refunded.']);
+        try {
+            $stripe = new StripeAdapter();
+            $refund = $stripe->createRefund(
+                $paymentIntentId,
+                null,
+                null,
+                'admin_refund_' . md5((string) $id)
+            );
+            $refundId = $refund['id'] ?? null;
+        } catch (\Throwable $e) {
+            Response::json([
+                'error'   => 'stripe_refund_failed',
+                'message' => $e->getMessage(),
+            ], 502);
+            return;
+        }
+
+        $db->prepare(
+            'UPDATE payments SET status = "refunded", stripe_refund_id = ?, updated_at = NOW() WHERE id = ?'
+        )->execute([$refundId, $id]);
+
+        Response::json(['success' => true, 'message' => 'Payment refunded via Stripe.', 'refund_id' => $refundId]);
     }
 }

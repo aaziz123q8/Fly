@@ -44,7 +44,7 @@ class EmailNotificationService
         $user = $this->fetchUser($userId);
         $name = $user ? trim($user['first_name'] . ' ' . $user['last_name']) : 'Valued Customer';
 
-        $resetUrl = $this->appUrl . '/password/reset?token=' . urlencode($token);
+        $resetUrl = $this->appUrl . '/password-reset.html?token=' . urlencode($token);
 
         $subject = 'Reset Your FlyMasar Password';
         $body    = $this->buildPasswordResetHtml($name, $resetUrl);

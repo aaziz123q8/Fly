@@ -107,8 +107,9 @@ class AdminSupportController
         $adminUserId = null;
         $authHeader  = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
         if (preg_match('/Bearer\s+(\S+)/i', $authHeader, $m)) {
+            $tokenHash = hash('sha256', $m[1]);
             $tokenStmt = $db->prepare('SELECT user_id FROM admin_sessions WHERE token = ? AND expires_at > NOW() LIMIT 1');
-            $tokenStmt->execute([$m[1]]);
+            $tokenStmt->execute([$tokenHash]);
             $sess = $tokenStmt->fetch(\PDO::FETCH_ASSOC);
             if ($sess) { $adminUserId = (int) $sess['user_id']; }
         }

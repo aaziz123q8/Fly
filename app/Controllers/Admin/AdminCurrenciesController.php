@@ -70,7 +70,52 @@ class AdminCurrenciesController
 
     public function refreshRates(Request $request): void
     {
-        // Placeholder — in production would call an exchange rate API
-        Response::json(['success' => true, 'message' => 'Rates refresh queued.']);
+        $ch = curl_init('https://open.er-api.com/v6/latest/GBP');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'FlyMasar/1.0');
+        $raw = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($raw === false || $httpCode !== 200) {
+            Response::json(['error' => 'Failed to fetch exchange rates from open.er-api.com', 'http_code' => $httpCode], 502);
+            return;
+        }
+
+        $data = json_decode($raw, true);
+        if (empty($data['rates']) || !is_array($data['rates'])) {
+            Response::json(['error' => 'Invalid response from exchange rate API'], 502);
+            return;
+        }
+
+        $rates = $data['rates'];
+        $db = Database::getInstance();
+
+        $stmt = $db->query('SELECT code FROM currencies WHERE is_active = 1');
+        $activeCurrencies = $stmt->fetchAll(\PDO::FETCH_COLUMN);
+
+        $updated = 0;
+        $upsert = $db->prepare(
+            'INSERT INTO exchange_rates (from_currency, to_currency, rate, updated_at)
+             VALUES (?, ?, ?, NOW())
+             ON DUPLICATE KEY UPDATE rate = VALUES(rate), updated_at = NOW()'
+        );
+
+        foreach ($activeCurrencies as $code) {
+            if (isset($rates[$code])) {
+                $upsert->execute(['GBP', $code, $rates[$code]]);
+                $updated++;
+            }
+        }
+
+        $db->prepare(
+            'UPDATE currencies c
+             JOIN exchange_rates er ON er.from_currency = "GBP" AND er.to_currency = c.code
+             SET c.rate_to_gbp = er.rate, c.updated_at = NOW()
+             WHERE c.is_active = 1'
+        )->execute();
+
+        Response::json(['success' => true, 'updated' => $updated]);
     }
 }

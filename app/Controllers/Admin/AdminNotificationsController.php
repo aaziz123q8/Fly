@@ -82,95 +82,23 @@ class AdminNotificationsController
 
     public function broadcast(Request $request): void
     {
-        $errors = $request->validate([
-            'title'   => 'required',
-            'message' => 'required',
-            'type'    => 'required',
-            'target'  => 'required',
-        ]);
-
-        if (!empty($errors)) {
-            Response::validationError($errors);
-        }
-
-        $title    = (string)$request->input('title');
-        $message  = (string)$request->input('message');
-        $type     = (string)$request->input('type');
-        $target   = (string)$request->input('target');
-        $rawChannels = (array)($request->input('channels') ?? ['email']);
-
-        // Allowlist permitted notification channels.
-        $allowedChannels = ['email', 'sms', 'push', 'whatsapp'];
-        $channels = array_values(array_filter($rawChannels, fn($c) => in_array($c, $allowedChannels, true)));
-        if (empty($channels)) {
-            Response::error('No valid channels specified. Allowed: ' . implode(', ', $allowedChannels), 422);
-        }
-
         $db = Database::getInstance();
 
-        // Determine target users
-        if ($target === 'all') {
-            $stmt = $db->query('SELECT id FROM users WHERE is_active = 1');
-        } elseif ($target === 'active_users') {
-            $stmt = $db->query(
-                "SELECT DISTINCT u.id FROM users u
-                 JOIN sessions s ON s.user_id = u.id
-                 WHERE u.is_active = 1 AND s.expires_at > NOW()"
-            );
-        } elseif (is_numeric($target)) {
-            $stmt = $db->prepare('SELECT id FROM users WHERE id = ? AND is_active = 1');
-            $stmt->execute([(int)$target]);
-        } else {
-            Response::error('Invalid target value.', 422, 'invalid_target');
-        }
-
-        $users = $stmt->fetchAll(\PDO::FETCH_COLUMN);
-
-        if (empty($users)) {
-            Response::json(['queued' => 0, 'message' => 'No users matched target.']);
-        }
-
-        $queued = 0;
-        $insertNotif = $db->prepare(
-            'INSERT INTO user_notifications (user_id, channel, title_en, title_ar, body_en, body_ar, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, NOW())'
-        );
-        $insertJob = $db->prepare(
-            'INSERT INTO job_queue (job_type, payload, status, created_at)
-             VALUES (?, ?, "pending", NOW())'
-        );
-
-        foreach ($users as $userId) {
-            foreach ($channels as $channel) {
-                $insertNotif->execute([
-                    $userId,
-                    $channel,
-                    $title,
-                    $title, // Arabic title same for now
-                    $message,
-                    $message,
-                ]);
-                $notifId = (int)$db->lastInsertId();
-
-                $payload = json_encode([
-                    'notification_id' => $notifId,
-                    'user_id'         => $userId,
-                    'channel'         => $channel,
-                    'title'           => $title,
-                    'message'         => $message,
-                    'type'            => $type,
-                ]);
-
-                $insertJob->execute(['send_notification', $payload]);
-                $queued++;
-            }
-        }
+        try {
+            $db->prepare(
+                'INSERT INTO error_logs (level, message, context, created_at)
+                 VALUES (?, ?, ?, NOW())'
+            )->execute([
+                'warning',
+                'broadcast() called but send_notification job type has no worker handler',
+                json_encode(['uri' => $_SERVER['REQUEST_URI'] ?? '']),
+            ]);
+        } catch (\Throwable) {}
 
         Response::json([
-            'queued'  => $queued,
-            'users'   => count($users),
-            'channels' => $channels,
-        ]);
+            'error'   => 'not_implemented',
+            'message' => 'Broadcast notifications are not yet available. The send_notification job type has no worker handler.',
+        ], 501);
     }
 
     // =========================================================================

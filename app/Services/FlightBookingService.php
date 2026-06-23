@@ -686,6 +686,45 @@ class FlightBookingService
         // Advance session step.
         $this->sessionService->update($session['session_key'], ['current_step' => 'complete']);
 
+        // Record coupon usage.
+        $couponCode     = $pricingSnapshot['coupon_code']     ?? null;
+        $discountAmount = $pricingSnapshot['discount_amount'] ?? 0;
+        if (!empty($couponCode)) {
+            try {
+                $couponStmt = $this->db->prepare('SELECT id FROM coupons WHERE code = ? LIMIT 1');
+                $couponStmt->execute([$couponCode]);
+                $couponRow = $couponStmt->fetch(PDO::FETCH_ASSOC);
+                if ($couponRow) {
+                    $this->db->prepare(
+                        'INSERT INTO coupon_usages
+                           (coupon_id, user_id, booking_type, booking_id, discount_amount, used_at)
+                         VALUES (?, ?, ?, ?, ?, NOW())'
+                    )->execute([
+                        $couponRow['id'],
+                        $userId,
+                        'flight',
+                        $bookingId,
+                        $discountAmount,
+                    ]);
+                }
+            } catch (\Throwable $couponEx) {
+                try {
+                    $this->db->prepare(
+                        'INSERT INTO error_logs (level, message, context, created_at)
+                         VALUES (?, ?, ?, NOW())'
+                    )->execute([
+                        'error',
+                        'Failed to record coupon usage for flight booking',
+                        json_encode([
+                            'booking_id'  => $bookingId,
+                            'coupon_code' => $couponCode,
+                            'error'       => $couponEx->getMessage(),
+                        ]),
+                    ]);
+                } catch (\Throwable) {}
+            }
+        }
+
         // Queue jobs.
         $this->queueJobs($bookingId, $userId);
 
@@ -745,12 +784,12 @@ class FlightBookingService
                     JSON_ARRAYAGG(
                         JSON_OBJECT(
                             "slice_index",   fbs.slice_index,
-                            "segment_index", fbs.segment_index,
+                            "segment_index", fbs.segment_order,
                             "origin",        fbs.origin_airport,
                             "destination",   fbs.destination_airport,
-                            "departing_at",  fbs.departing_at,
-                            "arriving_at",   fbs.arriving_at,
-                            "carrier",       fbs.carrier_iata_code,
+                            "departing_at",  fbs.departure_at,
+                            "arriving_at",   fbs.arrival_at,
+                            "carrier",       fbs.airline_code,
                             "flight_number", fbs.flight_number
                         )
                     ) AS segments

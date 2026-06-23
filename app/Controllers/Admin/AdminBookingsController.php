@@ -232,14 +232,14 @@ class AdminBookingsController
 
             // Rooms.
             $roomStmt = $db->prepare(
-                'SELECT * FROM hotel_booking_rooms WHERE hotel_booking_id = ?'
+                'SELECT * FROM hotel_booking_rooms WHERE booking_id = ?'
             );
             $roomStmt->execute([$id]);
             $booking['rooms'] = $roomStmt->fetchAll(\PDO::FETCH_ASSOC);
 
             // Guests.
             $guestStmt = $db->prepare(
-                'SELECT * FROM hotel_booking_guests WHERE hotel_booking_id = ?'
+                'SELECT * FROM hotel_booking_guests WHERE booking_id = ?'
             );
             $guestStmt->execute([$id]);
             $booking['guests'] = $guestStmt->fetchAll(\PDO::FETCH_ASSOC);
