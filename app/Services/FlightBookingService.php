@@ -451,19 +451,63 @@ class FlightBookingService
             'platform'          => 'flymasar',
         ];
 
+        // Validate services payload — each item must have id (string) and quantity (int)
+        $cleanServices = [];
+        foreach (($servicesData ?: []) as $svc) {
+            $sid = trim((string)($svc['id'] ?? ''));
+            $qty = (int)($svc['quantity'] ?? 1);
+            if ($sid !== '') {
+                $cleanServices[] = ['id' => $sid, 'quantity' => max(1, $qty)];
+            }
+        }
+
+        // Forensic pre-flight log: everything sent to Duffel
+        $preFlightLog = [
+            'offer_id'          => $offerId,
+            'booking_reference' => $bookingReference,
+            'passengers_count'  => count($duffelPassengers),
+            'passengers'        => $duffelPassengers,
+            'services'          => $cleanServices,
+            'payments'          => $duffelPayments,
+            'metadata'          => $metadata,
+        ];
+        error_log('[DUFFEL_CREATE_ORDER_PRE] ' . json_encode($preFlightLog, JSON_UNESCAPED_UNICODE));
+        try {
+            $this->db->prepare(
+                'INSERT INTO error_logs (level, message, context, created_at) VALUES (?,?,?,NOW())'
+            )->execute(['debug', 'createOrder payload', json_encode($preFlightLog, JSON_UNESCAPED_UNICODE)]);
+        } catch (\Throwable) {}
+
         // Create Duffel order. On failure: auto-refund Stripe before re-throwing.
         try {
             $orderResponse = $this->duffel->createOrder(
                 $offerId,
                 $duffelPassengers,
                 $duffelPayments,
-                $servicesData ?: [],
+                $cleanServices,
                 $metadata
             );
         } catch (\Throwable $duffelEx) {
             // Map to a structured, Arabic-ready exception
             $mapped   = DuffelErrorMapper::fromDuffelException($duffelEx);
             $parts    = DuffelErrorMapper::split($mapped->getMessage());
+
+            // Full forensic log — exception message, code, trace
+            $forensic = [
+                'booking_reference' => $bookingReference,
+                'offer_id'          => $offerId,
+                'duffel_exception'  => $duffelEx->getMessage(),
+                'http_status'       => $duffelEx->getCode(),
+                'mapped_internal'   => $parts['internal'],
+                'mapped_customer'   => $parts['customer'],
+                'trace'             => substr($duffelEx->getTraceAsString(), 0, 1500),
+            ];
+            error_log('[DUFFEL_ORDER_FAIL] ' . json_encode($forensic, JSON_UNESCAPED_UNICODE));
+            try {
+                $this->db->prepare(
+                    'INSERT INTO error_logs (level, message, context, created_at) VALUES (?,?,?,NOW())'
+                )->execute(['error', 'createOrder failed', json_encode($forensic, JSON_UNESCAPED_UNICODE)]);
+            } catch (\Throwable) {}
 
             // Log the internal detail for operations visibility
             error_log('[DUFFEL_ORDER_FAIL] ref=' . $bookingReference . ' | ' . $parts['internal']);
@@ -782,14 +826,22 @@ class FlightBookingService
             $this->completeBooking($sessionKey, $paymentIntentId);
             return $this->fetchCompletedBookingResult($userId);
         } catch (\Throwable $e) {
+            $ctx = [
+                'session_key' => $sessionKey,
+                'pi'          => $paymentIntentId,
+                'error'       => $e->getMessage(),
+                'code'        => $e->getCode(),
+                'file'        => $e->getFile() . ':' . $e->getLine(),
+                'trace'       => substr($e->getTraceAsString(), 0, 1500),
+            ];
             try {
                 $this->db->prepare(
                     'INSERT INTO error_logs (level, message, context, created_at) VALUES (?,?,?,NOW())'
-                )->execute(['error', 'confirmCheckout: completeBooking failed: ' . $e->getMessage(),
-                    json_encode(['session_key' => $sessionKey, 'pi' => $paymentIntentId, 'trace' => substr($e->getTraceAsString(), 0, 800)])]);
+                )->execute(['error', 'confirmCheckout: completeBooking failed', json_encode($ctx, JSON_UNESCAPED_UNICODE)]);
             } catch (\Throwable) {}
+            error_log('[CONFIRM_CHECKOUT_FAIL] ' . json_encode($ctx, JSON_UNESCAPED_UNICODE));
 
-            // Throw with full detail so frontend can display the real reason
+            // Throw with the exact mapped customer message (Arabic) + http code
             throw new \RuntimeException($e->getMessage(), $e->getCode() ?: 500);
         }
     }

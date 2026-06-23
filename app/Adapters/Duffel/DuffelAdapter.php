@@ -416,10 +416,22 @@ class DuffelAdapter
         }
 
         if ($statusCode >= 400) {
-            $errorMsg = $decoded['errors'][0]['message'] ?? ($decoded['errors'][0]['title'] ?? 'Unknown Duffel API error');
-            $errorCode = $decoded['errors'][0]['code'] ?? '';
+            $errorMsg  = $decoded['errors'][0]['message'] ?? ($decoded['errors'][0]['title'] ?? 'Unknown Duffel API error');
+            $errorCode = $decoded['errors'][0]['code']    ?? '';
+            $requestId = $decoded['meta']['request_id']   ?? '';
+
+            // Log full forensic detail to PHP error log
+            error_log(sprintf(
+                '[DUFFEL_HTTP_%d] url=%s code=%s request_id=%s body=%s',
+                $statusCode, $url, $errorCode, $requestId, $response
+            ));
+
+            // Include the raw JSON body in the exception message so DuffelErrorMapper
+            // can parse the full errors array and map to the correct Arabic message.
             throw new \RuntimeException(
-                'Duffel API error (' . $statusCode . '): ' . $errorMsg . ($errorCode ? ' [' . $errorCode . ']' : ''),
+                'Duffel API error (' . $statusCode . '): ' . $errorMsg
+                . ($errorCode ? ' [' . $errorCode . ']' : '')
+                . ' ' . $response,
                 $statusCode
             );
         }
