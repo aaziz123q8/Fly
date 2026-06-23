@@ -750,7 +750,6 @@ class FlightBookingService
 
     public function confirmCheckout(string $sessionKey, string $paymentIntentId, int $userId): array
     {
-        // Look up session
         $stmt = $this->db->prepare(
             'SELECT * FROM booking_sessions WHERE session_key = :sk AND user_id = :uid LIMIT 1'
         );
@@ -761,25 +760,57 @@ class FlightBookingService
             throw new \RuntimeException('جلسة الحجز غير موجودة', 404);
         }
 
-        // If already complete, return booking reference
+        // Already complete (webhook arrived before this call)
         if (($session['current_step'] ?? '') === 'complete') {
-            $booking = $this->db->prepare(
-                'SELECT id, booking_reference, duffel_booking_reference, status FROM flight_bookings WHERE user_id = :uid ORDER BY id DESC LIMIT 1'
-            );
-            $booking->execute([':uid' => $userId]);
-            $row = $booking->fetch(\PDO::FETCH_ASSOC);
-            return [
-                'status'                  => 'confirmed',
-                'booking_reference'       => $row['booking_reference']        ?? '',
-                'booking_id'              => $row['id']                       ?? null,
-                'duffel_booking_reference'=> $row['duffel_booking_reference'] ?? null,
-            ];
+            return $this->fetchCompletedBookingResult($userId);
         }
 
-        // Payment may still be processing via webhook — return pending
+        // Verify payment with Stripe directly — don't wait for webhook
+        try {
+            $stripe = new \App\Adapters\Stripe\StripeAdapter();
+            $intent = $stripe->getPaymentIntent($paymentIntentId);
+        } catch (\Throwable $e) {
+            return ['status' => 'pending', 'message' => 'جارٍ التحقق من الدفع…'];
+        }
+
+        if (($intent['status'] ?? '') !== 'succeeded') {
+            return ['status' => 'pending', 'message' => 'جارٍ معالجة الدفع…'];
+        }
+
+        // Payment confirmed — complete booking synchronously
+        try {
+            $this->completeBooking($sessionKey, $paymentIntentId);
+            return $this->fetchCompletedBookingResult($userId);
+        } catch (\Throwable $e) {
+            // Log and surface the error so the user knows what failed
+            try {
+                $this->db->prepare(
+                    'INSERT INTO error_logs (level, message, context, created_at) VALUES (?,?,?,NOW())'
+                )->execute(['error', 'confirmCheckout: completeBooking failed: ' . $e->getMessage(),
+                    json_encode(['session_key' => $sessionKey, 'pi' => $paymentIntentId])]);
+            } catch (\Throwable) {}
+
+            throw new \RuntimeException(
+                'تم خصم المبلغ بنجاح لكن حدث خطأ أثناء إنشاء الحجز. سيتواصل معك فريق الدعم قريباً. ' .
+                'خطأ: ' . $e->getMessage(),
+                500
+            );
+        }
+    }
+
+    private function fetchCompletedBookingResult(int $userId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT id, booking_reference, duffel_booking_reference, status
+             FROM flight_bookings WHERE user_id = :uid ORDER BY id DESC LIMIT 1'
+        );
+        $stmt->execute([':uid' => $userId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
         return [
-            'status'  => 'pending',
-            'message' => 'جارٍ تأكيد الحجز…',
+            'status'                   => 'confirmed',
+            'booking_reference'        => $row['booking_reference']        ?? '',
+            'booking_id'               => $row['id']                       ?? null,
+            'duffel_booking_reference' => $row['duffel_booking_reference'] ?? null,
         ];
     }
 

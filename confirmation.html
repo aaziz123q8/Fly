@@ -154,9 +154,11 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>
-  const urlP = new URLSearchParams(window.location.search);
-  const ref  = urlP.get('ref')  || '';
-  const bid  = urlP.get('bid')  || '';  // numeric booking ID if available
+  const urlP      = new URLSearchParams(window.location.search);
+  const ref       = urlP.get('ref') || '';
+  const bid       = urlP.get('bid') || '';
+  const sessionKey = urlP.get('session') || '';
+  const piId       = urlP.get('pi')      || '';
 
   if (ref) document.getElementById('confirmRef').textContent = ref;
 
@@ -289,13 +291,59 @@
 
   async function loadBooking() {
     if (!Auth.isLoggedIn()) return;
+
+    // Try by explicit ref/bid first
     const key = bid || ref;
-    if (!key) return;
+    if (key) {
+      try {
+        const res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
+        const b   = res.booking || res;
+        if (b && b.id) { renderBooking(b); return; }
+      } catch(e) { /* fall through to other strategies */ }
+    }
+
+    // If session+pi provided, poll confirmCheckout to get the booking ref
+    if (sessionKey && piId) {
+      const delays = [1000, 2000, 4000, 8000];
+      for (let i = 0; i < delays.length; i++) {
+        await new Promise(r => setTimeout(r, delays[i]));
+        try {
+          const cr = await Api.post('/api/flights/checkout/confirm', {
+            session_key: sessionKey, payment_intent_id: piId,
+          }, true);
+          if (cr.status === 'confirmed') {
+            const bookRef = cr.booking_reference || cr.duffel_booking_reference || '';
+            if (bookRef) document.getElementById('confirmRef').textContent = bookRef;
+            if (cr.duffel_booking_reference) {
+              document.getElementById('confirmPnr').textContent = cr.duffel_booking_reference;
+              document.getElementById('pnrBox').style.display  = 'block';
+            }
+            // Load full booking details
+            if (cr.booking_id) {
+              try {
+                const res2 = await Api.get('/api/flights/bookings/' + cr.booking_id, true);
+                const b2   = res2.booking || res2;
+                if (b2 && b2.id) renderBooking(b2);
+              } catch(e2) { /* non-critical */ }
+            }
+            return;
+          }
+        } catch(e) { break; }
+      }
+    }
+
+    // Last resort: fetch most recent booking for this user
     try {
-      const res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
-      const b   = res.booking || res;
-      renderBooking(b);
-    } catch(e) { /* silent — non-critical */ }
+      const res = await Api.get('/api/flights/bookings', true);
+      const bookings = res.bookings || res.data || res || [];
+      if (bookings.length) {
+        const b = bookings[0];
+        if (b.booking_reference && !ref) {
+          document.getElementById('confirmRef').textContent = b.booking_reference;
+        }
+        renderBooking(b);
+      }
+    } catch(e) { /* silent */ }
   }
 
   async function syncBooking() {

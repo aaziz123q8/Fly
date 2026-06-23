@@ -673,8 +673,13 @@ async function submitPayment() {
     }
 
     if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
+      // Show "creating booking" state while we call the server
+      tx.textContent = 'جاري إنشاء الحجز...'; tx.classList.remove('hidden');
+
       let bookingRef = '';
-      const delays = [2000, 4000, 8000, 16000, 16000];
+      let confirmed  = false;
+      // Short initial delay then poll — confirmCheckout now calls Duffel directly
+      const delays = [500, 1000, 2000, 4000, 8000, 12000];
       for (let i = 0; i < delays.length; i++) {
         await new Promise(r => setTimeout(r, delays[i]));
         try {
@@ -682,12 +687,27 @@ async function submitPayment() {
             session_key: sessionKey,
             payment_intent_id: piId,
           }, true);
-          if (cr.status === 'confirmed') { bookingRef = cr.booking_reference || ''; break; }
-        } catch(e) { break; }
+          if (cr.status === 'confirmed') {
+            bookingRef = cr.duffel_booking_reference || cr.booking_reference || '';
+            confirmed  = true;
+            break;
+          }
+        } catch(e) {
+          // 500 = booking completion error (Duffel failure) — show message
+          if (e && (e.status >= 500 || (e.message && e.message.includes('خطأ')))) {
+            showError('⚠️ تم خصم المبلغ بنجاح لكن حدث خطأ في إنشاء الحجز. سيتواصل معك فريق الدعم.');
+            btn.disabled = false; sp.classList.add('hidden');
+            tx.textContent = 'ادفع الآن 🔒'; tx.classList.remove('hidden');
+            return;
+          }
+          break;
+        }
       }
+
       window.location.href = 'confirmation.html?session=' + encodeURIComponent(sessionKey)
         + '&pi=' + encodeURIComponent(piId)
-        + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '');
+        + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '')
+        + (confirmed ? '&confirmed=1' : '');
     } else {
       showError('حالة الدفع غير معروفة. يرجى التواصل مع الدعم.');
       btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
