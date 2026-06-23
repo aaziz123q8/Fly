@@ -63,20 +63,18 @@
     </div>
     <form onsubmit="saveTraveler(event)">
       <input type="hidden" id="travelerId">
+      <!-- Row 0: Title + Gender -->
       <div class="form-row2">
         <div class="form-group">
-          <label class="form-label">الاسم الأول (بالإنجليزي) <span style="color:red">*</span></label>
-          <input type="text" class="form-control" id="tFirst" required placeholder="First Name">
-        </div>
-        <div class="form-group">
-          <label class="form-label">الاسم الأوسط</label>
-          <input type="text" class="form-control" id="tMiddle" placeholder="Middle Name">
-        </div>
-      </div>
-      <div class="form-row2">
-        <div class="form-group">
-          <label class="form-label">الاسم الأخير (بالإنجليزي) <span style="color:red">*</span></label>
-          <input type="text" class="form-control" id="tLast" required placeholder="Last Name">
+          <label class="form-label">اللقب <span style="color:red">*</span></label>
+          <select class="form-control" id="tTitle" required>
+            <option value="">اختر</option>
+            <option value="mr">Mr — السيد</option>
+            <option value="ms">Ms — السيدة</option>
+            <option value="mrs">Mrs — المتزوجة</option>
+            <option value="miss">Miss — الآنسة</option>
+            <option value="dr">Dr — دكتور/ة</option>
+          </select>
         </div>
         <div class="form-group">
           <label class="form-label">الجنس <span style="color:red">*</span></label>
@@ -87,35 +85,66 @@
           </select>
         </div>
       </div>
+      <!-- Row 1: Names -->
       <div class="form-row2">
         <div class="form-group">
-          <label class="form-label">الجنسية <span style="color:red">*</span></label>
-          <input type="text" class="form-control" id="tNationality" required placeholder="مثال: Kuwaiti">
+          <label class="form-label">الاسم الأول (بالإنجليزي) <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="tFirst" required placeholder="First Name" dir="ltr">
         </div>
         <div class="form-group">
-          <label class="form-label">تاريخ الميلاد <span style="color:red">*</span></label>
-          <input type="date" class="form-control" id="tDob" required>
+          <label class="form-label">الاسم الأوسط</label>
+          <input type="text" class="form-control" id="tMiddle" placeholder="Middle Name" dir="ltr">
         </div>
       </div>
       <div class="form-row2">
         <div class="form-group">
-          <label class="form-label">الدولة</label>
-          <input type="text" class="form-control" id="tCountry" placeholder="مثال: Kuwait">
+          <label class="form-label">الاسم الأخير (بالإنجليزي) <span style="color:red">*</span></label>
+          <input type="text" class="form-control" id="tLast" required placeholder="Last Name" dir="ltr">
+        </div>
+        <div class="form-group">
+          <label class="form-label">الجنسية <span style="color:red">*</span></label>
+          <select class="form-control" id="tNationality" required>
+            <option value="">اختر الجنسية</option>
+            <option value="DZA">جزائري</option><option value="BHR">بحريني</option>
+            <option value="EGY">مصري</option><option value="ARE">إماراتي</option>
+            <option value="JOR">أردني</option><option value="KWT">كويتي</option>
+            <option value="LBN">لبناني</option><option value="LBY">ليبي</option>
+            <option value="MRT">موريتاني</option><option value="MAR">مغربي</option>
+            <option value="OMN">عماني</option><option value="PSE">فلسطيني</option>
+            <option value="QAT">قطري</option><option value="SAU">سعودي</option>
+            <option value="SDN">سوداني</option><option value="SYR">سوري</option>
+            <option value="TUN">تونسي</option><option value="YEM">يمني</option>
+            <option value="USA">أمريكي</option><option value="GBR">بريطاني</option>
+            <option value="FRA">فرنسي</option><option value="DEU">ألماني</option>
+            <option value="IND">هندي</option><option value="PAK">باكستاني</option>
+            <option value="PHL">فلبيني</option><option value="TUR">تركي</option>
+            <option value="IRN">إيراني</option><option value="IDN">إندونيسي</option>
+            <option value="MYS">ماليزي</option><option value="BGD">بنغلاديشي</option>
+            <option value="ETH">إثيوبي</option><option value="KEN">كيني</option>
+            <option value="NGA">نيجيري</option><option value="ZAF">جنوب أفريقي</option>
+            <option value="CAN">كندي</option><option value="AUS">أسترالي</option>
+            <option value="CHN">صيني</option><option value="JPN">ياباني</option>
+            <option value="KOR">كوري</option><option value="RUS">روسي</option>
+            <option value="ESP">إسباني</option><option value="ITA">إيطالي</option>
+            <option value="NLD">هولندي</option><option value="SWE">سويدي</option>
+            <option value="OTH">أخرى</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row2">
+        <div class="form-group">
+          <label class="form-label">تاريخ الميلاد <span style="color:red">*</span></label>
+          <input type="date" class="form-control" id="tDob" required>
         </div>
         <div class="form-group">
           <label class="form-label">البريد الإلكتروني</label>
           <input type="email" class="form-control" id="tEmail" placeholder="email@example.com">
         </div>
       </div>
-      <div class="form-row2">
-        <div class="form-group">
-          <label class="form-label">كود الهاتف <span style="color:red">*</span></label>
-          <input type="text" class="form-control" id="tPhoneCode" placeholder="+965" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">رقم الهاتف <span style="color:red">*</span></label>
-          <input type="tel" class="form-control" id="tPhone" placeholder="XXXX XXXX" required>
-        </div>
+      <div class="form-group">
+        <label class="form-label">رقم الهاتف <span style="color:red">*</span></label>
+        <input type="tel" class="form-control" id="tPhone" placeholder="+96599123456" required dir="ltr">
+        <div style="font-size:0.73rem;color:var(--text-muted);margin-top:3px">بصيغة دولية مع رمز الدولة (مثال: +96599123456)</div>
       </div>
       <div style="border-top:1px solid #f0f2f5;margin:20px 0;padding-top:20px">
         <div style="font-weight:600;color:var(--text-muted);font-size:0.85rem;margin-bottom:12px">وثيقة السفر</div>
@@ -196,7 +225,7 @@
       <div class="traveler-card">
         <div class="traveler-avatar">${(t.first_name||'?')[0].toUpperCase()}</div>
         <div class="traveler-info">
-          <div class="traveler-name">${t.first_name||''} ${t.middle_name||''} ${t.last_name||''}</div>
+          <div class="traveler-name">${t.title ? t.title.toUpperCase()+'. ' : ''}${t.first_name||''} ${t.middle_name||''} ${t.last_name||''}</div>
           <div class="traveler-meta">
             ${t.nationality ? `<span>🌍 ${t.nationality}</span>` : ''}
             ${t.date_of_birth ? `<span>🎂 ${t.date_of_birth}</span>` : ''}
@@ -214,16 +243,23 @@
   function openModal(traveler=null, idx=null) {
     document.getElementById('modalTitle').textContent = traveler ? 'تعديل مسافر' : 'إضافة مسافر';
     document.getElementById('travelerId').value = traveler?.id || '';
+    document.getElementById('tTitle').value = traveler?.title || '';
     document.getElementById('tFirst').value = traveler?.first_name || '';
     document.getElementById('tMiddle').value = traveler?.middle_name || '';
     document.getElementById('tLast').value = traveler?.last_name || '';
     document.getElementById('tGender').value = traveler?.gender || '';
     document.getElementById('tNationality').value = traveler?.nationality || '';
     document.getElementById('tDob').value = traveler?.date_of_birth || '';
-    document.getElementById('tCountry').value = traveler?.country || '';
     document.getElementById('tEmail').value = traveler?.email || '';
-    document.getElementById('tPhoneCode').value = traveler?.phone_country_code || '+';
-    document.getElementById('tPhone').value = traveler?.phone_number || traveler?.phone || '';
+    // Phone: prefer stored E.164 in phone_number, fall back to combined from old split fields
+    let storedPhone = traveler?.phone_number || '';
+    if (!storedPhone.startsWith('+') && traveler?.phone_country_code && traveler?.phone_number) {
+      storedPhone = (traveler.phone_country_code.trim() + traveler.phone_number.trim()).replace(/\s+/g,'');
+    }
+    if (!storedPhone.startsWith('+') && (traveler?.phone||'').startsWith('+')) {
+      storedPhone = (traveler.phone||'').replace(/\s+/g,'');
+    }
+    document.getElementById('tPhone').value = storedPhone;
     document.getElementById('tDocType').value = traveler?.document_type || 'passport';
     document.getElementById('tDocNum').value = traveler?.document_number || '';
     document.getElementById('tDocIssue').value = traveler?.document_issue || '';
@@ -239,18 +275,20 @@
   async function saveTraveler(e) {
     e.preventDefault();
     const id = document.getElementById('travelerId').value;
+    // Normalise phone to E.164 (strip spaces, ensure leading +)
+    let rawPhone = document.getElementById('tPhone').value.trim().replace(/[\s\-()]/g,'');
+    if (rawPhone && !rawPhone.startsWith('+')) rawPhone = '+' + rawPhone;
     const data = {
+      title: document.getElementById('tTitle').value,
       first_name: document.getElementById('tFirst').value.trim(),
       middle_name: document.getElementById('tMiddle').value.trim(),
       last_name: document.getElementById('tLast').value.trim(),
       gender: document.getElementById('tGender').value,
-      nationality: document.getElementById('tNationality').value.trim(),
+      nationality: document.getElementById('tNationality').value,
       date_of_birth: document.getElementById('tDob').value,
-      country: document.getElementById('tCountry').value.trim(),
       email: document.getElementById('tEmail').value.trim(),
-      phone_country_code: document.getElementById('tPhoneCode').value.trim(),
-      phone_number: document.getElementById('tPhone').value.trim(),
-      phone: document.getElementById('tPhoneCode').value.trim() + ' ' + document.getElementById('tPhone').value.trim(),
+      phone_number: rawPhone,
+      phone: rawPhone,
       document_type: document.getElementById('tDocType').value,
       document_number: document.getElementById('tDocNum').value.trim(),
       issue_date: document.getElementById('tDocIssue').value,

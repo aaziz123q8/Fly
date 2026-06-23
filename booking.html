@@ -730,7 +730,15 @@
     set(`p${formIdx}_doc_num`, t.document_number);
     set(`p${formIdx}_doc_exp`, t.document_expiry);
     set(`p${formIdx}_doc_issue`, t.document_issue);
-    if (t.phone_number) set(`p${formIdx}_phone`, t.phone_number);
+    // Reconstruct E.164: prefer phone_number if starts with +, else try combining code+number, else use phone field
+    let fillPhone = t.phone_number || '';
+    if (!fillPhone.startsWith('+') && t.phone_country_code && t.phone_number) {
+      fillPhone = (t.phone_country_code.trim() + t.phone_number.trim()).replace(/\s+/g, '');
+    }
+    if (!fillPhone.startsWith('+') && (t.phone||'').startsWith('+')) {
+      fillPhone = (t.phone||'').replace(/\s+/g,'');
+    }
+    if (fillPhone) set(`p${formIdx}_phone`, fillPhone);
     // Fill DOB dropdowns
     if (t.date_of_birth) {
       const parts = t.date_of_birth.split('-');
