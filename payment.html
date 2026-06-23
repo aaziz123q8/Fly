@@ -927,6 +927,7 @@ async function submitPayment() {
       elements,
       confirmParams: {
         payment_method_data: { billing_details: { name: cardName } },
+        return_url: window.location.href,
       },
       redirect: 'if_required',
     });
