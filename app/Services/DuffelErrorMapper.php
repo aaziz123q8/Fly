@@ -76,6 +76,36 @@ class DuffelErrorMapper
             'status' => 502,
             'action' => 'retry_or_support',
         ],
+        'insufficient_balance' => [
+            'ar'     => 'رصيد حساب Duffel غير كافٍ. يرجى إضافة رصيد تجريبي من لوحة تحكم Duffel (Settings → Balance).',
+            'status' => 402,
+            'action' => 'top_up_balance',
+        ],
+        'not_supported' => [
+            'ar'     => 'هذا الحجز غير مدعوم حالياً. يرجى التواصل مع الدعم.',
+            'status' => 422,
+            'action' => 'contact_support',
+        ],
+        'invalid_passenger_identity_document' => [
+            'ar'     => 'بيانات جواز سفر أحد المسافرين غير صحيحة. يرجى التحقق من البيانات.',
+            'status' => 422,
+            'action' => 'fix_passengers',
+        ],
+        'offer_id_already_used' => [
+            'ar'     => 'تم استخدام هذا العرض من قبل. يرجى البحث عن رحلة جديدة.',
+            'status' => 409,
+            'action' => 'new_search',
+        ],
+        'service_not_available_for_offer' => [
+            'ar'     => 'إحدى الخدمات الإضافية المختارة لم تعد متاحة. يرجى تحديث اختياراتك.',
+            'status' => 409,
+            'action' => 'reselect_services',
+        ],
+        'price_guarantee_expired' => [
+            'ar'     => 'انتهت ضمانة السعر. يرجى البحث من جديد.',
+            'status' => 410,
+            'action' => 'new_search',
+        ],
     ];
 
     /**
