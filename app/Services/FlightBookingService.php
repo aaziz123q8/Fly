@@ -161,6 +161,24 @@ class FlightBookingService
             }
             // Normalise to uppercase so mapPassengersForDuffel receives a clean value.
             $p['nationality'] = $nat;
+
+            // Phone number: required for adult/child, optional for infant.
+            $pTypeNorm = strtolower(trim($p['type'] ?? 'adult'));
+            $rawPhone  = trim((string)($p['phone_number'] ?? ''));
+            if ($pTypeNorm !== 'infant') {
+                if ($rawPhone === '') {
+                    throw new RuntimeException("المسافر {$num}: رقم الهاتف مطلوب.", 422);
+                }
+                $normalised = $this->normalizePhone($rawPhone);
+                $digits = preg_replace('/\D/', '', $normalised);
+                if (strlen($digits) < 8 || strlen($normalised) > 20) {
+                    throw new RuntimeException("المسافر {$num}: رقم الهاتف غير صحيح — يجب أن يحتوي على 8 أرقام على الأقل بصيغة دولية.", 422);
+                }
+                $p['phone_number'] = $normalised;
+            } elseif ($rawPhone !== '') {
+                $p['phone_number'] = $this->normalizePhone($rawPhone);
+            }
+
             $passengers[$idx] = $p;
         }
 
@@ -1687,6 +1705,9 @@ class FlightBookingService
             if (!empty($p['passport_expiry'])) {
                 $entry['passport_expiry_date'] = $p['passport_expiry'];
             }
+            if (!empty($p['phone_number'])) {
+                $entry['phone_number'] = $p['phone_number'];
+            }
 
             if ($duffelId !== null) {
                 $entry['id'] = $duffelId;
@@ -1721,6 +1742,16 @@ class FlightBookingService
         unset($entry);
 
         return $mapped;
+    }
+
+    private function normalizePhone(string $phone): string
+    {
+        // Strip spaces and dashes, ensure leading +
+        $phone = preg_replace('/[\s\-()]/', '', $phone);
+        if ($phone !== '' && $phone[0] !== '+') {
+            $phone = '+' . $phone;
+        }
+        return $phone;
     }
 
     private function isInfantPassenger(string $duffelId, array $offerPassengers): bool

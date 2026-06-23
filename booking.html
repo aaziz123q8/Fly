@@ -315,6 +315,11 @@
         <div style="display:grid;grid-template-columns:1fr;gap:16px;margin-bottom:16px">
           ${dobFields(i, p.type)}
         </div>
+        <div class="form-group" style="margin-bottom:16px">
+          <label class="form-label">رقم الهاتف${p.type!=='infant'?' <span style="color:red">*</span>':' <small style="color:var(--text-muted)">(اختياري)</small>'}</label>
+          <input type="tel" class="form-control" id="p${i}_phone" placeholder="مثال: +96599123456" dir="ltr" autocomplete="tel">
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:3px">بصيغة دولية مع رمز البلد</div>
+        </div>
         <div style="border-top:1px solid #f0f2f5;margin:16px 0;padding-top:16px">
           <div style="font-size:0.85rem;font-weight:600;color:var(--text-muted);margin-bottom:12px">وثيقة السفر</div>
           <div class="form-row2" style="margin-bottom:12px">
@@ -778,6 +783,7 @@
       document_number: document.getElementById(`p${i}_doc_num`)?.value?.trim(),
       document_expiry: document.getElementById(`p${i}_doc_exp`)?.value?.trim(),
       document_issue: document.getElementById(`p${i}_doc_issue`)?.value?.trim(),
+      phone_number: document.getElementById(`p${i}_phone`)?.value?.trim(),
     }));
   }
 
@@ -819,6 +825,19 @@
         switchPax(i, document.querySelectorAll('.pax-tab')[i]);
         const errMsg = document.getElementById(`p${i}_expError`)?.textContent;
         alert(errMsg || 'يرجى التحقق من تاريخ انتهاء وثيقة ' + paxTypes[i].label); return;
+      }
+      // Phone number: required for adult/child, optional for infant
+      if (p.type !== 'infant') {
+        const ph = p.phone_number || '';
+        const digits = ph.replace(/\D/g,'');
+        if (!ph) {
+          switchPax(i, document.querySelectorAll('.pax-tab')[i]);
+          alert('يرجى إدخال رقم هاتف ' + paxTypes[i].label + ' بصيغة دولية (مثال: +96599123456)'); return;
+        }
+        if (digits.length < 8 || ph.length > 20) {
+          switchPax(i, document.querySelectorAll('.pax-tab')[i]);
+          alert('رقم هاتف ' + paxTypes[i].label + ' غير صحيح — يجب أن يحتوي على 8 أرقام على الأقل'); return;
+        }
       }
     }
     const dupErr = checkDuplicateNames(passengers);
@@ -864,6 +883,12 @@
     document.getElementById('contactPhone').value = user.phone || '';
   }
   buildTabs();
+  // Pre-fill first passenger phone from contact info after tabs are built
+  const _contactPh = document.getElementById('contactPhone')?.value?.trim();
+  if (_contactPh) {
+    const _p0phone = document.getElementById('p0_phone');
+    if (_p0phone && !_p0phone.value) _p0phone.value = _contactPh;
+  }
   loadFlightInfo();
   loadSavedTravelers();
 </script>
