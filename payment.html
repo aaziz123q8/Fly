@@ -9,30 +9,78 @@
   <script src="https://js.stripe.com/v3/"></script>
   <style>
     .pay-page { background:var(--bg); min-height:100vh; padding:32px 0 80px; }
-    .pay-grid { display:grid; grid-template-columns:1fr 380px; gap:24px; }
-    @media(max-width:900px) { .pay-grid { grid-template-columns:1fr; } }
-    .pay-card { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:28px; margin-bottom:20px; }
-    .pay-card h2 { font-size:1.1rem; font-weight:700; color:var(--primary); margin:0 0 20px; display:flex; align-items:center; gap:8px; }
-    #stripe-element {
-      border: 2px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 16px;
-      background: #fff;
-      transition: border-color .2s;
+    .pay-grid {
+      display:grid;
+      grid-template-columns:1fr 400px;
+      gap:24px;
+      align-items:start;
     }
-    #stripe-element.StripeElement--focus { border-color: var(--primary); }
-    #stripe-element.StripeElement--invalid { border-color: var(--error, #ef4444); }
+    @media(max-width:900px) {
+      .pay-grid { grid-template-columns:1fr; }
+      .pay-summary-col { order:-1; }
+    }
+    .pay-card { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:24px 28px; margin-bottom:20px; }
+    .pay-card h2 { font-size:1.05rem; font-weight:700; color:var(--primary); margin:0 0 18px; display:flex; align-items:center; gap:8px; }
+
+    /* ── Stripe element wrapper ── */
+    .stripe-wrapper { position:relative; min-height:56px; }
+    #stripe-loading {
+      position:absolute; inset:0;
+      display:flex; align-items:center; justify-content:center; gap:10px;
+      background:#fafafa; border:1.5px solid #e5e7eb; border-radius:10px;
+      color:#6b7280; font-size:0.88rem; z-index:2;
+      pointer-events:none;
+    }
+    #stripe-element {
+      border:2px solid #e5e7eb; border-radius:12px; padding:16px;
+      background:#fff; transition:border-color .2s; min-height:44px;
+    }
+    #stripe-element.StripeElement--focus { border-color:var(--primary); }
+    #stripe-element.StripeElement--invalid { border-color:var(--error,#ef4444); }
+
     .payment-method-tabs { display:flex; gap:8px; margin-bottom:20px; }
     .pm-tab { flex:1; padding:12px; border:2px solid #e5e7eb; border-radius:12px; background:none; cursor:pointer; font-family:inherit; font-size:0.9rem; font-weight:600; color:var(--text-muted); text-align:center; transition:all .2s; }
     .pm-tab.active { border-color:var(--primary); color:var(--primary); background:#f0f5ff; }
+
     .secure-badges { display:flex; gap:12px; flex-wrap:wrap; align-items:center; margin-top:20px; padding-top:16px; border-top:1px solid #f0f2f5; }
     .secure-badge { display:flex; align-items:center; gap:6px; font-size:0.78rem; color:var(--text-muted); }
-    .price-summary { position:sticky; top:20px; }
-    .price-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f0f2f5; font-size:0.92rem; }
+
+    /* ── Flight summary card ── */
+    .flight-route-bar {
+      display:flex; align-items:center; justify-content:space-between;
+      background:linear-gradient(135deg,#1a3c5e 0%,#2d6a9f 100%);
+      border-radius:14px; padding:18px 20px; color:#fff; margin-bottom:16px;
+    }
+    .route-city { text-align:center; }
+    .route-iata { font-size:1.6rem; font-weight:900; letter-spacing:1px; }
+    .route-name { font-size:0.72rem; opacity:.8; margin-top:2px; }
+    .route-line {
+      flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+      padding:0 12px;
+    }
+    .route-plane { font-size:1.4rem; }
+    .route-duration { font-size:0.72rem; opacity:.75; white-space:nowrap; }
+    .route-dashes {
+      width:100%; height:1px; background:rgba(255,255,255,.35);
+      position:relative;
+    }
+
+    .flight-meta-grid {
+      display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:14px;
+    }
+    .flight-meta-item {
+      background:#f8fafc; border-radius:10px; padding:10px 12px;
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .flight-meta-label { font-size:0.7rem; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:.4px; }
+    .flight-meta-value { font-size:0.9rem; font-weight:700; color:var(--text); }
+
+    .price-divider { border:none; border-top:1px solid #f0f2f5; margin:12px 0; }
+    .price-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f2f5; font-size:0.92rem; }
     .price-row:last-child { border-bottom:none; }
-    .price-total { display:flex; justify-content:space-between; padding:16px 0 0; font-size:1.15rem; font-weight:800; color:var(--primary); border-top:2px solid var(--primary); margin-top:8px; }
-    .price-currency-note { font-size:0.75rem; color:var(--text-muted); margin-top:6px; text-align:center; }
-    #payError { color:var(--error,#ef4444); font-size:0.88rem; margin-top:12px; display:none; }
+    .price-total { display:flex; justify-content:space-between; padding:14px 0 0; font-size:1.15rem; font-weight:800; color:var(--primary); border-top:2px solid var(--primary); margin-top:6px; }
+
+    #payError { color:var(--error,#ef4444); font-size:0.88rem; margin-top:12px; display:none; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 14px; }
     #deadlineBanner { display:none; background:#fff7ed; border:2px solid #f59e0b; border-radius:12px; padding:14px 18px; margin-bottom:18px; }
     #deadlineBanner.expired { background:#fef2f2; border-color:#ef4444; }
     #deadlineBanner .dl-row { display:flex; align-items:center; gap:10px; }
@@ -40,6 +88,7 @@
     #deadlineBanner.expired .dl-label { color:#991b1b; }
     #deadlineCountdown { font-size:1.05rem; font-weight:800; color:#b45309; font-variant-numeric:tabular-nums; }
     #deadlineBanner.expired #deadlineCountdown { color:#dc2626; }
+
     .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
     @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
     .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
@@ -89,7 +138,48 @@
   <div class="container">
     <div class="pay-grid">
 
-      <!-- Left: Payment Form -->
+      <!-- RIGHT column: Order Summary (shows first on mobile) -->
+      <div class="pay-summary-col">
+
+        <!-- ── Travel Summary Card ── -->
+        <div class="pay-card" id="flightSummaryCard">
+          <h2>✈️ ملخص رحلتك</h2>
+          <div id="flightSummaryBody">
+            <div style="text-align:center;padding:20px;color:var(--text-muted)">
+              <div class="spinner" style="margin:0 auto 10px"></div>
+              جاري تحميل تفاصيل الرحلة...
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Price Breakdown Card ── -->
+        <div class="pay-card">
+          <h2>💰 تفاصيل السعر</h2>
+          <div id="orderSummary"></div>
+          <div class="price-total" id="totalRow" style="display:none">
+            <span id="totalLabel">الإجمالي</span>
+            <span id="totalDisplay">—</span>
+          </div>
+          <div id="gbpEquivalentRow" style="display:none;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 14px;margin-top:10px;font-size:0.85rem;color:#92400e;line-height:1.5">
+            <span style="font-weight:700">💳 سيتم تحصيل المبلغ بالجنيه الإسترليني:</span>
+            <span id="gbpEquivalentAmount" style="font-weight:800;font-size:1rem;display:block;margin-top:2px;color:#78350f"></span>
+          </div>
+        </div>
+
+        <!-- ── Trust badge ── -->
+        <div class="pay-card" style="background:#f0f5ff;border:2px solid #c5d5e8">
+          <div style="display:flex;gap:12px;align-items:flex-start">
+            <span style="font-size:1.5rem">🛡️</span>
+            <div>
+              <div style="font-weight:700;color:var(--primary);margin-bottom:4px">ضمان استرداد الأموال</div>
+              <div style="font-size:0.82rem;color:var(--text-muted)">لا نخزن بيانات بطاقتك. معالجة الدفع عبر Stripe المعتمدة عالمياً بمعايير PCI-DSS.</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- LEFT column: Payment Form -->
       <div>
         <div class="pay-card">
           <h2>🔒 الدفع الآمن</h2>
@@ -99,7 +189,6 @@
             <button class="pm-tab" id="tabLink" onclick="switchTab('link')" style="display:none">🔗 Stripe Link</button>
           </div>
 
-          <!-- Payment deadline banner — shown when offer has a payment_required_by or expires_at -->
           <div id="deadlineBanner">
             <div class="dl-row">
               <span style="font-size:1.4rem">⏰</span>
@@ -119,11 +208,15 @@
             </div>
             <div class="form-group">
               <label class="form-label">بيانات البطاقة</label>
-              <div id="stripe-loading" style="padding:14px;text-align:center;color:#6b7280;font-size:0.88rem;border:1.5px solid #e5e7eb;border-radius:10px;background:#fafafa">
-                <div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto 8px"></div>
-                جاري تحميل نموذج الدفع...
+              <!-- Wrapper keeps stripe-element always in DOM and visible -->
+              <div class="stripe-wrapper">
+                <div id="stripe-loading">
+                  <div class="spinner" style="width:18px;height:18px;border-width:2px"></div>
+                  جاري تحميل نموذج الدفع...
+                </div>
+                <!-- NEVER set display:none on this element — Stripe needs it visible to mount -->
+                <div id="stripe-element"></div>
               </div>
-              <div id="stripe-element" style="display:none"></div>
             </div>
             <div id="payError"></div>
           </div>
@@ -144,34 +237,6 @@
         </div>
       </div>
 
-      <!-- Right: Order Summary -->
-      <div class="price-summary">
-        <div class="pay-card">
-          <h2>ملخص الطلب</h2>
-          <div id="orderSummary" style="color:var(--text-muted);text-align:center;padding:10px">
-            <div class="spinner"></div>
-          </div>
-          <div class="price-total" id="totalRow" style="display:none">
-            <span id="totalLabel">الإجمالي</span>
-            <span id="totalDisplay">—</span>
-          </div>
-          <div id="gbpEquivalentRow" style="display:none;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 14px;margin-top:10px;font-size:0.85rem;color:#92400e;line-height:1.5">
-            <span style="font-weight:700">💳 سيتم تحصيل المبلغ بالجنيه الإسترليني:</span>
-            <span id="gbpEquivalentAmount" style="font-weight:800;font-size:1rem;display:block;margin-top:2px;color:#78350f"></span>
-          </div>
-        </div>
-
-        <div class="pay-card" style="background:#f0f5ff;border:2px solid #c5d5e8">
-          <div style="display:flex;gap:12px;align-items:flex-start">
-            <span style="font-size:1.5rem">🛡️</span>
-            <div>
-              <div style="font-weight:700;color:var(--primary);margin-bottom:4px">ضمان استرداد الأموال</div>
-              <div style="font-size:0.82rem;color:var(--text-muted)">لا نخزن بيانات بطاقتك. معالجة الدفع عبر Stripe المعتمدة.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
     </div>
   </div>
 </div>
@@ -189,15 +254,19 @@
 <script>
   if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
 
-  const params = new URLSearchParams(window.location.search);
-  const sessionKey = params.get('session') || '';
-  const piId       = params.get('pi') || '';
-  const clientSecret = params.get('secret') || '';
-  const amountGBP  = parseFloat(params.get('amount') || '0');
+  const params       = new URLSearchParams(window.location.search);
+  const sessionKey   = params.get('session')  || '';
+  const piId         = params.get('pi')        || '';
+  const clientSecret = params.get('secret')    || '';
+  const amountGBP    = parseFloat(params.get('amount')   || '0');
+  const baseAmount   = parseFloat(params.get('base')     || '0') || (amountGBP * 0.9);
+  const taxAmount    = parseFloat(params.get('tax')      || '0') || (amountGBP * 0.1);
+  const discountAmount = parseFloat(params.get('discount') || '0');
 
   let stripe   = null;
   let elements = null;
 
+  // ── Stripe init ────────────────────────────────────────────────────────────
   async function initStripe() {
     if (!clientSecret) {
       showError('بيانات الجلسة غير مكتملة. يرجى العودة وإعادة المحاولة.');
@@ -216,24 +285,25 @@
       return;
     }
     try {
-      stripe = Stripe(key);
+      stripe   = Stripe(key);
       elements = stripe.elements({ locale: 'ar', clientSecret });
       const card = elements.create('payment', {
         fields: { billingDetails: { name: 'never' } },
       });
+      // Hide the overlay once Stripe has rendered inside the element
       card.on('ready', () => {
         document.getElementById('stripe-loading').style.display = 'none';
-        document.getElementById('stripe-element').style.display = 'block';
       });
+      // Mount to a VISIBLE element — never display:none before mount
       card.mount('#stripe-element');
       card.on('change', e => {
         const err = document.getElementById('payError');
-        if (e.error) { err.textContent = e.error.message; err.style.display='block'; }
-        else { err.style.display='none'; }
+        if (e.error) { err.textContent = e.error.message; err.style.display = 'block'; }
+        else          { err.style.display = 'none'; }
       });
     } catch (e) {
       document.getElementById('stripe-loading').style.display = 'none';
-      showError('حدث خطأ أثناء تهيئة نظام الدفع. يرجى تحديث الصفحة.');
+      showError('حدث خطأ أثناء تهيئة نظام الدفع. يرجى تحديث الصفحة والمحاولة مجدداً.');
     }
   }
 
@@ -244,15 +314,156 @@
   }
 
   function switchTab(tab) {
-    document.getElementById('tabCard').classList.toggle('active', tab==='card');
-    document.getElementById('tabLink').classList.toggle('active', tab==='link');
+    document.getElementById('tabCard').classList.toggle('active', tab === 'card');
+    document.getElementById('tabLink').classList.toggle('active', tab === 'link');
   }
 
-  // breakdown passed from services.html via URL (base + tax from server pricing)
-  const baseAmount = parseFloat(params.get('base') || '0') || (amountGBP * 0.9);
-  const taxAmount  = parseFloat(params.get('tax')  || '0') || (amountGBP * 0.1);
-  const discountAmount = parseFloat(params.get('discount') || '0');
+  // ── Flight summary ─────────────────────────────────────────────────────────
+  function formatDateAr(isoStr) {
+    if (!isoStr) return '—';
+    try {
+      return new Date(isoStr).toLocaleDateString('ar-SA', {
+        weekday:'long', year:'numeric', month:'long', day:'numeric',
+      });
+    } catch(e) { return isoStr; }
+  }
+  function formatTimeAr(isoStr) {
+    if (!isoStr) return '—';
+    try {
+      return new Date(isoStr).toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit', hour12:false });
+    } catch(e) { return isoStr; }
+  }
 
+  async function loadFlightSummary() {
+    const body = document.getElementById('flightSummaryBody');
+    if (!sessionKey) { body.innerHTML = ''; return; }
+    try {
+      const res = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey));
+      const offer = res.offer || res.data || {};
+
+      // Try to get slices from the offer
+      const slices = offer.slices || [];
+      const pax    = offer.passengers || [];
+      const cabinClass = offer.cabin_class || offer.cabinClass || '';
+      const airline   = (offer.owner && offer.owner.name) ? offer.owner.name : (offer.airline_name || '');
+
+      if (!slices.length) {
+        // Minimal fallback — no offer data available
+        body.innerHTML = renderMinimalSummary();
+        return;
+      }
+
+      const firstSlice = slices[0];
+      const lastSlice  = slices[slices.length - 1];
+      const firstSeg   = firstSlice.segments ? firstSlice.segments[0] : {};
+      const lastSeg    = (lastSlice.segments && lastSlice.segments.length)
+                         ? lastSlice.segments[lastSlice.segments.length - 1] : {};
+
+      const origin      = firstSeg.origin      || firstSlice.origin      || {};
+      const destination = lastSeg.destination  || lastSlice.destination  || {};
+      const departAt    = firstSeg.departing_at || firstSlice.departing_at || '';
+      const arriveAt    = lastSeg.arriving_at   || lastSlice.arriving_at   || '';
+
+      const originIata  = origin.iata_code      || '—';
+      const originCity  = origin.city_name       || origin.name || originIata;
+      const destIata    = destination.iata_code  || '—';
+      const destCity    = destination.city_name  || destination.name || destIata;
+
+      // Duration of first slice
+      const durationRaw = firstSlice.duration || '';
+      let durationDisp = '';
+      if (durationRaw) {
+        const m = durationRaw.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+        if (m) durationDisp = (m[1] ? m[1] + 'س ' : '') + (m[2] ? m[2] + 'د' : '');
+      }
+
+      const stops = firstSlice.segments ? (firstSlice.segments.length - 1) : 0;
+      const stopsLabel = stops === 0 ? 'مباشر' : (stops + ' توقف');
+      const paxCount   = pax.length || 1;
+      const cabinLabel = { economy:'اقتصادي', premium_economy:'بريميوم', business:'رجال أعمال', first:'أول' }[cabinClass] || cabinClass || 'اقتصادي';
+
+      let airlineLogoHtml = '';
+      const marketSegments = firstSlice.segments || [];
+      if (marketSegments[0] && marketSegments[0].operating_carrier && marketSegments[0].operating_carrier.logo_symbol_url) {
+        airlineLogoHtml = `<img src="${marketSegments[0].operating_carrier.logo_symbol_url}" style="height:28px;border-radius:4px;margin-bottom:4px" alt="">`;
+      }
+
+      body.innerHTML = `
+        <div class="flight-route-bar">
+          <div class="route-city">
+            <div class="route-iata">${originIata}</div>
+            <div class="route-name">${originCity}</div>
+            ${departAt ? `<div style="font-size:0.8rem;opacity:.9;margin-top:4px">${formatTimeAr(departAt)}</div>` : ''}
+          </div>
+          <div class="route-line">
+            <div class="route-dashes"></div>
+            <div class="route-plane">✈️</div>
+            <div class="route-dashes"></div>
+            ${durationDisp ? `<div class="route-duration">${durationDisp}</div>` : ''}
+          </div>
+          <div class="route-city" style="text-align:center">
+            <div class="route-iata">${destIata}</div>
+            <div class="route-name">${destCity}</div>
+            ${arriveAt ? `<div style="font-size:0.8rem;opacity:.9;margin-top:4px">${formatTimeAr(arriveAt)}</div>` : ''}
+          </div>
+        </div>
+        <div class="flight-meta-grid">
+          <div class="flight-meta-item">
+            <span class="flight-meta-label">📅 تاريخ المغادرة</span>
+            <span class="flight-meta-value" style="font-size:0.82rem">${formatDateAr(departAt)}</span>
+          </div>
+          <div class="flight-meta-item">
+            <span class="flight-meta-label">👥 المسافرون</span>
+            <span class="flight-meta-value">${paxCount} مسافر</span>
+          </div>
+          <div class="flight-meta-item">
+            <span class="flight-meta-label">💺 درجة السفر</span>
+            <span class="flight-meta-value">${cabinLabel}</span>
+          </div>
+          <div class="flight-meta-item">
+            <span class="flight-meta-label">🛑 التوقفات</span>
+            <span class="flight-meta-value">${stopsLabel}</span>
+          </div>
+          ${airline ? `
+          <div class="flight-meta-item" style="grid-column:1/-1">
+            <span class="flight-meta-label">✈️ شركة الطيران</span>
+            <span class="flight-meta-value" style="display:flex;align-items:center;gap:8px">${airlineLogoHtml}${airline}</span>
+          </div>` : ''}
+        </div>
+        ${slices.length > 1 ? `<div style="font-size:0.8rem;color:var(--text-muted);background:#f0f5ff;border-radius:8px;padding:8px 12px;margin-bottom:4px">
+          🔄 رحلة ذهاب وإياب · ${slices.length} رحلات
+        </div>` : ''}
+      `;
+    } catch (e) {
+      // Fallback to minimal display (URL params only)
+      document.getElementById('flightSummaryBody').innerHTML = renderMinimalSummary();
+    }
+  }
+
+  function renderMinimalSummary() {
+    // Show what we can from URL params
+    const orig = params.get('origin') || '—';
+    const dest = params.get('dest')   || '—';
+    const date = params.get('date')   || '';
+    return `
+      <div class="flight-route-bar">
+        <div class="route-city">
+          <div class="route-iata">${orig}</div>
+        </div>
+        <div class="route-line">
+          <div class="route-dashes"></div>
+          <div class="route-plane">✈️</div>
+          <div class="route-dashes"></div>
+        </div>
+        <div class="route-city">
+          <div class="route-iata">${dest}</div>
+        </div>
+      </div>
+      ${date ? `<div style="font-size:0.85rem;color:var(--text-muted);padding:6px 0">${formatDateAr(date)}</div>` : ''}
+    `;
+  }
+
+  // ── Price breakdown ────────────────────────────────────────────────────────
   function loadOrderSummary() {
     const el = document.getElementById('orderSummary');
     if (!amountGBP) {
@@ -260,60 +471,56 @@
       return;
     }
 
-    // Convert all amounts to display currency
     const fmt = (gbp) => typeof formatPrice === 'function' ? formatPrice(gbp) : ('£ ' + gbp.toFixed(2));
 
     let rows = `
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f0f2f5;font-size:0.92rem">
-        <span>سعر الرحلة</span>
+      <div class="price-row">
+        <span>✈️ سعر الرحلة</span>
         <span>${fmt(baseAmount)}</span>
       </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;${discountAmount > 0 ? 'border-bottom:1px solid #f0f2f5;' : ''}font-size:0.92rem">
-        <span>الضرائب والرسوم</span>
+      <div class="price-row" ${discountAmount > 0 ? '' : 'style="border-bottom:none"'}>
+        <span>🧾 الضرائب والرسوم</span>
         <span>${fmt(taxAmount)}</span>
       </div>`;
     if (discountAmount > 0) {
-      rows += `<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:0.92rem;color:#16a34a">
-        <span>خصم الكوبون</span>
+      rows += `<div class="price-row" style="color:#16a34a;border-bottom:none">
+        <span>🎁 خصم الكوبون</span>
         <span>−${fmt(discountAmount)}</span>
       </div>`;
     }
     el.innerHTML = rows;
 
-    // Currency display
-    const cur = (typeof currentCurrency !== 'undefined' && currentCurrency) ? currentCurrency : 'GBP';
+    // Currency total
+    const cur   = (typeof currentCurrency !== 'undefined' && currentCurrency) ? currentCurrency : 'GBP';
     const isGBP = cur === 'GBP';
-    const totalRow   = document.getElementById('totalRow');
-    const totalLabel = document.getElementById('totalLabel');
-    const totalDisp  = document.getElementById('totalDisplay');
-    const gbpRow     = document.getElementById('gbpEquivalentRow');
-    const gbpAmt     = document.getElementById('gbpEquivalentAmount');
-    const payNote    = document.getElementById('payNoteText');
-    const payBtnTxt  = document.getElementById('payBtnTxt');
+    const totalRow  = document.getElementById('totalRow');
+    const totalDisp = document.getElementById('totalDisplay');
+    const gbpRow    = document.getElementById('gbpEquivalentRow');
+    const gbpAmt    = document.getElementById('gbpEquivalentAmount');
+    const payNote   = document.getElementById('payNoteText');
+    const payBtnTxt = document.getElementById('payBtnTxt');
 
     totalRow.style.display = 'flex';
 
     if (isGBP) {
-      totalLabel.textContent = 'الإجمالي (GBP)';
-      totalDisp.textContent  = '£ ' + amountGBP.toFixed(2);
-      gbpRow.style.display   = 'none';
+      document.getElementById('totalLabel').textContent = 'الإجمالي (GBP)';
+      totalDisp.textContent = '£ ' + amountGBP.toFixed(2);
+      gbpRow.style.display  = 'none';
     } else {
-      // Show display currency total
-      const displayAmt = typeof formatPrice === 'function' ? formatPrice(amountGBP, cur) : ('£ ' + amountGBP.toFixed(2));
-      totalLabel.textContent = 'الإجمالي (' + cur + ')';
-      totalDisp.textContent  = displayAmt;
-      // GBP note
-      gbpRow.style.display = 'block';
-      gbpAmt.textContent   = '£ ' + amountGBP.toFixed(2) + ' (GBP)';
-      // Update pay button and disclaimer
+      const displayAmt = typeof formatPrice === 'function' ? formatPrice(amountGBP) : ('£ ' + amountGBP.toFixed(2));
+      document.getElementById('totalLabel').textContent = 'الإجمالي (' + cur + ')';
+      totalDisp.textContent = displayAmt;
+      gbpRow.style.display  = 'block';
+      gbpAmt.textContent    = '£ ' + amountGBP.toFixed(2) + ' (GBP)';
       payBtnTxt.textContent = 'ادفع الآن £' + amountGBP.toFixed(2) + ' 🔒';
       if (payNote) payNote.textContent = 'المبالغ بـ ' + cur + ' للعرض فقط. سيتم تحصيل £' + amountGBP.toFixed(2) + ' (GBP) من بطاقتك.';
     }
   }
 
+  // ── Submit payment ─────────────────────────────────────────────────────────
   async function submitPayment() {
-    if (!stripe || !elements) { showError('جاري تحميل نظام الدفع...'); return; }
-    if (!clientSecret) { showError('بيانات الدفع غير متوفرة. يرجى العودة وإعادة المحاولة.'); return; }
+    if (!stripe || !elements) { showError('جاري تحميل نظام الدفع، يرجى الانتظار لحظة...'); return; }
+    if (!clientSecret)        { showError('بيانات الدفع غير متوفرة. يرجى العودة وإعادة المحاولة.'); return; }
 
     const cardName = document.getElementById('cardName').value.trim();
     if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة'); return; }
@@ -321,11 +528,10 @@
     const btn = document.getElementById('payBtn');
     const sp  = document.getElementById('paySpinner');
     const tx  = document.getElementById('payBtnTxt');
-    btn.disabled=true; sp.classList.remove('hidden'); tx.classList.add('hidden');
+    btn.disabled = true; sp.classList.remove('hidden'); tx.classList.add('hidden');
     document.getElementById('payError').style.display = 'none';
 
     try {
-      // confirmPayment is the current Stripe.js API (replaces deprecated confirmCardPayment)
       const result = await stripe.confirmPayment({
         elements,
         confirmParams: {
@@ -336,16 +542,15 @@
 
       if (result.error) {
         showError(result.error.message || 'فشل الدفع. يرجى التحقق من بيانات البطاقة.');
-        btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+        btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
         return;
       }
 
       if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-        // Poll with exponential backoff (2s, 4s, 8s, 16s, 16s, 16s)
         let bookingRef = '';
         const delays = [2000, 4000, 8000, 16000, 16000, 16000];
-        for (let attempt = 0; attempt < delays.length; attempt++) {
-          await new Promise(r => setTimeout(r, delays[attempt]));
+        for (let i = 0; i < delays.length; i++) {
+          await new Promise(r => setTimeout(r, delays[i]));
           try {
             const confirmRes = await Api.post('/api/flights/checkout/confirm', {
               session_key: sessionKey,
@@ -362,30 +567,25 @@
           + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '');
       } else {
         showError('حالة الدفع غير معروفة. يرجى التواصل مع الدعم.');
-        btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+        btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
       }
     } catch (err) {
       showError(err.message || 'حدث خطأ أثناء الدفع');
-      btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+      btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
     }
   }
 
-  // ── Payment deadline countdown ────────────────────────────────────────────────
-  // `deadline` URL param is populated by services.html from payment_requirements.
-  // Also honours `offer_expires` for offer-level expiry.
-  // The backend enforces the deadline independently — this is a UX aid only.
+  // ── Deadline countdown ─────────────────────────────────────────────────────
   (function startDeadlineCountdown() {
     const deadlineParam = params.get('deadline') || params.get('offer_expires') || '';
     if (!deadlineParam) return;
-
-    const deadlineTs   = new Date(deadlineParam).getTime();
+    const deadlineTs = new Date(deadlineParam).getTime();
     if (isNaN(deadlineTs)) return;
 
-    const banner      = document.getElementById('deadlineBanner');
-    const countdown   = document.getElementById('deadlineCountdown');
-    const expiredMsg  = document.getElementById('deadlineExpiredMsg');
-    const payBtn      = document.getElementById('payBtn');
-
+    const banner     = document.getElementById('deadlineBanner');
+    const countdown  = document.getElementById('deadlineCountdown');
+    const expiredMsg = document.getElementById('deadlineExpiredMsg');
+    const payBtn     = document.getElementById('payBtn');
     banner.style.display = 'block';
 
     function tick() {
@@ -411,16 +611,13 @@
     const timer = setInterval(tick, 1000);
   })();
 
-  // Guard against currency.js load failure
-  if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
-
-  // If clientSecret is missing on page load, show actionable error immediately
+  // ── Guard: missing session ─────────────────────────────────────────────────
   if (!clientSecret || !sessionKey) {
     document.getElementById('payError').textContent = '⚠️ انتهت صلاحية جلسة الدفع أو حدث خطأ. يرجى العودة واختيار الخدمات مجدداً.';
     document.getElementById('payError').style.display = 'block';
     document.getElementById('payBtn').disabled = true;
     const backUrl = sessionKey
-      ? 'services.html?session=' + encodeURIComponent(sessionKey) + (piId ? '&offer_id=' + encodeURIComponent(piId) : '')
+      ? 'services.html?session=' + encodeURIComponent(sessionKey)
       : 'index.html';
     const backEl = document.createElement('a');
     backEl.href = backUrl;
@@ -430,9 +627,12 @@
     document.getElementById('payBtn').after(backEl);
   }
 
-  // Init
+  if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
+
+  // ── Init ───────────────────────────────────────────────────────────────────
   initCurrency();
   loadOrderSummary();
+  loadFlightSummary();
   initStripe();
 </script>
 </body>
