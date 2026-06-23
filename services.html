@@ -611,16 +611,16 @@ async function proceedToPayment() {
   try {
     const services = buildServicesPayload();
 
-    // Verify price with Duffel before proceeding (real-time check)
+    // Save services first (moves session to review step)
+    await Api.post('/api/flights/checkout/services', { session_key: sessionKey, services }, true);
+
+    // Then verify price with Duffel (moves session to payment step)
     if (services.length > 0) {
       txt.textContent = 'جاري التحقق من السعر…';
       txt.classList.remove('hidden');
       await recalculateDuffelPrice(services);
       txt.textContent = 'متابعة للدفع';
     }
-
-    // Save services (even if empty — moves session to review step)
-    await Api.post('/api/flights/checkout/services', { session_key: sessionKey, services }, true);
 
     // Create payment intent
     const piRes = await Api.post('/api/flights/checkout/payment-intent', {

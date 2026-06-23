@@ -245,7 +245,7 @@ class FlightBookingService
     ): array {
         $session = $this->requireSession($sessionKey, $userId);
 
-        if (!in_array($session['current_step'], ['payment', 'services'], true)) {
+        if (!in_array($session['current_step'], ['payment', 'services', 'review'], true)) {
             throw new RuntimeException('Session is not at the payment step.', 422);
         }
 
