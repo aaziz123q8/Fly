@@ -134,7 +134,7 @@
             <span id="payBtnTxt">ادفع الآن 🔒</span>
             <div class="spinner spinner-sm hidden" id="paySpinner" style="border-top-color:white"></div>
           </button>
-          <p style="font-size:0.78rem;color:var(--text-muted);text-align:center;margin-top:10px">
+          <p style="font-size:0.78rem;color:var(--text-muted);text-align:center;margin-top:10px" id="payNoteText">
             بالضغط على "ادفع الآن" أنت توافق على شروط الخدمة. المبلغ سيُحصَّل بالجنيه الإسترليني (GBP).
           </p>
         </div>
@@ -148,10 +148,13 @@
             <div class="spinner"></div>
           </div>
           <div class="price-total" id="totalRow" style="display:none">
-            <span>الإجمالي (GBP)</span>
+            <span id="totalLabel">الإجمالي</span>
             <span id="totalDisplay">—</span>
           </div>
-          <p class="price-currency-note">يُحصَّل المبلغ بالجنيه الإسترليني · العملات الأخرى للعرض فقط</p>
+          <div id="gbpEquivalentRow" style="display:none;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:10px 14px;margin-top:10px;font-size:0.85rem;color:#92400e;line-height:1.5">
+            <span style="font-weight:700">💳 سيتم تحصيل المبلغ بالجنيه الإسترليني:</span>
+            <span id="gbpEquivalentAmount" style="font-weight:800;font-size:1rem;display:block;margin-top:2px;color:#78350f"></span>
+          </div>
         </div>
 
         <div class="pay-card" style="background:#f0f5ff;border:2px solid #c5d5e8">
@@ -192,26 +195,37 @@
   let elements = null;
 
   async function initStripe() {
-    try {
-      const cfg = await Api.get('/api/config/stripe-key');
-      const key = cfg.publishable_key || cfg.key || '';
-      if (!key) throw new Error('no key');
-      stripe = Stripe(key);
-    } catch {
-      showError('تعذر تحميل إعدادات الدفع. يرجى المحاولة مجدداً.');
+    if (!clientSecret) {
+      showError('بيانات الجلسة غير مكتملة. يرجى العودة وإعادة المحاولة.');
       return;
     }
-
-    elements = stripe.elements({ locale: 'ar', clientSecret });
-    const card = elements.create('payment', {
-      fields: { billingDetails: { name: 'never' } },
-    });
-    card.mount('#stripe-element');
-    card.on('change', e => {
-      const err = document.getElementById('payError');
-      if (e.error) { err.textContent = e.error.message; err.style.display='block'; }
-      else { err.style.display='none'; }
-    });
+    let key = '';
+    try {
+      const cfg = await Api.get('/api/config/stripe-key');
+      key = cfg.publishable_key || cfg.key || '';
+    } catch (e) {
+      showError('تعذر الاتصال بالخادم. يرجى التحقق من الاتصال والمحاولة مجدداً.');
+      return;
+    }
+    if (!key) {
+      showError('إعدادات الدفع غير مكتملة. يرجى التواصل مع الدعم الفني.');
+      return;
+    }
+    try {
+      stripe = Stripe(key);
+      elements = stripe.elements({ locale: 'ar', clientSecret });
+      const card = elements.create('payment', {
+        fields: { billingDetails: { name: 'never' } },
+      });
+      card.mount('#stripe-element');
+      card.on('change', e => {
+        const err = document.getElementById('payError');
+        if (e.error) { err.textContent = e.error.message; err.style.display='block'; }
+        else { err.style.display='none'; }
+      });
+    } catch (e) {
+      showError('حدث خطأ أثناء تهيئة نظام الدفع. يرجى تحديث الصفحة.');
+    }
   }
 
   function showError(msg) {
@@ -252,8 +266,36 @@
       </div>`;
     }
     el.innerHTML = rows;
-    document.getElementById('totalRow').style.display = 'flex';
-    document.getElementById('totalDisplay').textContent = '£ ' + amountGBP.toFixed(2);
+
+    // Currency display
+    const cur = (typeof currentCurrency !== 'undefined' && currentCurrency) ? currentCurrency : 'GBP';
+    const isGBP = cur === 'GBP';
+    const totalRow   = document.getElementById('totalRow');
+    const totalLabel = document.getElementById('totalLabel');
+    const totalDisp  = document.getElementById('totalDisplay');
+    const gbpRow     = document.getElementById('gbpEquivalentRow');
+    const gbpAmt     = document.getElementById('gbpEquivalentAmount');
+    const payNote    = document.getElementById('payNoteText');
+    const payBtnTxt  = document.getElementById('payBtnTxt');
+
+    totalRow.style.display = 'flex';
+
+    if (isGBP) {
+      totalLabel.textContent = 'الإجمالي (GBP)';
+      totalDisp.textContent  = '£ ' + amountGBP.toFixed(2);
+      gbpRow.style.display   = 'none';
+    } else {
+      // Show display currency total
+      const displayAmt = typeof formatPrice === 'function' ? formatPrice(amountGBP, cur) : ('£ ' + amountGBP.toFixed(2));
+      totalLabel.textContent = 'الإجمالي (' + cur + ')';
+      totalDisp.textContent  = displayAmt;
+      // GBP note
+      gbpRow.style.display = 'block';
+      gbpAmt.textContent   = '£ ' + amountGBP.toFixed(2) + ' (GBP)';
+      // Update pay button and disclaimer
+      payBtnTxt.textContent = 'ادفع الآن £' + amountGBP.toFixed(2) + ' 🔒';
+      if (payNote) payNote.textContent = 'المبالغ بـ ' + cur + ' للعرض فقط. سيتم تحصيل £' + amountGBP.toFixed(2) + ' (GBP) من بطاقتك.';
+    }
   }
 
   async function submitPayment() {
