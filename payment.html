@@ -6,7 +6,6 @@
   <title>الدفع — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
   <script src="js/dark-mode.js"></script>
-  <script src="https://js.stripe.com/v3/"></script>
   <style>
     * { box-sizing: border-box; }
     body { background: #f4f6f9; margin: 0; padding: 0; font-family: inherit; }
@@ -390,26 +389,48 @@ if (!clientSecret || !sessionKey) {
   document.getElementById('payBtn').disabled = true;
 }
 
-// ── Stripe init ────────────────────────────────────────────────────────────
+// ── Load Stripe.js dynamically then init ──────────────────────────────────
+function loadStripeJs() {
+  return new Promise((resolve, reject) => {
+    if (typeof Stripe !== 'undefined') { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://js.stripe.com/v3/';
+    s.onload  = resolve;
+    s.onerror = () => reject(new Error('فشل تحميل مكتبة Stripe. تحقق من الاتصال بالإنترنت.'));
+    document.head.appendChild(s);
+  });
+}
+
 async function initStripe() {
   if (!clientSecret || !sessionKey) return;
 
+  // Step 1: load Stripe.js
+  try {
+    await loadStripeJs();
+  } catch (e) {
+    document.getElementById('stripe-loading').style.display = 'none';
+    showError('⚠️ ' + e.message);
+    return;
+  }
+
+  // Step 2: fetch publishable key
   let key = '';
   try {
     const cfg = await Api.get('/api/config/stripe-key');
     key = cfg.publishable_key || cfg.key || '';
   } catch (e) {
-    showError('⚠️ تعذر الاتصال بالخادم. يرجى تحديث الصفحة.<br><small style="color:#999">' + e.message + '</small>');
     document.getElementById('stripe-loading').style.display = 'none';
+    showError('⚠️ تعذر الاتصال بالخادم. يرجى تحديث الصفحة.');
     return;
   }
 
-  if (!key || key.startsWith('pk_live_YOUR') || key.startsWith('YOUR')) {
+  if (!key || key.includes('YOUR')) {
+    document.getElementById('stripe-loading').style.display = 'none';
     showError('⚠️ إعدادات الدفع غير مكتملة. يرجى التواصل مع الدعم الفني.');
-    document.getElementById('stripe-loading').style.display = 'none';
     return;
   }
 
+  // Step 3: create elements and mount
   try {
     stripe   = Stripe(key);
     elements = stripe.elements({ locale: 'ar', clientSecret });
@@ -423,7 +444,6 @@ async function initStripe() {
       document.getElementById('stripe-loading').style.display = 'none';
     });
 
-    // Mount to element that is ALWAYS visible (no display:none)
     card.mount('#stripe-element');
 
     card.on('change', e => {
@@ -433,8 +453,7 @@ async function initStripe() {
 
   } catch (e) {
     document.getElementById('stripe-loading').style.display = 'none';
-    // Show actual error in test mode so it can be diagnosed
-    showError('⚠️ خطأ في تهيئة الدفع: <small>' + (e.message || String(e)) + '</small>');
+    showError('⚠️ خطأ في تهيئة الدفع: ' + (e.message || String(e)));
   }
 }
 
