@@ -472,25 +472,46 @@ class FlightBookingService
             }
         }
 
-        // Pre-price the offer with selected services to get the authoritative amount.
-        // The amount sent to Duffel in payments[] MUST exactly match priceOffer's total_amount.
+        // Fetch the live offer from Duffel to get the authoritative total_amount.
+        // Using GET /air/offers/{id} (simple, no side-effects) instead of the
+        // priceOffer action which was unreliable in test/sandbox mode.
         try {
-            $priceResponse  = $this->duffel->priceOffer($offerId, ['balance'], $cleanServices);
-            $pricedAmount   = $priceResponse['data']['total_amount']   ?? null;
-            $pricedCurrency = strtoupper($priceResponse['data']['total_currency'] ?? $offer['currency']);
+            $freshOffer     = $this->duffel->getOffer($offerId);
+            $pricedAmount   = $freshOffer['data']['total_amount']   ?? null;
+            $pricedCurrency = strtoupper($freshOffer['data']['total_currency'] ?? $offer['currency'] ?? 'GBP');
+
+            // If services were selected, add their per-unit total_amount from the offer's available_services.
+            if (!empty($cleanServices)) {
+                $availSvcs = [];
+                foreach (($freshOffer['data']['available_services'] ?? []) as $as) {
+                    $availSvcs[$as['id']] = (float)($as['total_amount'] ?? 0);
+                }
+                $svcTotal = 0.0;
+                foreach ($cleanServices as $cs) {
+                    $unitPrice = $availSvcs[$cs['id']] ?? 0.0;
+                    $svcTotal += $unitPrice * (int)($cs['quantity'] ?? 1);
+                }
+                if ($svcTotal > 0) {
+                    $pricedAmount = number_format((float)$pricedAmount + $svcTotal, 2, '.', '');
+                }
+            }
+
             if ($pricedAmount === null) {
                 throw new \RuntimeException('لم يتم الحصول على سعر الرحلة من Duffel.', 409);
             }
         } catch (\RuntimeException $priceEx) {
-            // Log the pricing failure for ops visibility
-            error_log('[PRICE_OFFER_FAIL] offer=' . $offerId . ' error=' . $priceEx->getMessage());
-            // Re-map through DuffelErrorMapper so the user gets a proper Arabic message
+            error_log('[GET_OFFER_FAIL] offer=' . $offerId . ' error=' . $priceEx->getMessage());
             $mapped = DuffelErrorMapper::fromDuffelException($priceEx);
             $parts  = DuffelErrorMapper::split($mapped->getMessage());
             throw new \RuntimeException($parts['customer'], $mapped->getCode() ?: 409);
         }
 
-        // Build Duffel payment payload using the freshly priced amount.
+        error_log('[AMOUNT_CHECK] offer_cached=' . $offer['total_amount']
+            . ' fresh=' . $pricedAmount
+            . ' currency=' . $pricedCurrency
+            . ' services_count=' . count($cleanServices));
+
+        // Build Duffel payment payload using the freshly fetched amount.
         $duffelPayments = [[
             'type'     => 'balance',
             'amount'   => (string) $pricedAmount,
