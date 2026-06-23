@@ -3,334 +3,565 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>الدفع — فلاي مسار</title>
+  <title>التأكيد والدفع — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
   <script src="js/dark-mode.js"></script>
   <style>
-    * { box-sizing: border-box; }
-    body { background: #f4f6f9; margin: 0; padding: 0; font-family: inherit; }
+    *, *::before, *::after { box-sizing: border-box; }
+    :root {
+      --pay-bg:      #f0f4f9;
+      --pay-white:   #ffffff;
+      --pay-border:  #e4e8ef;
+      --pay-primary: var(--primary, #1a3c5e);
+      --pay-accent:  #0ea5e9;
+      --pay-green:   #16a34a;
+      --pay-green-h: #15803d;
+      --pay-red:     #dc2626;
+      --pay-muted:   #6b7280;
+      --pay-shadow:  0 2px 12px rgba(0,0,0,.08);
+      --pay-radius:  16px;
+    }
+    body { background: var(--pay-bg); margin: 0; padding: 0; font-family: inherit; }
 
-    /* ── Top navbar ── */
+    /* ── Top navbar ──────────────────────────────────────── */
     .pay-nav {
-      background: #fff;
-      border-bottom: 1px solid #e5e7eb;
-      padding: 14px 20px;
+      background: var(--pay-white);
+      border-bottom: 1px solid var(--pay-border);
+      padding: 0 20px;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      position: sticky; top: 0; z-index: 100;
+      position: sticky; top: 0; z-index: 200;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
     }
-    .pay-nav-brand { font-size: 1.1rem; font-weight: 800; color: var(--primary); text-decoration: none; }
-    .pay-nav-back { color: var(--text-muted); font-size: 0.85rem; text-decoration: none; display: flex; align-items: center; gap: 4px; }
+    .pay-nav-back {
+      color: var(--pay-muted); font-size: 0.85rem; text-decoration: none;
+      display: flex; align-items: center; gap: 5px; min-width: 70px;
+      transition: color .15s;
+    }
+    .pay-nav-back:hover { color: var(--pay-primary); }
+    .pay-nav-logo {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 1.1rem; font-weight: 900; color: var(--pay-primary);
+      text-decoration: none;
+    }
+    .pay-nav-logo-icon {
+      width: 34px; height: 34px; background: var(--pay-primary);
+      border-radius: 10px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; color: #fff; flex-shrink: 0;
+    }
+    .pay-nav-spacer { min-width: 70px; }
 
-    /* ── Steps bar ── */
+    /* ── Progress stepper ────────────────────────────────── */
     .steps-bar {
-      background: #fff;
-      border-bottom: 1px solid #f0f2f5;
-      padding: 10px 0;
+      background: var(--pay-white);
+      border-bottom: 1px solid var(--pay-border);
+      padding: 12px 16px;
     }
     .steps-inner {
-      display: flex; align-items: center; gap: 6px;
-      justify-content: center; flex-wrap: nowrap;
-      max-width: 500px; margin: 0 auto; padding: 0 16px;
+      display: flex; align-items: center;
+      max-width: 480px; margin: 0 auto;
+      gap: 0;
     }
-    .step-dot {
-      width: 26px; height: 26px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.75rem; font-weight: 700; flex-shrink: 0;
-    }
-    .step-done { background: var(--primary); color: #fff; }
-    .step-active { background: var(--primary); color: #fff; }
-    .step-pending { background: #e5e7eb; color: #9ca3af; }
-    .step-line { flex: 1; height: 2px; min-width: 16px; }
-    .step-label { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
-    .step-label.active { color: var(--primary); font-weight: 600; }
-
-    /* ── Page body ── */
-    .pay-body {
-      max-width: 520px;
-      margin: 0 auto;
-      padding: 16px 16px 140px;
-    }
-
-    /* ── Cards ── */
-    .pcard {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 1px 6px rgba(0,0,0,.07);
-      padding: 18px 20px;
-      margin-bottom: 14px;
-    }
-    .pcard-title {
-      font-size: 0.9rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin: 0 0 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    /* ── Flight summary ── */
-    .flight-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .flight-route {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex: 1;
-    }
-    .flight-iata {
-      font-size: 1.5rem;
-      font-weight: 900;
-      color: var(--primary);
-      line-height: 1;
-    }
-    .flight-arrow {
-      font-size: 1.1rem;
-      color: var(--text-muted);
-    }
-    .flight-meta {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-top: 6px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    .flight-meta-item {
-      display: flex; align-items: center; gap: 4px;
-    }
-    .airline-logo {
-      width: 44px; height: 44px; border-radius: 10px;
-      object-fit: contain; border: 1px solid #f0f2f5;
-      background: #fafafa; padding: 4px;
+    .step-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
       flex-shrink: 0;
     }
+    .step-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 800; transition: all .2s;
+    }
+    .step-done  { background: var(--pay-green);   color: #fff; }
+    .step-active { background: var(--pay-primary); color: #fff; box-shadow: 0 0 0 3px rgba(26,60,94,.18); }
+    .step-pending { background: var(--pay-border); color: var(--pay-muted); }
+    .step-lbl {
+      font-size: 0.68rem; white-space: nowrap;
+      color: var(--pay-muted);
+    }
+    .step-lbl.done   { color: var(--pay-green); }
+    .step-lbl.active { color: var(--pay-primary); font-weight: 700; }
+    .step-line {
+      flex: 1; height: 2px; margin: 0 4px;
+      margin-bottom: 14px; /* align with dots */
+    }
+    .step-line.done    { background: var(--pay-green); }
+    .step-line.pending { background: var(--pay-border); }
+
+    /* ── Page layout ─────────────────────────────────────── */
+    .pay-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px 16px 140px;
+    }
+    @media(min-width:768px) {
+      .pay-wrap {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        grid-template-rows: auto;
+        gap: 20px;
+        padding: 28px 24px 60px;
+        align-items: start;
+      }
+      .pay-col-left  { grid-column: 1; }
+      .pay-col-right { grid-column: 2; grid-row: 1 / span 10; }
+    }
+
+    /* ── Cards ────────────────────────────────────────────── */
+    .pcard {
+      background: var(--pay-white);
+      border-radius: var(--pay-radius);
+      box-shadow: var(--pay-shadow);
+      padding: 20px 20px;
+      margin-bottom: 14px;
+      border: 1px solid var(--pay-border);
+    }
+    .pcard-title {
+      font-size: 0.9rem; font-weight: 800;
+      color: var(--pay-primary);
+      margin: 0 0 16px;
+      display: flex; align-items: center; gap: 8px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #f0f2f5;
+    }
+    .pcard-title-icon {
+      width: 30px; height: 30px; border-radius: 8px;
+      background: rgba(26,60,94,.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.9rem; flex-shrink: 0;
+    }
+
+    /* ── Deadline banner ─────────────────────────────────── */
+    #deadlineBanner {
+      display: none;
+      background: #fffbeb; border: 1.5px solid #f59e0b;
+      border-radius: 12px; padding: 12px 16px; margin-bottom: 14px;
+      font-size: 0.85rem; line-height: 1.5;
+      display: flex; align-items: center; gap: 10px;
+    }
+    #deadlineBanner.expired { background: #fef2f2; border-color: var(--pay-red); }
+    #deadlineCountdown { font-weight: 800; font-variant-numeric: tabular-nums; color: #b45309; }
+    #deadlineBanner.expired #deadlineCountdown { color: var(--pay-red); }
+
+    /* ── Flight summary card ─────────────────────────────── */
+    .flight-card-inner { display: flex; flex-direction: column; gap: 14px; }
+    .route-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .route-airport {
+      flex: 1; text-align: center;
+    }
+    .route-iata {
+      font-size: 1.8rem; font-weight: 900;
+      color: var(--pay-primary); line-height: 1;
+    }
+    .route-city {
+      font-size: 0.72rem; color: var(--pay-muted); margin-top: 2px;
+    }
+    .route-time {
+      font-size: 0.88rem; font-weight: 700; margin-top: 3px;
+    }
+    .route-middle {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 2px; flex-shrink: 0; padding: 0 4px;
+    }
+    .route-arrow-line {
+      width: 80px; height: 2px;
+      background: linear-gradient(to left, var(--pay-primary), var(--pay-accent));
+      border-radius: 2px; position: relative;
+    }
+    .route-arrow-line::after {
+      content: '✈'; position: absolute;
+      top: -9px; left: 50%; transform: translateX(-50%);
+      font-size: 0.9rem; color: var(--pay-accent);
+    }
+    .route-stops { font-size: 0.68rem; color: var(--pay-muted); margin-top: 6px; }
+    .flight-meta-row {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .flight-badge {
+      background: #f0f4f9; border-radius: 20px;
+      padding: 4px 10px; font-size: 0.75rem; color: var(--pay-primary);
+      display: flex; align-items: center; gap: 4px; font-weight: 600;
+    }
+    .airline-row {
+      display: flex; align-items: center; gap: 10px;
+      padding-top: 12px; border-top: 1px solid #f0f2f5;
+    }
+    .airline-logo {
+      width: 40px; height: 40px; border-radius: 10px;
+      object-fit: contain; border: 1px solid var(--pay-border);
+      background: #fafafa; padding: 4px; flex-shrink: 0;
+    }
     .airline-logo-placeholder {
-      width: 44px; height: 44px; border-radius: 10px;
-      background: linear-gradient(135deg,#1a3c5e,#2d6a9f);
+      width: 40px; height: 40px; border-radius: 10px;
+      background: linear-gradient(135deg, #1a3c5e, #2d6a9f);
       display: flex; align-items: center; justify-content: center;
       font-size: 1.2rem; flex-shrink: 0;
     }
-
-    /* ── Price details ── */
-    .price-row {
-      display: flex; justify-content: space-between;
-      padding: 9px 0; border-bottom: 1px solid #f5f5f5;
-      font-size: 0.9rem;
+    .flight-detail-link {
+      font-size: 0.78rem; color: var(--pay-accent);
+      text-decoration: none; display: flex; align-items: center; gap: 3px;
     }
-    .price-row:last-child { border-bottom: none; }
-    .price-row.total {
-      font-size: 1.05rem; font-weight: 800;
-      color: var(--primary); border-top: 2px solid var(--primary);
-      padding-top: 12px; margin-top: 4px; border-bottom: none;
+    .flight-detail-link:hover { text-decoration: underline; }
+    .flight-skeleton {
+      display: flex; flex-direction: column; gap: 10px; padding: 4px 0;
     }
-    .price-note {
-      font-size: 0.75rem; color: #b45309; background: #fffbeb;
-      border: 1px solid #fde68a; border-radius: 8px;
-      padding: 8px 12px; margin-top: 10px; line-height: 1.5;
+    .skel { background: #f0f2f5; border-radius: 8px; animation: shimmer 1.4s infinite; }
+    @keyframes shimmer {
+      0%,100% { opacity: .7; } 50% { opacity: .3; }
     }
 
-    /* ── Coupon ── */
-    .coupon-row {
-      display: flex; gap: 8px;
+    /* ── Card payment section ────────────────────────────── */
+    .card-logos {
+      display: flex; gap: 8px; margin-bottom: 16px;
     }
-    .coupon-input {
-      flex: 1; padding: 10px 14px; border: 1.5px solid #e5e7eb;
-      border-radius: 10px; font-family: inherit; font-size: 0.88rem;
-      outline: none; transition: border-color .2s;
+    .card-logo-img {
+      height: 26px; border-radius: 4px; border: 1px solid var(--pay-border);
+      padding: 2px 6px; background: #fff; object-fit: contain;
     }
-    .coupon-input:focus { border-color: var(--primary); }
-    .coupon-btn {
-      padding: 10px 16px; background: var(--primary); color: #fff;
-      border: none; border-radius: 10px; font-family: inherit;
-      font-size: 0.85rem; font-weight: 600; cursor: pointer;
-      white-space: nowrap;
+    .card-logo-text {
+      height: 26px; border-radius: 4px; border: 1px solid var(--pay-border);
+      padding: 2px 8px; background: #fff; font-size: 0.72rem; font-weight: 800;
+      display: flex; align-items: center; letter-spacing: .5px;
     }
-    .coupon-result { font-size: 0.82rem; margin-top: 6px; }
-    .coupon-ok { color: #16a34a; }
-    .coupon-err { color: #dc2626; }
-
-    /* ── Stripe ── */
-    .stripe-wrap { position: relative; }
+    .card-logo-visa  { color: #1a1f71; }
+    .card-logo-mc    { color: #eb001b; }
+    .card-logo-amex  { color: #2e77bc; }
+    .form-group { margin-bottom: 14px; }
+    .form-lbl {
+      display: block; font-size: 0.8rem; font-weight: 600;
+      color: #374151; margin-bottom: 6px;
+    }
+    .form-inp {
+      width: 100%; padding: 11px 14px;
+      border: 1.5px solid var(--pay-border);
+      border-radius: 10px; font-family: inherit; font-size: 0.9rem;
+      outline: none; transition: border-color .2s, box-shadow .2s;
+      background: #fff; color: #111;
+    }
+    .form-inp:focus {
+      border-color: var(--pay-accent);
+      box-shadow: 0 0 0 3px rgba(14,165,233,.1);
+    }
+    .stripe-wrap { position: relative; min-height: 48px; }
     #stripe-loading {
       position: absolute; inset: 0; z-index: 2;
-      display: flex; align-items: center; justify-content: center;
-      gap: 8px; background: #fafafa; border: 1.5px solid #e5e7eb;
-      border-radius: 10px; font-size: 0.82rem; color: #6b7280;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      background: #fafafa; border: 1.5px solid var(--pay-border);
+      border-radius: 10px; font-size: 0.82rem; color: var(--pay-muted);
     }
     #stripe-element {
-      border: 1.5px solid #e5e7eb; border-radius: 10px;
-      padding: 14px; background: #fff; transition: border-color .2s;
+      border: 1.5px solid var(--pay-border);
+      border-radius: 10px; padding: 12px 14px;
+      background: #fff; transition: border-color .2s;
       min-height: 44px;
     }
-    #stripe-element.StripeElement--focus { border-color: var(--primary); }
-    #stripe-element.StripeElement--invalid { border-color: #ef4444; }
+    #stripe-element.StripeElement--focus  { border-color: var(--pay-accent); }
+    #stripe-element.StripeElement--invalid { border-color: var(--pay-red); }
 
-    /* ── Error box ── */
+    /* ── Security badges ─────────────────────────────────── */
+    .sec-badges {
+      display: flex; gap: 10px; flex-wrap: wrap;
+      justify-content: center; margin-top: 14px;
+    }
+    .sec-badge {
+      font-size: 0.7rem; color: var(--pay-muted);
+      display: flex; align-items: center; gap: 4px;
+      background: #f8fafc; border: 1px solid var(--pay-border);
+      border-radius: 20px; padding: 4px 10px; font-weight: 600;
+    }
+
+    /* ── Error box ────────────────────────────────────────── */
     #payError {
-      display: none; background: #fef2f2; border: 1px solid #fecaca;
-      border-radius: 10px; padding: 12px 14px; color: #dc2626;
-      font-size: 0.85rem; line-height: 1.5; margin-top: 10px;
+      display: none;
+      background: #fef2f2; border: 1px solid #fecaca;
+      border-radius: 10px; padding: 12px 14px;
+      color: var(--pay-red); font-size: 0.85rem; line-height: 1.6;
+      margin-top: 12px;
+    }
+    #payError .err-detail {
+      margin-top: 8px; font-size: 0.75rem; color: #9b1c1c;
+      border-top: 1px dashed #fecaca; padding-top: 8px;
+      display: none; word-break: break-word;
+    }
+    #payError.show-detail .err-detail { display: block; }
+    #errToggle {
+      font-size: 0.72rem; color: #9b1c1c; cursor: pointer;
+      text-decoration: underline; margin-top: 4px; display: inline-block;
     }
 
-    /* ── Deadline ── */
-    #deadlineBanner {
-      display: none; background: #fff7ed; border: 2px solid #f59e0b;
-      border-radius: 12px; padding: 12px 16px; margin-bottom: 14px;
-      font-size: 0.85rem;
+    /* ── Coupon ───────────────────────────────────────────── */
+    .coupon-row { display: flex; gap: 8px; }
+    .coupon-input {
+      flex: 1; padding: 10px 14px;
+      border: 1.5px solid var(--pay-border); border-radius: 10px;
+      font-family: inherit; font-size: 0.88rem; outline: none;
+      transition: border-color .2s; background: #fff;
     }
-    #deadlineBanner.expired { background: #fef2f2; border-color: #ef4444; }
-    #deadlineCountdown { font-weight: 800; font-variant-numeric: tabular-nums; }
+    .coupon-input:focus { border-color: var(--pay-accent); }
+    .coupon-btn {
+      padding: 10px 18px; background: var(--pay-primary); color: #fff;
+      border: none; border-radius: 10px; font-family: inherit;
+      font-size: 0.85rem; font-weight: 700; cursor: pointer;
+      white-space: nowrap; transition: opacity .15s;
+    }
+    .coupon-btn:hover { opacity: .88; }
+    .coupon-result { font-size: 0.8rem; margin-top: 6px; }
+    .coupon-ok  { color: var(--pay-green); }
+    .coupon-err { color: var(--pay-red); }
 
-    /* ── Sticky pay footer ── */
+    /* ── Price rows ───────────────────────────────────────── */
+    .price-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid #f5f7fa;
+      font-size: 0.88rem; color: #374151;
+    }
+    .price-row:last-child { border-bottom: none; }
+    .price-row-lbl { display: flex; align-items: center; gap: 6px; }
+    .price-row.total-row {
+      font-size: 1.05rem; font-weight: 800;
+      color: var(--pay-primary);
+      border-top: 2px solid #e4e8ef;
+      padding-top: 14px; margin-top: 6px;
+    }
+    .price-kwd { font-size: 1.2rem; font-weight: 900; color: var(--pay-primary); }
+    .price-gbp { font-size: 0.72rem; color: #b45309; margin-top: 1px; }
+    .price-note {
+      background: #fffbeb; border: 1px solid #fde68a;
+      border-radius: 8px; padding: 8px 12px;
+      font-size: 0.75rem; color: #92400e;
+      margin-top: 10px; line-height: 1.5;
+    }
+
+    /* ── Sticky footer ────────────────────────────────────── */
     .pay-footer {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-      background: #fff; border-top: 1px solid #e5e7eb;
-      padding: 12px 16px env(safe-area-inset-bottom, 12px);
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+      background: var(--pay-white);
+      border-top: 1px solid var(--pay-border);
+      padding: 12px 16px env(safe-area-inset-bottom, 8px);
+      box-shadow: 0 -4px 16px rgba(0,0,0,.08);
     }
     .pay-footer-inner {
       max-width: 520px; margin: 0 auto;
       display: flex; align-items: center; gap: 14px;
     }
-    .pay-footer-total {
-      flex-shrink: 0;
-      text-align: right;
-    }
-    .pay-footer-label { font-size: 0.7rem; color: var(--text-muted); }
-    .pay-footer-amount { font-size: 1.15rem; font-weight: 800; color: var(--primary); }
-    .pay-footer-gbp { font-size: 0.7rem; color: #b45309; }
+    .pay-footer-total { flex-shrink: 0; text-align: right; }
+    .pay-footer-lbl   { font-size: 0.68rem; color: var(--pay-muted); }
+    .pay-footer-amt   { font-size: 1.2rem; font-weight: 900; color: var(--pay-primary); line-height: 1.1; }
+    .pay-footer-sub   { font-size: 0.68rem; color: #b45309; }
     .pay-btn {
-      flex: 1; background: var(--primary); color: #fff;
-      border: none; border-radius: 12px; padding: 14px;
-      font-family: inherit; font-size: 1rem; font-weight: 700;
+      flex: 1; background: var(--pay-green); color: #fff;
+      border: none; border-radius: 12px; padding: 14px 20px;
+      font-family: inherit; font-size: 1rem; font-weight: 800;
       cursor: pointer; display: flex; align-items: center;
-      justify-content: center; gap: 8px; transition: opacity .2s;
+      justify-content: center; gap: 8px;
+      transition: background .15s, opacity .15s;
+      min-height: 50px;
     }
+    .pay-btn:hover:not(:disabled) { background: var(--pay-green-h); }
     .pay-btn:disabled { opacity: .6; cursor: not-allowed; }
 
-    /* ── Security badges ── */
-    .sec-badges {
-      display: flex; gap: 14px; flex-wrap: wrap;
-      justify-content: center; margin-top: 12px;
-    }
-    .sec-badge { font-size: 0.72rem; color: var(--text-muted); display: flex; align-items: center; gap: 4px; }
-
+    /* Desktop: hide sticky footer, show inline button */
     @media(min-width:768px) {
-      .pay-footer { padding: 16px; }
+      .pay-footer { display: none; }
+      .pay-wrap   { padding-bottom: 40px; }
+      .desktop-pay-section { display: block !important; }
     }
+    .desktop-pay-section { display: none; }
+    .desktop-pay-btn {
+      width: 100%; background: var(--pay-green); color: #fff;
+      border: none; border-radius: 12px; padding: 16px 20px;
+      font-family: inherit; font-size: 1.05rem; font-weight: 800;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; gap: 10px;
+      transition: background .15s, opacity .15s;
+      margin-top: 16px;
+    }
+    .desktop-pay-btn:hover:not(:disabled) { background: var(--pay-green-h); }
+    .desktop-pay-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+    /* Spinner utility */
+    .spin {
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 2.5px solid rgba(255,255,255,.35);
+      border-top-color: #fff; animation: rotating .7s linear infinite;
+    }
+    @keyframes rotating { to { transform: rotate(360deg); } }
+    .hidden { display: none !important; }
   </style>
 </head>
 <body>
 
-<!-- Nav -->
-<div class="pay-nav">
-  <a href="javascript:history.back()" class="pay-nav-back">← العودة</a>
-  <a href="index.html" class="pay-nav-brand">✈️ فلاي مسار</a>
-  <div style="width:60px"></div>
-</div>
+<!-- ── Navbar ─────────────────────────────────────────────── -->
+<nav class="pay-nav">
+  <a href="javascript:history.back()" class="pay-nav-back" aria-label="العودة">
+    <span style="font-size:1.1rem">→</span> العودة
+  </a>
+  <a href="index.html" class="pay-nav-logo">
+    <div class="pay-nav-logo-icon">✈</div>
+    فلاي مسار
+  </a>
+  <div class="pay-nav-spacer"></div>
+</nav>
 
-<!-- Steps -->
+<!-- ── Progress stepper ──────────────────────────────────── -->
 <div class="steps-bar">
   <div class="steps-inner">
-    <div class="step-dot step-done">✓</div>
-    <span class="step-label">المسافرون</span>
-    <div class="step-line" style="background:var(--primary)"></div>
-    <div class="step-dot step-done">✓</div>
-    <span class="step-label">الخدمات</span>
-    <div class="step-line" style="background:var(--primary)"></div>
-    <div class="step-dot step-active">٣</div>
-    <span class="step-label active">الدفع</span>
-    <div class="step-line" style="background:#e5e7eb"></div>
-    <div class="step-dot step-pending">٤</div>
-    <span class="step-label">التأكيد</span>
+    <div class="step-item">
+      <div class="step-dot step-done">✓</div>
+      <span class="step-lbl done">المسافرون</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item">
+      <div class="step-dot step-done">✓</div>
+      <span class="step-lbl done">الخدمات</span>
+    </div>
+    <div class="step-line done"></div>
+    <div class="step-item">
+      <div class="step-dot step-active">٣</div>
+      <span class="step-lbl active">الدفع</span>
+    </div>
+    <div class="step-line pending"></div>
+    <div class="step-item">
+      <div class="step-dot step-pending">٤</div>
+      <span class="step-lbl">التأكيد</span>
+    </div>
   </div>
 </div>
 
-<div class="pay-body">
+<!-- ── Page body ─────────────────────────────────────────── -->
+<div class="pay-wrap">
 
-  <!-- Deadline banner -->
-  <div id="deadlineBanner">
-    ⏰ المهلة: <span id="deadlineCountdown">—</span>
-    <div id="deadlineExpiredMsg" style="display:none;color:#dc2626;margin-top:4px;font-size:0.82rem">
-      انتهت مهلة الدفع. يرجى البحث من جديد.
+  <!-- Left column (stacked on mobile) -->
+  <div class="pay-col-left">
+
+    <!-- Deadline banner -->
+    <div id="deadlineBanner" style="display:none">
+      ⏰ ينتهي العرض خلال: <span id="deadlineCountdown">—</span>
+      <span id="deadlineExpiredMsg" style="display:none;color:var(--pay-red)">
+        · انتهت المهلة. يرجى البحث من جديد.
+      </span>
     </div>
-  </div>
 
-  <!-- 1. Flight summary -->
-  <div class="pcard" id="flightCard">
-    <div id="flightSummary">
-      <div style="text-align:center;padding:12px;color:var(--text-muted)">
-        <div class="spinner" style="margin:0 auto 8px;width:20px;height:20px;border-width:2px"></div>
-        <span style="font-size:0.82rem">جاري التحميل…</span>
+    <!-- Flight summary -->
+    <div class="pcard" id="flightCard">
+      <div class="pcard-title">
+        <div class="pcard-title-icon">✈️</div>
+        تفاصيل الرحلة
+      </div>
+      <div id="flightSummary">
+        <div class="flight-skeleton">
+          <div class="skel" style="height:28px;width:60%"></div>
+          <div class="skel" style="height:16px;width:80%"></div>
+          <div class="skel" style="height:16px;width:45%"></div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- 2. Card name -->
-  <div class="pcard">
-    <div class="pcard-title">💳 بيانات البطاقة</div>
-    <div class="form-group" style="margin-bottom:14px">
-      <label class="form-label" style="font-size:0.82rem;margin-bottom:6px;display:block">اسم حامل البطاقة</label>
-      <input type="text" class="form-control" id="cardName"
-        placeholder="الاسم كما هو على البطاقة" autocomplete="cc-name"
-        style="border-radius:10px;padding:10px 14px">
-    </div>
-    <div class="stripe-wrap">
-      <div id="stripe-loading">
-        <div class="spinner" style="width:16px;height:16px;border-width:2px"></div>
-        جاري تحميل نموذج الدفع…
+    <!-- Card payment -->
+    <div class="pcard">
+      <div class="pcard-title">
+        <div class="pcard-title-icon">💳</div>
+        بيانات البطاقة
       </div>
-      <div id="stripe-element"></div>
+
+      <!-- Card type logos -->
+      <div class="card-logos">
+        <span class="card-logo-text card-logo-visa">VISA</span>
+        <span class="card-logo-text card-logo-mc">MC</span>
+        <span class="card-logo-text card-logo-amex">AMEX</span>
+      </div>
+
+      <!-- Cardholder name -->
+      <div class="form-group">
+        <label class="form-lbl" for="cardName">اسم حامل البطاقة</label>
+        <input type="text" class="form-inp" id="cardName"
+          placeholder="الاسم كما هو مكتوب على البطاقة"
+          autocomplete="cc-name" dir="ltr">
+      </div>
+
+      <!-- Stripe Payment Element -->
+      <div class="stripe-wrap">
+        <div id="stripe-loading">
+          <div class="spin" style="border-top-color:var(--pay-muted)"></div>
+          <span>جاري تحميل نموذج الدفع…</span>
+        </div>
+        <div id="stripe-element"></div>
+      </div>
+
+      <!-- Error display -->
+      <div id="payError">
+        <span id="errMsg"></span>
+        <span id="errToggle" onclick="toggleErrDetail()" style="display:none">▼ تفاصيل تقنية</span>
+        <div class="err-detail" id="errDetail"></div>
+      </div>
+
+      <!-- Security badges -->
+      <div class="sec-badges">
+        <span class="sec-badge">🔒 SSL 256-bit</span>
+        <span class="sec-badge">🛡️ PCI-DSS Level 1</span>
+        <span class="sec-badge">⚡ Stripe</span>
+        <span class="sec-badge">🔐 3D Secure</span>
+      </div>
     </div>
-    <div id="payError"></div>
-    <div class="sec-badges" style="margin-top:14px">
-      <span class="sec-badge">🔒 SSL 256-bit</span>
-      <span class="sec-badge">🛡️ PCI-DSS Level 1</span>
-      <span class="sec-badge">✅ Stripe</span>
+
+    <!-- Coupon -->
+    <div class="pcard">
+      <div class="pcard-title">
+        <div class="pcard-title-icon">🎁</div>
+        كود الخصم
+        <span style="font-size:0.73rem;color:var(--pay-muted);font-weight:400;margin-right:auto">(اختياري)</span>
+      </div>
+      <div class="coupon-row">
+        <input type="text" class="coupon-input" id="couponInput" placeholder="أدخل كود الخصم">
+        <button class="coupon-btn" onclick="applyCoupon()">تطبيق</button>
+      </div>
+      <div id="couponResult" class="coupon-result"></div>
     </div>
-  </div>
 
-  <!-- 3. Coupon -->
-  <div class="pcard">
-    <div class="pcard-title">🎁 كود الخصم <span style="font-size:0.75rem;color:var(--text-muted);font-weight:400">(اختياري)</span></div>
-    <div class="coupon-row">
-      <input type="text" class="coupon-input" id="couponInput" placeholder="أدخل كود الخصم">
-      <button class="coupon-btn" onclick="applyCoupon()">تطبيق</button>
+    <!-- Desktop pay button -->
+    <div class="desktop-pay-section">
+      <button class="desktop-pay-btn" id="desktopPayBtn" onclick="submitPayment()">
+        <span id="desktopPayTxt">🔒 ادفع الآن</span>
+        <div class="spin hidden" id="desktopPaySpin"></div>
+      </button>
+      <p style="text-align:center;font-size:0.73rem;color:var(--pay-muted);margin:8px 0 0">
+        🛡️ لا نخزن بيانات بطاقتك · الدفع محمي بـ Stripe
+      </p>
     </div>
-    <div id="couponResult" class="coupon-result"></div>
-  </div>
 
-  <!-- 4. Price breakdown -->
-  <div class="pcard">
-    <div class="pcard-title">💰 تفاصيل السعر</div>
-    <div id="priceRows"></div>
-    <div id="priceNote" class="price-note" style="display:none"></div>
-  </div>
+  </div><!-- /pay-col-left -->
 
-  <!-- 5. Guarantee -->
-  <div style="text-align:center;padding:4px 0 8px;font-size:0.78rem;color:var(--text-muted)">
-    🛡️ لا نخزن بيانات بطاقتك · الدفع محمي بـ Stripe
-  </div>
+  <!-- Right column: price summary (on desktop) / below on mobile -->
+  <div class="pay-col-right">
 
-</div>
+    <!-- Price summary -->
+    <div class="pcard">
+      <div class="pcard-title">
+        <div class="pcard-title-icon">💰</div>
+        ملخص السعر
+      </div>
+      <div id="priceRows"></div>
+      <div id="priceNote" class="price-note" style="display:none"></div>
+    </div>
 
-<!-- Sticky pay button -->
+  </div><!-- /pay-col-right -->
+
+</div><!-- /pay-wrap -->
+
+<!-- ── Sticky mobile footer ───────────────────────────────── -->
 <div class="pay-footer">
   <div class="pay-footer-inner">
     <div class="pay-footer-total" id="footerTotal">
-      <div class="pay-footer-label">المجموع</div>
-      <div class="pay-footer-amount" id="footerAmount">—</div>
-      <div class="pay-footer-gbp" id="footerGbp" style="display:none"></div>
+      <div class="pay-footer-lbl">الإجمالي</div>
+      <div class="pay-footer-amt" id="footerAmount">—</div>
+      <div class="pay-footer-sub" id="footerSub" style="display:none"></div>
     </div>
     <button class="pay-btn" id="payBtn" onclick="submitPayment()">
-      <span id="payBtnTxt">ادفع الآن 🔒</span>
-      <div class="spinner spinner-sm hidden" id="paySpinner" style="border-top-color:white"></div>
+      <span id="payBtnTxt">🔒 ادفع الآن</span>
+      <div class="spin hidden" id="paySpinner"></div>
     </button>
   </div>
 </div>
@@ -339,31 +570,37 @@
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
 <script>
+// ── Auth guard ─────────────────────────────────────────────
 if (!Auth.isLoggedIn()) {
   window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
 }
 
-const params         = new URLSearchParams(window.location.search);
-const sessionKey     = params.get('session')   || '';
-const piId           = params.get('pi')         || '';
-const clientSecret   = params.get('secret')     || '';
-const amountGBP      = parseFloat(params.get('amount')   || '0');
-const baseAmountGBP  = parseFloat(params.get('base')     || '0') || (amountGBP * 0.9);
-const taxAmountGBP   = parseFloat(params.get('tax')      || '0') || (amountGBP * 0.1);
-let   discountGBP    = parseFloat(params.get('discount') || '0');
+// ── URL params ─────────────────────────────────────────────
+const params        = new URLSearchParams(window.location.search);
+const sessionKey    = params.get('session')   || '';
+const piId          = params.get('pi')         || '';
+const clientSecret  = params.get('secret')     || '';
+const amountGBP     = parseFloat(params.get('amount')   || '0');
+const baseAmountGBP = parseFloat(params.get('base')     || '0') || round2(amountGBP * 0.909);
+const taxAmountGBP  = parseFloat(params.get('tax')      || '0') || round2(amountGBP * 0.091);
+let   discountGBP   = parseFloat(params.get('discount') || '0');
+let   extraSvcGBP   = 0;
 
 let stripe   = null;
 let elements = null;
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+function round2(n) { return Math.round(n * 100) / 100; }
+
+// ── Format price ───────────────────────────────────────────
 function fmt(gbp) {
-  return typeof formatPrice === 'function' ? formatPrice(gbp) : ('£' + gbp.toFixed(2));
+  if (typeof formatPrice === 'function') return formatPrice(gbp);
+  return '£' + gbp.toFixed(2);
 }
 function fmtDate(iso) {
   if (!iso) return '';
   try {
     return new Date(iso).toLocaleDateString('ar-SA', {
-      weekday:'long', day:'numeric', month:'long', year:'numeric',
+      weekday:'long', day:'numeric', month:'long', year:'numeric'
     });
   } catch(e) { return iso; }
 }
@@ -373,52 +610,74 @@ function fmtTime(iso) {
     return new Date(iso).toLocaleTimeString('ar-SA', { hour:'2-digit', minute:'2-digit', hour12:false });
   } catch(e) { return iso; }
 }
-function showError(msg) {
-  const el = document.getElementById('payError');
-  el.innerHTML = msg;
-  el.style.display = 'block';
+
+// ── Error display ──────────────────────────────────────────
+let lastDetailMsg = '';
+function showError(msg, detail) {
+  const box    = document.getElementById('payError');
+  const msgEl  = document.getElementById('errMsg');
+  const toggle = document.getElementById('errToggle');
+  const detEl  = document.getElementById('errDetail');
+  msgEl.textContent = msg;
+  box.style.display = 'block';
+  box.classList.remove('show-detail');
+  if (detail) {
+    lastDetailMsg = detail;
+    detEl.textContent = detail;
+    toggle.style.display = 'inline-block';
+    toggle.textContent   = '▼ تفاصيل تقنية';
+  } else {
+    toggle.style.display = 'none';
+  }
+  box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+function toggleErrDetail() {
+  const box    = document.getElementById('payError');
+  const toggle = document.getElementById('errToggle');
+  box.classList.toggle('show-detail');
+  toggle.textContent = box.classList.contains('show-detail') ? '▲ إخفاء' : '▼ تفاصيل تقنية';
 }
 function hideError() {
   document.getElementById('payError').style.display = 'none';
 }
 
-// ── Missing session guard ──────────────────────────────────────────────────
+// ── Guard: missing session ─────────────────────────────────
 if (!clientSecret || !sessionKey) {
   document.getElementById('flightSummary').innerHTML =
-    '<p style="color:#dc2626;font-size:0.85rem;text-align:center;padding:8px">⚠️ انتهت صلاحية جلسة الدفع. يرجى العودة واختيار الخدمات مجدداً.</p>';
+    '<p style="color:var(--pay-red);font-size:0.85rem;text-align:center;padding:12px">' +
+    '⚠️ انتهت صلاحية جلسة الدفع. يرجى العودة وإعادة الاختيار.</p>';
   document.getElementById('payBtn').disabled = true;
+  const db = document.getElementById('desktopPayBtn');
+  if (db) db.disabled = true;
 }
 
-// ── Load Stripe.js dynamically then init ──────────────────────────────────
+// ── Stripe loader ──────────────────────────────────────────
 function loadStripeJs() {
   return new Promise((resolve, reject) => {
     if (typeof Stripe !== 'undefined') { resolve(); return; }
     const s = document.createElement('script');
-    s.src = 'https://js.stripe.com/v3/';
+    s.src     = 'https://js.stripe.com/v3/';
     s.onload  = resolve;
-    s.onerror = () => reject(new Error('فشل تحميل مكتبة Stripe. تحقق من الاتصال بالإنترنت.'));
+    s.onerror = () => reject(new Error('فشل تحميل مكتبة الدفع. تحقق من الاتصال بالإنترنت.'));
     document.head.appendChild(s);
   });
 }
 
 async function initStripe() {
   if (!clientSecret || !sessionKey) return;
-
-  // Step 1: load Stripe.js
   try {
     await loadStripeJs();
-  } catch (e) {
+  } catch(e) {
     document.getElementById('stripe-loading').style.display = 'none';
     showError('⚠️ ' + e.message);
     return;
   }
 
-  // Step 2: fetch publishable key
   let key = '';
   try {
     const cfg = await Api.get('/api/config/stripe-key');
     key = cfg.publishable_key || cfg.key || '';
-  } catch (e) {
+  } catch(e) {
     document.getElementById('stripe-loading').style.display = 'none';
     showError('⚠️ تعذر الاتصال بالخادم. يرجى تحديث الصفحة.');
     return;
@@ -426,11 +685,10 @@ async function initStripe() {
 
   if (!key || key.includes('YOUR')) {
     document.getElementById('stripe-loading').style.display = 'none';
-    showError('⚠️ إعدادات الدفع غير مكتملة. يرجى التواصل مع الدعم الفني.');
+    showError('⚠️ إعدادات الدفع غير مكتملة. تواصل مع الدعم الفني.');
     return;
   }
 
-  // Step 3: create elements and mount
   try {
     stripe   = Stripe(key);
     elements = stripe.elements({ locale: 'ar', clientSecret });
@@ -444,199 +702,211 @@ async function initStripe() {
     card.on('ready', () => {
       document.getElementById('stripe-loading').style.display = 'none';
     });
-
     card.mount('#stripe-element');
-
     card.on('change', e => {
       if (e.error) showError(e.error.message);
       else         hideError();
     });
-
-  } catch (e) {
+  } catch(e) {
     document.getElementById('stripe-loading').style.display = 'none';
     showError('⚠️ خطأ في تهيئة الدفع: ' + (e.message || String(e)));
   }
 }
 
-// ── Flight summary ─────────────────────────────────────────────────────────
+// ── Flight summary ─────────────────────────────────────────
 async function loadFlightSummary() {
   const el = document.getElementById('flightSummary');
   if (!sessionKey) return;
-
   try {
-    const res   = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey));
-    const offer = res.offer || res.data || res || {};
+    const res    = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey));
+    const offer  = res.offer || {};
     const slices = offer.slices || [];
-    const pax    = offer.passengers || [];
+    if (!slices.length) { el.innerHTML = buildMinimalCard(); return; }
 
-    if (!slices.length) {
-      el.innerHTML = buildMinimalFlightCard();
-      return;
-    }
+    const fs   = slices[0];
+    const ls   = slices[slices.length - 1];
+    const fseg = (fs.segments || [])[0] || {};
+    const lseg = ((ls.segments || []).slice(-1))[0] || {};
 
-    const firstSlice  = slices[0];
-    const firstSeg    = (firstSlice.segments || [])[0] || {};
-    const lastSlice   = slices[slices.length - 1];
-    const lastSegs    = lastSlice.segments || [];
-    const lastSeg     = lastSegs[lastSegs.length - 1] || {};
+    const orig  = fseg.origin      || fs.origin      || {};
+    const dest  = lseg.destination || ls.destination || {};
+    const depAt = fseg.departing_at || fs.departing_at || '';
+    const arrAt = lseg.arriving_at  || ls.arriving_at  || '';
 
-    const orig        = firstSeg.origin      || firstSlice.origin      || {};
-    const dest        = lastSeg.destination  || lastSlice.destination  || {};
-    const depAt       = firstSeg.departing_at || firstSlice.departing_at || '';
-    const arrAt       = lastSeg.arriving_at   || lastSlice.arriving_at   || '';
-    const airline     = (firstSeg.operating_carrier || firstSeg.marketing_carrier || offer.owner || {});
-    const logoUrl     = airline.logo_symbol_url || airline.logo_lockup_url || '';
-    const airlineName = airline.name || '';
+    const airline  = fseg.marketing_carrier || fseg.operating_carrier || offer.owner || {};
+    const logo     = airline.logo_symbol_url || airline.logo_lockup_url || '';
+    const aName    = airline.name || '';
 
-    const stops = (firstSlice.segments || []).length - 1;
-    const stopsLabel = stops === 0 ? '🟢 مباشر' : ('🔴 ' + stops + ' توقف');
-    const paxCount = pax.length || parseInt(params.get('pax') || '1');
-    const cabin = { economy:'اقتصادي', premium_economy:'بريميوم', business:'رجال أعمال', first:'درجة أولى' }[offer.cabin_class || ''] || 'اقتصادي';
+    const stops      = (fs.segments || []).length - 1;
+    const stopsLabel = stops === 0 ? '🟢 مباشر' : ('⚠️ ' + stops + ' توقف');
+    const paxCount   = (offer.passengers_included || []).length || parseInt(params.get('pax') || '1');
+    const cabinMap   = { economy:'اقتصادي', premium_economy:'بريميوم اقتصادي', business:'رجال أعمال', first:'الدرجة الأولى' };
+    const cabinLbl   = cabinMap[offer.cabin_class] || 'اقتصادي';
+    const tripType   = slices.length > 1 ? 'ذهاب وإياب 🔄' : 'ذهاب فقط ➡️';
 
     el.innerHTML = `
-      <div class="flight-header">
-        <div style="flex:1">
-          <div class="flight-route">
-            <div>
-              <div class="flight-iata">${orig.iata_code || '—'}</div>
-              <div style="font-size:0.72rem;color:var(--text-muted)">${orig.city_name || orig.name || ''}</div>
-              ${depAt ? `<div style="font-size:0.8rem;font-weight:700;margin-top:2px">${fmtTime(depAt)}</div>` : ''}
-            </div>
-            <div style="flex:1;text-align:center;padding:0 8px">
-              <div style="font-size:0.7rem;color:var(--text-muted)">${stopsLabel}</div>
-              <div style="font-size:1.2rem">←</div>
-            </div>
-            <div style="text-align:left">
-              <div class="flight-iata">${dest.iata_code || '—'}</div>
-              <div style="font-size:0.72rem;color:var(--text-muted)">${dest.city_name || dest.name || ''}</div>
-              ${arrAt ? `<div style="font-size:0.8rem;font-weight:700;margin-top:2px">${fmtTime(arrAt)}</div>` : ''}
-            </div>
+      <div class="flight-card-inner">
+        <div class="route-row">
+          <div class="route-airport">
+            <div class="route-iata">${orig.iata_code || '—'}</div>
+            <div class="route-city">${orig.city_name || orig.name || ''}</div>
+            ${depAt ? `<div class="route-time">${fmtTime(depAt)}</div>` : ''}
           </div>
-          <div class="flight-meta">
-            ${depAt ? `<span class="flight-meta-item">📅 ${fmtDate(depAt)}</span>` : ''}
-            <span class="flight-meta-item">👥 ${paxCount} مسافر</span>
-            <span class="flight-meta-item">💺 ${cabin}</span>
-            ${slices.length > 1 ? '<span class="flight-meta-item">🔄 ذهاب وإياب</span>' : '<span class="flight-meta-item">➡️ ذهاب فقط</span>'}
+          <div class="route-middle">
+            <div class="route-arrow-line"></div>
+            <div class="route-stops">${stopsLabel}</div>
           </div>
-          ${airlineName ? `<div style="font-size:0.78rem;color:var(--text-muted);margin-top:6px">✈️ ${airlineName}</div>` : ''}
+          <div class="route-airport" style="text-align:left">
+            <div class="route-iata">${dest.iata_code || '—'}</div>
+            <div class="route-city">${dest.city_name || dest.name || ''}</div>
+            ${arrAt ? `<div class="route-time">${fmtTime(arrAt)}</div>` : ''}
+          </div>
         </div>
-        ${logoUrl
-          ? `<img src="${logoUrl}" class="airline-logo" alt="${airlineName}">`
-          : `<div class="airline-logo-placeholder">✈️</div>`}
-      </div>
-    `;
-  } catch (e) {
-    el.innerHTML = buildMinimalFlightCard();
+        <div class="flight-meta-row">
+          ${depAt ? `<span class="flight-badge">📅 ${fmtDate(depAt)}</span>` : ''}
+          <span class="flight-badge">👥 ${paxCount} مسافر</span>
+          <span class="flight-badge">💺 ${cabinLbl}</span>
+          <span class="flight-badge">${tripType}</span>
+        </div>
+        <div class="airline-row">
+          ${logo
+            ? `<img src="${logo}" class="airline-logo" alt="${aName}">`
+            : `<div class="airline-logo-placeholder">✈️</div>`}
+          <div style="flex:1">
+            ${aName ? `<div style="font-size:0.8rem;font-weight:700;color:#374151">${aName}</div>` : ''}
+            <a href="javascript:void(0)" class="flight-detail-link" onclick="window.history.back()">
+              راجع تفاصيل حجزك ←
+            </a>
+          </div>
+        </div>
+      </div>`;
+  } catch(e) {
+    el.innerHTML = buildMinimalCard();
   }
 }
 
-function buildMinimalFlightCard() {
+function buildMinimalCard() {
   const orig = params.get('origin') || '—';
   const dest = params.get('dest')   || '—';
   const date = params.get('date')   || '';
-  return `
-    <div class="flight-header">
-      <div style="flex:1">
-        <div class="flight-route">
-          <div class="flight-iata">${orig}</div>
-          <div style="flex:1;text-align:center;font-size:1.2rem;color:var(--text-muted)">←</div>
-          <div class="flight-iata">${dest}</div>
-        </div>
-        ${date ? `<div class="flight-meta"><span>📅 ${fmtDate(date)}</span></div>` : ''}
-      </div>
-      <div class="airline-logo-placeholder">✈️</div>
-    </div>`;
+  return `<div class="flight-card-inner">
+    <div class="route-row">
+      <div class="route-airport"><div class="route-iata">${orig}</div></div>
+      <div class="route-middle"><div class="route-arrow-line"></div></div>
+      <div class="route-airport" style="text-align:left"><div class="route-iata">${dest}</div></div>
+    </div>
+    ${date ? `<div class="flight-meta-row"><span class="flight-badge">📅 ${fmtDate(date)}</span></div>` : ''}
+  </div>`;
 }
 
-// ── Price breakdown ────────────────────────────────────────────────────────
-let extraServicesGBP = 0; // populated from review API
-
+// ── Price breakdown ────────────────────────────────────────
 function renderPriceRows() {
-  const cur   = (typeof currentCurrency !== 'undefined' && currentCurrency) ? currentCurrency : 'GBP';
-  const isGBP = cur === 'GBP';
+  const cur   = (typeof currentCurrency !== 'undefined') ? currentCurrency : 'GBP';
+  const net   = Math.max(0, round2(amountGBP + extraSvcGBP - discountGBP));
 
   let html = `
     <div class="price-row">
-      <span>✈️ سعر الرحلة الأساسي</span>
+      <span class="price-row-lbl">✈️ سعر الرحلة الأساسي</span>
       <span>${fmt(baseAmountGBP)}</span>
     </div>
     <div class="price-row">
-      <span>🧾 الضرائب والرسوم</span>
+      <span class="price-row-lbl">🧾 الضرائب والرسوم</span>
       <span>${fmt(taxAmountGBP)}</span>
     </div>`;
 
-  if (extraServicesGBP > 0) {
-    html += `<div class="price-row" style="color:#0369a1">
-      <span>🧳 الخدمات الإضافية</span>
-      <span>${fmt(extraServicesGBP)}</span>
+  if (extraSvcGBP > 0) {
+    html += `<div class="price-row">
+      <span class="price-row-lbl" style="color:#0369a1">🧳 الخدمات الإضافية</span>
+      <span style="color:#0369a1">${fmt(extraSvcGBP)}</span>
     </div>`;
   }
-
   if (discountGBP > 0) {
-    html += `<div class="price-row" style="color:#16a34a">
-      <span>🎁 خصم الكوبون</span>
-      <span>−${fmt(discountGBP)}</span>
+    html += `<div class="price-row">
+      <span class="price-row-lbl" style="color:var(--pay-green)">🎁 خصم الكوبون</span>
+      <span style="color:var(--pay-green)">−${fmt(discountGBP)}</span>
     </div>`;
   }
 
-  const net = Math.max(0, amountGBP - discountGBP);
-  html += `<div class="price-row total">
+  html += `<div class="price-row total-row">
     <span>الإجمالي</span>
-    <span>${fmt(net)}</span>
+    <div style="text-align:left">
+      <div class="price-kwd">${fmt(net)}</div>
+      ${cur !== 'GBP' ? `<div class="price-gbp">£${net.toFixed(2)} GBP</div>` : ''}
+    </div>
   </div>`;
 
   document.getElementById('priceRows').innerHTML = html;
-
   document.getElementById('footerAmount').textContent = fmt(net);
 
-  if (!isGBP) {
-    document.getElementById('footerGbp').textContent = '£' + net.toFixed(2) + ' GBP';
-    document.getElementById('footerGbp').style.display = 'block';
+  const sub = document.getElementById('footerSub');
+  if (cur !== 'GBP') {
+    sub.textContent   = '(£' + net.toFixed(2) + ' GBP)';
+    sub.style.display = 'block';
+
     const note = document.getElementById('priceNote');
-    note.textContent = '💳 سيتم تحصيل £' + net.toFixed(2) + ' (GBP) من بطاقتك. المبالغ بـ ' + cur + ' للعرض فقط.';
+    note.textContent  = '💳 سيتم تحصيل £' + net.toFixed(2) + ' (GBP) من بطاقتك. المبالغ بـ ' + cur + ' للعرض فقط.';
     note.style.display = 'block';
   }
 }
 
 async function loadPriceRows() {
-  renderPriceRows(); // render immediately with URL params
-
+  renderPriceRows();
   if (!sessionKey) return;
   try {
-    const res      = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey));
-    const cost     = parseFloat(res.services_cost_gbp ?? 0);
-    if (cost > 0) {
-      extraServicesGBP = cost;
-      renderPriceRows();
-    }
-  } catch(e) { /* non-fatal — URL params already rendered */ }
+    const res  = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey));
+    const cost = parseFloat(res.services_cost_gbp ?? 0);
+    if (cost > 0) { extraSvcGBP = cost; renderPriceRows(); }
+  } catch(e) { /* non-fatal */ }
 }
 
-// ── Coupon ─────────────────────────────────────────────────────────────────
+// ── Coupon ─────────────────────────────────────────────────
 async function applyCoupon() {
   const code = document.getElementById('couponInput').value.trim();
   const res  = document.getElementById('couponResult');
   if (!code) return;
-  res.textContent = 'جاري التحقق…';
+  res.textContent = '⏳ جاري التحقق…';
   res.className   = 'coupon-result';
   try {
     const data = await Api.post('/api/coupons/validate', { code, amount: amountGBP });
     if (data.valid) {
-      discountGBP = parseFloat(data.discount_gbp || 0);
+      discountGBP     = parseFloat(data.discount_gbp || 0);
       res.textContent = '✅ تم تطبيق الخصم: ' + fmt(discountGBP);
       res.className   = 'coupon-result coupon-ok';
-      loadPriceRows();
+      renderPriceRows();
     } else {
       res.textContent = '❌ ' + (data.message || 'كود الخصم غير صالح');
       res.className   = 'coupon-result coupon-err';
     }
-  } catch (e) {
+  } catch(e) {
     res.textContent = '❌ تعذر التحقق من الكود';
     res.className   = 'coupon-result coupon-err';
   }
 }
 
-// ── Submit ─────────────────────────────────────────────────────────────────
+// ── Submit payment ─────────────────────────────────────────
+function setPayLoading(loading) {
+  const btn  = document.getElementById('payBtn');
+  const spin = document.getElementById('paySpinner');
+  const txt  = document.getElementById('payBtnTxt');
+  const dBtn = document.getElementById('desktopPayBtn');
+  const dSp  = document.getElementById('desktopPaySpin');
+  const dTxt = document.getElementById('desktopPayTxt');
+
+  btn.disabled  = loading;
+  if (dBtn) dBtn.disabled = loading;
+
+  if (loading) {
+    spin.classList.remove('hidden'); txt.classList.add('hidden');
+    if (dSp) { dSp.classList.remove('hidden'); }
+    if (dTxt) dTxt.classList.add('hidden');
+  } else {
+    spin.classList.add('hidden');    txt.classList.remove('hidden');
+    txt.textContent = '🔒 ادفع الآن';
+    if (dSp) dSp.classList.add('hidden');
+    if (dTxt) { dTxt.classList.remove('hidden'); dTxt.textContent = '🔒 ادفع الآن'; }
+  }
+}
+
 async function submitPayment() {
   if (!stripe || !elements) {
     showError('⏳ جاري تحميل نظام الدفع، يرجى الانتظار لحظة ثم المحاولة مجدداً.');
@@ -646,16 +916,10 @@ async function submitPayment() {
     showError('⚠️ بيانات الدفع غير متوفرة. يرجى العودة وإعادة المحاولة.');
     return;
   }
-
   const cardName = document.getElementById('cardName').value.trim();
-  if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة'); return; }
+  if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة.'); return; }
 
-  const btn = document.getElementById('payBtn');
-  const sp  = document.getElementById('paySpinner');
-  const tx  = document.getElementById('payBtnTxt');
-  btn.disabled = true;
-  sp.classList.remove('hidden');
-  tx.classList.add('hidden');
+  setPayLoading(true);
   hideError();
 
   try {
@@ -669,55 +933,67 @@ async function submitPayment() {
 
     if (result.error) {
       showError(result.error.message || 'فشل الدفع. يرجى التحقق من بيانات البطاقة.');
-      btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+      setPayLoading(false);
       return;
     }
 
     if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-      // Show "creating booking" state while we call the server
-      tx.textContent = 'جاري إنشاء الحجز...'; tx.classList.remove('hidden');
+      // Update button text
+      document.getElementById('payBtnTxt').textContent = 'جاري إنشاء الحجز…';
+      document.getElementById('payBtnTxt').classList.remove('hidden');
+      const dt = document.getElementById('desktopPayTxt');
+      if (dt) { dt.textContent = 'جاري إنشاء الحجز…'; dt.classList.remove('hidden'); }
 
       let bookingRef = '';
       let confirmed  = false;
-      // Short initial delay then poll — confirmCheckout now calls Duffel directly
-      const delays = [500, 1000, 2000, 4000, 8000, 12000];
+      const delays   = [500, 1000, 2000, 4000, 8000, 12000];
+
       for (let i = 0; i < delays.length; i++) {
         await new Promise(r => setTimeout(r, delays[i]));
         try {
           const cr = await Api.post('/api/flights/checkout/confirm', {
-            session_key: sessionKey,
-            payment_intent_id: piId,
+            session_key:        sessionKey,
+            payment_intent_id:  piId,
           }, true);
+
           if (cr.status === 'confirmed') {
             bookingRef = cr.duffel_booking_reference || cr.booking_reference || '';
             confirmed  = true;
             break;
           }
+          // status === 'pending' → keep polling
         } catch(e) {
-          // Any error from confirmCheckout = show the real server message
-          const msg = (e && (e.message || e.error || '')) || 'حدث خطأ أثناء إنشاء الحجز';
-          showError('⚠️ ' + msg);
-          btn.disabled = false; sp.classList.add('hidden');
-          tx.textContent = 'ادفع الآن 🔒'; tx.classList.remove('hidden');
+          // e is { status, error, message } from api.js or { message } on network fail
+          const serverMsg  = e.message || e.error || '';
+          const isGeneric  = serverMsg.includes('حدث خطأ أثناء إنشاء الحجز مع شركة الطيران');
+
+          // Always show the server message; attach raw detail if it looks generic
+          showError(
+            '⚠️ ' + (serverMsg || 'حدث خطأ أثناء إنشاء الحجز'),
+            isGeneric ? 'HTTP ' + (e.status || '?') + ' — تحقق من لوحة تحكم Duffel' : null
+          );
+          setPayLoading(false);
           return;
         }
       }
 
-      window.location.href = 'confirmation.html?session=' + encodeURIComponent(sessionKey)
-        + '&pi=' + encodeURIComponent(piId)
+      window.location.href = 'confirmation.html'
+        + '?session=' + encodeURIComponent(sessionKey)
+        + '&pi='      + encodeURIComponent(piId)
         + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '')
-        + (confirmed ? '&confirmed=1' : '');
+        + (confirmed  ? '&confirmed=1' : '');
     } else {
       showError('حالة الدفع غير معروفة. يرجى التواصل مع الدعم.');
-      btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+      setPayLoading(false);
     }
-  } catch (err) {
+
+  } catch(err) {
     showError(err.message || 'حدث خطأ أثناء الدفع');
-    btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+    setPayLoading(false);
   }
 }
 
-// ── Deadline ───────────────────────────────────────────────────────────────
+// ── Deadline countdown ─────────────────────────────────────
 (function() {
   const dp = params.get('deadline') || params.get('offer_expires') || '';
   if (!dp) return;
@@ -726,14 +1002,16 @@ async function submitPayment() {
   const banner    = document.getElementById('deadlineBanner');
   const countdown = document.getElementById('deadlineCountdown');
   const expMsg    = document.getElementById('deadlineExpiredMsg');
-  banner.style.display = 'block';
+  banner.style.display = 'flex';
   function tick() {
     const rem = ts - Date.now();
     if (rem <= 0) {
       countdown.textContent = 'منتهية';
       banner.classList.add('expired');
-      expMsg.style.display = 'block';
+      expMsg.style.display = 'inline';
       document.getElementById('payBtn').disabled = true;
+      const db = document.getElementById('desktopPayBtn');
+      if (db) db.disabled = true;
       clearInterval(timer);
       return;
     }
@@ -747,12 +1025,12 @@ async function submitPayment() {
   const timer = setInterval(tick, 1000);
 })();
 
-// ── Boot ───────────────────────────────────────────────────────────────────
+// ── Boot ────────────────────────────────────────────────────
 if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
 initCurrency();
-loadPriceRows();      // async — shows URL data first, then refines from API
-loadFlightSummary();  // async
-initStripe();         // async — loads Stripe.js then mounts
+loadPriceRows();
+loadFlightSummary();
+initStripe();
 </script>
 </body>
 </html>
