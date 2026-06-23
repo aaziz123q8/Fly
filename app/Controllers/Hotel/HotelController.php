@@ -106,6 +106,7 @@ class HotelController
         if (!empty($errors)) Response::validationError($errors);
 
         $user = AuthMiddleware::currentUser();
+        if ($user === null) { Response::unauthorized(); return; }
 
         try {
             $result = $this->bookingService->prebook(
@@ -136,6 +137,7 @@ class HotelController
         if (!empty($errors)) Response::validationError($errors);
 
         $user = AuthMiddleware::currentUser();
+        if ($user === null) { Response::unauthorized(); return; }
 
         $guests = $request->input('guests');
         if (!is_array($guests)) {
@@ -167,6 +169,7 @@ class HotelController
         if (!empty($errors)) Response::validationError($errors);
 
         $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
 
         try {
             $result = $this->bookingService->createPaymentIntent(
@@ -213,7 +216,8 @@ class HotelController
 
     public function listBookings(Request $request): void
     {
-        $user     = AuthMiddleware::currentUser();
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) { Response::unauthorized(); return; }
         $bookings = $this->bookingService->getUserBookings((int) $user['id']);
         Response::json(['bookings' => $bookings, 'count' => count($bookings)]);
     }
@@ -224,8 +228,9 @@ class HotelController
 
     public function getBooking(Request $request): void
     {
-        $id      = (int) $request->param('id');
-        $user    = AuthMiddleware::currentUser();
+        $id   = (int) $request->param('id');
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) { Response::unauthorized(); return; }
         $booking = $this->bookingService->getBookingById($id, (int) $user['id']);
 
         if ($booking === null) {

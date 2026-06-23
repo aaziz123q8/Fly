@@ -104,8 +104,8 @@ class AdminPaymentsController
             $refund = $stripe->createRefund(
                 $paymentIntentId,
                 null,
-                null,
-                'admin_refund_' . md5((string) $id)
+                'admin_refund_' . md5((string) $id),
+                'requested_by_customer'
             );
             $refundId = $refund['id'] ?? null;
         } catch (\Throwable $e) {

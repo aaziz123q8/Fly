@@ -870,7 +870,7 @@ class FlightBookingService
 
         // Already complete (webhook arrived before this call)
         if (($session['current_step'] ?? '') === 'complete') {
-            return $this->fetchCompletedBookingResult($userId);
+            return $this->fetchCompletedBookingResult($userId, $paymentIntentId);
         }
 
         // Verify payment with Stripe directly — don't wait for webhook
@@ -888,7 +888,7 @@ class FlightBookingService
         // Payment confirmed — complete booking synchronously
         try {
             $this->completeBooking($sessionKey, $paymentIntentId);
-            return $this->fetchCompletedBookingResult($userId);
+            return $this->fetchCompletedBookingResult($userId, $paymentIntentId);
         } catch (\Throwable $e) {
             $ctx = [
                 'session_key' => $sessionKey,
@@ -910,8 +910,30 @@ class FlightBookingService
         }
     }
 
-    private function fetchCompletedBookingResult(int $userId): array
+    private function fetchCompletedBookingResult(int $userId, string $paymentIntentId = ''): array
     {
+        // Prefer lookup by payment_intent_id to avoid returning wrong booking in concurrent sessions
+        if ($paymentIntentId !== '') {
+            $stmt = $this->db->prepare(
+                'SELECT fb.id, fb.booking_reference, fb.duffel_booking_reference, fb.status
+                 FROM flight_bookings fb
+                 JOIN payments p ON p.booking_id = fb.id AND p.booking_type = "flight"
+                 WHERE p.stripe_payment_intent_id = :pi AND fb.user_id = :uid
+                 LIMIT 1'
+            );
+            $stmt->execute([':pi' => $paymentIntentId, ':uid' => $userId]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if ($row) {
+                return [
+                    'status'                   => 'confirmed',
+                    'booking_reference'        => $row['booking_reference']        ?? '',
+                    'booking_id'               => $row['id']                       ?? null,
+                    'duffel_booking_reference' => $row['duffel_booking_reference'] ?? null,
+                ];
+            }
+        }
+
+        // Fallback: most recent booking for this user
         $stmt = $this->db->prepare(
             'SELECT id, booking_reference, duffel_booking_reference, status
              FROM flight_bookings WHERE user_id = :uid ORDER BY id DESC LIMIT 1'
@@ -1641,9 +1663,9 @@ class FlightBookingService
             foreach ($rules as $rule) {
                 $feeAmount = 0.0;
 
-                if ($rule['rule_type'] === 'percentage') {
+                if ($rule['value_type'] === 'percentage') {
                     $feeAmount = round($runningTotal * ((float) $rule['value'] / 100), 2);
-                } elseif ($rule['rule_type'] === 'fixed') {
+                } elseif ($rule['value_type'] === 'fixed') {
                     $feeAmount = (float) $rule['value'];
                 }
 

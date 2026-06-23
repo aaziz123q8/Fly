@@ -325,7 +325,10 @@ class AdminBookingsController
             Response::notFound('Booking not found.');
         }
 
-        $dbStatus = in_array($newStatus, ['pending','confirmed','completed','cancelled'], true) ? $newStatus : 'pending';
+        if (!in_array($newStatus, ['pending', 'confirmed', 'completed', 'cancelled'], true)) {
+            Response::error('Invalid status. Allowed: pending, confirmed, completed, cancelled.', 422);
+        }
+        $dbStatus = $newStatus;
         $setCancelled = $dbStatus === 'cancelled' ? ', cancelled_at = NOW()' : '';
         $db->prepare("UPDATE $table SET status = ? $setCancelled WHERE id = ?")->execute([$dbStatus, $id]);
 
