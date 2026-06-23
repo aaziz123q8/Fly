@@ -156,6 +156,114 @@ class EmailNotificationService
         $this->sendHtmlMail($row['email'], $subject, $body);
     }
 
+    /**
+     * Notify customer that their flight schedule has changed.
+     * Payload: { booking_id, user_id }
+     */
+    public function sendScheduleChangeEmail(array $payload): void
+    {
+        $bookingId = (int)($payload['booking_id'] ?? 0);
+        $booking   = $this->fetchFlightBookingWithUser($bookingId);
+        if (!$booking) return;
+
+        $subject = 'Important: Your Flight Schedule Has Changed — ' . $booking['booking_reference'];
+        $body    = $this->buildSimpleNotificationHtml(
+            trim($booking['first_name'] . ' ' . $booking['last_name']),
+            'Flight Schedule Change',
+            'We are writing to inform you that your flight schedule has been updated by the airline. ' .
+            'Please log in to your account to view the latest itinerary details.',
+            $this->appUrl . '/dashboard'
+        );
+        $this->sendHtmlMail($booking['email'], $subject, $body);
+    }
+
+    /**
+     * Notify customer their booking was cancelled and refund is processing.
+     * Payload: { booking_id, user_id }
+     */
+    public function sendCancellationEmail(array $payload): void
+    {
+        $bookingId = (int)($payload['booking_id'] ?? 0);
+        $booking   = $this->fetchFlightBookingWithUser($bookingId);
+        if (!$booking) return;
+
+        $subject = 'Your Booking Has Been Cancelled — ' . $booking['booking_reference'];
+        $body    = $this->buildSimpleNotificationHtml(
+            trim($booking['first_name'] . ' ' . $booking['last_name']),
+            'Booking Cancellation Confirmed',
+            'Your flight booking ' . htmlspecialchars($booking['booking_reference'], ENT_QUOTES, 'UTF-8') .
+            ' has been successfully cancelled. If a refund is applicable, it will be processed within 5–10 business days.',
+            $this->appUrl . '/dashboard'
+        );
+        $this->sendHtmlMail($booking['email'], $subject, $body);
+    }
+
+    /**
+     * Notify customer the airline has cancelled their flight.
+     * Payload: { booking_id, user_id }
+     */
+    public function sendAirlineCancellationEmail(array $payload): void
+    {
+        $bookingId = (int)($payload['booking_id'] ?? 0);
+        $booking   = $this->fetchFlightBookingWithUser($bookingId);
+        if (!$booking) return;
+
+        $subject = 'Urgent: Your Flight Has Been Cancelled by the Airline — ' . $booking['booking_reference'];
+        $body    = $this->buildSimpleNotificationHtml(
+            trim($booking['first_name'] . ' ' . $booking['last_name']),
+            'Flight Cancelled by Airline',
+            'We regret to inform you that the airline has cancelled your flight for booking ' .
+            htmlspecialchars($booking['booking_reference'], ENT_QUOTES, 'UTF-8') .
+            '. Please contact us for assistance with rebooking or a full refund.',
+            $this->appUrl . '/dashboard'
+        );
+        $this->sendHtmlMail($booking['email'], $subject, $body);
+    }
+
+    /**
+     * Notify customer that their flight change request was rejected.
+     * Payload: { booking_id, user_id }
+     */
+    public function sendChangeRejectedEmail(array $payload): void
+    {
+        $bookingId = (int)($payload['booking_id'] ?? 0);
+        $booking   = $this->fetchFlightBookingWithUser($bookingId);
+        if (!$booking) return;
+
+        $subject = 'Flight Change Request Rejected — ' . $booking['booking_reference'];
+        $body    = $this->buildSimpleNotificationHtml(
+            trim($booking['first_name'] . ' ' . $booking['last_name']),
+            'Change Request Rejected',
+            'Unfortunately, your flight change request for booking ' .
+            htmlspecialchars($booking['booking_reference'], ENT_QUOTES, 'UTF-8') .
+            ' could not be processed. Please contact our support team for assistance.',
+            $this->appUrl . '/dashboard'
+        );
+        $this->sendHtmlMail($booking['email'], $subject, $body);
+    }
+
+    /**
+     * Notify customer that payment is required to confirm the booking.
+     * Payload: { booking_id, user_id }
+     */
+    public function sendAwaitingPaymentEmail(array $payload): void
+    {
+        $bookingId = (int)($payload['booking_id'] ?? 0);
+        $booking   = $this->fetchFlightBookingWithUser($bookingId);
+        if (!$booking) return;
+
+        $subject = 'Action Required: Payment Needed for Your Booking — ' . $booking['booking_reference'];
+        $body    = $this->buildSimpleNotificationHtml(
+            trim($booking['first_name'] . ' ' . $booking['last_name']),
+            'Payment Required',
+            'Your flight booking ' .
+            htmlspecialchars($booking['booking_reference'], ENT_QUOTES, 'UTF-8') .
+            ' is awaiting payment. Please complete payment promptly to confirm your reservation.',
+            $this->appUrl . '/dashboard'
+        );
+        $this->sendHtmlMail($booking['email'], $subject, $body);
+    }
+
     // =========================================================================
     // Internal: mail sending
     // =========================================================================
@@ -183,6 +291,20 @@ class EmailNotificationService
     // Internal: DB helpers
     // =========================================================================
 
+    private function fetchFlightBookingWithUser(int $bookingId): ?array
+    {
+        if ($bookingId <= 0) return null;
+        $stmt = $this->db->prepare(
+            'SELECT fb.*, u.email, u.first_name, u.last_name
+             FROM flight_bookings fb
+             JOIN users u ON u.id = fb.user_id
+             WHERE fb.id = :id LIMIT 1'
+        );
+        $stmt->execute([':id' => $bookingId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
     private function fetchUser(int $userId): ?array
     {
         if ($userId <= 0) {
@@ -197,6 +319,43 @@ class EmailNotificationService
     // =========================================================================
     // Internal: HTML builders
     // =========================================================================
+
+    private function buildSimpleNotificationHtml(string $name, string $heading, string $message, string $ctaUrl): string
+    {
+        $year     = date('Y');
+        $appName  = htmlspecialchars($this->fromName, ENT_QUOTES, 'UTF-8');
+        $nameHtml = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+        $headHtml = htmlspecialchars($heading, ENT_QUOTES, 'UTF-8');
+        $ctaHtml  = htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8');
+
+        return <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><title>{$headHtml}</title></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:40px 20px;">
+    <table width="600" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:8px;overflow:hidden;">
+      <tr><td style="background:#1a73e8;padding:30px 40px;">
+        <h1 style="color:#fff;margin:0;font-size:24px;">{$appName}</h1>
+      </td></tr>
+      <tr><td style="padding:40px;">
+        <p style="font-size:16px;color:#333;">Dear {$nameHtml},</p>
+        <h2 style="color:#1a73e8;">{$headHtml}</h2>
+        <p style="color:#555;line-height:1.6;">{$message}</p>
+        <p style="text-align:center;margin:30px 0;">
+          <a href="{$ctaHtml}" style="background:#1a73e8;color:#fff;padding:12px 30px;border-radius:4px;text-decoration:none;font-weight:bold;">View My Bookings</a>
+        </p>
+        <p style="color:#999;font-size:13px;">If you have any questions, please contact our support team.</p>
+      </td></tr>
+      <tr><td style="background:#f0f0f0;padding:20px 40px;text-align:center;">
+        <p style="color:#aaa;font-size:12px;margin:0;">&copy; {$year} {$appName}. All rights reserved.</p>
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body>
+</html>
+HTML;
+    }
 
     private function buildPasswordResetHtml(string $name, string $resetUrl): string
     {

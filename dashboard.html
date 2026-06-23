@@ -275,22 +275,31 @@
       </div>`;
       return;
     }
-    el.innerHTML = bookings.map(b => `
+    el.innerHTML = bookings.map(b => {
+      const origin = b.origin_airport || b.origin || b.from || '—';
+      const dest   = b.destination_airport || b.destination || b.to || '—';
+      const ref    = b.booking_reference || b.booking_ref || b.id || '—';
+      const dep    = b.departure_at ? new Date(b.departure_at).toLocaleDateString('ar-SA') : (b.departure_date || b.date || '—');
+      const amount = b.total_amount || b.total_price;
+      const currency = b.currency || 'ر.س';
+      const canCancel = b.status === 'confirmed';
+      return `
     <div class="booking-item">
       <div class="booking-icon">✈️</div>
       <div class="booking-info">
-        <div class="booking-title">${b.from || b.origin || ''} → ${b.to || b.destination || ''}</div>
+        <div class="booking-title">${origin} → ${dest}</div>
         <div class="booking-meta">
-          رقم الحجز: ${b.id || b.booking_ref || '—'} &nbsp;|&nbsp;
-          ${b.departure_date || b.date || '—'}
+          رقم الحجز: ${ref} &nbsp;|&nbsp; ${dep}
           ${b.flight_number ? `&nbsp;|&nbsp; رحلة: ${b.flight_number}` : ''}
         </div>
       </div>
       <div style="margin-right:auto;display:flex;align-items:center;gap:12px">
         ${badgeHtml(b.status || 'pending')}
-        <div class="booking-price">${b.total_price ? Number(b.total_price).toLocaleString('ar-SA') + ' ر.س' : '—'}</div>
+        <div class="booking-price">${amount ? Number(amount).toLocaleString('ar-SA') + ' ' + currency : '—'}</div>
+        ${canCancel ? `<button class="btn btn-sm btn-danger" onclick="initiateCancel(${b.id})">إلغاء</button>` : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+    }).join('');
   }
 
   function renderHotelBookings(bookings) {
@@ -403,10 +412,108 @@
     setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
   }
 
+  // =========================================================================
+  // Cancellation flow
+  // =========================================================================
+
+  let _cancelBookingId = null;
+  let _cancelExpiryTimer = null;
+
+  async function initiateCancel(bookingId) {
+    _cancelBookingId = bookingId;
+    const modal = document.getElementById('cancelModal');
+    const body  = document.getElementById('cancelModalBody');
+    body.innerHTML = '<div style="text-align:center;padding:24px">جارٍ تحميل بيانات الإلغاء…</div>';
+    modal.style.display = 'flex';
+    try {
+      const res = await Api.post(`/api/flights/bookings/${bookingId}/cancel`, {}, true);
+      const d = res.data || res;
+      // Store cancellation_id for confirm step.
+      modal.dataset.cancellationId = d.cancellation_id || '';
+      const refund = d.refund_amount ? `${Number(d.refund_amount).toLocaleString('ar-SA')} ${d.refund_currency || ''}` : 'غير متاح';
+      const refundTo = d.refund_to || '—';
+      const expiresAt = d.cancellation_expires_at ? new Date(d.cancellation_expires_at) : null;
+      const expiryStr = expiresAt ? expiresAt.toLocaleString('ar-SA') : '—';
+      body.innerHTML = `
+        <p style="color:#555;margin-bottom:12px">هل تريد إلغاء هذا الحجز؟ يرجى مراجعة تفاصيل الاسترداد أدناه.</p>
+        <div style="background:#fff8e1;border-radius:8px;padding:12px 16px;margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.9rem">
+            <div><span style="color:#92400e;font-weight:600">مبلغ الاسترداد:</span><br>${refund}</div>
+            <div><span style="color:#92400e;font-weight:600">طريقة الاسترداد:</span><br>${refundTo}</div>
+          </div>
+          <div style="margin-top:10px;font-size:.82rem;color:#b45309">
+            ⏰ ينتهي العرض: <span id="cancelExpiryCountdown" style="font-weight:700">${expiryStr}</span>
+          </div>
+        </div>
+        <div class="alert-warning" style="background:#fef3c7;border-radius:6px;padding:10px 14px;font-size:.85rem;color:#92400e;margin-bottom:0">
+          ⚠️ هذا الإجراء لا يمكن التراجع عنه. سيتم إلغاء حجزك مع شركة الطيران فور التأكيد.
+        </div>`;
+      // Start countdown timer.
+      if (expiresAt) {
+        clearInterval(_cancelExpiryTimer);
+        _cancelExpiryTimer = setInterval(() => {
+          const rem = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+          const el = document.getElementById('cancelExpiryCountdown');
+          if (!el) { clearInterval(_cancelExpiryTimer); return; }
+          if (rem === 0) {
+            clearInterval(_cancelExpiryTimer);
+            el.textContent = 'انتهت الصلاحية';
+            document.getElementById('confirmCancelBtn').disabled = true;
+          } else {
+            const m = Math.floor(rem / 60), s = rem % 60;
+            el.textContent = `${m}:${String(s).padStart(2,'0')} دقيقة`;
+          }
+        }, 1000);
+      }
+    } catch (err) {
+      body.innerHTML = `<div style="color:#dc2626;padding:8px">${err.message || 'تعذر تحميل بيانات الإلغاء'}</div>`;
+    }
+  }
+
+  function closeCancelModal() {
+    clearInterval(_cancelExpiryTimer);
+    document.getElementById('cancelModal').style.display = 'none';
+    _cancelBookingId = null;
+  }
+
+  async function confirmCancel() {
+    const modal = document.getElementById('cancelModal');
+    const cancellationId = modal.dataset.cancellationId;
+    if (!_cancelBookingId || !cancellationId) return;
+    const btn = document.getElementById('confirmCancelBtn');
+    btn.disabled = true;
+    btn.textContent = 'جارٍ الإلغاء…';
+    try {
+      await Api.post(`/api/flights/bookings/${_cancelBookingId}/cancel/confirm`, { cancellation_id: cancellationId }, true);
+      closeCancelModal();
+      showToast('تم إلغاء الحجز بنجاح', 'success');
+      loadFlightBookings();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'تأكيد الإلغاء';
+      showToast(err.message || 'فشل إلغاء الحجز', 'error');
+    }
+  }
+
   // Load data
   loadFlightBookings();
   loadHotelBookings();
   loadProfile();
 </script>
+
+<!-- Cancellation Modal -->
+<div id="cancelModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:28px;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <h3 style="margin:0;color:#dc2626">إلغاء الحجز</h3>
+      <button onclick="closeCancelModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#999">×</button>
+    </div>
+    <div id="cancelModalBody"></div>
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end">
+      <button onclick="closeCancelModal()" style="padding:10px 20px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;cursor:pointer">إلغاء</button>
+      <button id="confirmCancelBtn" onclick="confirmCancel()" style="padding:10px 20px;background:#dc2626;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700">تأكيد الإلغاء</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

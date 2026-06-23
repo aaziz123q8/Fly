@@ -80,15 +80,53 @@ class FlightBookingService
             throw new RuntimeException('Invalid step for saving passengers.', 422);
         }
 
+        // Normalize field names: booking.html sends document_number/document_expiry
+        // but the rest of the pipeline expects passport_number/passport_expiry.
+        foreach ($passengers as &$p) {
+            if (!isset($p['passport_number']) && isset($p['document_number'])) {
+                $p['passport_number'] = $p['document_number'];
+            }
+            if (!isset($p['passport_expiry']) && isset($p['document_expiry'])) {
+                $p['passport_expiry'] = $p['document_expiry'];
+            }
+        }
+        unset($p);
+
         // Validate each passenger record.
         $required = ['first_name', 'last_name', 'gender', 'date_of_birth',
-                     'nationality', 'document_number', 'document_expiry'];
+                     'nationality', 'passport_number', 'passport_expiry'];
+
+        $today        = new \DateTime('today');
+        $sixMonths    = (new \DateTime('today'))->modify('+6 months');
 
         foreach ($passengers as $idx => $p) {
             foreach ($required as $field) {
                 if (empty($p[$field])) {
                     throw new RuntimeException("Passenger {$idx}: {$field} is required.", 422);
                 }
+            }
+
+            // DOB must be in the past.
+            $dob = \DateTime::createFromFormat('Y-m-d', $p['date_of_birth']);
+            if (!$dob || $dob >= $today) {
+                throw new RuntimeException("Passenger {$idx}: date_of_birth must be a past date.", 422);
+            }
+
+            // Passport must not expire within 6 months of today.
+            $expiry = \DateTime::createFromFormat('Y-m-d', $p['passport_expiry']);
+            if (!$expiry) {
+                throw new RuntimeException("Passenger {$idx}: passport_expiry is not a valid date (YYYY-MM-DD).", 422);
+            }
+            if ($expiry <= $today) {
+                throw new RuntimeException("Passenger {$idx}: passport is expired.", 422);
+            }
+            if ($expiry < $sixMonths) {
+                throw new RuntimeException("Passenger {$idx}: passport must be valid for at least 6 months.", 422);
+            }
+
+            // Nationality must not be empty (already checked above, but extra guard).
+            if (trim((string)($p['nationality'] ?? '')) === '') {
+                throw new RuntimeException("Passenger {$idx}: nationality is required.", 422);
             }
         }
 
@@ -865,7 +903,10 @@ class FlightBookingService
         }
 
         // Confirm with Duffel — this actually cancels the airline booking.
-        $this->duffel->confirmCancellation($cancellationId);
+        $confirmResponse = $this->duffel->confirmCancellation($cancellationId);
+        $confirmedAt = !empty($confirmResponse['data']['confirmed_at'])
+            ? date('Y-m-d H:i:s', strtotime($confirmResponse['data']['confirmed_at']))
+            : date('Y-m-d H:i:s');
 
         // Attempt Stripe refund before marking the booking as cancelled.
         // If the refund fails, we set status to 'cancellation_pending_refund' so staff can retry.
@@ -934,17 +975,19 @@ class FlightBookingService
 
         $this->db->prepare(
             'UPDATE flight_bookings
-             SET status = :status, cancelled_at = NOW(), updated_at = NOW()
+             SET status = :status, cancelled_at = NOW(), cancellation_confirmed_at = :confirmed_at, updated_at = NOW()
              WHERE id = :id'
         )->execute([
-            ':status' => $finalStatus,
-            ':id'     => $bookingId,
+            ':status'       => $finalStatus,
+            ':confirmed_at' => $confirmedAt,
+            ':id'           => $bookingId,
         ]);
 
         return [
-            'booking_id'  => $bookingId,
-            'status'      => $finalStatus,
-            'refund_id'   => $refundId,
+            'booking_id'    => $bookingId,
+            'status'        => $finalStatus,
+            'refund_id'     => $refundId,
+            'confirmed_at'  => $confirmedAt,
         ];
     }
 
@@ -952,12 +995,30 @@ class FlightBookingService
     // syncFromDuffel — refresh booking from live Duffel order
     // =========================================================================
 
+    // Internal/job-worker entrypoint: no userId check (trusted internal call).
+    public function syncFromDuffelByBookingId(int $bookingId): array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM flight_bookings WHERE id = :id LIMIT 1');
+        $stmt->execute([':id' => $bookingId]);
+        $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if (!$booking) {
+            throw new \RuntimeException("Booking {$bookingId} not found.", 404);
+        }
+        return $this->syncBookingFromDuffelOrder($bookingId, $booking);
+    }
+
     public function syncFromDuffel(int $bookingId, int $userId): array
     {
         $booking = $this->getBookingById($bookingId, $userId);
         if ($booking === null) {
             throw new \RuntimeException('Booking not found.', 404);
         }
+        return $this->syncBookingFromDuffelOrder($bookingId, $booking);
+    }
+
+    private function syncBookingFromDuffelOrder(int $bookingId, array $booking): array
+    {
+        $userId = $booking['user_id'] ?? null;
 
         $providerOrderId = $booking['provider_order_id'] ?? '';
         if (empty($providerOrderId)) {
@@ -1065,7 +1126,12 @@ class FlightBookingService
             }
         }
 
-        return $this->getBookingById($bookingId, $userId) ?? $booking;
+        if ($userId !== null) {
+            return $this->getBookingById($bookingId, (int)$userId) ?? $booking;
+        }
+        $stmt = $this->db->prepare('SELECT * FROM flight_bookings WHERE id = :id LIMIT 1');
+        $stmt->execute([':id' => $bookingId]);
+        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: $booking;
     }
 
     /**

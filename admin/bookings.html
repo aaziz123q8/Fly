@@ -269,7 +269,20 @@
           <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">تاريخ الحجز</div><div>${b.created_at?new Date(b.created_at).toLocaleDateString('ar-SA'):'—'}</div></div>
           ${b.provider_order_id?`<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">Duffel Order ID</div><div style="font-family:monospace;font-size:.8rem">${b.provider_order_id}</div></div>`:''}
           ${b.coupon_code?`<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">كود الخصم</div><div style="font-weight:600;color:var(--success)">${b.coupon_code}</div></div>`:''}
-        </div>`;
+        </div>
+        ${(b.pending_cancellation_id||b.cancelled_at||b.cancellation_confirmed_at) ? `
+        <div style="margin-top:18px;border-top:1px solid #eee;padding-top:14px">
+          <div style="font-size:.75rem;font-weight:700;color:#dc2626;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🚫 تفاصيل الإلغاء</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            ${b.pending_cancellation_id?`<div style="grid-column:1/-1"><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">Duffel Cancellation ID</div><div style="font-family:monospace;font-size:.82rem">${b.pending_cancellation_id}</div></div>`:''}
+            ${b.cancellation_refund_amount?`<div><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">مبلغ الاسترداد</div><div style="font-weight:700;color:var(--success)">${Number(b.cancellation_refund_amount).toLocaleString('ar')} ${b.cancellation_refund_currency||''}</div></div>`:''}
+            ${b.cancellation_refund_to?`<div><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">طريقة الاسترداد</div><div>${b.cancellation_refund_to}</div></div>`:''}
+            ${b.cancellation_expires_at?`<div><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">انتهاء صلاحية العرض</div><div>${new Date(b.cancellation_expires_at).toLocaleString('ar-SA')}</div></div>`:''}
+            ${b.cancelled_at?`<div><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">تاريخ الإلغاء</div><div>${new Date(b.cancelled_at).toLocaleString('ar-SA')}</div></div>`:''}
+            ${b.cancellation_confirmed_at?`<div><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">تأكيد الإلغاء (Duffel)</div><div>${new Date(b.cancellation_confirmed_at).toLocaleString('ar-SA')}</div></div>`:''}
+          </div>
+        </div>` : ''}
+        `;
     } catch {
       el.innerHTML = '<div class="alert alert-error">تعذر تحميل تفاصيل الحجز</div>';
     }

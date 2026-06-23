@@ -288,7 +288,9 @@ class WebhookController
              WHERE provider_order_id = :oid AND status = :confirmed'
         )->execute([':status' => 'changed', ':oid' => $orderId, ':confirmed' => 'confirmed']);
 
-        // Queue notification job.
+        // Sync fresh data from Duffel so segments reflect the new schedule.
+        $this->queueNotificationJob($orderId, 'sync_flight_booking');
+        // Notify customer after sync completes.
         $this->queueNotificationJob($orderId, 'flight_schedule_changed');
 
         return 'booking_status_changed';

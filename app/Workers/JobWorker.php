@@ -161,6 +161,30 @@ class JobWorker
                 (new InvoicePdfService($this->db))->generate($payload);
                 break;
 
+            case 'sync_flight_booking':
+                (new \App\Services\FlightBookingService($this->db))->syncFromDuffelByBookingId((int)($payload['booking_id'] ?? 0));
+                break;
+
+            case 'flight_schedule_changed':
+                (new EmailNotificationService($this->db))->sendScheduleChangeEmail($payload);
+                break;
+
+            case 'cancel_booking_email':
+                (new EmailNotificationService($this->db))->sendCancellationEmail($payload);
+                break;
+
+            case 'flight_cancelled_by_airline':
+                (new EmailNotificationService($this->db))->sendAirlineCancellationEmail($payload);
+                break;
+
+            case 'flight_change_rejected':
+                (new EmailNotificationService($this->db))->sendChangeRejectedEmail($payload);
+                break;
+
+            case 'flight_awaiting_payment':
+                (new EmailNotificationService($this->db))->sendAwaitingPaymentEmail($payload);
+                break;
+
             default:
                 throw new \RuntimeException("Unknown job type: {$job['job_type']}");
         }
