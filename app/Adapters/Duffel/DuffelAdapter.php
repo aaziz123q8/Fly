@@ -158,7 +158,64 @@ class DuffelAdapter
             $data['metadata'] = $metadata;
         }
 
-        return $this->post('/air/orders', ['data' => $data]);
+        $requestBody = json_encode(['data' => $data], JSON_UNESCAPED_UNICODE);
+        $url         = $this->baseUrl . '/air/orders';
+
+        // Log the full createOrder request before sending
+        error_log('[DUFFEL_CREATE_ORDER_REQUEST] url=' . $url . ' body=' . $requestBody);
+
+        try {
+            $response = $this->post('/air/orders', ['data' => $data]);
+
+            // Log successful response summary
+            $orderId = $response['data']['id']                 ?? 'n/a';
+            $bookRef = $response['data']['booking_reference']  ?? 'n/a';
+            error_log('[DUFFEL_CREATE_ORDER_SUCCESS] order_id=' . $orderId . ' booking_ref=' . $bookRef);
+
+            $this->writeDebugLog('createOrder_success', [
+                'request_body'  => json_decode($requestBody, true),
+                'response_id'   => $orderId,
+                'booking_ref'   => $bookRef,
+            ]);
+
+            return $response;
+        } catch (\Throwable $e) {
+            // Log the full failure with request context
+            error_log('[DUFFEL_CREATE_ORDER_FAIL] message=' . $e->getMessage());
+
+            // Extract the raw JSON from the exception message to store separately
+            $msg       = $e->getMessage();
+            $jsonStart = strpos($msg, '{');
+            $rawJson   = $jsonStart !== false ? substr($msg, $jsonStart) : null;
+            $decoded   = $rawJson ? json_decode($rawJson, true) : null;
+
+            $this->writeDebugLog('createOrder_failure', [
+                'request_body'   => json_decode($requestBody, true),
+                'http_status'    => $e->getCode(),
+                'error_message'  => $msg,
+                'duffel_errors'  => $decoded['errors']          ?? null,
+                'duffel_meta'    => $decoded['meta']            ?? null,
+                'duffel_request_id' => $decoded['meta']['request_id'] ?? null,
+            ]);
+
+            throw $e;
+        }
+    }
+
+    /**
+     * Write a structured debug entry to the error_logs table.
+     * Silently swallows DB errors (non-critical).
+     */
+    private function writeDebugLog(string $event, array $context): void
+    {
+        try {
+            if (!defined('BASE_PATH')) return;
+            $db = \App\Helpers\Database::getInstance();
+            $db->prepare(
+                'INSERT INTO error_logs (level, message, context, created_at)
+                 VALUES (?, ?, ?, NOW())'
+            )->execute(['debug', 'duffel.' . $event, json_encode($context, JSON_UNESCAPED_UNICODE)]);
+        } catch (\Throwable) { /* non-critical */ }
     }
 
     /**

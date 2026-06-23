@@ -100,6 +100,44 @@ $router->get('/admin/clear-cache', function (Request $req): void {
     Response::json(['success' => true, 'opcache_cleared' => $cleared, 'time' => date('c')]);
 });
 
+// Forensic debug endpoint — returns last Duffel error_logs entries.
+// Protected by APP_MASTER_KEY token (?token=xxx).
+$router->get('/admin/duffel-debug', function (Request $req): void {
+    $token     = $_GET['token'] ?? '';
+    $masterKey = getenv('APP_MASTER_KEY') ?: '';
+    if ($masterKey === '' || $token !== $masterKey) {
+        Response::error('Forbidden', 403);
+        return;
+    }
+    try {
+        $db   = \App\Helpers\Database::getInstance();
+        $rows = $db->query(
+            "SELECT id, level, message, context, created_at
+             FROM error_logs
+             WHERE message LIKE '%duffel%'
+                OR message LIKE '%Duffel%'
+                OR message LIKE '%createOrder%'
+                OR message LIKE '%DUFFEL%'
+             ORDER BY id DESC
+             LIMIT 20"
+        )->fetchAll(\PDO::FETCH_ASSOC);
+
+        foreach ($rows as &$row) {
+            $decoded = json_decode($row['context'] ?? '', true);
+            $row['context_parsed'] = $decoded;
+        }
+        unset($row);
+
+        Response::json([
+            'count'    => count($rows),
+            'entries'  => $rows,
+            'time'     => date('c'),
+        ]);
+    } catch (\Throwable $e) {
+        Response::json(['error' => $e->getMessage()], 500);
+    }
+});
+
 // ---------------------------------------------------------------------------
 // Routes — Webhooks
 // ---------------------------------------------------------------------------

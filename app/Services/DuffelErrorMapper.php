@@ -146,12 +146,30 @@ class DuffelErrorMapper
             }
         }
 
-        // Fallback for unmapped errors
-        $fallback = 'حدث خطأ أثناء إنشاء الحجز مع شركة الطيران. يرجى المحاولة مجدداً أو التواصل مع الدعم.';
-        return new RuntimeException(
-            $fallback . '|[Duffel:unknown] ' . $msg,
-            502
+        // Fallback: extract whatever Duffel gave us even if code is not in our map
+        $firstError = null;
+        if ($body !== null) {
+            $dec = $decoded ?? json_decode($body, true);
+            $firstError = (is_array($dec) ? $dec['errors'][0] ?? null : null);
+        }
+        $rawCode   = $firstError['code']    ?? 'unknown';
+        $rawTitle  = $firstError['title']   ?? '';
+        $rawDetail = $firstError['message'] ?? '';
+        $requestId = ($decoded ?? [])['meta']['request_id'] ?? '';
+
+        $internal = sprintf(
+            '[Duffel:%s] title="%s" detail="%s" request_id=%s exception=%s',
+            $rawCode, $rawTitle, $rawDetail, $requestId, substr($msg, 0, 600)
         );
+
+        // Show the real Duffel code+message to help diagnose — change to generic once resolved
+        $customerMsg = sprintf(
+            'خطأ Duffel [%s]: %s',
+            $rawCode,
+            $rawDetail ?: ($rawTitle ?: 'راجع لوحة تحكم Duffel')
+        );
+
+        return new RuntimeException($customerMsg . '|' . $internal, 502);
     }
 
     /**
