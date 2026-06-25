@@ -369,12 +369,13 @@ function toggleBag(svcId) {
 function changeBagQty(svcId, delta) {
   const svc = availableServices.find(s => s.id === svcId);
   if (!svc) return;
+  const maxQty = svc.maximum_quantity ?? 1;
   const current = (selectedBagSvcs[svcId]?.qty || 0) + delta;
   if (current <= 0) {
     delete selectedBagSvcs[svcId];
     document.getElementById('svc_' + svcId).classList.remove('selected');
     document.getElementById('qty_' + svcId).textContent = '0';
-  } else {
+  } else if (current <= maxQty) {
     selectedBagSvcs[svcId] = { svc, qty: current };
     document.getElementById('svc_' + svcId).classList.add('selected');
     document.getElementById('qty_' + svcId).textContent = String(current);
@@ -447,12 +448,13 @@ function toggleMeal(svcId) {
 function changeMealQty(svcId, delta) {
   const svc = availableServices.find(s => s.id === svcId);
   if (!svc) return;
+  const maxQty = svc.maximum_quantity ?? 1;
   const current = (selectedMealSvcs[svcId]?.qty || 0) + delta;
   if (current <= 0) {
     delete selectedMealSvcs[svcId];
     document.getElementById('meal_' + svcId).classList.remove('selected');
     document.getElementById('mealqty_' + svcId).textContent = '0';
-  } else {
+  } else if (current <= maxQty) {
     selectedMealSvcs[svcId] = { svc, qty: current };
     document.getElementById('meal_' + svcId).classList.add('selected');
     document.getElementById('mealqty_' + svcId).textContent = String(current);
@@ -575,10 +577,12 @@ function selectSeat(designator, isAvailable, svcJson) {
 function buildServicesPayload() {
   const services = [];
   Object.entries(selectedBagSvcs).forEach(([id, {svc, qty}]) => {
-    services.push({ id, quantity: qty });
+    const maxQty = svc.maximum_quantity ?? 1;
+    services.push({ id, quantity: Math.min(qty, maxQty) });
   });
   Object.entries(selectedMealSvcs).forEach(([id, {svc, qty}]) => {
-    services.push({ id, quantity: qty });
+    const maxQty = svc.maximum_quantity ?? 1;
+    services.push({ id, quantity: Math.min(qty, maxQty) });
   });
   Object.values(selectedSeats).forEach(({svc}) => {
     if (svc && svc.id) services.push({ id: svc.id, quantity: 1 });

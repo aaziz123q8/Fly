@@ -796,16 +796,27 @@ class FlightBookingService
         $this->validateDuffelPassengers($duffelPassengers);
         $this->step('PASSENGER_VALIDATION', 'SUCCESS');
 
+        // Build maximum_quantity map from cached offer's available_services.
+        // Duffel rejects quantity > maximum_quantity with a 422 validation error.
+        $maxQtyMap = [];
+        foreach (($offerData['available_services'] ?? []) as $availSvc) {
+            $aid = $availSvc['id'] ?? '';
+            if ($aid !== '') {
+                $maxQtyMap[$aid] = (int)($availSvc['maximum_quantity'] ?? 1);
+            }
+        }
+
         // Build the services list for priceOffer (intended_services).
         // Per Duffel API: once an offer is repriced with intended_services, the services
         // are locked into the priced offer. createOrder MUST NOT send services again —
         // doing so causes an intended_services_conflict error.
         $intendedServices = [];
         foreach (($servicesData ?: []) as $svc) {
-            $sid = trim((string)($svc['id'] ?? ''));
-            $qty = (int)($svc['quantity'] ?? 1);
-            if ($sid !== '') {
-                $intendedServices[] = ['id' => $sid, 'quantity' => max(1, $qty)];
+            $sid    = trim((string)($svc['id'] ?? ''));
+            $maxQty = $maxQtyMap[$sid] ?? 1;
+            $qty    = min((int)($svc['quantity'] ?? 1), $maxQty);
+            if ($sid !== '' && $qty >= 1) {
+                $intendedServices[] = ['id' => $sid, 'quantity' => $qty];
             }
         }
 
@@ -2052,10 +2063,28 @@ class FlightBookingService
             throw new \RuntimeException('No offer in session.', 422);
         }
 
-        $servicesData = array_map(fn($s) => [
-            'id'       => (string) ($s['id'] ?? ''),
-            'quantity' => (int)    ($s['quantity'] ?? 1),
-        ], $services);
+        // Build maximum_quantity map from cached offer so we never exceed Duffel limits.
+        $maxQtyMap = [];
+        $cachedOffer = $this->fetchOffer($offerId);
+        if ($cachedOffer) {
+            $cachedData = json_decode($cachedOffer['offer_data'], true);
+            foreach (($cachedData['available_services'] ?? []) as $availSvc) {
+                $aid = $availSvc['id'] ?? '';
+                if ($aid !== '') {
+                    $maxQtyMap[$aid] = (int)($availSvc['maximum_quantity'] ?? 1);
+                }
+            }
+        }
+
+        $servicesData = [];
+        foreach ($services as $s) {
+            $sid    = (string) ($s['id'] ?? '');
+            $maxQty = $maxQtyMap[$sid] ?? 1;
+            $qty    = min((int)($s['quantity'] ?? 1), $maxQty);
+            if ($sid !== '' && $qty >= 1) {
+                $servicesData[] = ['id' => $sid, 'quantity' => $qty];
+            }
+        }
 
         $response = $this->duffel->priceOffer($offerId, ['balance'], $servicesData);
         $priced   = $response['data'] ?? $response;
