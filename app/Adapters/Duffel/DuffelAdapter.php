@@ -936,11 +936,22 @@ class DuffelAdapter
     }
 
     /**
-     * Get a single airline by IATA code.
+     * Get a single airline by its Duffel ID (arl_…).
      */
-    public function getAirline(string $iataCode): array
+    public function getAirline(string $airlineId): array
     {
-        return $this->get('/air/airlines/' . urlencode($iataCode));
+        return $this->get('/air/airlines/' . urlencode($airlineId));
+    }
+
+    /**
+     * List all airlines — one page.
+     */
+    public function listAirlines(int $limit = 50, ?string $after = null, ?string $before = null): array
+    {
+        $query = ['limit' => $limit];
+        if ($after !== null)  { $query['after']  = $after; }
+        if ($before !== null) { $query['before'] = $before; }
+        return $this->get('/air/airlines', $query);
     }
 
     // =========================================================================
