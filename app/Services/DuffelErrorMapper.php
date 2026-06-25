@@ -126,6 +126,59 @@ class DuffelErrorMapper
             'status' => 409,
             'action' => 'check_existing',
         ],
+        // 3DS session errors (createOrder with card payment)
+        'three_d_secure_session_not_found' => [
+            'ar'     => 'لم يتم العثور على جلسة التحقق الأمني. يرجى المحاولة مجدداً.',
+            'status' => 422,
+            'action' => 'retry_payment',
+        ],
+        'three_d_secure_session_not_ready_for_payment' => [
+            'ar'     => 'جلسة التحقق الأمني غير جاهزة للدفع. يرجى إعادة التحقق أو المحاولة مجدداً.',
+            'status' => 422,
+            'action' => 'retry_payment',
+        ],
+        'three_d_secure_session_expired' => [
+            'ar'     => 'انتهت صلاحية جلسة التحقق الأمني. يرجى المحاولة مجدداً.',
+            'status' => 422,
+            'action' => 'retry_payment',
+        ],
+        // Card errors
+        'payment_declined' => [
+            'ar'     => 'تم رفض الدفع. يرجى التحقق من بيانات البطاقة أو استخدام بطاقة أخرى.',
+            'status' => 422,
+            'action' => 'retry_payment',
+        ],
+        'invalid_card_expiration_date' => [
+            'ar'     => 'تاريخ انتهاء صلاحية البطاقة غير صحيح.',
+            'status' => 422,
+            'action' => 'fix_card',
+        ],
+        // Airline errors
+        'price_changed' => [
+            'ar'     => 'تغير سعر الرحلة. يرجى البحث من جديد.',
+            'status' => 409,
+            'action' => 'new_search',
+        ],
+        'duplicate_booking' => [
+            'ar'     => 'يوجد حجز مكرر بنفس البيانات لهذه الرحلة.',
+            'status' => 409,
+            'action' => 'check_existing',
+        ],
+        'ancillary_service_not_available' => [
+            'ar'     => 'إحدى الخدمات الإضافية المختارة (كالمقاعد) لم تعد متاحة. يرجى تحديث اختياراتك.',
+            'status' => 409,
+            'action' => 'reselect_services',
+        ],
+        'order_not_created' => [
+            'ar'     => 'لم يتم إنشاء الحجز. يرجى عدم إعادة المحاولة والتواصل مع الدعم.',
+            'status' => 422,
+            'action' => 'contact_support',
+        ],
+        'invalid_intended_card' => [
+            'ar'     => 'البطاقة المستخدمة غير صالحة. يرجى المحاولة مجدداً.',
+            'status' => 422,
+            'action' => 'retry_payment',
+        ],
     ];
 
     /**

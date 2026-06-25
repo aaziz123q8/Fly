@@ -850,6 +850,47 @@ class FlightBookingService
             throw new RuntimeException($parts['customer'], $mapped->getCode() ?: 502);
         }
 
+        // ── Handle 200 / 202 pending responses from card payments ──────────────
+        // 201 = full order created; 200 = confirmed but resource not yet ready;
+        // 202 = accepted, still processing. In both non-201 cases we record a
+        // pending booking and return a confirmation message to the user.
+        // The order details will arrive via Duffel order.created webhook.
+        $httpStatus = $orderResponse['http_status'] ?? 201;
+        if ($httpStatus === 200 || $httpStatus === 202) {
+            $pendingMessage = $orderResponse['data']['message']
+                ?? 'تم تأكيد الحجز وسيظهر في النظام قريباً.';
+            error_log('[DUFFEL_ORDER_PENDING] http=' . $httpStatus
+                . ' ref=' . $bookingReference . ' msg=' . $pendingMessage);
+
+            // Persist a pending row so ops can track and webhook can update it.
+            try {
+                $this->db->prepare(
+                    'INSERT INTO flight_bookings
+                       (user_id, provider_id, booking_reference, status,
+                        trip_type, cabin_class, adults_count, children_count,
+                        origin_iata, destination_iata, departure_at, total_amount, currency,
+                        created_at, updated_at)
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())'
+                )->execute([
+                    $userId, 'duffel', $bookingReference, 'pending',
+                    $tripType ?? 'one_way', $cabinClass ?? 'economy',
+                    $adults ?? 1, $children ?? 0,
+                    $origin ?? '', $dest ?? '', $departureAt ?? null,
+                    $pricedAmount, $pricedCurrency,
+                ]);
+            } catch (\Throwable $dbEx) {
+                error_log('[PENDING_INSERT_FAIL] ' . $dbEx->getMessage());
+            }
+
+            return [
+                'booking_id'        => 0,
+                'booking_reference' => $bookingReference,
+                'status'            => 'pending',
+                'pending_message'   => $pendingMessage,
+                'http_status'       => $httpStatus,
+            ];
+        }
+
         $order           = $orderResponse['data'] ?? [];
         $providerOrderId = $order['id'] ?? '';
 

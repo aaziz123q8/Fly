@@ -1041,6 +1041,10 @@ async function submitPayment() {
       }, true);
 
       bookingRef = cr.duffel_booking_reference || cr.booking_reference || '';
+      // 200/202: booking accepted but resource not yet available — still redirect to confirmation.
+      if (cr.status === 'pending') {
+        bookingRef = cr.booking_reference || bookingRef;
+      }
     } catch(e) {
       const serverMsg = e.message || e.error || '';
       showError(

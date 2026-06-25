@@ -165,11 +165,13 @@ class DuffelAdapter
         error_log('[DUFFEL_CREATE_ORDER_REQUEST] url=' . $url . ' body=' . $requestBody);
 
         try {
-            $response = $this->post('/air/orders', ['data' => $data]);
+            // Airline APIs can take up to 120s; use 130s to guarantee we get a response.
+            $response = $this->request('POST', $this->baseUrl . '/air/orders', ['data' => $data], 130);
 
-            // Log successful response summary
-            $orderId = $response['data']['id']                 ?? 'n/a';
-            $bookRef = $response['data']['booking_reference']  ?? 'n/a';
+            // Log successful response summary (201 has full order; 200/202 only has a message).
+            $httpStatus = $response['http_status'] ?? 201;
+            $orderId = $response['data']['id']                ?? ($httpStatus !== 201 ? 'pending' : 'n/a');
+            $bookRef = $response['data']['booking_reference'] ?? ($httpStatus !== 201 ? 'pending' : 'n/a');
             error_log('[DUFFEL_CREATE_ORDER_SUCCESS] order_id=' . $orderId . ' booking_ref=' . $bookRef);
 
             $this->writeDebugLog('createOrder_success', [
@@ -504,7 +506,7 @@ class DuffelAdapter
         return $this->request('PATCH', $this->baseUrl . $path, $body);
     }
 
-    private function request(string $method, string $url, ?array $body = null): array
+    private function request(string $method, string $url, ?array $body = null, int $timeoutSeconds = 30): array
     {
         $headers = [
             'Authorization: Bearer ' . $this->apiKey,
@@ -518,7 +520,7 @@ class DuffelAdapter
             CURLOPT_CUSTOMREQUEST  => $method,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER     => $headers,
-            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_TIMEOUT        => $timeoutSeconds,
         ]);
 
         if ($body !== null) {
@@ -532,6 +534,11 @@ class DuffelAdapter
 
         if ($curlError) {
             throw new \RuntimeException('Duffel API cURL error: ' . $curlError);
+        }
+
+        // 204 No Content — success with empty body (e.g. deleteCard).
+        if ($statusCode === 204) {
+            return ['http_status' => 204];
         }
 
         $decoded = json_decode((string)$response, true);
@@ -560,6 +567,11 @@ class DuffelAdapter
                 $statusCode
             );
         }
+
+        // Stamp the HTTP status into the decoded array so callers can distinguish
+        // 201 Created (full order), 200 OK (confirmed but resource not yet available),
+        // and 202 Accepted (still processing — do not retry).
+        $decoded['http_status'] = $statusCode;
 
         return $decoded;
     }
