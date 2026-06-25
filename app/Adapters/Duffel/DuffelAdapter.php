@@ -35,28 +35,37 @@ class DuffelAdapter
     /**
      * Create an offer request (flight search).
      *
-     * @param  array  $slices      [{origin, destination, departure_date}]
-     * @param  array  $passengers  [{type: 'adult'|'child'|'infant_without_seat'}]
-     * @param  string $cabinClass  economy|premium_economy|business|first
-     * @param  array  $options     Optional: private_fares, include_split_ticket
+     * @param  array  $slices           [{origin, destination, departure_date}]
+     * @param  array  $passengers       [{type: 'adult'|'child'|'infant_without_seat'}]
+     * @param  string $cabinClass       economy|premium_economy|business|first
+     * @param  array  $options          Optional: private_fares, include_split_ticket, etc.
+     * @param  int    $supplierTimeout  Seconds Duffel waits for supplier responses (default 20,
+     *                                  max varies by supplier). Raise for slower/LCC suppliers.
+     *                                  Our curl timeout is set to $supplierTimeout + 10 to ensure
+     *                                  we always receive Duffel's response before we time out.
      */
     public function searchOffers(
         array $slices,
         array $passengers,
         string $cabinClass = 'economy',
-        array $options = []
+        array $options = [],
+        int $supplierTimeout = 20
     ): array {
         if ($this->apiKey === '') {
             throw new \RuntimeException('خدمة البحث عن الرحلات غير متاحة حالياً. الرجاء المحاولة لاحقاً.');
         }
 
         $data = array_merge([
-            'slices'      => $slices,
-            'passengers'  => $passengers,
-            'cabin_class' => $cabinClass,
+            'slices'           => $slices,
+            'passengers'       => $passengers,
+            'cabin_class'      => $cabinClass,
+            'supplier_timeout' => $supplierTimeout,
         ], $options);
 
-        return $this->post('/air/offer_requests?return_offers=true', ['data' => $data]);
+        // Set curl timeout = supplierTimeout + 10s so we always outlast Duffel's supplier wait.
+        $curlTimeout = $supplierTimeout + 10;
+
+        return $this->request('POST', $this->baseUrl . '/air/offer_requests?return_offers=true', ['data' => $data], $curlTimeout);
     }
 
     /**
