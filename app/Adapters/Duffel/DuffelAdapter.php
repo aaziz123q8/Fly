@@ -554,6 +554,64 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Webhook Management
+    // =========================================================================
+
+    /**
+     * List registered webhook endpoints.
+     */
+    public function listWebhooks(int $limit = 50, ?string $after = null): array
+    {
+        $query = ['limit' => $limit];
+        if ($after !== null) {
+            $query['after'] = $after;
+        }
+        return $this->get('/air/webhooks', $query);
+    }
+
+    /**
+     * Create a webhook endpoint.
+     * Duffel allows only one webhook per live_mode value per organisation.
+     * The secret in the response must be saved to config/apis.php immediately —
+     * it is not returned again.
+     *
+     * @param  string   $url     Must be HTTPS; no IPs or localhost.
+     * @param  string[] $events  e.g. ['order.created', 'order.airline_initiated_change']
+     */
+    public function createWebhook(string $url, array $events): array
+    {
+        return $this->post('/air/webhooks', ['data' => ['url' => $url, 'events' => $events]]);
+    }
+
+    /**
+     * Update a webhook endpoint (url, events, active status).
+     *
+     * @param  string        $webhookId  e.g. "end_0000A3tQSmKyqOrcySrGbo"
+     * @param  array{url?: string, events?: string[], active?: bool} $changes
+     */
+    public function updateWebhook(string $webhookId, array $changes): array
+    {
+        return $this->patch('/air/webhooks/' . urlencode($webhookId), ['data' => $changes]);
+    }
+
+    /**
+     * Delete a webhook endpoint.
+     */
+    public function deleteWebhook(string $webhookId): void
+    {
+        $this->request('DELETE', $this->baseUrl . '/air/webhooks/' . urlencode($webhookId));
+    }
+
+    /**
+     * Ping a webhook — sends a fake event to verify your endpoint is reachable.
+     * Returns 204 No Content on success.
+     */
+    public function pingWebhook(string $webhookId): void
+    {
+        $this->request('POST', $this->baseUrl . '/air/webhooks/' . urlencode($webhookId) . '/actions/ping');
+    }
+
+    // =========================================================================
     // Webhook Deliveries (admin / debugging)
     // =========================================================================
 
