@@ -74,7 +74,7 @@ class FlightController
 
         try {
             $duffel = new DuffelAdapter();
-            $data   = $duffel->getOfferWithServices($offerId);
+            $data   = $duffel->getOffer($offerId, true);
             Response::json($data);
         } catch (\RuntimeException $e) {
             Response::error($e->getMessage(), $e->getCode() ?: 502);

@@ -105,12 +105,27 @@ class DuffelAdapter
      * List offers for a previously created offer request.
      * Returns one page (up to $limit results). Pass $after cursor for subsequent pages.
      * To auto-fetch all pages use fetchAllPages('/air/offers', $query).
+     *
+     * @param  string|null $sort            'total_amount', '-total_amount', 'total_duration', '-total_duration'
+     * @param  int|null    $maxConnections  Filter by max stops (0 = direct only, 1 = default)
      */
-    public function listOffers(string $offerRequestId, array $filters = [], int $limit = 200, ?string $after = null): array
-    {
+    public function listOffers(
+        string $offerRequestId,
+        array $filters = [],
+        int $limit = 200,
+        ?string $after = null,
+        ?string $sort = null,
+        ?int $maxConnections = null
+    ): array {
         $query = array_merge(['offer_request_id' => $offerRequestId, 'limit' => $limit], $filters);
         if ($after !== null) {
             $query['after'] = $after;
+        }
+        if ($sort !== null) {
+            $query['sort'] = $sort;
+        }
+        if ($maxConnections !== null) {
+            $query['max_connections'] = $maxConnections;
         }
         return $this->get('/air/offers', $query);
     }
@@ -147,31 +162,27 @@ class DuffelAdapter
     }
 
     /**
-     * Retrieve a single offer by ID (basic info, no services).
+     * Retrieve a single offer by ID with fresh pricing.
+     * Set $returnAvailableServices=true just before checkout to get baggage/meal options.
      */
-    public function getOffer(string $offerId): array
+    public function getOffer(string $offerId, bool $returnAvailableServices = false): array
     {
-        return $this->get('/air/offers/' . urlencode($offerId));
+        $query = $returnAvailableServices ? ['return_available_services' => 'true'] : [];
+        return $this->get('/air/offers/' . urlencode($offerId), $query);
     }
 
     /**
-     * Retrieve a single offer by ID including all available services (bags, meals, etc.).
-     * Call this just before checkout to get fresh prices and ancillary options.
+     * Price an offer with intended payment methods and optional ancillary services.
+     * Returns the final total including any card/payment surcharges.
+     *
+     * @param  array  $intendedPaymentMethods  Array of payment method type strings, e.g. ['balance'] or ['arc_bsp_cash']
+     * @param  array  $intendedServices        Array of service objects: [['id' => '...', 'quantity' => 1], ...]
      */
-    public function getOfferWithServices(string $offerId): array
-    {
-        return $this->get('/air/offers/' . urlencode($offerId), ['return_available_services' => 'true']);
-    }
-
-    /**
-     * Price an offer with intended payment methods and optional services.
-     * Returns the final amount including any surcharges.
-     */
-    public function priceOffer(string $offerId, array $intendedPaymentMethods = ['balance'], array $services = []): array
+    public function priceOffer(string $offerId, array $intendedPaymentMethods = ['balance'], array $intendedServices = []): array
     {
         $data = ['intended_payment_methods' => array_map(fn($m) => ['type' => $m], $intendedPaymentMethods)];
-        if (!empty($services)) {
-            $data['services'] = $services;
+        if (!empty($intendedServices)) {
+            $data['intended_services'] = $intendedServices;
         }
         return $this->post('/air/offers/' . urlencode($offerId) . '/actions/price', ['data' => $data]);
     }

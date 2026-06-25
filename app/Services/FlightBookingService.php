@@ -1857,7 +1857,7 @@ class FlightBookingService
 
         // Fall back: fetch live from Duffel.
         try {
-            $data      = $this->duffel->getOfferWithServices($offerId);
+            $data      = $this->duffel->getOffer($offerId, true);
             $offerData = $data['data'] ?? $data;
             if (empty($offerData['id'])) {
                 return null;
