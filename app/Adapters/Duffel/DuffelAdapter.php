@@ -373,15 +373,100 @@ class DuffelAdapter
     }
 
     /**
-     * List orders — one page. Use fetchAllPages('/air/orders', $filters) to get everything.
+     * List orders with rich Duffel filter support — one page.
+     *
+     * Supported scalar filters: booking_reference, offer_id, awaiting_payment,
+     * sort, requires_action, user_id.
+     * Array filters (pass as PHP arrays, serialised as repeated keys):
+     *   owner_id, origin_id, destination_id, passenger_name.
+     * Date-range filters (pass as associative arrays with before/after keys):
+     *   departing_at, arriving_at, created_at.
      */
-    public function listOrders(array $filters = [], int $limit = 200, ?string $after = null): array
-    {
+    public function listOrders(
+        array $filters = [],
+        int $limit = 200,
+        ?string $after = null,
+        ?string $bookingReference = null,
+        ?string $offerId = null,
+        ?bool $awaitingPayment = null,
+        ?string $sort = null,
+        array $ownerIds = [],
+        array $originIds = [],
+        array $destinationIds = [],
+        ?array $departingAt = null,
+        ?array $arrivingAt = null,
+        ?array $createdAt = null,
+        array $passengerNames = [],
+        ?bool $requiresAction = null,
+        ?string $userId = null
+    ): array {
         $query = array_merge(['limit' => $limit], $filters);
-        if ($after !== null) {
-            $query['after'] = $after;
+        if ($after !== null)            { $query['after'] = $after; }
+        if ($bookingReference !== null) { $query['booking_reference'] = $bookingReference; }
+        if ($offerId !== null)          { $query['offer_id'] = $offerId; }
+        if ($awaitingPayment !== null)  { $query['awaiting_payment'] = $awaitingPayment ? 'true' : 'false'; }
+        if ($sort !== null)             { $query['sort'] = $sort; }
+        if ($requiresAction !== null)   { $query['requires_action'] = $requiresAction ? 'true' : 'false'; }
+        if ($userId !== null)           { $query['user_id'] = $userId; }
+
+        // Array params sent as repeated keys: owner_id[], origin_id[], etc.
+        foreach ($ownerIds as $id)       { $query['owner_id[]'][] = $id; }
+        foreach ($originIds as $id)      { $query['origin_id[]'][] = $id; }
+        foreach ($destinationIds as $id) { $query['destination_id[]'][] = $id; }
+        foreach ($passengerNames as $n)  { $query['passenger_name[]'][] = $n; }
+
+        // Date-range objects: departing_at[before], departing_at[after], etc.
+        foreach (['departing_at' => $departingAt, 'arriving_at' => $arrivingAt, 'created_at' => $createdAt] as $key => $range) {
+            if ($range === null) { continue; }
+            foreach (['before', 'after'] as $bound) {
+                if (isset($range[$bound])) { $query[$key . '[' . $bound . ']'] = $range[$bound]; }
+            }
         }
+
         return $this->get('/air/orders', $query);
+    }
+
+    /**
+     * Update an order — supports metadata (key/value pairs) and users (array of user objects).
+     */
+    public function updateOrder(string $orderId, array $data): array
+    {
+        return $this->patch('/air/orders/' . urlencode($orderId), ['data' => $data]);
+    }
+
+    /**
+     * Price an order before payment. Returns updated total_amount/tax_amount.
+     * $intendedPaymentMethods: list of payment type strings e.g. ['balance'].
+     */
+    public function priceOrder(string $orderId, array $intendedPaymentMethods = ['balance']): array
+    {
+        $data = [
+            'intended_payment_methods' => array_map(fn($m) => ['type' => $m], $intendedPaymentMethods),
+        ];
+        return $this->post('/air/orders/' . urlencode($orderId) . '/actions/price', ['data' => $data]);
+    }
+
+    /**
+     * List available ancillary services that can be added to an existing order.
+     */
+    public function listAvailableServicesForOrder(string $orderId): array
+    {
+        return $this->get('/air/orders/' . urlencode($orderId) . '/available_services');
+    }
+
+    /**
+     * Add ancillary services to an existing order and charge payment.
+     * $addServices: [['id' => 'ase_…', 'quantity' => 1], …]
+     * $payment: ['type' => 'balance'|'arc_bsp_cash', 'currency' => 'GBP', 'amount' => '10.00']
+     * Not supported for hold orders.
+     */
+    public function addServiceToOrder(string $orderId, array $addServices, ?array $payment = null): array
+    {
+        $data = ['add_services' => $addServices];
+        if ($payment !== null) {
+            $data['payment'] = $payment;
+        }
+        return $this->post('/air/orders/' . urlencode($orderId) . '/services', ['data' => $data]);
     }
 
     // =========================================================================
