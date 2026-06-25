@@ -1240,7 +1240,7 @@ class FlightBookingService
                 if ($couponRow) {
                     $this->db->prepare(
                         'INSERT INTO coupon_usages
-                           (coupon_id, user_id, booking_type, booking_id, discount_amount, used_at)
+                           (coupon_id, user_id, booking_type, booking_id, discount_applied, used_at)
                          VALUES (?, ?, ?, ?, ?, NOW())'
                     )->execute([
                         $couponRow['id'],
