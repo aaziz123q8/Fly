@@ -656,6 +656,63 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Airline Credits
+    // =========================================================================
+
+    /**
+     * Get a single airline credit by its ID.
+     */
+    public function getAirlineCredit(string $airlineCreditId): array
+    {
+        return $this->get('/air/airline_credits/' . urlencode($airlineCreditId));
+    }
+
+    /**
+     * List airline credits — one page. Filter by user_id to get credits for a specific customer.
+     */
+    public function listAirlineCredits(int $limit = 50, ?string $after = null, ?string $before = null, ?string $userId = null): array
+    {
+        $query = ['limit' => $limit];
+        if ($after !== null)  { $query['after']   = $after; }
+        if ($before !== null) { $query['before']  = $before; }
+        if ($userId !== null) { $query['user_id'] = $userId; }
+        return $this->get('/air/airline_credits', $query);
+    }
+
+    /**
+     * Create a new airline credit.
+     * Provide $userId to associate with an existing customer user, OR
+     * provide $givenName + $familyName for a new customer (mutually exclusive).
+     * $type: 'eticket' | 'mco' | 'emd'
+     */
+    public function createAirlineCredit(
+        string $airlineIataCode,
+        string $amount,
+        string $amountCurrency,
+        string $code,
+        string $expiresAt,
+        string $issuedOn,
+        string $type,
+        ?string $userId = null,
+        ?string $givenName = null,
+        ?string $familyName = null
+    ): array {
+        $data = [
+            'airline_iata_code' => $airlineIataCode,
+            'amount'            => $amount,
+            'amount_currency'   => $amountCurrency,
+            'code'              => $code,
+            'expires_at'        => $expiresAt,
+            'issued_on'         => $issuedOn,
+            'type'              => $type,
+        ];
+        if ($userId !== null)     { $data['user_id']     = $userId; }
+        if ($givenName !== null)  { $data['given_name']  = $givenName; }
+        if ($familyName !== null) { $data['family_name'] = $familyName; }
+        return $this->post('/air/airline_credits', ['data' => $data]);
+    }
+
+    // =========================================================================
     // Batch Offer Requests  (long-polling search)
     // =========================================================================
 
