@@ -61,11 +61,47 @@ class DuffelAdapter
 
     /**
      * List offers for a previously created offer request.
+     * Returns one page (up to $limit results). Pass $after cursor for subsequent pages.
+     * To auto-fetch all pages use fetchAllPages('/air/offers', $query).
      */
-    public function listOffers(string $offerRequestId, array $filters = []): array
+    public function listOffers(string $offerRequestId, array $filters = [], int $limit = 200, ?string $after = null): array
     {
-        $query = array_merge(['offer_request_id' => $offerRequestId], $filters);
+        $query = array_merge(['offer_request_id' => $offerRequestId, 'limit' => $limit], $filters);
+        if ($after !== null) {
+            $query['after'] = $after;
+        }
         return $this->get('/air/offers', $query);
+    }
+
+    /**
+     * Fetch every page of a list endpoint, following cursor-based pagination.
+     * Returns a merged array: ['data' => [...all items...], 'meta' => [...last page meta...]].
+     *
+     * @param  string $path    e.g. '/air/orders'
+     * @param  array  $query   base query params (do not include 'after')
+     * @param  int    $limit   page size, 1–200 (default 200 = fewest requests)
+     */
+    public function fetchAllPages(string $path, array $query = [], int $limit = 200): array
+    {
+        $query['limit'] = $limit;
+        $allItems       = [];
+        $lastMeta       = [];
+        $after          = null;
+
+        do {
+            if ($after !== null) {
+                $query['after'] = $after;
+            } else {
+                unset($query['after']);
+            }
+
+            $page     = $this->get($path, $query);
+            $allItems = array_merge($allItems, $page['data'] ?? []);
+            $lastMeta = $page['meta'] ?? [];
+            $after    = $lastMeta['after'] ?? null;
+        } while ($after !== null);
+
+        return ['data' => $allItems, 'meta' => $lastMeta];
     }
 
     /**
@@ -284,11 +320,15 @@ class DuffelAdapter
     }
 
     /**
-     * List all orders (paginated). Useful for admin sync.
+     * List orders — one page. Use fetchAllPages('/air/orders', $filters) to get everything.
      */
-    public function listOrders(array $filters = []): array
+    public function listOrders(array $filters = [], int $limit = 200, ?string $after = null): array
     {
-        return $this->get('/air/orders', $filters);
+        $query = array_merge(['limit' => $limit], $filters);
+        if ($after !== null) {
+            $query['after'] = $after;
+        }
+        return $this->get('/air/orders', $query);
     }
 
     // =========================================================================
@@ -315,11 +355,17 @@ class DuffelAdapter
     }
 
     /**
-     * List order cancellations, optionally filtered by order_id.
+     * List order cancellations, optionally filtered by order_id — one page.
      */
-    public function listOrderCancellations(string $orderId = ''): array
+    public function listOrderCancellations(string $orderId = '', int $limit = 200, ?string $after = null): array
     {
-        $query = $orderId !== '' ? ['order_id' => $orderId] : [];
+        $query = ['limit' => $limit];
+        if ($orderId !== '') {
+            $query['order_id'] = $orderId;
+        }
+        if ($after !== null) {
+            $query['after'] = $after;
+        }
         return $this->get('/air/order_cancellations', $query);
     }
 
@@ -476,13 +522,16 @@ class DuffelAdapter
     }
 
     /**
-     * List all airlines (or search by name/IATA).
+     * Search airlines by name/IATA — one page. For full list use fetchAllPages('/air/airlines').
      */
-    public function searchAirlines(string $query = '', int $limit = 50): array
+    public function searchAirlines(string $query = '', int $limit = 200, ?string $after = null): array
     {
         $params = ['limit' => $limit];
         if ($query !== '') {
             $params['name'] = $query;
+        }
+        if ($after !== null) {
+            $params['after'] = $after;
         }
         return $this->get('/air/airlines', $params);
     }
