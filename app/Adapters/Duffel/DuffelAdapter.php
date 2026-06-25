@@ -548,15 +548,12 @@ class DuffelAdapter
     /**
      * List order cancellations, optionally filtered by order_id — one page.
      */
-    public function listOrderCancellations(string $orderId = '', int $limit = 200, ?string $after = null): array
+    public function listOrderCancellations(string $orderId = '', int $limit = 50, ?string $after = null, ?string $before = null): array
     {
         $query = ['limit' => $limit];
-        if ($orderId !== '') {
-            $query['order_id'] = $orderId;
-        }
-        if ($after !== null) {
-            $query['after'] = $after;
-        }
+        if ($orderId !== '')  { $query['order_id'] = $orderId; }
+        if ($after !== null)  { $query['after']    = $after; }
+        if ($before !== null) { $query['before']   = $before; }
         return $this->get('/air/order_cancellations', $query);
     }
 
