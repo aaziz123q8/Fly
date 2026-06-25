@@ -665,6 +665,50 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Component Client Keys  (/identity/component_client_keys)
+    // =========================================================================
+
+    /**
+     * Create a component client key for authenticating Duffel UI components
+     * (e.g. the 3DS component, ancillaries component).
+     *
+     * Scope options (mutually exclusive):
+     *   - No args          → unscoped key (broadest access)
+     *   - $userId only     → scoped to a customer user
+     *   - $userId + $orderId   → scoped to a user + order
+     *   - $userId + $bookingId → scoped to a user + stays booking
+     *
+     * @param  string|null $userId     Duffel customer user ID ("icu_...")
+     * @param  string|null $orderId    Duffel order ID ("ord_...")
+     * @param  string|null $bookingId  Duffel stays booking ID ("bok_...")
+     * @return string  The JWT component_client_key
+     */
+    public function createComponentClientKey(
+        ?string $userId    = null,
+        ?string $orderId   = null,
+        ?string $bookingId = null
+    ): string {
+        $data = [];
+        if ($userId !== null) {
+            $data['user_id'] = $userId;
+        }
+        if ($orderId !== null) {
+            $data['order_id'] = $orderId;
+        }
+        if ($bookingId !== null) {
+            $data['booking_id'] = $bookingId;
+        }
+
+        $response = $this->request(
+            'POST',
+            $this->baseUrl . '/identity/component_client_keys',
+            empty($data) ? [] : ['data' => $data]
+        );
+
+        return $response['data']['component_client_key'] ?? '';
+    }
+
+    // =========================================================================
     // Customer User Groups  (/identity/customer/user_groups)
     // =========================================================================
 
