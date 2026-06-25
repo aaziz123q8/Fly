@@ -952,6 +952,25 @@ class DuffelAdapter
     }
 
     /**
+     * List loyalty programmes — one page.
+     */
+    public function listLoyaltyProgrammes(int $limit = 50, ?string $after = null, ?string $before = null): array
+    {
+        $query = ['limit' => $limit];
+        if ($after !== null)  { $query['after']  = $after; }
+        if ($before !== null) { $query['before'] = $before; }
+        return $this->get('/air/loyalty_programmes', $query);
+    }
+
+    /**
+     * Get a single loyalty programme by its Duffel ID (loy_…).
+     */
+    public function getLoyaltyProgramme(string $loyaltyProgrammeId): array
+    {
+        return $this->get('/air/loyalty_programmes/' . urlencode($loyaltyProgrammeId));
+    }
+
+    /**
      * Get a single city by its Duffel ID (cit_…).
      */
     public function getCity(string $cityId): array
