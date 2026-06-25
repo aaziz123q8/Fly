@@ -37,35 +37,68 @@ class DuffelAdapter
      *
      * @param  array  $slices           [{origin, destination, departure_date}]
      * @param  array  $passengers       [{type: 'adult'|'child'|'infant_without_seat'}]
-     * @param  string $cabinClass       economy|premium_economy|business|first
-     * @param  array  $options          Optional: private_fares, include_split_ticket, etc.
-     * @param  int    $supplierTimeout  Seconds Duffel waits for supplier responses (default 20,
-     *                                  max varies by supplier). Raise for slower/LCC suppliers.
-     *                                  Our curl timeout is set to $supplierTimeout + 10 to ensure
-     *                                  we always receive Duffel's response before we time out.
+     * @param  string $cabinClass         economy|premium_economy|business|first
+     * @param  array  $options            Optional body params:
+     *                                    - max_connections (int, default 1; 0 = direct only)
+     *                                    - private_fares (object, keyed by IATA airline code)
+     *                                    - airline_credit_ids (string[])
+     *                                    - include_split_ticket (bool, requires view=itineraries)
+     * @param  int    $supplierTimeout    Milliseconds Duffel waits for supplier responses
+     *                                    (default 20000). Sent as query param per Duffel docs.
+     * @param  string $view               'offers' (default) or 'itineraries'
+     * @param  bool   $returnOffers       When false, creates offer request without fetching offers
      */
     public function searchOffers(
         array $slices,
         array $passengers,
         string $cabinClass = 'economy',
         array $options = [],
-        int $supplierTimeout = 20
+        int $supplierTimeout = 20000,
+        string $view = 'offers',
+        bool $returnOffers = true
     ): array {
         if ($this->apiKey === '') {
             throw new \RuntimeException('خدمة البحث عن الرحلات غير متاحة حالياً. الرجاء المحاولة لاحقاً.');
         }
 
         $data = array_merge([
-            'slices'           => $slices,
-            'passengers'       => $passengers,
-            'cabin_class'      => $cabinClass,
-            'supplier_timeout' => $supplierTimeout,
+            'slices'      => $slices,
+            'passengers'  => $passengers,
+            'cabin_class' => $cabinClass,
         ], $options);
 
-        // Set curl timeout = supplierTimeout + 10s so we always outlast Duffel's supplier wait.
-        $curlTimeout = $supplierTimeout + 10;
+        $queryParams = http_build_query([
+            'return_offers'    => $returnOffers ? 'true' : 'false',
+            'supplier_timeout' => $supplierTimeout,
+            'view'             => $view,
+        ]);
 
-        return $this->request('POST', $this->baseUrl . '/air/offer_requests?return_offers=true', ['data' => $data], $curlTimeout);
+        // curl timeout = supplier timeout in seconds + 10s buffer
+        $curlTimeout = (int) ceil($supplierTimeout / 1000) + 10;
+
+        return $this->request('POST', $this->baseUrl . '/air/offer_requests?' . $queryParams, ['data' => $data], $curlTimeout);
+    }
+
+    /**
+     * List offer requests. Returns one page; use $after cursor for subsequent pages.
+     */
+    public function listOfferRequests(int $limit = 50, ?string $after = null): array
+    {
+        $query = ['limit' => $limit];
+        if ($after !== null) {
+            $query['after'] = $after;
+        }
+        return $this->get('/air/offer_requests', $query);
+    }
+
+    /**
+     * Get a single offer request with its offers or itineraries.
+     *
+     * @param  string $view  'offers' (default) or 'itineraries'
+     */
+    public function getOfferRequest(string $offerRequestId, string $view = 'offers'): array
+    {
+        return $this->get('/air/offer_requests/' . $offerRequestId, ['view' => $view]);
     }
 
     /**
