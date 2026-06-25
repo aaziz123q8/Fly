@@ -936,6 +936,25 @@ class DuffelAdapter
     }
 
     /**
+     * Get a single aircraft by its Duffel ID (arc_…).
+     */
+    public function getAircraft(string $aircraftId): array
+    {
+        return $this->get('/air/aircraft/' . urlencode($aircraftId));
+    }
+
+    /**
+     * List all aircraft — one page.
+     */
+    public function listAircraft(int $limit = 50, ?string $after = null, ?string $before = null): array
+    {
+        $query = ['limit' => $limit];
+        if ($after !== null)  { $query['after']  = $after; }
+        if ($before !== null) { $query['before'] = $before; }
+        return $this->get('/air/aircraft', $query);
+    }
+
+    /**
      * Get a single airline by its Duffel ID (arl_…).
      */
     public function getAirline(string $airlineId): array
