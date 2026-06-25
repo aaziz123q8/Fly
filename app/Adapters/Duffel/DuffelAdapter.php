@@ -598,6 +598,26 @@ class DuffelAdapter
     }
 
     /**
+     * List order change offers for a given order change request — one page.
+     * Sort: 'change_total_amount' or 'total_duration' (prefix '-' for descending).
+     */
+    public function listOrderChangeOffers(
+        string $orderChangeRequestId,
+        int $limit = 50,
+        ?string $after = null,
+        ?string $before = null,
+        ?string $sort = null,
+        ?int $maxConnections = null
+    ): array {
+        $query = ['order_change_request_id' => $orderChangeRequestId, 'limit' => $limit];
+        if ($after !== null)          { $query['after']           = $after; }
+        if ($before !== null)         { $query['before']          = $before; }
+        if ($sort !== null)           { $query['sort']            = $sort; }
+        if ($maxConnections !== null) { $query['max_connections'] = $maxConnections; }
+        return $this->get('/air/order_change_offers', $query);
+    }
+
+    /**
      * Get a specific order change offer.
      */
     public function getOrderChangeOffer(string $orderChangeOfferId): array
