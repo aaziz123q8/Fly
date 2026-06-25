@@ -141,7 +141,9 @@ class DuffelAdapter
         array $passengers,
         array $payments,
         array $services = [],
-        ?array $metadata = null
+        ?array $metadata = null,
+        ?string $deviceIp = null,
+        ?string $deviceUserAgent = null
     ): array {
         $data = [
             'type'            => 'instant',
@@ -164,15 +166,25 @@ class DuffelAdapter
         // Log the full createOrder request before sending
         error_log('[DUFFEL_CREATE_ORDER_REQUEST] url=' . $url . ' body=' . $requestBody);
 
+        // Build optional device-detail headers for fraud detection.
+        $deviceHeaders = [];
+        if ($deviceIp !== null && filter_var($deviceIp, FILTER_VALIDATE_IP)) {
+            $deviceHeaders[] = 'x-duffel-device-ip: ' . $deviceIp;
+        }
+        if ($deviceUserAgent !== null && $deviceUserAgent !== '') {
+            $deviceHeaders[] = 'x-duffel-device-user-agent: ' . $deviceUserAgent;
+        }
+
         try {
             // Airline APIs can take up to 120s; use 130s to guarantee we get a response.
-            $response = $this->request('POST', $this->baseUrl . '/air/orders', ['data' => $data], 130);
+            $response = $this->request('POST', $this->baseUrl . '/air/orders', ['data' => $data], 130, $deviceHeaders);
 
             // Log successful response summary (201 has full order; 200/202 only has a message).
             $httpStatus = $response['http_status'] ?? 201;
+            $xReqId    = $response['x_request_id'] ?? '';
             $orderId = $response['data']['id']                ?? ($httpStatus !== 201 ? 'pending' : 'n/a');
             $bookRef = $response['data']['booking_reference'] ?? ($httpStatus !== 201 ? 'pending' : 'n/a');
-            error_log('[DUFFEL_CREATE_ORDER_SUCCESS] order_id=' . $orderId . ' booking_ref=' . $bookRef);
+            error_log('[DUFFEL_CREATE_ORDER_SUCCESS] http=' . $httpStatus . ' order_id=' . $orderId . ' booking_ref=' . $bookRef . ' x-request-id=' . $xReqId);
 
             $this->writeDebugLog('createOrder_success', [
                 'request_body'  => json_decode($requestBody, true),
@@ -506,22 +518,31 @@ class DuffelAdapter
         return $this->request('PATCH', $this->baseUrl . $path, $body);
     }
 
-    private function request(string $method, string $url, ?array $body = null, int $timeoutSeconds = 30): array
+    private function request(string $method, string $url, ?array $body = null, int $timeoutSeconds = 30, array $extraHeaders = []): array
     {
-        $headers = [
+        $headers = array_merge([
             'Authorization: Bearer ' . $this->apiKey,
             'Duffel-Version: ' . $this->version,
             'Accept: application/json',
+            'Accept-Encoding: gzip',
             'Content-Type: application/json',
-        ];
+        ], $extraHeaders);
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_CUSTOMREQUEST  => $method,
             CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING       => 'gzip',   // auto-decompress gzip responses
             CURLOPT_HTTPHEADER     => $headers,
             CURLOPT_TIMEOUT        => $timeoutSeconds,
+            CURLOPT_HEADERFUNCTION => function($ch, $headerLine) use (&$requestId) {
+                if (stripos($headerLine, 'x-request-id:') === 0) {
+                    $requestId = trim(substr($headerLine, strlen('x-request-id:')));
+                }
+                return strlen($headerLine);
+            },
         ]);
+        $requestId = null;
 
         if ($body !== null) {
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body, JSON_UNESCAPED_UNICODE));
@@ -550,7 +571,8 @@ class DuffelAdapter
         if ($statusCode >= 400) {
             $errorMsg  = $decoded['errors'][0]['message'] ?? ($decoded['errors'][0]['title'] ?? 'Unknown Duffel API error');
             $errorCode = $decoded['errors'][0]['code']    ?? '';
-            $requestId = $decoded['meta']['request_id']   ?? '';
+            // x-request-id from response header takes precedence; fall back to meta field.
+            $requestId = $requestId ?? ($decoded['meta']['request_id'] ?? '');
 
             // Log full forensic detail to PHP error log
             error_log(sprintf(
@@ -568,10 +590,11 @@ class DuffelAdapter
             );
         }
 
-        // Stamp the HTTP status into the decoded array so callers can distinguish
-        // 201 Created (full order), 200 OK (confirmed but resource not yet available),
+        // Stamp HTTP status and x-request-id so callers can log and distinguish
+        // 201 Created (full order), 200 OK (confirmed but not yet available),
         // and 202 Accepted (still processing — do not retry).
-        $decoded['http_status'] = $statusCode;
+        $decoded['http_status']  = $statusCode;
+        $decoded['x_request_id'] = $requestId;
 
         return $decoded;
     }

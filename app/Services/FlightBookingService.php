@@ -410,7 +410,7 @@ class FlightBookingService
      * Called by payment.html after the user fills the card form.
      * Returns { card_id, three_d_secure_session_id, three_d_secure_session_token, redirect_url }
      */
-    public function initCardPayment(string $sessionKey, int $userId, array $cardData, ?string $couponCode = null): array
+    public function initCardPayment(string $sessionKey, int $userId, array $cardData, ?string $couponCode = null, ?string $deviceIp = null, ?string $deviceUserAgent = null): array
     {
         $session = $this->requireSession($sessionKey, $userId);
 
@@ -543,11 +543,13 @@ class FlightBookingService
         // ready_for_payment → proceed directly to completeBooking (no challenge needed).
         // challenge_required → frontend must render the Duffel UI component using client_id.
 
-        // Persist card_id, 3DS session id, and updated pricing.
+        // Persist card_id, 3DS session id, device info, and updated pricing.
         $idempotencyKey = bin2hex(random_bytes(32));
         $this->sessionService->update($sessionKey, [
             'duffel_card_id'      => $cardId,
             'tds_session_id'      => $tdsId,
+            'device_ip'           => $deviceIp,
+            'device_user_agent'   => $deviceUserAgent,
             'idempotency_key'     => $idempotencyKey,
             'coupon_code'         => $couponCode,
             'pricing_snapshot'    => $pricingSnapshot,
@@ -791,7 +793,9 @@ class FlightBookingService
                 $duffelPassengers,
                 $duffelPayments,
                 $cleanServices,
-                $metadata
+                $metadata,
+                $session['device_ip']         ?? null,
+                $session['device_user_agent'] ?? null
             );
         } catch (\Throwable $duffelEx) {
             // Map to a structured, Arabic-ready exception

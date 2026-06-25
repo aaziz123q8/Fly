@@ -278,12 +278,21 @@ class FlightController
             return;
         }
 
+        // Forward traveller device details for Duffel fraud detection.
+        $deviceIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
+        if ($deviceIp !== null && str_contains($deviceIp, ',')) {
+            $deviceIp = trim(explode(',', $deviceIp)[0]);
+        }
+        $deviceUserAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
+
         try {
             $result = $this->bookingService->initCardPayment(
                 $sessionKey,
                 (int) $user['id'],
                 $cardData,
-                $coupon
+                $coupon,
+                $deviceIp,
+                $deviceUserAgent
             );
             Response::json($result);
         } catch (\RuntimeException $e) {
