@@ -98,7 +98,7 @@ class DuffelAdapter
      */
     public function getOfferRequest(string $offerRequestId, string $view = 'offers'): array
     {
-        return $this->get('/air/offer_requests/' . $offerRequestId, ['view' => $view]);
+        return $this->get('/air/offer_requests/' . urlencode($offerRequestId), ['view' => $view]);
     }
 
     /**
@@ -112,7 +112,7 @@ class DuffelAdapter
     public function listOffers(
         string $offerRequestId,
         array $filters = [],
-        int $limit = 200,
+        int $limit = 50,
         ?string $after = null,
         ?string $sort = null,
         ?int $maxConnections = null
@@ -204,8 +204,9 @@ class DuffelAdapter
     // =========================================================================
 
     /**
-     * Get seat maps for an offer (one map per segment).
-     * Seats are booked via the services array in createOrder().
+     * Get seat maps for an offer — returns one seat map per segment.
+     * Seats are a special service type not returned by getOffer(returnAvailableServices=true);
+     * this is the only way to retrieve them. Not available for all airlines.
      */
     public function getSeatMaps(string $offerId): array
     {
@@ -348,20 +349,11 @@ class DuffelAdapter
     }
 
     /**
-     * Create a Duffel payment for a hold order.
+     * @deprecated Use createPayment() instead.
      */
     public function createDuffelPayment(string $orderId, string $amount, string $currency, string $type = 'balance'): array
     {
-        return $this->post('/air/payments', [
-            'data' => [
-                'order_id' => $orderId,
-                'payment'  => [
-                    'type'     => $type,
-                    'amount'   => $amount,
-                    'currency' => $currency,
-                ],
-            ],
-        ]);
+        return $this->createPayment($orderId, ['type' => $type, 'amount' => $amount, 'currency' => $currency]);
     }
 
     /**
@@ -384,7 +376,7 @@ class DuffelAdapter
      */
     public function listOrders(
         array $filters = [],
-        int $limit = 200,
+        int $limit = 50,
         ?string $after = null,
         ?string $bookingReference = null,
         ?string $offerId = null,
@@ -470,20 +462,6 @@ class DuffelAdapter
     }
 
     // =========================================================================
-    // Seat Maps
-    // =========================================================================
-
-    /**
-     * Get seat maps for an offer — returns one seat map per segment.
-     * Seats are a special service type not returned by getOffer(returnAvailableServices=true);
-     * this is the only way to retrieve them. Not available for all airlines.
-     */
-    public function getSeatMaps(string $offerId): array
-    {
-        return $this->get('/air/seat_maps', ['offer_id' => $offerId]);
-    }
-
-    // =========================================================================
     // Payments
     // =========================================================================
 
@@ -563,7 +541,7 @@ class DuffelAdapter
      */
     public function confirmCancellation(string $cancellationId): array
     {
-        return $this->post('/air/order_cancellations/' . urlencode($cancellationId) . '/actions/confirm', []);
+        return $this->request('POST', $this->baseUrl . '/air/order_cancellations/' . urlencode($cancellationId) . '/actions/confirm');
     }
 
     // =========================================================================
@@ -783,7 +761,7 @@ class DuffelAdapter
      */
     public function acceptAirlineInitiatedChange(string $aicId): array
     {
-        return $this->post('/air/airline_initiated_changes/' . urlencode($aicId) . '/actions/accept', []);
+        return $this->request('POST', $this->baseUrl . '/air/airline_initiated_changes/' . urlencode($aicId) . '/actions/accept');
     }
 
     /**
@@ -835,7 +813,7 @@ class DuffelAdapter
     {
         $query = [];
         foreach ($selectedPartialOffers as $offerId) {
-            $query['selected_partial_offer[]'][] = $offerId;
+            $query['selected_partial_offer'][] = $offerId;
         }
         return $this->get('/air/partial_offer_requests/' . urlencode($partialOfferRequestId) . '/fares', $query);
     }
@@ -939,16 +917,13 @@ class DuffelAdapter
     /**
      * Search airlines by name/IATA — one page. For full list use fetchAllPages('/air/airlines').
      */
-    public function searchAirlines(string $query = '', int $limit = 200, ?string $after = null): array
+    /**
+     * Search airlines — alias for listAirlines() with optional cursor.
+     * Note: Duffel /air/airlines has no text-search filter; use listAirlines() and filter client-side.
+     */
+    public function searchAirlines(int $limit = 50, ?string $after = null): array
     {
-        $params = ['limit' => $limit];
-        if ($query !== '') {
-            $params['name'] = $query;
-        }
-        if ($after !== null) {
-            $params['after'] = $after;
-        }
-        return $this->get('/air/airlines', $params);
+        return $this->listAirlines($limit, $after);
     }
 
     /**
