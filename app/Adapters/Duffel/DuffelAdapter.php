@@ -410,21 +410,43 @@ class DuffelAdapter
 
     /**
      * Create a 3DS session to authenticate a card before use in createOrder.
+     * Endpoint is api.duffel.com (NOT api.duffel.cards).
      *
-     * @param  array $data  card_id, resource_id (offer_id), resource_type ('offer'),
-     *                      services, passenger_name, user_redirect_url
+     * Pass exception='secure_corporate_payment' to skip the cardholder challenge
+     * (status goes straight to 'ready_for_payment'). Without the exception,
+     * status may be 'challenge_required' and the client must render the UI component.
+     *
+     * @param  string      $cardId      Card token ID from createCard()
+     * @param  string      $resourceId  Offer ID (or order/booking ID)
+     * @param  array       $services    [{id, quantity}] ancillary services
+     * @param  string|null $exception   'secure_corporate_payment' to skip challenge
      */
-    public function createThreeDSecureSession(array $data): array
-    {
-        return $this->request('POST', self::CARDS_BASE_URL . '/payments/three_d_secure_sessions', ['data' => $data]);
+    public function createThreeDSecureSession(
+        string $cardId,
+        string $resourceId,
+        array  $services  = [],
+        ?string $exception = 'secure_corporate_payment'
+    ): array {
+        $data = [
+            'card_id'     => $cardId,
+            'resource_id' => $resourceId,
+        ];
+        if (!empty($services)) {
+            $data['services'] = $services;
+        }
+        if ($exception !== null) {
+            $data['exception'] = $exception;
+        }
+        return $this->request('POST', $this->baseUrl . '/payments/three_d_secure_sessions', ['data' => $data]);
     }
 
     /**
-     * Retrieve a 3DS session by ID to check its status (ready/authenticated/failed).
+     * Retrieve a 3DS session by ID to check status:
+     * ready_for_payment | challenge_required | failed | expired
      */
     public function getThreeDSecureSession(string $sessionId): array
     {
-        return $this->request('GET', self::CARDS_BASE_URL . '/payments/three_d_secure_sessions/' . urlencode($sessionId));
+        return $this->request('GET', $this->baseUrl . '/payments/three_d_secure_sessions/' . urlencode($sessionId));
     }
 
     // =========================================================================

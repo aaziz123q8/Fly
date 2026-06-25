@@ -505,24 +505,43 @@ class FlightBookingService
         }
 
         // Create 3DS session to authenticate the card for this offer.
+        // Uses secure_corporate_payment exception → status goes straight to ready_for_payment
+        // without requiring a cardholder challenge UI component.
         try {
-            $tdsResponse = $this->duffel->createThreeDSecureSession([
-                'card_id'           => $cardId,
-                'resource_id'       => $offerId,
-                'resource_type'     => 'offer',
-                'services'          => $cleanServices,
-            ]);
+            $tdsResponse = $this->duffel->createThreeDSecureSession(
+                $cardId,
+                $offerId,
+                $cleanServices,
+                'secure_corporate_payment'
+            );
         } catch (\Throwable $e) {
-            // Clean up card token if 3DS creation fails.
             try { $this->duffel->deleteCard($cardId); } catch (\Throwable) {}
             error_log('[DUFFEL_CREATE_3DS_FAIL] card=' . $cardId . ' ' . $e->getMessage());
             throw new RuntimeException('فشل إنشاء جلسة التحقق الأمني. يرجى المحاولة مجدداً.', 502);
         }
 
-        $tdsData    = $tdsResponse['data'] ?? [];
-        $tdsId      = $tdsData['id']    ?? '';
-        $tdsToken   = $tdsData['token'] ?? '';
-        $redirectUrl = $tdsData['redirect_url'] ?? '';
+        $tdsData   = $tdsResponse['data'] ?? [];
+        $tdsId     = $tdsData['id']     ?? '';
+        $tdsStatus = $tdsData['status'] ?? '';
+        $clientId  = $tdsData['client_id'] ?? ''; // used by Duffel UI component if challenge_required
+
+        error_log('[3DS_STATUS] card=' . $cardId . ' offer=' . $offerId . ' status=' . $tdsStatus . ' tds_id=' . $tdsId);
+
+        if ($tdsStatus === 'failed') {
+            try { $this->duffel->deleteCard($cardId); } catch (\Throwable) {}
+            throw new RuntimeException('فشل التحقق الأمني للبطاقة. يرجى المحاولة مجدداً أو استخدام بطاقة أخرى.', 422);
+        }
+        if ($tdsStatus === 'expired') {
+            try { $this->duffel->deleteCard($cardId); } catch (\Throwable) {}
+            throw new RuntimeException('انتهت صلاحية جلسة التحقق الأمني. يرجى المحاولة مجدداً.', 422);
+        }
+        if (empty($tdsId)) {
+            try { $this->duffel->deleteCard($cardId); } catch (\Throwable) {}
+            throw new RuntimeException('لم يتم استلام معرف جلسة التحقق الأمني.', 502);
+        }
+
+        // ready_for_payment → proceed directly to completeBooking (no challenge needed).
+        // challenge_required → frontend must render the Duffel UI component using client_id.
 
         // Persist card_id, 3DS session id, and updated pricing.
         $idempotencyKey = bin2hex(random_bytes(32));
@@ -551,8 +570,8 @@ class FlightBookingService
         return [
             'card_id'                   => $cardId,
             'three_d_secure_session_id' => $tdsId,
-            'three_d_secure_token'      => $tdsToken,
-            'redirect_url'              => $redirectUrl,
+            'status'                    => $tdsStatus,
+            'client_id'                 => $clientId,
             'amount'                    => $totalAmount,
             'currency'                  => $currency,
             'discount'                  => $discountAmount,
@@ -584,7 +603,7 @@ class FlightBookingService
             throw new RuntimeException('فشل التحقق من جلسة الأمان. يرجى المحاولة مجدداً.', 502);
         }
 
-        if ($tdsStatus !== 'authenticated') {
+        if ($tdsStatus !== 'ready_for_payment') {
             throw new RuntimeException('فشل التحقق الأمني للبطاقة (3D Secure). يرجى المحاولة مجدداً.', 422);
         }
 

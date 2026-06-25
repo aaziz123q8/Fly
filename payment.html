@@ -613,6 +613,9 @@
   </div>
 </div>
 
+<!-- Duffel 3DS UI Component container -->
+<div id="tdsContainer" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);align-items:center;justify-content:center;"></div>
+
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
@@ -901,35 +904,40 @@ function setPayLoading(loading) {
   }
 }
 
-// ── 3DS popup / redirect handler ───────────────────────────
+// ── 3DS challenge via Duffel UI Component ──────────────────
 let tdsSessionId = '';
-let tdsPopup     = null;
 
-function openThreeDSecure(redirectUrl) {
+function waitForDuffelChallenge(clientId) {
   return new Promise((resolve, reject) => {
-    // Open 3DS auth in a popup; fall back to same-tab redirect if blocked.
-    try {
-      tdsPopup = window.open(redirectUrl, 'duffel3ds',
-        'width=500,height=700,resizable=yes,scrollbars=yes');
-      if (!tdsPopup || tdsPopup.closed) throw new Error('popup blocked');
-    } catch(e) {
-      // Redirect current tab; after 3DS Duffel redirects back via return_url.
-      window.location.href = redirectUrl;
-      return;
-    }
+    const container = document.getElementById('tdsContainer');
+    if (!container) return reject(new Error('عنصر التحقق الأمني غير موجود.'));
+    container.style.display = 'flex';
+    container.innerHTML = '';
 
-    // Poll for popup close (user completes or dismisses 3DS).
-    const checker = setInterval(() => {
-      if (!tdsPopup || tdsPopup.closed) {
-        clearInterval(checker);
-        resolve();
+    const script = document.createElement('script');
+    script.src = 'https://assets.duffel.com/components/three-d-secure/v1/index.js';
+    script.onload = () => {
+      try {
+        const component = window.DuffelThreeDSecure.createThreeDSecureComponent({
+          clientKey: clientId,
+          onSuccess: () => { container.style.display = 'none'; resolve(); },
+          onFailure: (err) => { container.style.display = 'none'; reject(new Error(err?.message || 'فشل التحقق الأمني.')); },
+        });
+        component.render(container);
+      } catch(e) {
+        container.style.display = 'none';
+        reject(new Error('فشل تحميل مكوّن التحقق الأمني.'));
       }
-    }, 500);
+    };
+    script.onerror = () => {
+      container.style.display = 'none';
+      reject(new Error('فشل تحميل مكوّن التحقق الأمني.'));
+    };
+    document.head.appendChild(script);
 
     // Safety timeout: 10 min.
     setTimeout(() => {
-      clearInterval(checker);
-      if (tdsPopup && !tdsPopup.closed) tdsPopup.close();
+      container.style.display = 'none';
       reject(new Error('انتهت مهلة التحقق الأمني. يرجى المحاولة مجدداً.'));
     }, 600000);
   });
@@ -1000,20 +1008,25 @@ async function submitPayment() {
     }
 
     tdsSessionId = initRes.three_d_secure_session_id || '';
-    const redirectUrl = initRes.redirect_url || '';
+    const tdsStatus = initRes.status || '';
+    const clientId  = initRes.client_id || '';
 
-    // Step 2: open 3DS authentication.
-    if (redirectUrl) {
-      document.getElementById('payBtnTxt').textContent = '🔐 أكمل التحقق في النافذة المنبثقة…';
-      if (dt) dt.textContent = '🔐 أكمل التحقق…';
+    // Step 2: 3DS challenge (only when required).
+    if (tdsStatus === 'challenge_required') {
+      document.getElementById('payBtnTxt').textContent = '🔐 أكمل التحقق الأمني…';
+      if (dt) { dt.textContent = '🔐 أكمل التحقق الأمني…'; }
 
       try {
-        await openThreeDSecure(redirectUrl);
+        await waitForDuffelChallenge(clientId);
       } catch(tdsErr) {
         showError('⚠️ ' + (tdsErr.message || 'فشل التحقق الأمني.'));
         setPayLoading(false);
         return;
       }
+    } else if (tdsStatus !== 'ready_for_payment') {
+      showError('⚠️ فشل التحقق الأمني. يرجى المحاولة مجدداً.');
+      setPayLoading(false);
+      return;
     }
 
     // Step 3: complete booking after 3DS.
@@ -1049,29 +1062,6 @@ async function submitPayment() {
   }
 }
 
-// ── Handle 3DS return redirect (if popup was blocked and we did full redirect) ──
-(function() {
-  const p = new URLSearchParams(window.location.search);
-  const tdsReturn = p.get('tds_session_id') || p.get('three_d_secure_session_id') || '';
-  if (tdsReturn && sessionKey) {
-    tdsSessionId = tdsReturn;
-    // Auto-complete booking after returning from 3DS redirect.
-    setPayLoading(true);
-    document.getElementById('payBtnTxt').textContent = '✈️ جاري إنشاء الحجز…';
-    document.getElementById('payBtnTxt').classList.remove('hidden');
-    Api.post('/api/flights/checkout/card/complete', {
-      session_key: sessionKey,
-      three_d_secure_session_id: tdsReturn,
-    }, true).then(cr => {
-      const ref = cr.duffel_booking_reference || cr.booking_reference || '';
-      window.location.href = 'confirmation.html?session=' + encodeURIComponent(sessionKey)
-        + '&confirmed=1' + (ref ? '&ref=' + encodeURIComponent(ref) : '');
-    }).catch(e => {
-      showError('⚠️ ' + (e.message || 'فشل إنشاء الحجز بعد التحقق الأمني.'));
-      setPayLoading(false);
-    });
-  }
-})();
 
 // ── Deadline countdown ─────────────────────────────────────
 (function() {
