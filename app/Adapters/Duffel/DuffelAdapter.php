@@ -656,6 +656,49 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Batch Offer Requests  (long-polling search)
+    // =========================================================================
+
+    /**
+     * Create a batch offer request and return immediately with an ID and batch counts.
+     * Poll getBatchOfferRequest() until remaining_batches === 0.
+     * Batch offer requests expire after 1 minute; underlying offers are still accessible
+     * via getOfferRequest() / listOffers() using the same ID.
+     *
+     * $options: cabin_class, max_connections, include_split_ticket,
+     *           private_fares, airline_credit_ids (see searchOffers() for shape).
+     */
+    public function createBatchOfferRequest(
+        array $slices,
+        array $passengers,
+        array $options = [],
+        int $supplierTimeout = 20000
+    ): array {
+        $data = array_merge([
+            'slices'     => $slices,
+            'passengers' => $passengers,
+        ], $options);
+        $queryParams = http_build_query(['supplier_timeout' => $supplierTimeout]);
+        $curlTimeout = (int) ceil($supplierTimeout / 1000) + 10;
+        return $this->request(
+            'POST',
+            $this->baseUrl . '/air/batch_offer_requests?' . $queryParams,
+            ['data' => $data],
+            $curlTimeout
+        );
+    }
+
+    /**
+     * Poll for the next available batch of offers.
+     * Repeat until remaining_batches === 0. Multiple batches may arrive per call.
+     * $view: 'offers' (flat list, default) or 'itineraries' (hierarchical structure).
+     */
+    public function getBatchOfferRequest(string $batchOfferRequestId, string $view = 'offers'): array
+    {
+        return $this->get('/air/batch_offer_requests/' . urlencode($batchOfferRequestId), ['view' => $view]);
+    }
+
+    // =========================================================================
     // Airline-Initiated Changes
     // =========================================================================
 
