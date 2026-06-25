@@ -573,17 +573,20 @@ class DuffelAdapter
     /**
      * Create an order change request to find available change options.
      *
-     * @param  string $orderId
-     * @param  array  $slices  ['add' => [...slices], 'remove' => [...sliceIds]]
+     * @param  string      $orderId
+     * @param  array       $slices       ['add' => [...slices], 'remove' => [...sliceIds]]
+     * @param  array|null  $privateFares ['UA' => [['corporate_code' => '…', 'tour_code' => '…']], …]
      */
-    public function createOrderChangeRequest(string $orderId, array $slices): array
+    public function createOrderChangeRequest(string $orderId, array $slices, ?array $privateFares = null): array
     {
-        return $this->post('/air/order_change_requests', [
-            'data' => [
-                'order_id' => $orderId,
-                'slices'   => $slices,
-            ],
-        ]);
+        $data = [
+            'order_id' => $orderId,
+            'slices'   => $slices,
+        ];
+        if ($privateFares !== null) {
+            $data['private_fares'] = $privateFares;
+        }
+        return $this->post('/air/order_change_requests', ['data' => $data]);
     }
 
     /**
