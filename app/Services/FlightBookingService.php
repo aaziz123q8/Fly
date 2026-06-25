@@ -470,42 +470,41 @@ class FlightBookingService
         $cardData['address_postal_code']  = trim($cardData['address_postal_code']  ?? '') ?: '00000';
         $cardData['address_country_code'] = strtoupper(trim($cardData['address_country_code'] ?? '')) ?: 'US';
 
+        // Build card payload — omit address_line_2 if empty (Duffel rejects empty strings).
+        $cardPayload = [
+            'number'               => preg_replace('/\s/', '', $cardData['number']),
+            'name'                 => $cardData['name'],
+            'cvc'                  => (string) $cardData['cvc'],
+            'expiry_month'         => str_pad((string) $cardData['expiry_month'], 2, '0', STR_PAD_LEFT),
+            'expiry_year'          => str_pad((string) $cardData['expiry_year'], 2, '0', STR_PAD_LEFT),
+            'address_line_1'       => $cardData['address_line_1'],
+            'address_city'         => $cardData['address_city'],
+            'address_region'       => $cardData['address_region'],
+            'address_postal_code'  => (string) $cardData['address_postal_code'],
+            'address_country_code' => $cardData['address_country_code'],
+        ];
+        $addrLine2 = trim($cardData['address_line_2'] ?? '');
+        if ($addrLine2 !== '') {
+            $cardPayload['address_line_2'] = $addrLine2;
+        }
+
+        error_log('[DUFFEL_CREATE_CARD_REQUEST] ' . json_encode(array_merge($cardPayload, ['number' => '****', 'cvc' => '***'])));
+
         // Create single-use Duffel card token.
         try {
-            $cardResponse = $this->duffel->createCard([
-                'number'               => preg_replace('/\s/', '', $cardData['number']),
-                'name'                 => $cardData['name'],
-                'cvc'                  => $cardData['cvc'],
-                'expiry_month'         => str_pad((string) $cardData['expiry_month'], 2, '0', STR_PAD_LEFT),
-                'expiry_year'          => substr((string) $cardData['expiry_year'], -2),
-                'address_line_1'       => $cardData['address_line_1'],
-                'address_line_2'       => trim($cardData['address_line_2'] ?? ''),
-                'address_city'         => $cardData['address_city'],
-                'address_region'       => $cardData['address_region'],
-                'address_postal_code'  => $cardData['address_postal_code'],
-                'address_country_code' => $cardData['address_country_code'],
-                'multi_use'            => false,
-            ]);
+            $cardResponse = $this->duffel->createCard($cardPayload);
         } catch (\Throwable $e) {
             $msg = $e->getMessage();
             error_log('[DUFFEL_CREATE_CARD_FAIL] http=' . $e->getCode() . ' msg=' . $msg);
-            // Surface a descriptive error if Duffel returns a recognisable validation code.
+            // Extract and surface the actual Duffel error for diagnosis.
             $decoded = null;
             if (($jsonPos = strpos($msg, '{')) !== false) {
                 $decoded = json_decode(substr($msg, $jsonPos), true);
             }
             $duffelCode = $decoded['errors'][0]['code']    ?? '';
-            $duffelMsg  = $decoded['errors'][0]['message'] ?? '';
-            if ($duffelCode === 'card_number_invalid' || str_contains($duffelMsg, 'number')) {
-                throw new RuntimeException('رقم البطاقة غير صحيح. تأكد من إدخاله بشكل كامل.', 422);
-            }
-            if ($duffelCode === 'card_expired' || str_contains($duffelMsg, 'expir')) {
-                throw new RuntimeException('بطاقتك منتهية الصلاحية. يرجى استخدام بطاقة أخرى.', 422);
-            }
-            if ($duffelCode === 'card_cvc_invalid' || str_contains($duffelMsg, 'cvc') || str_contains($duffelMsg, 'cvv')) {
-                throw new RuntimeException('رمز CVC غير صحيح.', 422);
-            }
-            throw new RuntimeException('فشل حفظ بيانات البطاقة. تأكد من صحة البيانات وحاول مجدداً.', 422);
+            $duffelMsg  = $decoded['errors'][0]['message'] ?? $msg;
+            // Pass the real error through so it can be seen in the UI.
+            throw new RuntimeException('[Duffel Cards] ' . $duffelCode . ': ' . $duffelMsg, $e->getCode() ?: 422);
         }
 
         $cardId = $cardResponse['data']['id'] ?? '';
