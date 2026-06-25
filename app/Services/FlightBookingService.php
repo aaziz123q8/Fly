@@ -503,7 +503,7 @@ class FlightBookingService
             $duffelCode = $decoded['errors'][0]['code']    ?? '';
             $duffelMsg  = $decoded['errors'][0]['message'] ?? $msg;
             // Pass the real error through so it can be seen in the UI.
-            throw new RuntimeException('[Duffel Cards] ' . $duffelCode . ': ' . $duffelMsg, $e->getCode() ?: 422);
+            throw new RuntimeException('[Duffel Cards] ' . $duffelCode . ': ' . $duffelMsg, (int)$e->getCode() ?: 422);
         }
 
         $cardId = $cardResponse['data']['id'] ?? '';
@@ -762,19 +762,25 @@ class FlightBookingService
 
         // Generate unique booking reference in FM00000001 format — atomic via table lock.
         $this->step('BOOKING_REF_GEN', 'START');
-        $this->db->exec("LOCK TABLES flight_bookings WRITE");
         try {
-            $lastRef = $this->db->query(
-                "SELECT booking_reference FROM flight_bookings ORDER BY id DESC LIMIT 1"
-            )->fetchColumn();
-            if ($lastRef && preg_match('/^FM(\d+)$/', $lastRef, $m)) {
-                $nextNum = (int)$m[1] + 1;
-            } else {
-                $nextNum = (int)$this->db->query("SELECT COUNT(*) FROM flight_bookings")->fetchColumn() + 1;
+            $this->db->exec("LOCK TABLES flight_bookings WRITE");
+            try {
+                $lastRef = $this->db->query(
+                    "SELECT booking_reference FROM flight_bookings ORDER BY id DESC LIMIT 1"
+                )->fetchColumn();
+                if ($lastRef && preg_match('/^FM(\d+)$/', $lastRef, $m)) {
+                    $nextNum = (int)$m[1] + 1;
+                } else {
+                    $nextNum = (int)$this->db->query("SELECT COUNT(*) FROM flight_bookings")->fetchColumn() + 1;
+                }
+                $bookingReference = 'FM' . str_pad((string)$nextNum, 8, '0', STR_PAD_LEFT);
+            } finally {
+                $this->db->exec("UNLOCK TABLES");
             }
-            $bookingReference = 'FM' . str_pad((string)$nextNum, 8, '0', STR_PAD_LEFT);
-        } finally {
-            $this->db->exec("UNLOCK TABLES");
+        } catch (\Throwable $lockEx) {
+            $sqlState = $lockEx instanceof \PDOException ? (string)$lockEx->getCode() : '';
+            $this->step('BOOKING_REF_GEN', 'FAIL', ['error' => $lockEx->getMessage(), 'sql_state' => $sqlState]);
+            throw new \RuntimeException('[LOCK_FAIL] ' . $lockEx->getMessage(), 500, $lockEx);
         }
         $this->stepRef = $bookingReference;
         $this->step('BOOKING_REF_GEN', 'SUCCESS', ['ref' => $bookingReference]);
@@ -1325,7 +1331,7 @@ class FlightBookingService
             error_log('[CONFIRM_CHECKOUT_FAIL] ' . json_encode($ctx, JSON_UNESCAPED_UNICODE));
 
             // Throw with the exact mapped customer message (Arabic) + http code
-            throw new \RuntimeException($e->getMessage(), $e->getCode() ?: 500);
+            throw new \RuntimeException($e->getMessage(), (int)$e->getCode() ?: 500);
         }
     }
 

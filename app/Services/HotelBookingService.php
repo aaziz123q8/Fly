@@ -704,7 +704,7 @@ class HotelBookingService
             return $this->fetchCompletedBookingResult($userId);
         } catch (\Throwable $e) {
             error_log('[HOTEL_CONFIRM_CHECKOUT_FAIL] sk=' . $sessionKey . ' pi=' . $paymentIntentId . ' err=' . $e->getMessage());
-            throw new \RuntimeException($e->getMessage(), $e->getCode() ?: 500);
+            throw new \RuntimeException($e->getMessage(), (int)$e->getCode() ?: 500);
         }
     }
 

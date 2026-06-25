@@ -89,7 +89,7 @@ class StripeAdapter
                 'currency'          => $intent->currency,
             ];
         } catch (ApiErrorException $e) {
-            throw new \RuntimeException('Stripe PaymentIntent creation failed: ' . $e->getMessage(), $e->getHttpStatus(), $e);
+            throw new \RuntimeException('Stripe PaymentIntent creation failed: ' . $e->getMessage(), (int)$e->getHttpStatus(), $e);
         }
     }
 
@@ -102,7 +102,7 @@ class StripeAdapter
             $intent = $this->requireClient()->paymentIntents->retrieve($paymentIntentId);
             return $intent->toArray();
         } catch (ApiErrorException $e) {
-            throw new \RuntimeException('Stripe PaymentIntent retrieval failed: ' . $e->getMessage(), $e->getHttpStatus(), $e);
+            throw new \RuntimeException('Stripe PaymentIntent retrieval failed: ' . $e->getMessage(), (int)$e->getHttpStatus(), $e);
         }
     }
 
@@ -118,7 +118,7 @@ class StripeAdapter
             );
             return $intent->toArray();
         } catch (ApiErrorException $e) {
-            throw new \RuntimeException('Stripe PaymentIntent cancellation failed: ' . $e->getMessage(), $e->getHttpStatus(), $e);
+            throw new \RuntimeException('Stripe PaymentIntent cancellation failed: ' . $e->getMessage(), (int)$e->getHttpStatus(), $e);
         }
     }
 
@@ -158,7 +158,7 @@ class StripeAdapter
             $refund = $this->requireClient()->refunds->create($params, $options ?: null);
             return $refund->toArray();
         } catch (ApiErrorException $e) {
-            throw new \RuntimeException('Stripe refund failed: ' . $e->getMessage(), $e->getHttpStatus(), $e);
+            throw new \RuntimeException('Stripe refund failed: ' . $e->getMessage(), (int)$e->getHttpStatus(), $e);
         }
     }
 
@@ -179,7 +179,7 @@ class StripeAdapter
             ]);
             return $customer->toArray();
         } catch (ApiErrorException $e) {
-            throw new \RuntimeException('Stripe Customer creation failed: ' . $e->getMessage(), $e->getHttpStatus(), $e);
+            throw new \RuntimeException('Stripe Customer creation failed: ' . $e->getMessage(), (int)$e->getHttpStatus(), $e);
         }
     }
 
