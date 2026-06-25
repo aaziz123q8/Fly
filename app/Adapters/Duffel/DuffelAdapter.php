@@ -612,6 +612,59 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Customer Users  (identity API — base path /identity/customer/users)
+    // =========================================================================
+
+    /**
+     * List customer users, optionally filtered by email.
+     */
+    public function listCustomerUsers(array $filters = [], int $limit = 50, ?string $after = null): array
+    {
+        $query = array_merge(['limit' => $limit], $filters);
+        if ($after !== null) {
+            $query['after'] = $after;
+        }
+        $url = $this->baseUrl . '/identity/customer/users';
+        if (!empty($query)) {
+            $url .= '?' . http_build_query($query);
+        }
+        return $this->request('GET', $url);
+    }
+
+    /**
+     * Create a Duffel customer user.
+     *
+     * @param  array{email: string, given_name: string, family_name: string,
+     *                phone_number?: string, preferred_language?: string, group_id?: string} $userData
+     */
+    public function createCustomerUser(array $userData): array
+    {
+        return $this->request('POST', $this->baseUrl . '/identity/customer/users', ['data' => $userData]);
+    }
+
+    /**
+     * Retrieve a single customer user by Duffel ID.
+     *
+     * @param  string $userId  e.g. "icu_0000AgZitpOnQtd3NQxjwO"
+     */
+    public function getCustomerUser(string $userId): array
+    {
+        return $this->request('GET', $this->baseUrl . '/identity/customer/users/' . urlencode($userId));
+    }
+
+    /**
+     * Update a customer user (full replacement — all required fields must be sent).
+     *
+     * @param  string $userId
+     * @param  array{email: string, given_name: string, family_name: string,
+     *                phone_number?: string, preferred_language?: string, group_id?: string} $userData
+     */
+    public function updateCustomerUser(string $userId, array $userData): array
+    {
+        return $this->request('PUT', $this->baseUrl . '/identity/customer/users/' . urlencode($userId), ['data' => $userData]);
+    }
+
+    // =========================================================================
     // Webhook Events (admin / debugging)
     // =========================================================================
 
