@@ -936,6 +936,26 @@ class DuffelAdapter
     }
 
     /**
+     * Get a single airport by its Duffel ID (arp_…).
+     */
+    public function getAirport(string $airportId): array
+    {
+        return $this->get('/air/airports/' . urlencode($airportId));
+    }
+
+    /**
+     * List airports — one page. Filter by iata_country_code (ISO 3166-1 alpha-2) to narrow results.
+     */
+    public function listAirports(int $limit = 50, ?string $after = null, ?string $before = null, ?string $iataCountryCode = null): array
+    {
+        $query = ['limit' => $limit];
+        if ($after !== null)           { $query['after']             = $after; }
+        if ($before !== null)          { $query['before']            = $before; }
+        if ($iataCountryCode !== null) { $query['iata_country_code'] = $iataCountryCode; }
+        return $this->get('/air/airports', $query);
+    }
+
+    /**
      * Get a single aircraft by its Duffel ID (arc_…).
      */
     public function getAircraft(string $aircraftId): array
