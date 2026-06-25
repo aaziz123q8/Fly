@@ -652,11 +652,11 @@ if (!Auth.isLoggedIn()) {
 // ── URL params ─────────────────────────────────────────────
 const params        = new URLSearchParams(window.location.search);
 const sessionKey    = params.get('session')   || '';
-const amountGBP     = parseFloat(params.get('amount')   || '0');
-const baseAmountGBP = parseFloat(params.get('base')     || '0') || round2(amountGBP * 0.909);
-const taxAmountGBP  = parseFloat(params.get('tax')      || '0') || round2(amountGBP * 0.091);
-let   discountGBP   = parseFloat(params.get('discount') || '0');
-let   extraSvcGBP   = 0;
+let amountGBP     = parseFloat(params.get('amount')   || '0');
+let baseAmountGBP = parseFloat(params.get('base')     || '0') || round2(amountGBP * 0.909);
+let taxAmountGBP  = parseFloat(params.get('tax')      || '0') || round2(amountGBP * 0.091);
+let discountGBP   = parseFloat(params.get('discount') || '0');
+let extraSvcGBP   = 0;
 
 function round2(n) { return Math.round(n * 100) / 100; }
 
@@ -874,9 +874,19 @@ async function loadPriceRows() {
   renderPriceRows();
   if (!sessionKey) return;
   try {
-    const res  = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey));
+    const res      = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey));
+    const pricing  = res.pricing_snapshot || {};
+    const base     = parseFloat(pricing.base_amount ?? 0);
+    const total    = parseFloat(pricing.total       ?? 0);
+    const fees     = (pricing.fees || []).reduce((s, f) => s + parseFloat(f.amount || 0), 0);
+    if (base > 0) {
+      baseAmountGBP = base;
+      taxAmountGBP  = Math.max(0, round2(fees));
+      amountGBP     = total;
+    }
     const cost = parseFloat(res.services_cost_gbp ?? 0);
-    if (cost > 0) { extraSvcGBP = cost; renderPriceRows(); }
+    if (cost > 0) extraSvcGBP = cost;
+    renderPriceRows();
   } catch(e) { /* non-fatal */ }
 }
 
