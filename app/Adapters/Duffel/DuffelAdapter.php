@@ -913,11 +913,27 @@ class DuffelAdapter
     // =========================================================================
 
     /**
-     * Search airports by name, IATA code, or city.
+     * Suggest places (airports or cities) matching a text query or within a geo-radius.
+     * Use $query for name/IATA/country search, or $lat/$lng/$rad (metres) for proximity search.
+     * Returns a mix of type='airport' and type='city' results.
+     */
+    public function suggestPlaces(?string $query = null, ?string $lat = null, ?string $lng = null, ?string $rad = null): array
+    {
+        $params = [];
+        if ($query !== null) { $params['query'] = $query; }
+        if ($lat !== null)   { $params['lat']   = $lat; }
+        if ($lng !== null)   { $params['lng']   = $lng; }
+        if ($rad !== null)   { $params['rad']   = $rad; }
+        return $this->get('/places/suggestions', $params);
+    }
+
+    /**
+     * Search airports/cities by name or IATA code.
+     * @deprecated Use suggestPlaces() instead.
      */
     public function searchAirports(string $query, int $limit = 20): array
     {
-        return $this->get('/places/suggestions', ['query' => $query, 'limit' => $limit]);
+        return $this->suggestPlaces($query);
     }
 
     /**
