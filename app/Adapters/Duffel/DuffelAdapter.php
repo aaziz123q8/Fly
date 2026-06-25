@@ -554,6 +554,37 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Webhook Deliveries (admin / debugging)
+    // =========================================================================
+
+    /**
+     * List webhook deliveries with optional filters.
+     * Useful for debugging missed or failed deliveries from the admin panel.
+     *
+     * @param  array        $filters  Keys: type, endpoint_id, delivery_success, created_at
+     * @param  int          $limit    1–200 (default 50 per Duffel spec)
+     * @param  string|null  $after    Cursor for next page
+     */
+    public function listWebhookDeliveries(array $filters = [], int $limit = 50, ?string $after = null): array
+    {
+        $query = array_merge(['limit' => $limit], $filters);
+        if ($after !== null) {
+            $query['after'] = $after;
+        }
+        return $this->get('/air/webhooks/deliveries', $query);
+    }
+
+    /**
+     * Retrieve a single webhook delivery by its ID.
+     *
+     * @param  string $deliveryId  e.g. "del_0000A3tQSmKyqOrcySrGbo"
+     */
+    public function getWebhookDelivery(string $deliveryId): array
+    {
+        return $this->get('/air/webhooks/deliveries/' . urlencode($deliveryId));
+    }
+
+    // =========================================================================
     // HTTP helpers
     // =========================================================================
 
