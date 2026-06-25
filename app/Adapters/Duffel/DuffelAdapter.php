@@ -665,6 +665,70 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Customer User Groups  (/identity/customer/user_groups)
+    // =========================================================================
+
+    /**
+     * List all customer user groups (paginated).
+     */
+    public function listCustomerUserGroups(int $limit = 50, ?string $after = null): array
+    {
+        $query = ['limit' => $limit];
+        if ($after !== null) {
+            $query['after'] = $after;
+        }
+        $url = $this->baseUrl . '/identity/customer/user_groups';
+        if (!empty($query)) {
+            $url .= '?' . http_build_query($query);
+        }
+        return $this->request('GET', $url);
+    }
+
+    /**
+     * Create a customer user group.
+     *
+     * @param  string   $name     Group display name, e.g. "Northwind Solutions"
+     * @param  string[] $userIds  Optional list of customer user IDs to seed the group
+     */
+    public function createCustomerUserGroup(string $name, array $userIds = []): array
+    {
+        $data = ['name' => $name];
+        if (!empty($userIds)) {
+            $data['user_ids'] = $userIds;
+        }
+        return $this->request('POST', $this->baseUrl . '/identity/customer/user_groups', ['data' => $data]);
+    }
+
+    /**
+     * Retrieve a single customer user group by Duffel ID.
+     *
+     * @param  string $groupId  e.g. "usg_0000AgZitpOnQtd3NQxjwO"
+     */
+    public function getCustomerUserGroup(string $groupId): array
+    {
+        return $this->request('GET', $this->baseUrl . '/identity/customer/user_groups/' . urlencode($groupId));
+    }
+
+    /**
+     * Update a customer user group (partial PATCH — only send fields to change).
+     *
+     * @param  string        $groupId
+     * @param  array{name?: string, user_ids?: string[]} $changes
+     */
+    public function updateCustomerUserGroup(string $groupId, array $changes): array
+    {
+        return $this->request('PATCH', $this->baseUrl . '/identity/customer/user_groups/' . urlencode($groupId), ['data' => $changes]);
+    }
+
+    /**
+     * Delete a customer user group by ID.
+     */
+    public function deleteCustomerUserGroup(string $groupId): void
+    {
+        $this->request('DELETE', $this->baseUrl . '/identity/customer/user_groups/' . urlencode($groupId));
+    }
+
+    // =========================================================================
     // Webhook Events (admin / debugging)
     // =========================================================================
 
