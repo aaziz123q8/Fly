@@ -656,6 +656,46 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Partial Offer Requests  (deprecated — will be removed in next major version)
+    // =========================================================================
+
+    /**
+     * Create a partial offer request to search slices independently.
+     * Returns partial offers per slice; use getPartialOfferFares() to combine.
+     */
+    public function createPartialOfferRequest(array $slices, array $passengers, string $cabinClass = 'economy', array $options = []): array
+    {
+        $data = array_merge([
+            'slices'      => $slices,
+            'passengers'  => $passengers,
+            'cabin_class' => $cabinClass,
+        ], $options);
+        return $this->post('/air/partial_offer_requests', ['data' => $data]);
+    }
+
+    /**
+     * Get a partial offer request by ID.
+     */
+    public function getPartialOfferRequest(string $partialOfferRequestId): array
+    {
+        return $this->get('/air/partial_offer_requests/' . urlencode($partialOfferRequestId));
+    }
+
+    /**
+     * @deprecated Will be removed in the next major Duffel API version.
+     * Retrieve full offer fares by combining selected partial offer IDs (one per slice).
+     * $selectedPartialOffers: ['off_…_0', 'off_…_1']
+     */
+    public function getPartialOfferFares(string $partialOfferRequestId, array $selectedPartialOffers): array
+    {
+        $query = [];
+        foreach ($selectedPartialOffers as $offerId) {
+            $query['selected_partial_offer[]'][] = $offerId;
+        }
+        return $this->get('/air/partial_offer_requests/' . urlencode($partialOfferRequestId) . '/fares', $query);
+    }
+
+    // =========================================================================
     // Cards API  (PCI-compliant hostname: api.duffel.cards)
     // =========================================================================
 
