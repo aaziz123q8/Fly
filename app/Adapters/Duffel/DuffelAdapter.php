@@ -470,6 +470,45 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Payments
+    // =========================================================================
+
+    /**
+     * List payments for a specific order — one page.
+     */
+    public function listPayments(string $orderId, int $limit = 50, ?string $after = null, ?string $before = null): array
+    {
+        $query = ['order_id' => $orderId, 'limit' => $limit];
+        if ($after !== null)  { $query['after']  = $after; }
+        if ($before !== null) { $query['before'] = $before; }
+        return $this->get('/air/payments', $query);
+    }
+
+    /**
+     * Create a payment for a hold order.
+     * Always retrieve the latest order price before calling this to avoid price_changed errors.
+     * $payment: ['type' => 'balance'|'card'|'arc_bsp_cash', 'currency' => 'GBP', 'amount' => '30.20',
+     *            'three_d_secure_session_id' => '3ds_…' (required for card)]
+     */
+    public function createPayment(string $orderId, array $payment): array
+    {
+        return $this->post('/air/payments', [
+            'data' => [
+                'order_id' => $orderId,
+                'payment'  => $payment,
+            ],
+        ]);
+    }
+
+    /**
+     * Retrieve a single payment by its ID.
+     */
+    public function getPayment(string $paymentId): array
+    {
+        return $this->get('/air/payments/' . urlencode($paymentId));
+    }
+
+    // =========================================================================
     // Order Cancellations
     // =========================================================================
 
