@@ -936,6 +936,25 @@ class DuffelAdapter
     }
 
     /**
+     * Get a single city by its Duffel ID (cit_…).
+     */
+    public function getCity(string $cityId): array
+    {
+        return $this->get('/air/cities/' . urlencode($cityId));
+    }
+
+    /**
+     * List cities — one page.
+     */
+    public function listCities(int $limit = 50, ?string $after = null, ?string $before = null): array
+    {
+        $query = ['limit' => $limit];
+        if ($after !== null)  { $query['after']  = $after; }
+        if ($before !== null) { $query['before'] = $before; }
+        return $this->get('/air/cities', $query);
+    }
+
+    /**
      * Get a single airport by its Duffel ID (arp_…).
      */
     public function getAirport(string $airportId): array
