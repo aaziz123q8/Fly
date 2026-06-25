@@ -470,6 +470,20 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Seat Maps
+    // =========================================================================
+
+    /**
+     * Get seat maps for an offer — returns one seat map per segment.
+     * Seats are a special service type not returned by getOffer(returnAvailableServices=true);
+     * this is the only way to retrieve them. Not available for all airlines.
+     */
+    public function getSeatMaps(string $offerId): array
+    {
+        return $this->get('/air/seat_maps', ['offer_id' => $offerId]);
+    }
+
+    // =========================================================================
     // Payments
     // =========================================================================
 
