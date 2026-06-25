@@ -506,36 +506,12 @@
           autocomplete="cc-name" dir="ltr">
       </div>
 
-      <!-- Card number -->
+      <!-- Stripe Elements card field -->
       <div class="form-group">
-        <label class="form-lbl" for="cardNumber">رقم البطاقة</label>
-        <input type="text" class="form-inp" id="cardNumber"
-          placeholder="0000 0000 0000 0000"
-          maxlength="19" autocomplete="cc-number" inputmode="numeric" dir="ltr">
+        <label class="form-lbl">بيانات البطاقة</label>
+        <div id="stripeCardElement" style="padding:12px 14px;border:1px solid #d1d5db;border-radius:10px;background:#fff;min-height:44px;direction:ltr"></div>
+        <div id="stripeCardError" style="color:#dc2626;font-size:0.8rem;margin-top:6px;display:none"></div>
       </div>
-
-      <!-- Expiry + CVC -->
-      <div style="display:flex;gap:12px">
-        <div class="form-group" style="flex:1">
-          <label class="form-lbl" for="cardExpiry">تاريخ الانتهاء</label>
-          <input type="text" class="form-inp" id="cardExpiry"
-            placeholder="MM / YY" maxlength="7"
-            autocomplete="cc-exp" inputmode="numeric" dir="ltr">
-        </div>
-        <div class="form-group" style="flex:1">
-          <label class="form-lbl" for="cardCvc">CVC</label>
-          <input type="text" class="form-inp" id="cardCvc"
-            placeholder="123" maxlength="4"
-            autocomplete="cc-csc" inputmode="numeric" dir="ltr">
-        </div>
-      </div>
-
-      <!-- Billing address — hidden inputs with defaults; Duffel Cards API requires them -->
-      <input type="hidden" id="billAddress" value="N/A">
-      <input type="hidden" id="billCity"    value="N/A">
-      <input type="hidden" id="billPostal"  value="00000">
-      <input type="hidden" id="billRegion"  value="N/A">
-      <input type="hidden" id="billCountry" value="US">
 
       <!-- Error display -->
       <div id="payError">
@@ -548,7 +524,7 @@
       <div class="sec-badges">
         <span class="sec-badge">🔒 SSL 256-bit</span>
         <span class="sec-badge">🛡️ PCI-DSS</span>
-        <span class="sec-badge">✈️ Duffel</span>
+        <span class="sec-badge">✈️ Stripe</span>
         <span class="sec-badge">🔐 3D Secure</span>
       </div>
     </div>
@@ -574,7 +550,7 @@
         <div class="spin hidden" id="desktopPaySpin"></div>
       </button>
       <p style="text-align:center;font-size:0.73rem;color:var(--pay-muted);margin:8px 0 0">
-        🛡️ لا نخزن بيانات بطاقتك · يتم التشفير عبر Duffel Cards API
+        🛡️ لا نخزن بيانات بطاقتك · يتم التشفير بواسطة Stripe
       </p>
     </div>
 
@@ -612,9 +588,7 @@
   </div>
 </div>
 
-<!-- Duffel 3DS UI Component container -->
-<div id="tdsContainer" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);align-items:center;justify-content:center;"></div>
-
+<script src="https://js.stripe.com/v3/"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
@@ -634,6 +608,45 @@ let discountGBP   = parseFloat(params.get('discount') || '0');
 let extraSvcGBP   = 0;
 
 function round2(n) { return Math.round(n * 100) / 100; }
+
+// ── Stripe setup ────────────────────────────────────────────
+let stripe      = null;
+let stripeCard  = null;
+
+async function initStripe() {
+  try {
+    const cfg = await fetch('/api/config/stripe-key').then(r => r.json());
+    const pk  = cfg.publishable_key || '';
+    if (!pk) { console.error('[Stripe] No publishable key'); return; }
+    stripe = Stripe(pk);
+    const elements = stripe.elements();
+    stripeCard = elements.create('card', {
+      style: {
+        base: {
+          fontSize: '15px',
+          fontFamily: 'inherit',
+          color: '#111827',
+          '::placeholder': { color: '#9ca3af' },
+        },
+        invalid: { color: '#dc2626' },
+      },
+      hidePostalCode: true,
+    });
+    stripeCard.mount('#stripeCardElement');
+    stripeCard.on('change', function(e) {
+      const errEl = document.getElementById('stripeCardError');
+      if (e.error) {
+        errEl.textContent = e.error.message;
+        errEl.style.display = 'block';
+      } else {
+        errEl.style.display = 'none';
+      }
+    });
+  } catch(e) {
+    console.error('[Stripe init]', e);
+  }
+}
+initStripe();
 
 // ── Format price ───────────────────────────────────────────
 function fmt(gbp) {
@@ -695,19 +708,7 @@ if (!sessionKey) {
   if (db) db.disabled = true;
 }
 
-// ── Card number formatting ─────────────────────────────────
-document.getElementById('cardNumber').addEventListener('input', function() {
-  let v = this.value.replace(/\D/g, '').substring(0, 16);
-  this.value = v.replace(/(.{4})/g, '$1 ').trim();
-});
-document.getElementById('cardExpiry').addEventListener('input', function() {
-  let v = this.value.replace(/\D/g, '').substring(0, 4);
-  if (v.length >= 2) v = v.substring(0,2) + ' / ' + v.substring(2);
-  this.value = v;
-});
-document.getElementById('cardCvc').addEventListener('input', function() {
-  this.value = this.value.replace(/\D/g, '').substring(0, 4);
-});
+// (card number / expiry / CVC formatting handled by Stripe Elements)
 
 // ── Flight summary ─────────────────────────────────────────
 async function loadFlightSummary() {
@@ -913,148 +914,90 @@ function setPayLoading(loading) {
   }
 }
 
-// ── 3DS challenge via Duffel UI Component ──────────────────
-let tdsSessionId = '';
-
-function waitForDuffelChallenge(clientId) {
-  return new Promise((resolve, reject) => {
-    const container = document.getElementById('tdsContainer');
-    if (!container) return reject(new Error('عنصر التحقق الأمني غير موجود.'));
-    container.style.display = 'flex';
-    container.innerHTML = '';
-
-    const script = document.createElement('script');
-    script.src = 'https://assets.duffel.com/components/three-d-secure/v1/index.js';
-    script.onload = () => {
-      try {
-        const component = window.DuffelThreeDSecure.createThreeDSecureComponent({
-          clientKey: clientId,
-          onSuccess: () => { container.style.display = 'none'; resolve(); },
-          onFailure: (err) => { container.style.display = 'none'; reject(new Error(err?.message || 'فشل التحقق الأمني.')); },
-        });
-        component.render(container);
-      } catch(e) {
-        container.style.display = 'none';
-        reject(new Error('فشل تحميل مكوّن التحقق الأمني.'));
-      }
-    };
-    script.onerror = () => {
-      container.style.display = 'none';
-      reject(new Error('فشل تحميل مكوّن التحقق الأمني.'));
-    };
-    document.head.appendChild(script);
-
-    // Safety timeout: 10 min.
-    setTimeout(() => {
-      container.style.display = 'none';
-      reject(new Error('انتهت مهلة التحقق الأمني. يرجى المحاولة مجدداً.'));
-    }, 600000);
-  });
-}
-
 async function submitPayment() {
   if (!sessionKey) {
     showError('⚠️ انتهت صلاحية الجلسة. يرجى العودة وإعادة الاختيار.');
     return;
   }
+  if (!stripe || !stripeCard) {
+    showError('⚠️ لم يتم تحميل نظام الدفع. يرجى إعادة تحميل الصفحة.');
+    return;
+  }
 
-  // Collect card fields.
   const cardName   = document.getElementById('cardName').value.trim();
-  const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g,'').trim();
-  const expiryRaw  = document.getElementById('cardExpiry').value.replace(/\s/g,'').trim();
-  const cvc        = document.getElementById('cardCvc').value.trim();
-  const address1   = document.getElementById('billAddress').value.trim();
-  const city       = document.getElementById('billCity').value.trim();
-  const postal     = document.getElementById('billPostal').value.trim();
-  const region     = document.getElementById('billRegion').value.trim();
-  const country    = document.getElementById('billCountry').value.trim().toUpperCase();
   const couponCode = document.getElementById('couponInput')?.value.trim() || '';
 
-  // Basic client-side validation.
-  if (!cardName)                    { showError('يرجى إدخال اسم حامل البطاقة.');       return; }
-  if (cardNumber.length < 13)       { showError('يرجى إدخال رقم بطاقة صحيح.');         return; }
-  const expiryParts = expiryRaw.replace('/','').match(/^(\d{2})(\d{2})$/);
-  if (!expiryParts)                 { showError('يرجى إدخال تاريخ انتهاء صحيح (MM/YY).'); return; }
-  if (cvc.length < 3)               { showError('يرجى إدخال رمز CVC.');                 return; }
-
-  const [, expMonth, expYear] = expiryParts;
+  if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة.'); return; }
 
   setPayLoading(true);
   hideError();
 
-  try {
-    // Step 1: tokenise card + create 3DS session via Duffel Cards API.
-    document.getElementById('payBtnTxt').textContent = '🔐 جاري التحقق من البطاقة…';
-    document.getElementById('payBtnTxt').classList.remove('hidden');
-    const dt = document.getElementById('desktopPayTxt');
-    if (dt) { dt.textContent = '🔐 جاري التحقق…'; dt.classList.remove('hidden'); }
+  const dt = document.getElementById('desktopPayTxt');
 
-    let initRes;
+  try {
+    // Step 1: create Stripe PaymentIntent on the server.
+    document.getElementById('payBtnTxt').textContent = '⏳ جاري إعداد الدفع…';
+    if (dt) { dt.textContent = '⏳ جاري إعداد الدفع…'; dt.classList.remove('hidden'); }
+
+    let piRes;
     try {
-      initRes = await Api.post('/api/flights/checkout/card/init', {
-        session_key: sessionKey,
-        coupon_code: couponCode || null,
-        card: {
-          number:               cardNumber,
-          name:                 cardName,
-          cvc:                  cvc,
-          expiry_month:         expMonth,
-          expiry_year:          expYear,
-          address_line_1:       address1,
-          address_city:         city,
-          address_region:       region,
-          address_postal_code:  postal,
-          address_country_code: country,
-        },
+      piRes = await Api.post('/api/flights/checkout/payment-intent', {
+        session_key:  sessionKey,
+        coupon_code:  couponCode || null,
       }, true);
     } catch(e) {
-      showError('⚠️ ' + (e.message || 'فشل التحقق من البطاقة. تأكد من البيانات وحاول مجدداً.'));
+      showError('⚠️ ' + (e.message || 'فشل إنشاء طلب الدفع. يرجى المحاولة مجدداً.'));
       setPayLoading(false);
       return;
     }
 
-    tdsSessionId = initRes.three_d_secure_session_id || '';
-    const tdsStatus = initRes.status || '';
-    const clientId  = initRes.client_id || '';
+    const clientSecret     = piRes.client_secret     || '';
+    const paymentIntentId  = piRes.payment_intent_id || '';
 
-    // Step 2: 3DS challenge (only when required).
-    if (tdsStatus === 'challenge_required') {
-      document.getElementById('payBtnTxt').textContent = '🔐 أكمل التحقق الأمني…';
-      if (dt) { dt.textContent = '🔐 أكمل التحقق الأمني…'; }
-
-      try {
-        await waitForDuffelChallenge(clientId);
-      } catch(tdsErr) {
-        showError('⚠️ ' + (tdsErr.message || 'فشل التحقق الأمني.'));
-        setPayLoading(false);
-        return;
-      }
-    } else if (tdsStatus !== 'ready_for_payment') {
-      showError('⚠️ فشل التحقق الأمني. يرجى المحاولة مجدداً.');
+    if (!clientSecret) {
+      showError('⚠️ لم يتم استلام بيانات الدفع من الخادم.');
       setPayLoading(false);
       return;
     }
 
-    // Step 3: complete booking after 3DS.
+    // Step 2: confirm the card payment via Stripe (handles 3DS automatically).
+    document.getElementById('payBtnTxt').textContent = '🔐 جاري التحقق من البطاقة…';
+    if (dt) dt.textContent = '🔐 جاري التحقق من البطاقة…';
+
+    const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(clientSecret, {
+      payment_method: {
+        card: stripeCard,
+        billing_details: { name: cardName },
+      },
+    });
+
+    if (stripeError) {
+      showError('⚠️ ' + (stripeError.message || 'فشل الدفع. يرجى المحاولة مجدداً.'));
+      setPayLoading(false);
+      return;
+    }
+
+    if (!paymentIntent || paymentIntent.status !== 'succeeded') {
+      showError('⚠️ لم يكتمل الدفع. يرجى المحاولة مجدداً.');
+      setPayLoading(false);
+      return;
+    }
+
+    // Step 3: confirm booking on the server (Duffel order via balance payment).
     document.getElementById('payBtnTxt').textContent = '✈️ جاري إنشاء الحجز…';
     if (dt) dt.textContent = '✈️ جاري إنشاء الحجز…';
 
     let bookingRef = '';
     try {
-      const cr = await Api.post('/api/flights/checkout/card/complete', {
-        session_key:                sessionKey,
-        three_d_secure_session_id:  tdsSessionId,
+      const cr = await Api.post('/api/flights/checkout/confirm', {
+        session_key:        sessionKey,
+        payment_intent_id:  paymentIntentId,
       }, true);
 
       bookingRef = cr.duffel_booking_reference || cr.booking_reference || '';
-      // 200/202: booking accepted but resource not yet available — still redirect to confirmation.
-      if (cr.status === 'pending') {
-        bookingRef = cr.booking_reference || bookingRef;
-      }
     } catch(e) {
-      const serverMsg = e.message || e.error || '';
       showError(
-        '⚠️ ' + (serverMsg || 'حدث خطأ أثناء إنشاء الحجز.'),
+        '⚠️ ' + (e.message || 'حدث خطأ أثناء إنشاء الحجز.'),
         'HTTP ' + (e.status || '?')
       );
       setPayLoading(false);
@@ -1107,18 +1050,15 @@ async function submitPayment() {
 
 // ── Test-mode card banner ───────────────────────────────────
 function fillTestCard(number) {
-  const el = document.getElementById('cardNumber');
-  if (!el) return;
-  el.value = number;
-  el.dispatchEvent(new Event('input'));
-  document.getElementById('cardName').value    = 'Test User';
-  document.getElementById('cardExpiry').value  = '12/30';
-  document.getElementById('cardCvc').value     = '123';
-  document.getElementById('billAddress').value = '1 Test Street';
-  document.getElementById('billCity').value    = 'London';
-  document.getElementById('billPostal').value  = 'SW1A 1AA';
-  document.getElementById('billRegion').value  = 'England';
-  document.getElementById('billCountry').value = 'GB';
+  // Stripe Elements handles card input — only pre-fill the cardholder name.
+  document.getElementById('cardName').value = 'Test User';
+  // Display the selected test card number so the user knows which to enter in Stripe Elements.
+  const hint = document.getElementById('stripeCardError');
+  if (hint) {
+    hint.textContent = '💳 أدخل رقم البطاقة التجريبية: ' + number + ' في حقل البطاقة أعلاه.';
+    hint.style.color   = '#92400e';
+    hint.style.display = 'block';
+  }
 }
 
 (async function initTestModeBanner() {

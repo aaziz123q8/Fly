@@ -819,72 +819,38 @@ class DuffelAdapter
     }
 
     // =========================================================================
-    // Cards API  (PCI-compliant hostname: api.duffel.cards)
+    // Cards API  — DISABLED: Duffel Cards feature not enabled on this account.
+    // Payment is handled exclusively via Stripe. These methods throw immediately
+    // so no request ever reaches api.duffel.cards.
     // =========================================================================
 
-    private const CARDS_BASE_URL = 'https://api.duffel.cards';
-
-    /**
-     * Create a Duffel card token for use in createOrder with payment type 'card'.
-     * Requires PCI-compliant environment. Cards expire after 25 min or first use.
-     *
-     * @param  array $cardData  number, name, cvc, expiry_month, expiry_year,
-     *                          address_line_1, address_city, address_region,
-     *                          address_postal_code, address_country_code
-     */
+    /** @throws \RuntimeException always — Duffel Cards disabled */
     public function createCard(array $cardData): array
     {
-        // Cards API (api.duffel.cards) uses the same Duffel-Version as the Air API (v2).
-        return $this->request('POST', self::CARDS_BASE_URL . '/payments/cards', ['data' => $cardData]);
+        throw new \RuntimeException('تم تعطيل Duffel Cards. يتم الدفع حالياً عبر Stripe فقط.', 410);
     }
 
-    /**
-     * Delete a card by ID (useful for multi-use cards or cleanup on booking failure).
-     */
+    /** @throws \RuntimeException always — Duffel Cards disabled */
     public function deleteCard(string $cardId): void
     {
-        $this->request('DELETE', self::CARDS_BASE_URL . '/payments/cards/' . urlencode($cardId));
+        // No-op: Cards are not created so there is nothing to delete.
+        error_log('[DUFFEL_CARDS_DISABLED] deleteCard called with id=' . $cardId . ' — ignored');
     }
 
-    /**
-     * Create a 3DS session to authenticate a card before use in createOrder.
-     * Endpoint is api.duffel.com (NOT api.duffel.cards).
-     *
-     * Pass exception='secure_corporate_payment' to skip the cardholder challenge
-     * (status goes straight to 'ready_for_payment'). Without the exception,
-     * status may be 'challenge_required' and the client must render the UI component.
-     *
-     * @param  string      $cardId      Card token ID from createCard()
-     * @param  string      $resourceId  Offer ID (or order/booking ID)
-     * @param  array       $services    [{id, quantity}] ancillary services
-     * @param  string|null $exception   'secure_corporate_payment' to skip challenge
-     */
+    /** @throws \RuntimeException always — Duffel Cards disabled */
     public function createThreeDSecureSession(
         string $cardId,
         string $resourceId,
         array  $services  = [],
-        ?string $exception = 'secure_corporate_payment'
+        ?string $exception = null
     ): array {
-        $data = [
-            'card_id'     => $cardId,
-            'resource_id' => $resourceId,
-        ];
-        if (!empty($services)) {
-            $data['services'] = $services;
-        }
-        if ($exception !== null) {
-            $data['exception'] = $exception;
-        }
-        return $this->request('POST', $this->baseUrl . '/payments/three_d_secure_sessions', ['data' => $data]);
+        throw new \RuntimeException('تم تعطيل Duffel Cards. يتم الدفع حالياً عبر Stripe فقط.', 410);
     }
 
-    /**
-     * Retrieve a 3DS session by ID to check status:
-     * ready_for_payment | challenge_required | failed | expired
-     */
+    /** @throws \RuntimeException always — Duffel Cards disabled */
     public function getThreeDSecureSession(string $sessionId): array
     {
-        return $this->request('GET', $this->baseUrl . '/payments/three_d_secure_sessions/' . urlencode($sessionId));
+        throw new \RuntimeException('تم تعطيل Duffel Cards. يتم الدفع حالياً عبر Stripe فقط.', 410);
     }
 
     // =========================================================================
@@ -1350,9 +1316,8 @@ class DuffelAdapter
             'Content-Type: application/json',
         ], $extraHeaders);
 
-        // Detect service type for logging
-        $service = str_contains($url, 'api.duffel.cards') ? 'Cards'
-                 : (str_contains($url, '/payments/') ? 'Payments' : 'Flights');
+        // Detect service type for logging (Cards API disabled; no requests go to api.duffel.cards)
+        $service = str_contains($url, '/payments/') ? 'Payments' : 'Flights';
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [

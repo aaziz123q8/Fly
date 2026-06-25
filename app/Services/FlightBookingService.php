@@ -400,18 +400,17 @@ class FlightBookingService
     }
 
     // =========================================================================
-    // initCardPayment — Step 1: tokenise card via Duffel Cards API
+    // initCardPayment — DISABLED (Duffel Cards not enabled on this account)
     // =========================================================================
 
     /**
-     * Create a single-use Duffel card token and immediately create a 3DS session
-     * to authenticate it against the specific offer.
-     *
-     * Called by payment.html after the user fills the card form.
-     * Returns { card_id, three_d_secure_session_id, three_d_secure_session_token, redirect_url }
+     * @throws \RuntimeException always (HTTP 410) — Duffel Cards is disabled.
+     *         Payment is handled exclusively via Stripe.
      */
     public function initCardPayment(string $sessionKey, int $userId, array $cardData, ?string $couponCode = null, ?string $deviceIp = null, ?string $deviceUserAgent = null): array
     {
+        throw new \RuntimeException('تم تعطيل Duffel Cards. يتم الدفع حالياً عبر Stripe فقط.', 410);
+        // Dead code below — kept for reference only.
         $session = $this->requireSession($sessionKey, $userId);
 
         if (!in_array($session['current_step'], ['payment', 'services', 'review'], true)) {
@@ -600,15 +599,16 @@ class FlightBookingService
     }
 
     // =========================================================================
-    // completeCardBooking — Step 2: after 3DS auth, create Duffel order
+    // completeCardBooking — DISABLED (Duffel Cards not enabled on this account)
     // =========================================================================
 
     /**
-     * Called by payment.html after the 3DS redirect returns with status=authenticated.
-     * Verifies 3DS status, calls priceOffer, then createOrder with payment type 'card'.
+     * @throws \RuntimeException always (HTTP 410) — Duffel Cards is disabled.
      */
     public function completeCardBooking(string $sessionKey, string $tdsSessionId, int $userId): array
     {
+        throw new \RuntimeException('تم تعطيل Duffel Cards. يتم الدفع حالياً عبر Stripe فقط.', 410);
+        // Dead code below — kept for reference only.
         $session = $this->requireSession($sessionKey, $userId);
 
         $storedTdsId = $session['tds_session_id'] ?? '';

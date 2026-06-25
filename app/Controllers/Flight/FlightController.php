@@ -265,65 +265,18 @@ class FlightController
 
     public function initCardPayment(Request $request): void
     {
-        $user = AuthMiddleware::currentUser();
-        if ($user === null) Response::unauthorized();
-
-        $body       = $request->json() ?: [];
-        $sessionKey = (string) ($body['session_key'] ?? '');
-        $coupon     = isset($body['coupon_code']) ? (string) $body['coupon_code'] : null;
-        $cardData   = $body['card'] ?? [];
-
-        if (empty($sessionKey) || empty($cardData)) {
-            Response::error('session_key and card are required.', 422);
-            return;
-        }
-
-        // Forward traveller device details for Duffel fraud detection.
-        $deviceIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? null;
-        if ($deviceIp !== null && str_contains($deviceIp, ',')) {
-            $deviceIp = trim(explode(',', $deviceIp)[0]);
-        }
-        $deviceUserAgent = $_SERVER['HTTP_USER_AGENT'] ?? null;
-
-        try {
-            $result = $this->bookingService->initCardPayment(
-                $sessionKey,
-                (int) $user['id'],
-                $cardData,
-                $coupon,
-                $deviceIp,
-                $deviceUserAgent
-            );
-            Response::json($result);
-        } catch (\RuntimeException $e) {
-            Response::error($e->getMessage(), $e->getCode() ?: 400);
-        }
+        // Duffel Cards is disabled — payment is handled exclusively via Stripe.
+        Response::error('تم تعطيل Duffel Cards. يتم الدفع حالياً عبر Stripe فقط.', 410);
     }
 
     // =========================================================================
-    // Card payment: Step 2 — complete booking after 3DS auth
+    // Card payment: Step 2 — DISABLED (Duffel Cards removed)
     // =========================================================================
 
     public function completeCardBooking(Request $request): void
     {
-        $user = AuthMiddleware::currentUser();
-        if ($user === null) Response::unauthorized();
-
-        $body         = $request->json() ?: [];
-        $sessionKey   = (string) ($body['session_key'] ?? '');
-        $tdsSessionId = (string) ($body['three_d_secure_session_id'] ?? '');
-
-        if (empty($sessionKey) || empty($tdsSessionId)) {
-            Response::error('session_key and three_d_secure_session_id are required.', 422);
-            return;
-        }
-
-        try {
-            $result = $this->bookingService->completeCardBooking($sessionKey, $tdsSessionId, (int) $user['id']);
-            Response::json($result);
-        } catch (\RuntimeException $e) {
-            Response::error($e->getMessage(), $e->getCode() ?: 400);
-        }
+        // Duffel Cards is disabled — payment is handled exclusively via Stripe.
+        Response::error('تم تعطيل Duffel Cards. يتم الدفع حالياً عبر Stripe فقط.', 410);
     }
 
     // =========================================================================
