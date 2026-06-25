@@ -640,6 +640,54 @@ class FlightBookingService
     }
 
     // =========================================================================
+    // Forensic step logger (used throughout completeBooking)
+    // =========================================================================
+
+    private string $stepRef = '';  // booking reference for log correlation
+
+    private function step(string $name, string $state, array $ctx = []): void
+    {
+        $line = sprintf(
+            '[BOOKING_STEP][%s][%s] %s%s',
+            $this->stepRef ?: 'pre-ref',
+            $state,
+            $name,
+            $ctx ? ' | ' . json_encode($ctx, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : ''
+        );
+        error_log($line);
+    }
+
+    /**
+     * Execute a PDO statement with full error logging on failure.
+     * Throws RuntimeException with SQL details if the query fails.
+     */
+    private function execStep(string $stepName, \PDOStatement $stmt, array $params): void
+    {
+        $this->step($stepName, 'START');
+        try {
+            $stmt->execute($params);
+            $this->step($stepName, 'SUCCESS');
+        } catch (\Throwable $e) {
+            $info = $stmt->errorInfo();
+            $ctx  = [
+                'exception' => get_class($e),
+                'message'   => $e->getMessage(),
+                'file'      => $e->getFile() . ':' . $e->getLine(),
+                'sql_state' => $info[0] ?? null,
+                'error_code'=> $info[1] ?? null,
+                'error_msg' => $info[2] ?? null,
+                'params'    => $params,
+            ];
+            $this->step($stepName, 'FAIL', $ctx);
+            throw new \RuntimeException(
+                sprintf('[DB_FAIL][%s] %s (SQL:%s %s)', $stepName, $e->getMessage(), $info[0] ?? '', $info[2] ?? ''),
+                500,
+                $e
+            );
+        }
+    }
+
+    // =========================================================================
     // completeBooking  (called by WebhookController or after card 3DS)
     // =========================================================================
 
@@ -650,8 +698,10 @@ class FlightBookingService
         string $cardId = ''
     ): array
     {
-        // For card payments, look up by session_key directly.
-        // For Stripe/balance payments, look up by payment_intent_id.
+        $this->stepRef = '(pre-ref)';
+        $this->step('SESSION_LOAD', 'START', ['session_key' => substr($sessionKey, 0, 8) . '…', 'pi' => substr($paymentIntentId, 0, 12) . '…']);
+
+        // For Stripe/balance payments, look up by session_key (also works for card — disabled).
         if ($paymentType === 'card' || $sessionKey !== '') {
             $stmt = $this->db->prepare(
                 'SELECT * FROM booking_sessions
@@ -681,8 +731,10 @@ class FlightBookingService
         }
 
         if (!$session) {
+            $this->step('SESSION_LOAD', 'FAIL', ['reason' => 'not found']);
             throw new RuntimeException('Booking session not found.', 404);
         }
+        $this->step('SESSION_LOAD', 'SUCCESS', ['session_id' => $session['id'] ?? '?', 'step' => $session['current_step'] ?? '?']);
 
         $passengersData = is_string($session['passengers_data'])
             ? json_decode($session['passengers_data'], true)
@@ -699,13 +751,17 @@ class FlightBookingService
         $offerId = $session['provider_offer_id'];
         $userId  = (int) $session['user_id'];
 
+        $this->step('OFFER_LOAD', 'START', ['offer_id' => $offerId]);
         $offer = $this->fetchOffer($offerId);
         if ($offer === null) {
+            $this->step('OFFER_LOAD', 'FAIL', ['reason' => 'not found / expired']);
             throw new RuntimeException('Offer no longer available.', 410);
         }
         $offerData = json_decode($offer['offer_data'], true);
+        $this->step('OFFER_LOAD', 'SUCCESS', ['offer_id' => $offerId, 'total' => $offer['total_amount'], 'currency' => $offer['currency']]);
 
         // Generate unique booking reference in FM00000001 format — atomic via table lock.
+        $this->step('BOOKING_REF_GEN', 'START');
         $this->db->exec("LOCK TABLES flight_bookings WRITE");
         try {
             $lastRef = $this->db->query(
@@ -720,13 +776,19 @@ class FlightBookingService
         } finally {
             $this->db->exec("UNLOCK TABLES");
         }
+        $this->stepRef = $bookingReference;
+        $this->step('BOOKING_REF_GEN', 'SUCCESS', ['ref' => $bookingReference]);
 
         // Map passengers for Duffel (add required Duffel fields).
+        $this->step('PASSENGER_MAPPING', 'START', ['count' => count($passengersData)]);
         $duffelPassengers = $this->mapPassengersForDuffel($passengersData, $offerData);
+        $this->step('PASSENGER_MAPPING', 'SUCCESS', ['mapped_count' => count($duffelPassengers)]);
 
         // Pre-flight validation: ensure every required Duffel field is present
         // before hitting the API. Throws 422 with Arabic message on failure.
+        $this->step('PASSENGER_VALIDATION', 'START');
         $this->validateDuffelPassengers($duffelPassengers);
+        $this->step('PASSENGER_VALIDATION', 'SUCCESS');
 
         // Build the services list for priceOffer (intended_services).
         // Per Duffel API: once an offer is repriced with intended_services, the services
@@ -745,6 +807,7 @@ class FlightBookingService
         // After this call the price is fixed on Duffel's side. createOrder uses
         // the same offer_id with NO services field — they are already embedded.
         $intendedMethods = ['balance']; // Stripe collects money; Duffel charges balance
+        $this->step('PRICE_OFFER', 'START', ['offer_id' => $offerId, 'intended_services' => count($intendedServices)]);
         try {
             $priceResponse  = $this->duffel->priceOffer($offerId, $intendedMethods, $intendedServices);
             $pricedData     = $priceResponse['data'] ?? [];
@@ -754,7 +817,9 @@ class FlightBookingService
             if ($pricedAmount === null || $pricedAmount === '') {
                 throw new \RuntimeException('لم يتم الحصول على سعر الرحلة من Duffel.', 409);
             }
+            $this->step('PRICE_OFFER', 'SUCCESS', ['amount' => $pricedAmount, 'currency' => $pricedCurrency]);
         } catch (\RuntimeException $priceEx) {
+            $this->step('PRICE_OFFER', 'FAIL', ['error' => $priceEx->getMessage()]);
             error_log('[PRICE_OFFER_FAIL] offer=' . $offerId . ' error=' . $priceEx->getMessage());
             $mapped = DuffelErrorMapper::fromDuffelException($priceEx);
             $parts  = DuffelErrorMapper::split($mapped->getMessage());
@@ -832,6 +897,7 @@ class FlightBookingService
         // Create Duffel order. Services field is intentionally omitted — it was already
         // passed to priceOffer as intended_services. Sending it again causes
         // intended_services_conflict per Duffel API spec.
+        $this->step('CREATE_ORDER', 'START', ['offer_id' => $offerId, 'passengers' => count($duffelPassengers), 'payment_type' => $paymentType]);
         try {
             $orderResponse = $this->duffel->createOrder(
                 $offerId,
@@ -842,6 +908,7 @@ class FlightBookingService
                 $session['device_ip']         ?? null,
                 $session['device_user_agent'] ?? null
             );
+        $this->step('CREATE_ORDER', 'SUCCESS', ['order_id' => $orderResponse['data']['id'] ?? '?', 'http_status' => $orderResponse['http_status'] ?? 201]);
         } catch (\Throwable $duffelEx) {
             // Map to a structured, Arabic-ready exception
             $mapped   = DuffelErrorMapper::fromDuffelException($duffelEx);
@@ -857,6 +924,7 @@ class FlightBookingService
                 'mapped_customer'   => $parts['customer'],
                 'trace'             => substr($duffelEx->getTraceAsString(), 0, 1500),
             ];
+            $this->step('CREATE_ORDER', 'FAIL', ['error' => $duffelEx->getMessage(), 'code' => $duffelEx->getCode()]);
             error_log('[DUFFEL_ORDER_FAIL] ' . json_encode($forensic, JSON_UNESCAPED_UNICODE));
             try {
                 $this->db->prepare(
@@ -918,14 +986,14 @@ class FlightBookingService
                     'INSERT INTO flight_bookings
                        (user_id, provider_id, booking_reference, provider_offer_id, status,
                         trip_type, cabin_class, adults_count, children_count,
-                        origin_iata, destination_iata, departure_at, total_amount, currency,
+                        origin_airport, destination_airport, departure_at, total_amount, currency,
                         created_at, updated_at)
                      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())'
                 )->execute([
-                    $userId, 'duffel', $bookingReference, $offerId, 'pending',
-                    $tripType ?? 'one_way', $cabinClass ?? 'economy',
-                    $adults ?? 1, $children ?? 0,
-                    $origin ?? '', $dest ?? '', $departureAt ?? null,
+                    $userId, 1, $bookingReference, $offerId, 'pending',
+                    'one_way', 'economy',
+                    1, 0,
+                    '', '', null,
                     $pricedAmount, $pricedCurrency,
                 ]);
             } catch (\Throwable $dbEx) {
@@ -1016,6 +1084,7 @@ class FlightBookingService
         $currency    = strtoupper($offer['currency'] ?? 'GBP');
 
         // Insert flight_bookings row (including all Sprint-1 Duffel order fields).
+        $this->step('DB_INSERT_BOOKING', 'START', ['ref' => $bookingReference]);
         $bStmt = $this->db->prepare(
             'INSERT INTO flight_bookings
                (user_id, provider_id, booking_reference, provider_order_id,
@@ -1040,7 +1109,7 @@ class FlightBookingService
                 :awaiting_payment, :duffel_payment_failure,
                 NOW())'
         );
-        $bStmt->execute([
+        $bParams = [
             ':user_id'                    => $userId,
             ':ref'                        => $bookingReference,
             ':provider_order_id'          => $providerOrderId,
@@ -1066,7 +1135,8 @@ class FlightBookingService
             ':change_conditions'          => $changeConditions,
             ':awaiting_payment'           => $awaitingPayment,
             ':duffel_payment_failure'     => $duffelPaymentFailure,
-        ]);
+        ];
+        $this->execStep('DB_INSERT_BOOKING', $bStmt, $bParams);
         $bookingId = (int) $this->db->lastInsertId();
 
         // Insert flight_booking_passengers (with Duffel passenger ID and ticket number).
@@ -1083,19 +1153,26 @@ class FlightBookingService
         foreach ($passengersData as $idx => $passenger) {
             $duffelPaxId  = $duffelPassengers[$idx]['id'] ?? null;
             $ticketNumber = $duffelPaxId ? ($ticketMap[$duffelPaxId] ?? null) : null;
-            $pStmt->execute([
+            $rawGender    = strtolower(trim((string)($passenger['gender'] ?? '')));
+            $genderNorm   = match($rawGender) {
+                'male',   'm' => 'male',
+                'female', 'f' => 'female',
+                default       => 'male',
+            };
+            $pParams = [
                 ':booking_id'             => $bookingId,
                 ':passenger_type'         => $passenger['type'] ?? 'adult',
-                ':first_name'             => $passenger['first_name'],
-                ':last_name'              => $passenger['last_name'],
-                ':gender'                 => $passenger['gender'],
+                ':first_name'             => $passenger['first_name'] ?? ($passenger['given_name'] ?? ''),
+                ':last_name'              => $passenger['last_name']  ?? ($passenger['family_name'] ?? ''),
+                ':gender'                 => $genderNorm,
                 ':dob'                    => $passenger['date_of_birth'],
                 ':nationality'            => $passenger['nationality'],
                 ':passport_number'        => $passenger['passport_number'] ?? null,
                 ':passport_expiry'        => $passenger['passport_expiry'] ?? null,
                 ':provider_passenger_id'  => $duffelPaxId,
                 ':ticket_number'          => $ticketNumber,
-            ]);
+            ];
+            $this->execStep('DB_INSERT_PASSENGER_' . ($idx + 1), $pStmt, $pParams);
         }
 
         // Insert order-level documents (electronic tickets, itineraries).
@@ -1118,27 +1195,30 @@ class FlightBookingService
         );
         foreach ($slices as $sliceIdx => $slice) {
             foreach (($slice['segments'] ?? []) as $segIdx => $seg) {
-                $sStmt->execute([
+                $sParams = [
                     ':booking_id'     => $bookingId,
                     ':slice_index'    => $sliceIdx,
                     ':segment_order'  => $segIdx + 1,
                     ':origin'         => $seg['origin']['iata_code']      ?? '',
                     ':destination'    => $seg['destination']['iata_code'] ?? '',
-                    ':departing_at'   => $seg['departing_at']             ?? null,
-                    ':arriving_at'    => $seg['arriving_at']              ?? null,
+                    ':departing_at'   => $seg['departing_at']             ?? '1970-01-01 00:00:00',
+                    ':arriving_at'    => $seg['arriving_at']              ?? '1970-01-01 00:00:00',
                     ':carrier'        => $seg['marketing_carrier']['iata_code'] ?? '',
                     ':flight_number'  => ($seg['marketing_carrier']['iata_code'] ?? '') . ($seg['marketing_carrier_flight_number'] ?? ''),
                     ':aircraft'       => $seg['aircraft']['iata_code']    ?? null,
-                ]);
+                ];
+                $this->execStep('DB_INSERT_SEGMENT_' . $sliceIdx . '_' . ($segIdx + 1), $sStmt, $sParams);
             }
         }
 
         // Update payment row.
-        $this->db->prepare(
+        $payUpdateStmt = $this->db->prepare(
             'UPDATE payments
              SET booking_id = :bid, status = :status
              WHERE stripe_payment_intent_id = :pi'
-        )->execute([':bid' => $bookingId, ':status' => 'succeeded', ':pi' => $paymentIntentId]);
+        );
+        $this->execStep('DB_UPDATE_PAYMENT', $payUpdateStmt, [':bid' => $bookingId, ':status' => 'succeeded', ':pi' => $paymentIntentId]);
+        $this->step('SAVE_BOOKING', 'SUCCESS', ['booking_id' => $bookingId, 'ref' => $bookingReference]);
 
         // Advance session step.
         $this->sessionService->update($session['session_key'], ['current_step' => 'complete']);

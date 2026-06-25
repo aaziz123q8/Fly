@@ -14,14 +14,30 @@ require BASE_PATH . '/vendor/autoload.php';
 
 // Global exception handler — catches any unhandled Throwable and returns JSON.
 set_exception_handler(function (Throwable $e): void {
+    // Always log the full exception to the PHP error log.
+    error_log(sprintf(
+        '[UNHANDLED_EXCEPTION] %s: %s in %s:%d | trace: %s',
+        get_class($e),
+        $e->getMessage(),
+        $e->getFile(),
+        $e->getLine(),
+        substr($e->getTraceAsString(), 0, 3000)
+    ));
+
     if (!headers_sent()) {
         http_response_code(500);
         header('Content-Type: application/json; charset=UTF-8');
     }
-    $isDev = (getenv('APP_ENV') ?: 'production') === 'development';
+
+    $isDebug = filter_var(getenv('APP_DEBUG') ?: '0', FILTER_VALIDATE_BOOLEAN)
+            || (getenv('APP_ENV') ?: 'production') === 'development';
+
     echo json_encode([
         'error'   => 'server_error',
-        'message' => $isDev ? $e->getMessage() : 'An internal server error occurred.',
+        'message' => $isDebug
+            ? sprintf('[%s] %s in %s:%d', get_class($e), $e->getMessage(), $e->getFile(), $e->getLine())
+            : 'An internal server error occurred.',
+        'debug'   => $isDebug ? substr($e->getTraceAsString(), 0, 2000) : null,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit(1);
 });

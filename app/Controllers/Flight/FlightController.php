@@ -254,8 +254,14 @@ class FlightController
         try {
             $result = $this->bookingService->confirmCheckout($sessionKey, $piId, (int) $user['id']);
             Response::json($result);
-        } catch (\RuntimeException $e) {
-            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        } catch (\Throwable $e) {
+            $isDebug = filter_var(getenv('APP_DEBUG') ?: '0', FILTER_VALIDATE_BOOLEAN)
+                    || (getenv('APP_ENV') ?: 'production') === 'development';
+            $msg = $isDebug
+                ? sprintf('[%s] %s in %s:%d', get_class($e), $e->getMessage(), $e->getFile(), $e->getLine())
+                : $e->getMessage();
+            error_log(sprintf('[CONFIRM_CHECKOUT_CONTROLLER] %s: %s in %s:%d', get_class($e), $e->getMessage(), $e->getFile(), $e->getLine()));
+            Response::error($msg, ($e->getCode() >= 400 && $e->getCode() < 600) ? $e->getCode() : 500);
         }
     }
 
