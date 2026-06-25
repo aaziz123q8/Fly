@@ -472,42 +472,27 @@ class FlightBookingService
             }
         }
 
-        // Fetch the live offer from Duffel to get the authoritative total_amount.
-        // Using GET /air/offers/{id} (simple, no side-effects) instead of the
-        // priceOffer action which was unreliable in test/sandbox mode.
+        // Call priceOffer to get the EXACT amount Duffel will accept in createOrder.
+        // priceOffer locks the price on Duffel's side; getOffer does not — Duffel
+        // recalculates internally on createOrder and can diverge from a plain GET.
         try {
-            $freshOffer     = $this->duffel->getOffer($offerId);
-            $pricedAmount   = $freshOffer['data']['total_amount']   ?? null;
-            $pricedCurrency = strtoupper($freshOffer['data']['total_currency'] ?? $offer['currency'] ?? 'GBP');
+            $priceResponse  = $this->duffel->priceOffer($offerId, ['balance'], $cleanServices);
+            $pricedData     = $priceResponse['data'] ?? [];
+            $pricedAmount   = $pricedData['total_amount']    ?? null;
+            $pricedCurrency = strtoupper($pricedData['total_currency'] ?? $offer['currency'] ?? 'GBP');
 
-            // If services were selected, add their per-unit total_amount from the offer's available_services.
-            if (!empty($cleanServices)) {
-                $availSvcs = [];
-                foreach (($freshOffer['data']['available_services'] ?? []) as $as) {
-                    $availSvcs[$as['id']] = (float)($as['total_amount'] ?? 0);
-                }
-                $svcTotal = 0.0;
-                foreach ($cleanServices as $cs) {
-                    $unitPrice = $availSvcs[$cs['id']] ?? 0.0;
-                    $svcTotal += $unitPrice * (int)($cs['quantity'] ?? 1);
-                }
-                if ($svcTotal > 0) {
-                    $pricedAmount = number_format((float)$pricedAmount + $svcTotal, 2, '.', '');
-                }
-            }
-
-            if ($pricedAmount === null) {
+            if ($pricedAmount === null || $pricedAmount === '') {
                 throw new \RuntimeException('لم يتم الحصول على سعر الرحلة من Duffel.', 409);
             }
         } catch (\RuntimeException $priceEx) {
-            error_log('[GET_OFFER_FAIL] offer=' . $offerId . ' error=' . $priceEx->getMessage());
+            error_log('[PRICE_OFFER_FAIL] offer=' . $offerId . ' error=' . $priceEx->getMessage());
             $mapped = DuffelErrorMapper::fromDuffelException($priceEx);
             $parts  = DuffelErrorMapper::split($mapped->getMessage());
             throw new \RuntimeException($parts['customer'], $mapped->getCode() ?: 409);
         }
 
         error_log('[AMOUNT_CHECK] offer_cached=' . $offer['total_amount']
-            . ' fresh=' . $pricedAmount
+            . ' priced=' . $pricedAmount
             . ' currency=' . $pricedCurrency
             . ' services_count=' . count($cleanServices));
 
