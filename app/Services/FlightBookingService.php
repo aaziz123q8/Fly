@@ -866,17 +866,18 @@ class FlightBookingService
             error_log('[DUFFEL_ORDER_PENDING] http=' . $httpStatus
                 . ' ref=' . $bookingReference . ' msg=' . $pendingMessage);
 
-            // Persist a pending row so ops can track and webhook can update it.
+            // Persist a pending row so ops can track and the order.created/order.creation_failed
+            // webhook can locate and update it via provider_offer_id.
             try {
                 $this->db->prepare(
                     'INSERT INTO flight_bookings
-                       (user_id, provider_id, booking_reference, status,
+                       (user_id, provider_id, booking_reference, provider_offer_id, status,
                         trip_type, cabin_class, adults_count, children_count,
                         origin_iata, destination_iata, departure_at, total_amount, currency,
                         created_at, updated_at)
-                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())'
+                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW())'
                 )->execute([
-                    $userId, 'duffel', $bookingReference, 'pending',
+                    $userId, 'duffel', $bookingReference, $offerId, 'pending',
                     $tripType ?? 'one_way', $cabinClass ?? 'economy',
                     $adults ?? 1, $children ?? 0,
                     $origin ?? '', $dest ?? '', $departureAt ?? null,

@@ -257,6 +257,14 @@ class WebhookController
             case 'ping':
                 return 'pong';
 
+            // Sent ~30s after a 200/202 createOrder response once the order is ready.
+            case 'order.created':
+                return $this->onDuffelOrderCreated($data);
+
+            // Sent ~30s after a 202 createOrder when the order ultimately fails.
+            case 'order.creation_failed':
+                return $this->onDuffelOrderCreationFailed($data);
+
             case 'order.airline_initiated_change':
             case 'order.airline_initiated_change.updated':
             case 'order.updated':
@@ -274,9 +282,149 @@ class WebhookController
             case 'order.payment_status_updated':
                 return $this->onDuffelPaymentStatusUpdated($data);
 
+            // Sent after a card payment on a hold order resolves (200/202 from /air/payments).
+            case 'payment.created':
+                return $this->onDuffelPaymentCreated($data);
+
             default:
+                error_log('[Duffel|webhook] unhandled event type: ' . $type);
                 return 'unhandled_event_type:' . $type;
         }
+    }
+
+    /**
+     * order.created — fires ~30s after a 200/202 createOrder card payment response.
+     * The payload contains the full order object. Find the pending booking row by
+     * offer_id (embedded in the webhook) and promote it to confirmed.
+     */
+    private function onDuffelOrderCreated(array $data): string
+    {
+        $orderId  = $data['id']                ?? null;
+        $bookRef  = $data['booking_reference'] ?? null;
+        $offerId  = $data['selected_offers'][0]['id'] ?? ($data['offer_id'] ?? null);
+
+        error_log(sprintf('[Duffel|order.created] order=%s ref=%s offer=%s', $orderId, $bookRef, $offerId));
+
+        if (!$orderId) {
+            return 'missing_order_id';
+        }
+
+        // Try to locate the pending booking by provider_order_id (if we stored it on the 202 row)
+        // or by the offer_id stored in the booking session / flight_bookings.
+        $updated = 0;
+        if ($offerId) {
+            $stmt = $this->db->prepare(
+                "UPDATE flight_bookings
+                 SET provider_order_id        = COALESCE(NULLIF(provider_order_id,''), :oid),
+                     duffel_booking_reference = COALESCE(duffel_booking_reference, :ref),
+                     status                   = 'confirmed',
+                     updated_at               = NOW()
+                 WHERE status = 'pending'
+                   AND provider_offer_id = :offer_id"
+            );
+            $stmt->execute([':oid' => $orderId, ':ref' => $bookRef, ':offer_id' => $offerId]);
+            $updated = $stmt->rowCount();
+        }
+
+        // Fallback: match on provider_order_id already recorded during the pending insert.
+        if ($updated === 0) {
+            $stmt = $this->db->prepare(
+                "UPDATE flight_bookings
+                 SET duffel_booking_reference = COALESCE(duffel_booking_reference, :ref),
+                     status                   = 'confirmed',
+                     updated_at               = NOW()
+                 WHERE provider_order_id = :oid AND status = 'pending'"
+            );
+            $stmt->execute([':oid' => $orderId, ':ref' => $bookRef]);
+            $updated = $stmt->rowCount();
+        }
+
+        if ($updated > 0) {
+            $this->queueNotificationJob($orderId, 'flight_booking_confirmed');
+        } else {
+            error_log('[Duffel|order.created] no pending booking found for order=' . $orderId . ' offer=' . $offerId);
+        }
+
+        return 'order_created:updated=' . $updated;
+    }
+
+    /**
+     * order.creation_failed — fires ~30s after a 202 createOrder when the order fails.
+     * The payload contains the offer_id. Mark the pending booking as failed and alert ops.
+     */
+    private function onDuffelOrderCreationFailed(array $data): string
+    {
+        $offerId = $data['offer_id'] ?? null;
+        $reason  = $data['failure_reason'] ?? ($data['message'] ?? 'unknown');
+
+        error_log(sprintf('[Duffel|order.creation_failed] offer=%s reason=%s', $offerId, $reason));
+
+        $updated = 0;
+        if ($offerId) {
+            $stmt = $this->db->prepare(
+                "UPDATE flight_bookings
+                 SET status     = 'failed',
+                     updated_at = NOW()
+                 WHERE status = 'pending'
+                   AND provider_offer_id = :offer_id"
+            );
+            $stmt->execute([':offer_id' => $offerId]);
+            $updated = $stmt->rowCount();
+        }
+
+        // Queue an ops alert regardless — money may have left the card.
+        try {
+            $this->db->prepare(
+                'INSERT INTO job_queue (job_type, payload) VALUES (:jt, :pl)'
+            )->execute([
+                ':jt' => 'order_creation_failed_alert',
+                ':pl' => json_encode(['offer_id' => $offerId, 'reason' => $reason, 'rows_updated' => $updated]),
+            ]);
+        } catch (\Throwable) {}
+
+        return 'order_creation_failed:offer=' . $offerId . ':updated=' . $updated;
+    }
+
+    /**
+     * payment.created — fires ~30s after a card payment on a hold order resolves.
+     * Updates the payment record and confirms the booking if it was awaiting payment.
+     */
+    private function onDuffelPaymentCreated(array $data): string
+    {
+        $orderId   = $data['order_id'] ?? null;
+        $paymentId = $data['id']       ?? null;
+        $amount    = $data['amount']   ?? null;
+        $currency  = $data['currency'] ?? null;
+
+        error_log(sprintf('[Duffel|payment.created] order=%s payment=%s amount=%s %s',
+            $orderId, $paymentId, $amount, $currency));
+
+        if (!$orderId) {
+            return 'missing_order_id';
+        }
+
+        // Mark the booking as confirmed and clear the awaiting_payment flag.
+        $stmt = $this->db->prepare(
+            "UPDATE flight_bookings
+             SET awaiting_payment = 0,
+                 paid_at          = NOW(),
+                 status           = CASE WHEN status = 'awaiting_payment' THEN 'confirmed' ELSE status END,
+                 updated_at       = NOW()
+             WHERE provider_order_id = :oid"
+        );
+        $stmt->execute([':oid' => $orderId]);
+
+        // Update the payments table if a matching row exists.
+        $this->db->prepare(
+            "UPDATE payments SET status = 'succeeded', paid_at = NOW()
+             WHERE booking_type = 'flight'
+               AND booking_id   = (SELECT id FROM flight_bookings WHERE provider_order_id = :oid LIMIT 1)
+               AND status != 'succeeded'"
+        )->execute([':oid' => $orderId]);
+
+        $this->queueNotificationJob($orderId, 'flight_payment_confirmed');
+
+        return 'payment_created:order=' . $orderId;
     }
 
     private function onDuffelOrderChanged(array $data): string
