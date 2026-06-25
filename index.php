@@ -398,6 +398,24 @@ $router->get('api/flights/:id', function (Request $req): void {
 }, [AuthMiddleware::handle()]);
 
 // ---------------------------------------------------------------------------
+// Routes — Payment mode flag (no auth — only reveals test vs live, not any secret)
+// ---------------------------------------------------------------------------
+
+$router->get('api/config/payment-mode', function (Request $req): void {
+    $isTest = false;
+    $cfgFile = BASE_PATH . '/config/apis.php';
+    if (file_exists($cfgFile)) {
+        $cfg    = require $cfgFile;
+        $apiKey = $cfg['duffel']['api_key'] ?? '';
+        $isTest = str_starts_with($apiKey, 'duffel_test_');
+    }
+    if (!$isTest) {
+        $envKey = getenv('DUFFEL_API_KEY') ?: '';
+        $isTest = str_starts_with($envKey, 'duffel_test_');
+    }
+    Response::json(['test_mode' => $isTest]);
+});
+
 // Routes — Stripe public key (no auth — only exposes publishable key)
 // ---------------------------------------------------------------------------
 

@@ -474,6 +474,30 @@
         <span class="card-logo-text card-logo-amex">AMEX</span>
       </div>
 
+      <!-- Test-mode card hint (hidden in live mode) -->
+      <div id="testCardBanner" style="display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.6;">
+        <div style="font-weight:600;color:#92400e;margin-bottom:6px;">🧪 وضع الاختبار — بيانات البطاقة التجريبية</div>
+        <table style="width:100%;border-collapse:collapse;font-family:monospace;font-size:12px;">
+          <tr style="color:#78350f;">
+            <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4000 0082 6000 0000')" title="انقر للملء التلقائي">4000 0082 6000 0000</td>
+            <td style="padding:2px 4px;color:#92400e;">🇬🇧 بريطانيا — ينجح</td>
+          </tr>
+          <tr style="color:#78350f;">
+            <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4000 0000 0000 3220')" title="انقر للملء التلقائي">4000 0000 0000 3220</td>
+            <td style="padding:2px 4px;color:#92400e;">🇺🇸 يُطلب 3D Secure — ينجح</td>
+          </tr>
+          <tr style="color:#78350f;">
+            <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4000 0000 0000 9995')" title="انقر للملء التلقائي">4000 0000 0000 9995</td>
+            <td style="padding:2px 4px;color:#92400e;">🇺🇸 يفشل — رصيد غير كافٍ</td>
+          </tr>
+          <tr style="color:#78350f;">
+            <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4242 4242 4242 4242')" title="انقر للملء التلقائي">4242 4242 4242 4242</td>
+            <td style="padding:2px 4px;color:#92400e;">🇺🇸 ينجح</td>
+          </tr>
+        </table>
+        <div style="color:#92400e;margin-top:6px;font-size:11px;font-family:sans-serif;">CVC: أي 3 أرقام &nbsp;·&nbsp; تاريخ الانتهاء: أي تاريخ مستقبلي &nbsp;·&nbsp; انقر على الرقم للملء التلقائي</div>
+      </div>
+
       <!-- Cardholder name -->
       <div class="form-group">
         <label class="form-lbl" for="cardName">اسم حامل البطاقة</label>
@@ -1097,6 +1121,34 @@ async function submitPayment() {
   }
   tick();
   const timer = setInterval(tick, 1000);
+})();
+
+// ── Test-mode card banner ───────────────────────────────────
+function fillTestCard(number) {
+  const el = document.getElementById('cardNumber');
+  if (!el) return;
+  el.value = number;
+  el.dispatchEvent(new Event('input'));
+  document.getElementById('cardName').value    = 'Test User';
+  document.getElementById('cardExpiry').value  = '12/30';
+  document.getElementById('cardCvc').value     = '123';
+  document.getElementById('billAddress').value = '1 Test Street';
+  document.getElementById('billCity').value    = 'London';
+  document.getElementById('billPostal').value  = 'SW1A 1AA';
+  document.getElementById('billRegion').value  = 'England';
+  document.getElementById('billCountry').value = 'GB';
+}
+
+(async function initTestModeBanner() {
+  try {
+    const res = await fetch('/api/config/payment-mode');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data.test_mode) {
+      const banner = document.getElementById('testCardBanner');
+      if (banner) banner.style.display = 'block';
+    }
+  } catch(e) { /* non-critical */ }
 })();
 
 // ── Boot ────────────────────────────────────────────────────
