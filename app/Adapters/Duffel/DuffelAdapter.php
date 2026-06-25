@@ -832,10 +832,12 @@ class DuffelAdapter
      *                          address_line_1, address_city, address_region,
      *                          address_postal_code, address_country_code
      */
+    // Cards API uses date-based versioning independent of the Air API.
+    private const CARDS_API_VERSION = '2024-10-01';
+
     public function createCard(array $cardData): array
     {
-        // Cards API (api.duffel.cards) does not use the Duffel-Version header.
-        return $this->request('POST', self::CARDS_BASE_URL . '/payments/cards', ['data' => $cardData], 30, [], null, true);
+        return $this->request('POST', self::CARDS_BASE_URL . '/payments/cards', ['data' => $cardData], 30, [], self::CARDS_API_VERSION);
     }
 
     /**
@@ -843,7 +845,7 @@ class DuffelAdapter
      */
     public function deleteCard(string $cardId): void
     {
-        $this->request('DELETE', self::CARDS_BASE_URL . '/payments/cards/' . urlencode($cardId), null, 30, [], null, true);
+        $this->request('DELETE', self::CARDS_BASE_URL . '/payments/cards/' . urlencode($cardId), null, 30, [], self::CARDS_API_VERSION);
     }
 
     /**
@@ -1338,18 +1340,15 @@ class DuffelAdapter
         return $this->request('PATCH', $this->baseUrl . $path, $body);
     }
 
-    private function request(string $method, string $url, ?array $body = null, int $timeoutSeconds = 30, array $extraHeaders = [], ?string $versionOverride = null, bool $omitVersion = false): array
+    private function request(string $method, string $url, ?array $body = null, int $timeoutSeconds = 30, array $extraHeaders = [], ?string $versionOverride = null): array
     {
-        $baseHeaders = [
+        $headers = array_merge([
             'Authorization: Bearer ' . $this->apiKey,
+            'Duffel-Version: ' . ($versionOverride ?? $this->version),
             'Accept: application/json',
             'Accept-Encoding: gzip',
             'Content-Type: application/json',
-        ];
-        if (!$omitVersion) {
-            array_splice($baseHeaders, 1, 0, ['Duffel-Version: ' . ($versionOverride ?? $this->version)]);
-        }
-        $headers = array_merge($baseHeaders, $extraHeaders);
+        ], $extraHeaders);
 
         $ch = curl_init($url);
         curl_setopt_array($ch, [
