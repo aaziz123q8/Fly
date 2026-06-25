@@ -83,11 +83,6 @@ $router->get('/health', fn(Request $req) => Response::json([
     'time'   => date('c'),
 ]));
 
-$router->get('/api/config/stripe-key', function (Request $req): void {
-    $cfg = require BASE_PATH . '/config/apis.php';
-    $key = $cfg['stripe']['publishable_key'] ?? '';
-    Response::json(['publishable_key' => $key]);
-});
 
 $router->get('/admin/clear-cache', function (Request $req): void {
     $token     = $_GET['token'] ?? '';
@@ -404,6 +399,9 @@ $router->get('api/config/stripe-key', function (Request $req): void {
         $key = $cfg['stripe']['publishable_key'] ?? $cfg['stripe']['public_key'] ?? '';
     }
     if (!$key) $key = getenv('STRIPE_PUBLISHABLE_KEY') ?: '';
+    if (!$key) {
+        error_log('[STRIPE_KEY_MISSING] publishable_key not found in config/apis.php or STRIPE_PUBLISHABLE_KEY env');
+    }
     Response::json(['publishable_key' => $key]);
 });
 
