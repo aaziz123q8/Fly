@@ -788,14 +788,31 @@ class FlightBookingService
             'platform'          => 'flymasar',
         ];
 
-        // Forensic pre-flight log: everything sent to Duffel
+        // Forensic pre-flight log: sanitize PII before logging.
+        $sanitizedPassengers = array_map(function (array $pax): array {
+            $safe = $pax;
+            if (isset($safe['email'])) {
+                [$local, $domain] = explode('@', $safe['email'] . '@') + ['', ''];
+                $safe['email'] = (strlen($local) > 2 ? substr($local, 0, 2) . '***' : '***') . '@' . $domain;
+            }
+            if (isset($safe['phone_number'])) {
+                $safe['phone_number'] = substr($safe['phone_number'], 0, 4) . '****';
+            }
+            // Strip passport numbers from logs entirely.
+            foreach ($safe['identity_documents'] ?? [] as &$doc) {
+                $doc['unique_identifier'] = '****';
+            }
+            unset($doc);
+            return $safe;
+        }, $duffelPassengers);
+
         $preFlightLog = [
             'offer_id'          => $offerId,
             'booking_reference' => $bookingReference,
             'passengers_count'  => count($duffelPassengers),
-            'passengers'        => $duffelPassengers,
+            'passengers'        => $sanitizedPassengers,
             'services'          => $cleanServices,
-            'payments'          => $duffelPayments,
+            'payments'          => array_map(fn($pay) => array_merge($pay, ['card_id' => isset($pay['card_id']) ? '****' : null]), $duffelPayments),
             'metadata'          => $metadata,
         ];
         error_log('[DUFFEL_CREATE_ORDER_PRE] ' . json_encode($preFlightLog, JSON_UNESCAPED_UNICODE));
@@ -2047,18 +2064,37 @@ class FlightBookingService
     {
         $offerPassengers = $offerData['passengers'] ?? [];
 
-        // Build type-indexed queues to match by type, not by position
+        // Build type-indexed queues to match by type, not by position.
         $queues = ['adult' => [], 'child' => [], 'infant_without_seat' => []];
+        // Also build a lookup: duffel_id => type for later infant detection.
+        $duffelIdType = [];
         foreach ($offerPassengers as $op) {
             $type = $op['type'] ?? 'adult';
             $queues[$type][] = $op['id'];
+            $duffelIdType[$op['id']] = $type;
         }
 
-        // Normalise our type labels to Duffel's
+        // Normalise our type labels to Duffel's.
         $typeMap = ['adult' => 'adult', 'child' => 'child', 'infant' => 'infant_without_seat'];
 
+        // Allowed Duffel title values.
+        $allowedTitles = ['mr', 'ms', 'mrs', 'miss', 'dr'];
+
         $mapped    = [];
-        $adultIds  = [];   // track assigned adult IDs for infant_passenger_id assignment
+        $adultIds  = [];   // track assigned adult Duffel IDs for infant linkage
+        $infantIds = [];   // track assigned infant Duffel IDs
+
+        // First pass: collect the primary adult email to use as fallback for non-adults.
+        $primaryAdultEmail = '';
+        $primaryAdultPhone = '';
+        foreach ($passengers as $p) {
+            $ourType = $p['type'] ?? 'adult';
+            if ($ourType === 'adult') {
+                $primaryAdultEmail = trim((string)($p['email'] ?? ''));
+                $primaryAdultPhone = trim((string)($p['phone_number'] ?? ''));
+                break;
+            }
+        }
 
         foreach ($passengers as $p) {
             $ourType    = $p['type'] ?? 'adult';
@@ -2066,43 +2102,56 @@ class FlightBookingService
             $duffelId   = array_shift($queues[$duffelType]);
 
             // Nationality: accept both ISO alpha-3 codes and legacy display names.
-            // If it looks like a 3-letter code already, pass through; otherwise try mapping.
             $nationality = (string) ($p['nationality'] ?? '');
             if (strlen($nationality) !== 3) {
                 $nationality = $this->toIso3Nationality($nationality);
             }
-
             // Duffel requires ISO 3166-1 alpha-2 nationality codes (e.g. "KW" not "KWT").
             $nationalityAlpha2 = $this->toAlpha2($nationality);
 
+            // Sanitise title to one of Duffel's accepted values.
+            $rawTitle = strtolower(trim((string)($p['title'] ?? '')));
+            if (!in_array($rawTitle, $allowedTitles, true)) {
+                $rawTitle = (strtolower($p['gender'] ?? '') === 'female') ? 'ms' : 'mr';
+            }
+
+            // given_name / family_name accept multiple field name conventions.
+            $givenName  = trim((string)($p['given_name']  ?? $p['first_name']  ?? ''));
+            $familyName = trim((string)($p['family_name'] ?? $p['last_name']   ?? ''));
+
+            // Normalise phone to E.164; use adult fallback for children/infants.
+            $rawPhone = trim((string)($p['phone_number'] ?? ''));
+            if ($rawPhone === '' && $duffelType !== 'adult') {
+                $rawPhone = $primaryAdultPhone;
+            }
+            $phone = $rawPhone !== '' ? $this->normalizePhone($rawPhone) : '';
+
+            // Email: use adult fallback for children/infants.
+            $email = trim((string)($p['email'] ?? ''));
+            if ($email === '' && $duffelType !== 'adult') {
+                $email = $primaryAdultEmail;
+            }
+
             $entry = [
-                'title'        => strtolower(trim($p['title'] ?? 'mr')),
-                'given_name'   => $p['first_name'],
-                'family_name'  => $p['last_name'],
-                'gender'       => strtolower($p['gender'] ?? '') === 'female' ? 'f' : 'm',
-                'born_on'      => $p['date_of_birth'],
+                '_passenger_type' => $duffelType,   // internal — stripped before API call
+                'title'        => $rawTitle,
+                'given_name'   => $givenName,
+                'family_name'  => $familyName,
+                'gender'       => strtolower((string)($p['gender'] ?? '')) === 'female' ? 'f' : 'm',
+                'born_on'      => (string)($p['date_of_birth'] ?? ''),
                 'nationality'  => $nationalityAlpha2,
-                'email'        => $p['email'],
-                'phone_number' => $p['phone_number'] ?? '',
+                'email'        => $email,
+                'phone_number' => $phone,
             ];
 
             // Build identity_documents array (Duffel v2 format).
-            $docNumber = $p['passport_number'] ?? '';
-            $docExpiry = $p['passport_expiry'] ?? '';
-            $docType   = $p['document_type']   ?? 'passport';
-            $docIssued = $p['document_issue']   ?? '';
-
-            // Normalise document type to Duffel vocabulary.
-            $duffelDocType = match($docType) {
-                'passport'    => 'passport',
-                'id_card'     => 'passport',    // Duffel only accepts passport as primary travel doc
-                'national_id' => 'passport',
-                default       => 'passport',
-            };
+            $docNumber = trim((string)($p['passport_number'] ?? ''));
+            $docExpiry = trim((string)($p['passport_expiry'] ?? ''));
+            $docIssued = trim((string)($p['document_issue']  ?? ''));
 
             if ($docNumber !== '' && $docExpiry !== '') {
                 $identityDoc = [
-                    'type'                 => $duffelDocType,
+                    'type'                 => 'passport',
                     'unique_identifier'    => $docNumber,
                     'expires_on'           => $docExpiry,
                     'issuing_country_code' => $nationalityAlpha2,
@@ -2117,31 +2166,38 @@ class FlightBookingService
                 $entry['id'] = $duffelId;
                 if ($duffelType === 'adult') {
                     $adultIds[] = $duffelId;
+                } elseif ($duffelType === 'infant_without_seat') {
+                    $infantIds[] = $duffelId;
                 }
             }
 
             $mapped[] = $entry;
         }
 
-        // Assign infant_passenger_id: each infant must reference a unique adult.
-        // Duffel requires this field on the adult passenger, not the infant.
+        // Assign infant_passenger_id on the adult passenger entries.
+        // Use the $duffelIdType map (built before queue draining) for correct type detection.
         $infantCount = 0;
         foreach ($mapped as &$entry) {
-            if (!isset($entry['id'])) continue;
-            // Identify infant entries by matching their Duffel ID to the infant queue
-            $isInfantId = in_array($entry['id'], $queues['infant_without_seat'] ?? [], true)
-                || (isset($offerPassengers) && $this->isInfantPassenger($entry['id'], $offerPassengers));
-            if ($isInfantId && isset($adultIds[$infantCount])) {
-                // Find the adult entry and attach the infant id
-                foreach ($mapped as &$adultEntry) {
-                    if (($adultEntry['id'] ?? '') === $adultIds[$infantCount]) {
-                        $adultEntry['infant_passenger_id'] = $entry['id'];
-                        break;
+            $entryDuffelId = $entry['id'] ?? null;
+            if ($entryDuffelId === null) continue;
+            if (($duffelIdType[$entryDuffelId] ?? '') === 'infant_without_seat') {
+                if (isset($adultIds[$infantCount])) {
+                    foreach ($mapped as &$adultEntry) {
+                        if (($adultEntry['id'] ?? '') === $adultIds[$infantCount]) {
+                            $adultEntry['infant_passenger_id'] = $entryDuffelId;
+                            break;
+                        }
                     }
+                    unset($adultEntry);
                 }
-                unset($adultEntry);
                 $infantCount++;
             }
+        }
+        unset($entry);
+
+        // Strip internal tracking field before returning.
+        foreach ($mapped as &$entry) {
+            unset($entry['_passenger_type']);
         }
         unset($entry);
 
@@ -2155,33 +2211,77 @@ class FlightBookingService
      */
     private function validateDuffelPassengers(array $duffelPassengers): void
     {
+        $allowedTitles = ['mr', 'ms', 'mrs', 'miss', 'dr'];
+
+        // Duffel requires at least one adult passenger with email + phone.
+        $hasAdultWithContact = false;
+
         foreach ($duffelPassengers as $i => $p) {
-            $num = $i + 1;
-            $required = [
-                'title'        => 'اللقب',
-                'given_name'   => 'الاسم الأول',
-                'family_name'  => 'اسم العائلة',
-                'born_on'      => 'تاريخ الميلاد',
-                'gender'       => 'الجنس',
-                'nationality'  => 'الجنسية',
-                'email'        => 'البريد الإلكتروني',
-                'phone_number' => 'رقم الهاتف',
+            $num        = $i + 1;
+            $isAdult    = !isset($p['id'])
+                || true; // type info already consumed; validate contact below per-passenger
+
+            // Fields required for ALL passenger types.
+            $alwaysRequired = [
+                'title'       => 'اللقب',
+                'given_name'  => 'الاسم الأول',
+                'family_name' => 'اسم العائلة',
+                'born_on'     => 'تاريخ الميلاد',
+                'gender'      => 'الجنس',
+                'nationality' => 'الجنسية',
             ];
-            foreach ($required as $field => $label) {
+            foreach ($alwaysRequired as $field => $label) {
                 if (empty($p[$field])) {
                     throw new RuntimeException("المسافر {$num}: {$label} مطلوب قبل إرسال الحجز.", 422);
                 }
             }
-            if (!filter_var($p['email'], FILTER_VALIDATE_EMAIL)) {
-                throw new RuntimeException("المسافر {$num}: البريد الإلكتروني غير صحيح.", 422);
+
+            // Title must be one of Duffel's allowed values.
+            if (!in_array($p['title'], $allowedTitles, true)) {
+                throw new RuntimeException("المسافر {$num}: اللقب يجب أن يكون أحد القيم: mr, ms, mrs, miss, dr.", 422);
             }
-            $digits = preg_replace('/\D/', '', $p['phone_number']);
-            if (strlen((string)$digits) < 8 || strlen($p['phone_number']) > 20) {
-                throw new RuntimeException("المسافر {$num}: رقم الهاتف غير صحيح (E.164، 8 أرقام على الأقل).", 422);
-            }
+
+            // Nationality must be ISO 3166-1 alpha-2 (2 characters).
             if (strlen($p['nationality']) !== 2) {
                 throw new RuntimeException("المسافر {$num}: رمز الجنسية يجب أن يكون برمز دولي (مثال: KW).", 422);
             }
+
+            // born_on must be a valid date in YYYY-MM-DD format.
+            $bornOn = $p['born_on'] ?? '';
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $bornOn)) {
+                throw new RuntimeException("المسافر {$num}: تاريخ الميلاد يجب أن يكون بصيغة YYYY-MM-DD.", 422);
+            }
+
+            // Email validation — required for every passenger (Duffel API requires it on all).
+            $email = $p['email'] ?? '';
+            if (empty($email)) {
+                throw new RuntimeException("المسافر {$num}: البريد الإلكتروني مطلوب.", 422);
+            }
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new RuntimeException("المسافر {$num}: البريد الإلكتروني غير صحيح.", 422);
+            }
+
+            // Phone validation — required for every passenger.
+            $phone = $p['phone_number'] ?? '';
+            if (empty($phone)) {
+                throw new RuntimeException("المسافر {$num}: رقم الهاتف مطلوب.", 422);
+            }
+            // Must start with + (E.164).
+            if ($phone[0] !== '+') {
+                throw new RuntimeException("المسافر {$num}: رقم الهاتف يجب أن يبدأ بـ + (مثال: +96512345678).", 422);
+            }
+            $digits = preg_replace('/\D/', '', $phone);
+            if (strlen($digits) < 8 || strlen($phone) > 20) {
+                throw new RuntimeException("المسافر {$num}: رقم الهاتف غير صحيح (E.164، 8 أرقام على الأقل).", 422);
+            }
+
+            if (!empty($email) && !empty($phone)) {
+                $hasAdultWithContact = true;
+            }
+        }
+
+        if (!$hasAdultWithContact) {
+            throw new RuntimeException('يجب توفير بريد إلكتروني ورقم هاتف لمسافر واحد على الأقل.', 422);
         }
     }
 
