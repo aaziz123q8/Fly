@@ -637,11 +637,14 @@ class DuffelAdapter
 
     /**
      * Confirm an order change — actually amends the booking.
-     * The change_total_amount is charged to your Duffel balance.
+     * Pass $payment when change_total_amount > 0; omit when zero or negative (refund).
+     * $payment: ['type' => 'balance'|'card', 'currency' => 'GBP', 'amount' => '30.20',
+     *            'three_d_secure_session_id' => '3ds_…' (required for card)]
      */
-    public function confirmOrderChange(string $orderChangeId): array
+    public function confirmOrderChange(string $orderChangeId, ?array $payment = null): array
     {
-        return $this->post('/air/order_changes/' . urlencode($orderChangeId) . '/actions/confirm', []);
+        $body = $payment !== null ? ['data' => ['payment' => $payment]] : [];
+        return $this->post('/air/order_changes/' . urlencode($orderChangeId) . '/actions/confirm', $body);
     }
 
     /**
