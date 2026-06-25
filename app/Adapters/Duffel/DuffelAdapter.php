@@ -834,7 +834,8 @@ class DuffelAdapter
      */
     public function createCard(array $cardData): array
     {
-        return $this->request('POST', self::CARDS_BASE_URL . '/payments/cards', ['data' => $cardData]);
+        // Cards API uses v1 (separate versioning from the Air API which uses v2).
+        return $this->request('POST', self::CARDS_BASE_URL . '/payments/cards', ['data' => $cardData], 30, [], 'v1');
     }
 
     /**
@@ -842,7 +843,7 @@ class DuffelAdapter
      */
     public function deleteCard(string $cardId): void
     {
-        $this->request('DELETE', self::CARDS_BASE_URL . '/payments/cards/' . urlencode($cardId));
+        $this->request('DELETE', self::CARDS_BASE_URL . '/payments/cards/' . urlencode($cardId), null, 30, [], 'v1');
     }
 
     /**
@@ -1337,11 +1338,11 @@ class DuffelAdapter
         return $this->request('PATCH', $this->baseUrl . $path, $body);
     }
 
-    private function request(string $method, string $url, ?array $body = null, int $timeoutSeconds = 30, array $extraHeaders = []): array
+    private function request(string $method, string $url, ?array $body = null, int $timeoutSeconds = 30, array $extraHeaders = [], ?string $versionOverride = null): array
     {
         $headers = array_merge([
             'Authorization: Bearer ' . $this->apiKey,
-            'Duffel-Version: ' . $this->version,
+            'Duffel-Version: ' . ($versionOverride ?? $this->version),
             'Accept: application/json',
             'Accept-Encoding: gzip',
             'Content-Type: application/json',

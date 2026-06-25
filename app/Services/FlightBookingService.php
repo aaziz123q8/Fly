@@ -484,7 +484,24 @@ class FlightBookingService
                 'multi_use'            => false,
             ]);
         } catch (\Throwable $e) {
-            error_log('[DUFFEL_CREATE_CARD_FAIL] ' . $e->getMessage());
+            $msg = $e->getMessage();
+            error_log('[DUFFEL_CREATE_CARD_FAIL] http=' . $e->getCode() . ' msg=' . $msg);
+            // Surface a descriptive error if Duffel returns a recognisable validation code.
+            $decoded = null;
+            if (($jsonPos = strpos($msg, '{')) !== false) {
+                $decoded = json_decode(substr($msg, $jsonPos), true);
+            }
+            $duffelCode = $decoded['errors'][0]['code']    ?? '';
+            $duffelMsg  = $decoded['errors'][0]['message'] ?? '';
+            if ($duffelCode === 'card_number_invalid' || str_contains($duffelMsg, 'number')) {
+                throw new RuntimeException('رقم البطاقة غير صحيح. تأكد من إدخاله بشكل كامل.', 422);
+            }
+            if ($duffelCode === 'card_expired' || str_contains($duffelMsg, 'expir')) {
+                throw new RuntimeException('بطاقتك منتهية الصلاحية. يرجى استخدام بطاقة أخرى.', 422);
+            }
+            if ($duffelCode === 'card_cvc_invalid' || str_contains($duffelMsg, 'cvc') || str_contains($duffelMsg, 'cvv')) {
+                throw new RuntimeException('رمز CVC غير صحيح.', 422);
+            }
             throw new RuntimeException('فشل حفظ بيانات البطاقة. تأكد من صحة البيانات وحاول مجدداً.', 422);
         }
 
