@@ -832,12 +832,10 @@ class DuffelAdapter
      *                          address_line_1, address_city, address_region,
      *                          address_postal_code, address_country_code
      */
-    // Cards API uses date-based versioning independent of the Air API.
-    private const CARDS_API_VERSION = '2024-10-01';
-
     public function createCard(array $cardData): array
     {
-        return $this->request('POST', self::CARDS_BASE_URL . '/payments/cards', ['data' => $cardData], 30, [], self::CARDS_API_VERSION);
+        // Cards API (api.duffel.cards) uses the same Duffel-Version as the Air API (v2).
+        return $this->request('POST', self::CARDS_BASE_URL . '/payments/cards', ['data' => $cardData]);
     }
 
     /**
@@ -845,7 +843,7 @@ class DuffelAdapter
      */
     public function deleteCard(string $cardId): void
     {
-        $this->request('DELETE', self::CARDS_BASE_URL . '/payments/cards/' . urlencode($cardId), null, 30, [], self::CARDS_API_VERSION);
+        $this->request('DELETE', self::CARDS_BASE_URL . '/payments/cards/' . urlencode($cardId));
     }
 
     /**
@@ -1342,19 +1340,25 @@ class DuffelAdapter
 
     private function request(string $method, string $url, ?array $body = null, int $timeoutSeconds = 30, array $extraHeaders = [], ?string $versionOverride = null): array
     {
+        $duffelVersion = $versionOverride ?? $this->version;
+
         $headers = array_merge([
             'Authorization: Bearer ' . $this->apiKey,
-            'Duffel-Version: ' . ($versionOverride ?? $this->version),
+            'Duffel-Version: ' . $duffelVersion,
             'Accept: application/json',
             'Accept-Encoding: gzip',
             'Content-Type: application/json',
         ], $extraHeaders);
 
+        // Detect service type for logging
+        $service = str_contains($url, 'api.duffel.cards') ? 'Cards'
+                 : (str_contains($url, '/payments/') ? 'Payments' : 'Flights');
+
         $ch = curl_init($url);
         curl_setopt_array($ch, [
             CURLOPT_CUSTOMREQUEST  => $method,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING       => 'gzip',   // auto-decompress gzip responses
+            CURLOPT_ENCODING       => 'gzip',
             CURLOPT_HTTPHEADER     => $headers,
             CURLOPT_TIMEOUT        => $timeoutSeconds,
             CURLOPT_HEADERFUNCTION => function($ch, $headerLine) use (&$requestId) {
@@ -1375,11 +1379,17 @@ class DuffelAdapter
         $curlError  = curl_error($ch);
         curl_close($ch);
 
+        // Structured request log: service | method | url | version | status | response_snippet
+        error_log(sprintf(
+            '[DUFFEL_%s] %s %s | version=%s | status=%d | response=%s',
+            strtoupper($service), $method, $url, $duffelVersion, $statusCode,
+            substr((string)$response, 0, 500)
+        ));
+
         if ($curlError) {
             throw new \RuntimeException('Duffel API cURL error: ' . $curlError);
         }
 
-        // 204 No Content — success with empty body (e.g. deleteCard).
         if ($statusCode === 204) {
             return ['http_status' => 204];
         }
@@ -1387,23 +1397,14 @@ class DuffelAdapter
         $decoded = json_decode((string)$response, true);
 
         if (!is_array($decoded)) {
-            throw new \RuntimeException('Duffel API returned non-JSON response (HTTP ' . $statusCode . ').');
+            throw new \RuntimeException('Duffel API returned non-JSON response (HTTP ' . $statusCode . '): ' . substr((string)$response, 0, 300));
         }
 
         if ($statusCode >= 400) {
             $errorMsg  = $decoded['errors'][0]['message'] ?? ($decoded['errors'][0]['title'] ?? 'Unknown Duffel API error');
             $errorCode = $decoded['errors'][0]['code']    ?? '';
-            // x-request-id from response header takes precedence; fall back to meta field.
             $requestId = $requestId ?? ($decoded['meta']['request_id'] ?? '');
 
-            // Log full forensic detail to PHP error log
-            error_log(sprintf(
-                '[DUFFEL_HTTP_%d] url=%s code=%s request_id=%s body=%s',
-                $statusCode, $url, $errorCode, $requestId, $response
-            ));
-
-            // Include the raw JSON body in the exception message so DuffelErrorMapper
-            // can parse the full errors array and map to the correct Arabic message.
             throw new \RuntimeException(
                 'Duffel API error (' . $statusCode . '): ' . $errorMsg
                 . ($errorCode ? ' [' . $errorCode . ']' : '')
@@ -1412,9 +1413,6 @@ class DuffelAdapter
             );
         }
 
-        // Stamp HTTP status and x-request-id so callers can log and distinguish
-        // 201 Created (full order), 200 OK (confirmed but not yet available),
-        // and 202 Accepted (still processing — do not retry).
         $decoded['http_status']  = $statusCode;
         $decoded['x_request_id'] = $requestId;
 
