@@ -457,15 +457,18 @@ class FlightBookingService
             }
         }
 
-        // Validate required card fields.
-        $required = ['number', 'name', 'cvc', 'expiry_month', 'expiry_year',
-                     'address_line_1', 'address_city', 'address_region',
-                     'address_postal_code', 'address_country_code'];
-        foreach ($required as $f) {
+        // Validate required card fields (billing address is optional — defaults are used).
+        foreach (['number', 'name', 'cvc', 'expiry_month', 'expiry_year'] as $f) {
             if (empty($cardData[$f])) {
                 throw new RuntimeException('بيانات البطاقة غير مكتملة: ' . $f, 422);
             }
         }
+        // Apply billing address defaults when not supplied by the user.
+        $cardData['address_line_1']       = trim($cardData['address_line_1']       ?? '') ?: 'N/A';
+        $cardData['address_city']         = trim($cardData['address_city']         ?? '') ?: 'N/A';
+        $cardData['address_region']       = trim($cardData['address_region']       ?? '') ?: 'N/A';
+        $cardData['address_postal_code']  = trim($cardData['address_postal_code']  ?? '') ?: '00000';
+        $cardData['address_country_code'] = strtoupper(trim($cardData['address_country_code'] ?? '')) ?: 'US';
 
         // Create single-use Duffel card token.
         try {
@@ -476,11 +479,11 @@ class FlightBookingService
                 'expiry_month'         => str_pad((string) $cardData['expiry_month'], 2, '0', STR_PAD_LEFT),
                 'expiry_year'          => substr((string) $cardData['expiry_year'], -2),
                 'address_line_1'       => $cardData['address_line_1'],
-                'address_line_2'       => $cardData['address_line_2'] ?? '',
+                'address_line_2'       => trim($cardData['address_line_2'] ?? ''),
                 'address_city'         => $cardData['address_city'],
                 'address_region'       => $cardData['address_region'],
                 'address_postal_code'  => $cardData['address_postal_code'],
-                'address_country_code' => strtoupper($cardData['address_country_code']),
+                'address_country_code' => $cardData['address_country_code'],
                 'multi_use'            => false,
             ]);
         } catch (\Throwable $e) {

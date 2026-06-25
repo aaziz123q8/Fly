@@ -530,37 +530,12 @@
         </div>
       </div>
 
-      <!-- Billing address (required by Duffel Cards API) -->
-      <div class="form-group">
-        <label class="form-lbl" for="billAddress">عنوان الفوترة (السطر الأول)</label>
-        <input type="text" class="form-inp" id="billAddress"
-          placeholder="10 شارع …" autocomplete="billing street-address" dir="ltr">
-      </div>
-      <div style="display:flex;gap:12px">
-        <div class="form-group" style="flex:1">
-          <label class="form-lbl" for="billCity">المدينة</label>
-          <input type="text" class="form-inp" id="billCity"
-            placeholder="Kuwait City" autocomplete="billing address-level2" dir="ltr">
-        </div>
-        <div class="form-group" style="flex:1">
-          <label class="form-lbl" for="billPostal">الرمز البريدي</label>
-          <input type="text" class="form-inp" id="billPostal"
-            placeholder="12345" autocomplete="billing postal-code" dir="ltr">
-        </div>
-      </div>
-      <div style="display:flex;gap:12px">
-        <div class="form-group" style="flex:1">
-          <label class="form-lbl" for="billRegion">المنطقة / الولاية</label>
-          <input type="text" class="form-inp" id="billRegion"
-            placeholder="Al Asimah" autocomplete="billing address-level1" dir="ltr">
-        </div>
-        <div class="form-group" style="flex:1">
-          <label class="form-lbl" for="billCountry">كود الدولة (ISO)</label>
-          <input type="text" class="form-inp" id="billCountry"
-            placeholder="KW" maxlength="2"
-            autocomplete="billing country" dir="ltr" value="KW">
-        </div>
-      </div>
+      <!-- Billing address — hidden inputs with defaults; Duffel Cards API requires them -->
+      <input type="hidden" id="billAddress" value="N/A">
+      <input type="hidden" id="billCity"    value="N/A">
+      <input type="hidden" id="billPostal"  value="00000">
+      <input type="hidden" id="billRegion"  value="N/A">
+      <input type="hidden" id="billCountry" value="US">
 
       <!-- Error display -->
       <div id="payError">
@@ -739,7 +714,7 @@ async function loadFlightSummary() {
   const el = document.getElementById('flightSummary');
   if (!sessionKey) return;
   try {
-    const res    = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey));
+    const res    = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey), true);
     const offer  = res.offer || {};
     const slices = offer.slices || [];
     if (!slices.length) { el.innerHTML = buildMinimalCard(); return; }
@@ -874,7 +849,7 @@ async function loadPriceRows() {
   renderPriceRows();
   if (!sessionKey) return;
   try {
-    const res      = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey));
+    const res      = await Api.get('/api/flights/checkout/review?session_key=' + encodeURIComponent(sessionKey), true);
     const pricing  = res.pricing_snapshot || {};
     const base     = parseFloat(pricing.base_amount ?? 0);
     const total    = parseFloat(pricing.total       ?? 0);
@@ -1001,9 +976,6 @@ async function submitPayment() {
   const expiryParts = expiryRaw.replace('/','').match(/^(\d{2})(\d{2})$/);
   if (!expiryParts)                 { showError('يرجى إدخال تاريخ انتهاء صحيح (MM/YY).'); return; }
   if (cvc.length < 3)               { showError('يرجى إدخال رمز CVC.');                 return; }
-  if (!address1 || !city || !postal || !region || country.length !== 2) {
-    showError('يرجى إدخال عنوان الفوترة كاملاً.'); return;
-  }
 
   const [, expMonth, expYear] = expiryParts;
 
