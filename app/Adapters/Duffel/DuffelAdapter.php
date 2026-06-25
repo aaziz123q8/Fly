@@ -656,6 +656,51 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Airline-Initiated Changes
+    // =========================================================================
+
+    /**
+     * List airline-initiated changes, optionally filtered by order ID.
+     */
+    public function listAirlineInitiatedChanges(?string $orderId = null): array
+    {
+        $query = [];
+        if ($orderId !== null) { $query['order_id'] = $orderId; }
+        return $this->get('/air/airline_initiated_changes', $query);
+    }
+
+    /**
+     * Get a single airline-initiated change by its ID.
+     */
+    public function getAirlineInitiatedChange(string $aicId): array
+    {
+        return $this->get('/air/airline_initiated_changes/' . urlencode($aicId));
+    }
+
+    /**
+     * Accept an airline-initiated change.
+     * Only available when 'accept' is in available_actions.
+     */
+    public function acceptAirlineInitiatedChange(string $aicId): array
+    {
+        return $this->post('/air/airline_initiated_changes/' . urlencode($aicId) . '/actions/accept', []);
+    }
+
+    /**
+     * Update an airline-initiated change with the action taken outside Duffel.
+     * Only available when 'update' is in available_actions (IATA merchant orders
+     * where Duffel cannot accept programmatically).
+     * $actionTaken: 'accepted' | 'cancelled' | 'changed'
+     */
+    public function updateAirlineInitiatedChange(string $aicId, string $actionTaken): array
+    {
+        return $this->patch(
+            '/air/airline_initiated_changes/' . urlencode($aicId),
+            ['data' => ['action_taken' => $actionTaken]]
+        );
+    }
+
+    // =========================================================================
     // Partial Offer Requests  (deprecated — will be removed in next major version)
     // =========================================================================
 
