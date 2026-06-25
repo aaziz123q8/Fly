@@ -612,6 +612,48 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Webhook Events (admin / debugging)
+    // =========================================================================
+
+    /**
+     * List webhook events with optional filters.
+     *
+     * @param  array        $filters  Keys: type, delivery_success, created_at
+     * @param  int          $limit    1–200
+     * @param  string|null  $after    Pagination cursor
+     */
+    public function listWebhookEvents(array $filters = [], int $limit = 50, ?string $after = null): array
+    {
+        $query = array_merge(['limit' => $limit], $filters);
+        if ($after !== null) {
+            $query['after'] = $after;
+        }
+        return $this->get('/air/webhooks/events', $query);
+    }
+
+    /**
+     * Retrieve a single webhook event by its ID.
+     *
+     * @param  string $eventId  e.g. "wev_0000A3tQSmKyqOrcySrGbo"
+     */
+    public function getWebhookEvent(string $eventId): array
+    {
+        return $this->get('/air/webhooks/events/' . urlencode($eventId));
+    }
+
+    /**
+     * Trigger a re-delivery of a webhook event.
+     * Useful for replaying missed events (e.g. an order.created that arrived while
+     * the endpoint was down) without waiting for Duffel's 72-hour retry window.
+     *
+     * @param  string $eventId  e.g. "wev_0000A3tQSmKyqOrcySrGbo"
+     */
+    public function redeliverWebhookEvent(string $eventId): void
+    {
+        $this->request('POST', $this->baseUrl . '/air/webhooks/events/' . urlencode($eventId) . '/actions/redeliver');
+    }
+
+    // =========================================================================
     // Webhook Deliveries (admin / debugging)
     // =========================================================================
 

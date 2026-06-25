@@ -284,7 +284,36 @@ class WebhookController
 
             // Sent after a card payment on a hold order resolves (200/202 from /air/payments).
             case 'payment.created':
+            case 'air.payment.succeeded':
                 return $this->onDuffelPaymentCreated($data);
+
+            case 'air.payment.failed':
+                return $this->onDuffelPaymentFailed($data);
+
+            case 'air.payment.cancelled':
+            case 'air.payment.pending':
+                return 'payment_status_noted:' . $type;
+
+            case 'order_cancellation.created':
+                return 'cancellation_created:awaiting_confirmation';
+
+            case 'order_cancellation.confirmed':
+                return $this->onDuffelCancellationConfirmed($data);
+
+            case 'air.airline_credit.created':
+            case 'air.airline_credit.spent':
+            case 'air.airline_credit.invalidated':
+                return 'airline_credit_noted:' . $type;
+
+            case 'air.order.changed':
+                return $this->onDuffelOrderChanged($data);
+
+            // Alias used in some older deliveries
+            case 'order.airline_initiated_change_detected':
+                return $this->onDuffelOrderChanged($data);
+
+            case 'ping.triggered':
+                return 'pong';
 
             default:
                 error_log('[Duffel|webhook] unhandled event type: ' . $type);
@@ -544,6 +573,60 @@ class WebhookController
 
         return 'payment_status_updated:awaiting=' . ($awaitingPayment ? '1' : '0')
             . ':failure=' . ($failureReason ? 'yes' : 'no');
+    }
+
+    private function onDuffelPaymentFailed(array $data): string
+    {
+        $orderId = $data['order_id'] ?? ($data['id'] ?? null);
+        $reason  = $data['failure_reason'] ?? ($data['message'] ?? 'unknown');
+
+        error_log(sprintf('[Duffel|air.payment.failed] order=%s reason=%s', $orderId, $reason));
+
+        if (!$orderId) {
+            return 'missing_order_id';
+        }
+
+        $this->db->prepare(
+            "UPDATE flight_bookings
+             SET duffel_payment_failure = :reason, updated_at = NOW()
+             WHERE provider_order_id = :oid"
+        )->execute([':reason' => substr($reason, 0, 500), ':oid' => $orderId]);
+
+        try {
+            $this->db->prepare(
+                'INSERT INTO job_queue (job_type, payload) VALUES (:jt, :pl)'
+            )->execute([
+                ':jt' => 'payment_failed_alert',
+                ':pl' => json_encode(['order_id' => $orderId, 'reason' => $reason]),
+            ]);
+        } catch (\Throwable) {}
+
+        return 'payment_failed:order=' . $orderId;
+    }
+
+    private function onDuffelCancellationConfirmed(array $data): string
+    {
+        $cancellationId = $data['id']       ?? null;
+        $orderId        = $data['order_id'] ?? null;
+        $refundTo       = $data['refund_to'] ?? null;
+        $refundAmount   = $data['refund_amount'] ?? null;
+
+        error_log(sprintf('[Duffel|order_cancellation.confirmed] cancellation=%s order=%s refund_to=%s amount=%s',
+            $cancellationId, $orderId, $refundTo, $refundAmount));
+
+        if (!$orderId) {
+            return 'missing_order_id';
+        }
+
+        $this->db->prepare(
+            "UPDATE flight_bookings
+             SET status = 'cancelled', cancelled_at = NOW(), updated_at = NOW()
+             WHERE provider_order_id = :oid AND status != 'cancelled'"
+        )->execute([':oid' => $orderId]);
+
+        $this->queueNotificationJob($orderId, 'flight_cancellation_confirmed');
+
+        return 'cancellation_confirmed:order=' . $orderId . ':refund_to=' . $refundTo;
     }
 
     private function queueNotificationJob(string $providerOrderId, string $jobType): void
