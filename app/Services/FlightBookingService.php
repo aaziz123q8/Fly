@@ -728,23 +728,25 @@ class FlightBookingService
         // before hitting the API. Throws 422 with Arabic message on failure.
         $this->validateDuffelPassengers($duffelPassengers);
 
-        // Build clean services list first (needed for priceOffer AND createOrder).
-        $cleanServices = [];
+        // Build the services list for priceOffer (intended_services).
+        // Per Duffel API: once an offer is repriced with intended_services, the services
+        // are locked into the priced offer. createOrder MUST NOT send services again —
+        // doing so causes an intended_services_conflict error.
+        $intendedServices = [];
         foreach (($servicesData ?: []) as $svc) {
             $sid = trim((string)($svc['id'] ?? ''));
             $qty = (int)($svc['quantity'] ?? 1);
             if ($sid !== '') {
-                $cleanServices[] = ['id' => $sid, 'quantity' => max(1, $qty)];
+                $intendedServices[] = ['id' => $sid, 'quantity' => max(1, $qty)];
             }
         }
 
-        // Call priceOffer to get the EXACT amount Duffel will accept in createOrder.
-        // priceOffer locks the price on Duffel's side; getOffer does not — Duffel
-        // recalculates internally on createOrder and can diverge from a plain GET.
-        // For card payments, intended_payment_methods must be ['card']; for balance it's ['balance'].
-        $intendedMethods = ($paymentType === 'card') ? ['card'] : ['balance'];
+        // Call priceOffer to lock price (including any intended_services).
+        // After this call the price is fixed on Duffel's side. createOrder uses
+        // the same offer_id with NO services field — they are already embedded.
+        $intendedMethods = ['balance']; // Stripe collects money; Duffel charges balance
         try {
-            $priceResponse  = $this->duffel->priceOffer($offerId, $intendedMethods, $cleanServices);
+            $priceResponse  = $this->duffel->priceOffer($offerId, $intendedMethods, $intendedServices);
             $pricedData     = $priceResponse['data'] ?? [];
             $pricedAmount   = $pricedData['total_amount']    ?? null;
             $pricedCurrency = strtoupper($pricedData['total_currency'] ?? $offer['currency'] ?? 'GBP');
@@ -759,11 +761,12 @@ class FlightBookingService
             throw new \RuntimeException($parts['customer'], $mapped->getCode() ?: 409);
         }
 
-        error_log('[AMOUNT_CHECK] offer_cached=' . $offer['total_amount']
+        error_log('[AMOUNT_CHECK] offer_id=' . $offerId
+            . ' offer_cached=' . $offer['total_amount']
             . ' priced=' . $pricedAmount
             . ' currency=' . $pricedCurrency
-            . ' payment_type=' . $paymentType
-            . ' services_count=' . count($cleanServices));
+            . ' intended_services_count=' . count($intendedServices)
+            . ' services_in_createOrder=0 (intentionally empty — embedded in priced offer)');
 
         // Build Duffel payment payload using the locked price.
         if ($paymentType === 'card' && $cardId !== '') {
@@ -806,14 +809,18 @@ class FlightBookingService
             return $safe;
         }, $duffelPassengers);
 
+        // services must NOT be sent to createOrder — they were already passed to priceOffer
+        // as intended_services and are now embedded in the priced offer. Sending them again
+        // causes: intended_services_conflict (HTTP 422).
         $preFlightLog = [
-            'offer_id'          => $offerId,
-            'booking_reference' => $bookingReference,
-            'passengers_count'  => count($duffelPassengers),
-            'passengers'        => $sanitizedPassengers,
-            'services'          => $cleanServices,
-            'payments'          => array_map(fn($pay) => array_merge($pay, ['card_id' => isset($pay['card_id']) ? '****' : null]), $duffelPayments),
-            'metadata'          => $metadata,
+            'offer_id'               => $offerId,
+            'booking_reference'      => $bookingReference,
+            'passengers_count'       => count($duffelPassengers),
+            'passengers'             => $sanitizedPassengers,
+            'intended_services_sent_to_price_offer' => $intendedServices,
+            'services_in_createOrder' => [],    // always empty — embedded in priced offer
+            'payments'               => array_map(fn($pay) => array_merge($pay, ['card_id' => isset($pay['card_id']) ? '****' : null]), $duffelPayments),
+            'metadata'               => $metadata,
         ];
         error_log('[DUFFEL_CREATE_ORDER_PRE] ' . json_encode($preFlightLog, JSON_UNESCAPED_UNICODE));
         try {
@@ -822,13 +829,15 @@ class FlightBookingService
             )->execute(['debug', 'createOrder payload', json_encode($preFlightLog, JSON_UNESCAPED_UNICODE)]);
         } catch (\Throwable) {}
 
-        // Create Duffel order. On failure: auto-refund Stripe before re-throwing.
+        // Create Duffel order. Services field is intentionally omitted — it was already
+        // passed to priceOffer as intended_services. Sending it again causes
+        // intended_services_conflict per Duffel API spec.
         try {
             $orderResponse = $this->duffel->createOrder(
                 $offerId,
                 $duffelPassengers,
                 $duffelPayments,
-                $cleanServices,
+                [],             // NO services here — embedded in priced offer
                 $metadata,
                 $session['device_ip']         ?? null,
                 $session['device_user_agent'] ?? null
