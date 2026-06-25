@@ -382,6 +382,52 @@ class DuffelAdapter
     }
 
     // =========================================================================
+    // Cards API  (PCI-compliant hostname: api.duffel.cards)
+    // =========================================================================
+
+    private const CARDS_BASE_URL = 'https://api.duffel.cards';
+
+    /**
+     * Create a Duffel card token for use in createOrder with payment type 'card'.
+     * Requires PCI-compliant environment. Cards expire after 25 min or first use.
+     *
+     * @param  array $cardData  number, name, cvc, expiry_month, expiry_year,
+     *                          address_line_1, address_city, address_region,
+     *                          address_postal_code, address_country_code
+     */
+    public function createCard(array $cardData): array
+    {
+        return $this->request('POST', self::CARDS_BASE_URL . '/payments/cards', ['data' => $cardData]);
+    }
+
+    /**
+     * Delete a card by ID (useful for multi-use cards or cleanup on booking failure).
+     */
+    public function deleteCard(string $cardId): void
+    {
+        $this->request('DELETE', self::CARDS_BASE_URL . '/payments/cards/' . urlencode($cardId));
+    }
+
+    /**
+     * Create a 3DS session to authenticate a card before use in createOrder.
+     *
+     * @param  array $data  card_id, resource_id (offer_id), resource_type ('offer'),
+     *                      services, passenger_name, user_redirect_url
+     */
+    public function createThreeDSecureSession(array $data): array
+    {
+        return $this->request('POST', self::CARDS_BASE_URL . '/payments/three_d_secure_sessions', ['data' => $data]);
+    }
+
+    /**
+     * Retrieve a 3DS session by ID to check its status (ready/authenticated/failed).
+     */
+    public function getThreeDSecureSession(string $sessionId): array
+    {
+        return $this->request('GET', self::CARDS_BASE_URL . '/payments/three_d_secure_sessions/' . urlencode($sessionId));
+    }
+
+    // =========================================================================
     // Airports & Airlines (reference data for autocomplete)
     // =========================================================================
 

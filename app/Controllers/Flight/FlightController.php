@@ -260,6 +260,64 @@ class FlightController
     }
 
     // =========================================================================
+    // Card payment: Step 1 — tokenise card + create 3DS session
+    // =========================================================================
+
+    public function initCardPayment(Request $request): void
+    {
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
+
+        $body       = $request->json() ?: [];
+        $sessionKey = (string) ($body['session_key'] ?? '');
+        $coupon     = isset($body['coupon_code']) ? (string) $body['coupon_code'] : null;
+        $cardData   = $body['card'] ?? [];
+
+        if (empty($sessionKey) || empty($cardData)) {
+            Response::error('session_key and card are required.', 422);
+            return;
+        }
+
+        try {
+            $result = $this->bookingService->initCardPayment(
+                $sessionKey,
+                (int) $user['id'],
+                $cardData,
+                $coupon
+            );
+            Response::json($result);
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        }
+    }
+
+    // =========================================================================
+    // Card payment: Step 2 — complete booking after 3DS auth
+    // =========================================================================
+
+    public function completeCardBooking(Request $request): void
+    {
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
+
+        $body         = $request->json() ?: [];
+        $sessionKey   = (string) ($body['session_key'] ?? '');
+        $tdsSessionId = (string) ($body['three_d_secure_session_id'] ?? '');
+
+        if (empty($sessionKey) || empty($tdsSessionId)) {
+            Response::error('session_key and three_d_secure_session_id are required.', 422);
+            return;
+        }
+
+        try {
+            $result = $this->bookingService->completeCardBooking($sessionKey, $tdsSessionId, (int) $user['id']);
+            Response::json($result);
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        }
+    }
+
+    // =========================================================================
     // User bookings
     // =========================================================================
 

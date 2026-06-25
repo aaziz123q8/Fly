@@ -622,19 +622,8 @@ async function proceedToPayment() {
       txt.textContent = 'متابعة للدفع';
     }
 
-    // Create payment intent
-    const piRes = await Api.post('/api/flights/checkout/payment-intent', {
-      session_key: sessionKey,
-      coupon_code: couponCode || null,
-    }, true);
-
-    window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey)
-      + '&pi='       + encodeURIComponent(piRes.payment_intent_id || '')
-      + '&secret='   + encodeURIComponent(piRes.client_secret     || '')
-      + '&amount='   + encodeURIComponent(piRes.amount            || '')
-      + '&base='     + encodeURIComponent(piRes.base              || '')
-      + '&tax='      + encodeURIComponent(piRes.tax               || '')
-      + '&discount=' + encodeURIComponent(piRes.discount          || '');
+    // Navigate to payment page — card details and pricing are collected there.
+    window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey);
   } catch(e) {
     btn.disabled=false; txt.classList.remove('hidden'); spin.classList.add('hidden');
     showErr('حدث خطأ: ' + (e.message || 'يرجى المحاولة مجدداً'));
@@ -646,17 +635,7 @@ async function skipServices() {
   btn.disabled=true;
   try {
     await Api.post('/api/flights/checkout/services', { session_key: sessionKey, services: [] }, true);
-    const piRes = await Api.post('/api/flights/checkout/payment-intent', {
-      session_key: sessionKey,
-      coupon_code: couponCode || null,
-    }, true);
-    window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey)
-      + '&pi='       + encodeURIComponent(piRes.payment_intent_id || '')
-      + '&secret='   + encodeURIComponent(piRes.client_secret     || '')
-      + '&amount='   + encodeURIComponent(piRes.amount            || '')
-      + '&base='     + encodeURIComponent(piRes.base              || '')
-      + '&tax='      + encodeURIComponent(piRes.tax               || '')
-      + '&discount=' + encodeURIComponent(piRes.discount          || '');
+    window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey);
   } catch(e) {
     btn.disabled=false;
     showErr('حدث خطأ: ' + (e.message || ''));

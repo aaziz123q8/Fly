@@ -247,6 +247,16 @@ $router->group('api/flights', function (Router $r): void {
         (new FlightController())->confirmCheckout($req);
     }, [AuthMiddleware::handle()]);
 
+    // Checkout: Duffel card payment — Step 1 tokenise card + create 3DS session (auth required).
+    $r->post('/checkout/card/init', function (Request $req): void {
+        (new FlightController())->initCardPayment($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Checkout: Duffel card payment — Step 2 complete booking after 3DS auth (auth required).
+    $r->post('/checkout/card/complete', function (Request $req): void {
+        (new FlightController())->completeCardBooking($req);
+    }, [AuthMiddleware::handle()]);
+
     // Sync booking from live Duffel order (auth required).
     $r->post('/bookings/:id/sync', function (Request $req): void {
         (new FlightController())->syncBooking($req);

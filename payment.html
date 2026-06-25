@@ -482,13 +482,60 @@
           autocomplete="cc-name" dir="ltr">
       </div>
 
-      <!-- Stripe Payment Element -->
-      <div class="stripe-wrap">
-        <div id="stripe-loading">
-          <div class="spin" style="border-top-color:var(--pay-muted)"></div>
-          <span>جاري تحميل نموذج الدفع…</span>
+      <!-- Card number -->
+      <div class="form-group">
+        <label class="form-lbl" for="cardNumber">رقم البطاقة</label>
+        <input type="text" class="form-inp" id="cardNumber"
+          placeholder="0000 0000 0000 0000"
+          maxlength="19" autocomplete="cc-number" inputmode="numeric" dir="ltr">
+      </div>
+
+      <!-- Expiry + CVC -->
+      <div style="display:flex;gap:12px">
+        <div class="form-group" style="flex:1">
+          <label class="form-lbl" for="cardExpiry">تاريخ الانتهاء</label>
+          <input type="text" class="form-inp" id="cardExpiry"
+            placeholder="MM / YY" maxlength="7"
+            autocomplete="cc-exp" inputmode="numeric" dir="ltr">
         </div>
-        <div id="stripe-element"></div>
+        <div class="form-group" style="flex:1">
+          <label class="form-lbl" for="cardCvc">CVC</label>
+          <input type="text" class="form-inp" id="cardCvc"
+            placeholder="123" maxlength="4"
+            autocomplete="cc-csc" inputmode="numeric" dir="ltr">
+        </div>
+      </div>
+
+      <!-- Billing address (required by Duffel Cards API) -->
+      <div class="form-group">
+        <label class="form-lbl" for="billAddress">عنوان الفوترة (السطر الأول)</label>
+        <input type="text" class="form-inp" id="billAddress"
+          placeholder="10 شارع …" autocomplete="billing street-address" dir="ltr">
+      </div>
+      <div style="display:flex;gap:12px">
+        <div class="form-group" style="flex:1">
+          <label class="form-lbl" for="billCity">المدينة</label>
+          <input type="text" class="form-inp" id="billCity"
+            placeholder="Kuwait City" autocomplete="billing address-level2" dir="ltr">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-lbl" for="billPostal">الرمز البريدي</label>
+          <input type="text" class="form-inp" id="billPostal"
+            placeholder="12345" autocomplete="billing postal-code" dir="ltr">
+        </div>
+      </div>
+      <div style="display:flex;gap:12px">
+        <div class="form-group" style="flex:1">
+          <label class="form-lbl" for="billRegion">المنطقة / الولاية</label>
+          <input type="text" class="form-inp" id="billRegion"
+            placeholder="Al Asimah" autocomplete="billing address-level1" dir="ltr">
+        </div>
+        <div class="form-group" style="flex:1">
+          <label class="form-lbl" for="billCountry">كود الدولة (ISO)</label>
+          <input type="text" class="form-inp" id="billCountry"
+            placeholder="KW" maxlength="2"
+            autocomplete="billing country" dir="ltr" value="KW">
+        </div>
       </div>
 
       <!-- Error display -->
@@ -501,8 +548,8 @@
       <!-- Security badges -->
       <div class="sec-badges">
         <span class="sec-badge">🔒 SSL 256-bit</span>
-        <span class="sec-badge">🛡️ PCI-DSS Level 1</span>
-        <span class="sec-badge">⚡ Stripe</span>
+        <span class="sec-badge">🛡️ PCI-DSS</span>
+        <span class="sec-badge">✈️ Duffel</span>
         <span class="sec-badge">🔐 3D Secure</span>
       </div>
     </div>
@@ -528,7 +575,7 @@
         <div class="spin hidden" id="desktopPaySpin"></div>
       </button>
       <p style="text-align:center;font-size:0.73rem;color:var(--pay-muted);margin:8px 0 0">
-        🛡️ لا نخزن بيانات بطاقتك · الدفع محمي بـ Stripe
+        🛡️ لا نخزن بيانات بطاقتك · يتم التشفير عبر Duffel Cards API
       </p>
     </div>
 
@@ -578,16 +625,11 @@ if (!Auth.isLoggedIn()) {
 // ── URL params ─────────────────────────────────────────────
 const params        = new URLSearchParams(window.location.search);
 const sessionKey    = params.get('session')   || '';
-const piId          = params.get('pi')         || '';
-const clientSecret  = params.get('secret')     || '';
 const amountGBP     = parseFloat(params.get('amount')   || '0');
 const baseAmountGBP = parseFloat(params.get('base')     || '0') || round2(amountGBP * 0.909);
 const taxAmountGBP  = parseFloat(params.get('tax')      || '0') || round2(amountGBP * 0.091);
 let   discountGBP   = parseFloat(params.get('discount') || '0');
 let   extraSvcGBP   = 0;
-
-let stripe   = null;
-let elements = null;
 
 function round2(n) { return Math.round(n * 100) / 100; }
 
@@ -642,7 +684,7 @@ function hideError() {
 }
 
 // ── Guard: missing session ─────────────────────────────────
-if (!clientSecret || !sessionKey) {
+if (!sessionKey) {
   document.getElementById('flightSummary').innerHTML =
     '<p style="color:var(--pay-red);font-size:0.85rem;text-align:center;padding:12px">' +
     '⚠️ انتهت صلاحية جلسة الدفع. يرجى العودة وإعادة الاختيار.</p>';
@@ -651,67 +693,19 @@ if (!clientSecret || !sessionKey) {
   if (db) db.disabled = true;
 }
 
-// ── Stripe loader ──────────────────────────────────────────
-function loadStripeJs() {
-  return new Promise((resolve, reject) => {
-    if (typeof Stripe !== 'undefined') { resolve(); return; }
-    const s = document.createElement('script');
-    s.src     = 'https://js.stripe.com/v3/';
-    s.onload  = resolve;
-    s.onerror = () => reject(new Error('فشل تحميل مكتبة الدفع. تحقق من الاتصال بالإنترنت.'));
-    document.head.appendChild(s);
-  });
-}
-
-async function initStripe() {
-  if (!clientSecret || !sessionKey) return;
-  try {
-    await loadStripeJs();
-  } catch(e) {
-    document.getElementById('stripe-loading').style.display = 'none';
-    showError('⚠️ ' + e.message);
-    return;
-  }
-
-  let key = '';
-  try {
-    const cfg = await Api.get('/api/config/stripe-key');
-    key = cfg.publishable_key || cfg.key || '';
-  } catch(e) {
-    document.getElementById('stripe-loading').style.display = 'none';
-    showError('⚠️ تعذر الاتصال بالخادم. يرجى تحديث الصفحة.');
-    return;
-  }
-
-  if (!key || key.includes('YOUR')) {
-    document.getElementById('stripe-loading').style.display = 'none';
-    showError('⚠️ إعدادات الدفع غير مكتملة. تواصل مع الدعم الفني.');
-    return;
-  }
-
-  try {
-    stripe   = Stripe(key);
-    elements = stripe.elements({ locale: 'ar', clientSecret });
-
-    const card = elements.create('payment', {
-      fields: { billingDetails: { name: 'never' } },
-      layout: { type: 'tabs', defaultCollapsed: false },
-      wallets: { link: 'never', applePay: 'never', googlePay: 'never' },
-    });
-
-    card.on('ready', () => {
-      document.getElementById('stripe-loading').style.display = 'none';
-    });
-    card.mount('#stripe-element');
-    card.on('change', e => {
-      if (e.error) showError(e.error.message);
-      else         hideError();
-    });
-  } catch(e) {
-    document.getElementById('stripe-loading').style.display = 'none';
-    showError('⚠️ خطأ في تهيئة الدفع: ' + (e.message || String(e)));
-  }
-}
+// ── Card number formatting ─────────────────────────────────
+document.getElementById('cardNumber').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '').substring(0, 16);
+  this.value = v.replace(/(.{4})/g, '$1 ').trim();
+});
+document.getElementById('cardExpiry').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g, '').substring(0, 4);
+  if (v.length >= 2) v = v.substring(0,2) + ' / ' + v.substring(2);
+  this.value = v;
+});
+document.getElementById('cardCvc').addEventListener('input', function() {
+  this.value = this.value.replace(/\D/g, '').substring(0, 4);
+});
 
 // ── Flight summary ─────────────────────────────────────────
 async function loadFlightSummary() {
@@ -907,92 +901,177 @@ function setPayLoading(loading) {
   }
 }
 
+// ── 3DS popup / redirect handler ───────────────────────────
+let tdsSessionId = '';
+let tdsPopup     = null;
+
+function openThreeDSecure(redirectUrl) {
+  return new Promise((resolve, reject) => {
+    // Open 3DS auth in a popup; fall back to same-tab redirect if blocked.
+    try {
+      tdsPopup = window.open(redirectUrl, 'duffel3ds',
+        'width=500,height=700,resizable=yes,scrollbars=yes');
+      if (!tdsPopup || tdsPopup.closed) throw new Error('popup blocked');
+    } catch(e) {
+      // Redirect current tab; after 3DS Duffel redirects back via return_url.
+      window.location.href = redirectUrl;
+      return;
+    }
+
+    // Poll for popup close (user completes or dismisses 3DS).
+    const checker = setInterval(() => {
+      if (!tdsPopup || tdsPopup.closed) {
+        clearInterval(checker);
+        resolve();
+      }
+    }, 500);
+
+    // Safety timeout: 10 min.
+    setTimeout(() => {
+      clearInterval(checker);
+      if (tdsPopup && !tdsPopup.closed) tdsPopup.close();
+      reject(new Error('انتهت مهلة التحقق الأمني. يرجى المحاولة مجدداً.'));
+    }, 600000);
+  });
+}
+
 async function submitPayment() {
-  if (!stripe || !elements) {
-    showError('⏳ جاري تحميل نظام الدفع، يرجى الانتظار لحظة ثم المحاولة مجدداً.');
+  if (!sessionKey) {
+    showError('⚠️ انتهت صلاحية الجلسة. يرجى العودة وإعادة الاختيار.');
     return;
   }
-  if (!clientSecret) {
-    showError('⚠️ بيانات الدفع غير متوفرة. يرجى العودة وإعادة المحاولة.');
-    return;
+
+  // Collect card fields.
+  const cardName   = document.getElementById('cardName').value.trim();
+  const cardNumber = document.getElementById('cardNumber').value.replace(/\s/g,'').trim();
+  const expiryRaw  = document.getElementById('cardExpiry').value.replace(/\s/g,'').trim();
+  const cvc        = document.getElementById('cardCvc').value.trim();
+  const address1   = document.getElementById('billAddress').value.trim();
+  const city       = document.getElementById('billCity').value.trim();
+  const postal     = document.getElementById('billPostal').value.trim();
+  const region     = document.getElementById('billRegion').value.trim();
+  const country    = document.getElementById('billCountry').value.trim().toUpperCase();
+  const couponCode = document.getElementById('couponInput')?.value.trim() || '';
+
+  // Basic client-side validation.
+  if (!cardName)                    { showError('يرجى إدخال اسم حامل البطاقة.');       return; }
+  if (cardNumber.length < 13)       { showError('يرجى إدخال رقم بطاقة صحيح.');         return; }
+  const expiryParts = expiryRaw.replace('/','').match(/^(\d{2})(\d{2})$/);
+  if (!expiryParts)                 { showError('يرجى إدخال تاريخ انتهاء صحيح (MM/YY).'); return; }
+  if (cvc.length < 3)               { showError('يرجى إدخال رمز CVC.');                 return; }
+  if (!address1 || !city || !postal || !region || country.length !== 2) {
+    showError('يرجى إدخال عنوان الفوترة كاملاً.'); return;
   }
-  const cardName = document.getElementById('cardName').value.trim();
-  if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة.'); return; }
+
+  const [, expMonth, expYear] = expiryParts;
 
   setPayLoading(true);
   hideError();
 
   try {
-    const result = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        payment_method_data: { billing_details: { name: cardName } },
-        return_url: window.location.href,
-      },
-      redirect: 'if_required',
-    });
+    // Step 1: tokenise card + create 3DS session via Duffel Cards API.
+    document.getElementById('payBtnTxt').textContent = '🔐 جاري التحقق من البطاقة…';
+    document.getElementById('payBtnTxt').classList.remove('hidden');
+    const dt = document.getElementById('desktopPayTxt');
+    if (dt) { dt.textContent = '🔐 جاري التحقق…'; dt.classList.remove('hidden'); }
 
-    if (result.error) {
-      showError(result.error.message || 'فشل الدفع. يرجى التحقق من بيانات البطاقة.');
+    let initRes;
+    try {
+      initRes = await Api.post('/api/flights/checkout/card/init', {
+        session_key: sessionKey,
+        coupon_code: couponCode || null,
+        card: {
+          number:               cardNumber,
+          name:                 cardName,
+          cvc:                  cvc,
+          expiry_month:         expMonth,
+          expiry_year:          expYear,
+          address_line_1:       address1,
+          address_city:         city,
+          address_region:       region,
+          address_postal_code:  postal,
+          address_country_code: country,
+        },
+      }, true);
+    } catch(e) {
+      showError('⚠️ ' + (e.message || 'فشل التحقق من البطاقة. تأكد من البيانات وحاول مجدداً.'));
       setPayLoading(false);
       return;
     }
 
-    if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-      // Update button text
-      document.getElementById('payBtnTxt').textContent = 'جاري إنشاء الحجز…';
-      document.getElementById('payBtnTxt').classList.remove('hidden');
-      const dt = document.getElementById('desktopPayTxt');
-      if (dt) { dt.textContent = 'جاري إنشاء الحجز…'; dt.classList.remove('hidden'); }
+    tdsSessionId = initRes.three_d_secure_session_id || '';
+    const redirectUrl = initRes.redirect_url || '';
 
-      let bookingRef = '';
-      let confirmed  = false;
-      const delays   = [500, 1000, 2000, 4000, 8000, 12000];
+    // Step 2: open 3DS authentication.
+    if (redirectUrl) {
+      document.getElementById('payBtnTxt').textContent = '🔐 أكمل التحقق في النافذة المنبثقة…';
+      if (dt) dt.textContent = '🔐 أكمل التحقق…';
 
-      for (let i = 0; i < delays.length; i++) {
-        await new Promise(r => setTimeout(r, delays[i]));
-        try {
-          const cr = await Api.post('/api/flights/checkout/confirm', {
-            session_key:        sessionKey,
-            payment_intent_id:  piId,
-          }, true);
-
-          if (cr.status === 'confirmed') {
-            bookingRef = cr.duffel_booking_reference || cr.booking_reference || '';
-            confirmed  = true;
-            break;
-          }
-          // status === 'pending' → keep polling
-        } catch(e) {
-          // e is { status, error, message } from api.js or { message } on network fail
-          const serverMsg  = e.message || e.error || '';
-          const isGeneric  = serverMsg.includes('حدث خطأ أثناء إنشاء الحجز مع شركة الطيران');
-
-          // Always show the server message; attach raw detail if it looks generic
-          showError(
-            '⚠️ ' + (serverMsg || 'حدث خطأ أثناء إنشاء الحجز'),
-            isGeneric ? 'HTTP ' + (e.status || '?') + ' — تحقق من لوحة تحكم Duffel' : null
-          );
-          setPayLoading(false);
-          return;
-        }
+      try {
+        await openThreeDSecure(redirectUrl);
+      } catch(tdsErr) {
+        showError('⚠️ ' + (tdsErr.message || 'فشل التحقق الأمني.'));
+        setPayLoading(false);
+        return;
       }
-
-      window.location.href = 'confirmation.html'
-        + '?session=' + encodeURIComponent(sessionKey)
-        + '&pi='      + encodeURIComponent(piId)
-        + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '')
-        + (confirmed  ? '&confirmed=1' : '');
-    } else {
-      showError('حالة الدفع غير معروفة. يرجى التواصل مع الدعم.');
-      setPayLoading(false);
     }
+
+    // Step 3: complete booking after 3DS.
+    document.getElementById('payBtnTxt').textContent = '✈️ جاري إنشاء الحجز…';
+    if (dt) dt.textContent = '✈️ جاري إنشاء الحجز…';
+
+    let bookingRef = '';
+    try {
+      const cr = await Api.post('/api/flights/checkout/card/complete', {
+        session_key:                sessionKey,
+        three_d_secure_session_id:  tdsSessionId,
+      }, true);
+
+      bookingRef = cr.duffel_booking_reference || cr.booking_reference || '';
+    } catch(e) {
+      const serverMsg = e.message || e.error || '';
+      showError(
+        '⚠️ ' + (serverMsg || 'حدث خطأ أثناء إنشاء الحجز.'),
+        'HTTP ' + (e.status || '?')
+      );
+      setPayLoading(false);
+      return;
+    }
+
+    window.location.href = 'confirmation.html'
+      + '?session='    + encodeURIComponent(sessionKey)
+      + '&confirmed=1'
+      + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '');
 
   } catch(err) {
     showError(err.message || 'حدث خطأ أثناء الدفع');
     setPayLoading(false);
   }
 }
+
+// ── Handle 3DS return redirect (if popup was blocked and we did full redirect) ──
+(function() {
+  const p = new URLSearchParams(window.location.search);
+  const tdsReturn = p.get('tds_session_id') || p.get('three_d_secure_session_id') || '';
+  if (tdsReturn && sessionKey) {
+    tdsSessionId = tdsReturn;
+    // Auto-complete booking after returning from 3DS redirect.
+    setPayLoading(true);
+    document.getElementById('payBtnTxt').textContent = '✈️ جاري إنشاء الحجز…';
+    document.getElementById('payBtnTxt').classList.remove('hidden');
+    Api.post('/api/flights/checkout/card/complete', {
+      session_key: sessionKey,
+      three_d_secure_session_id: tdsReturn,
+    }, true).then(cr => {
+      const ref = cr.duffel_booking_reference || cr.booking_reference || '';
+      window.location.href = 'confirmation.html?session=' + encodeURIComponent(sessionKey)
+        + '&confirmed=1' + (ref ? '&ref=' + encodeURIComponent(ref) : '');
+    }).catch(e => {
+      showError('⚠️ ' + (e.message || 'فشل إنشاء الحجز بعد التحقق الأمني.'));
+      setPayLoading(false);
+    });
+  }
+})();
 
 // ── Deadline countdown ─────────────────────────────────────
 (function() {
@@ -1031,7 +1110,6 @@ if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
 initCurrency();
 loadPriceRows();
 loadFlightSummary();
-initStripe();
 </script>
 </body>
 </html>

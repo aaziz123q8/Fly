@@ -400,22 +400,248 @@ class FlightBookingService
     }
 
     // =========================================================================
-    // completeBooking  (called by WebhookController after payment_intent.succeeded)
+    // initCardPayment — Step 1: tokenise card via Duffel Cards API
     // =========================================================================
 
-    public function completeBooking(string $sessionKey, string $paymentIntentId): array
+    /**
+     * Create a single-use Duffel card token and immediately create a 3DS session
+     * to authenticate it against the specific offer.
+     *
+     * Called by payment.html after the user fills the card form.
+     * Returns { card_id, three_d_secure_session_id, three_d_secure_session_token, redirect_url }
+     */
+    public function initCardPayment(string $sessionKey, int $userId, array $cardData, ?string $couponCode = null): array
     {
-        // Look up session by payment_intent_id.
-        $stmt = $this->db->prepare(
-            'SELECT * FROM booking_sessions
-             WHERE payment_intent_id = :pi AND booking_type = :bt
-             LIMIT 1'
-        );
-        $stmt->execute([':pi' => $paymentIntentId, ':bt' => 'flight']);
+        $session = $this->requireSession($sessionKey, $userId);
+
+        if (!in_array($session['current_step'], ['payment', 'services', 'review'], true)) {
+            throw new RuntimeException('Session is not at the payment step.', 422);
+        }
+
+        $this->enforcePaymentDeadlines($session);
+
+        $offerId = $session['provider_offer_id'] ?? '';
+        if (empty($offerId)) {
+            throw new RuntimeException('No offer in session.', 422);
+        }
+
+        // Build pricing snapshot (needed for payment record).
+        $pricingSnapshot = is_string($session['pricing_snapshot'])
+            ? json_decode($session['pricing_snapshot'], true)
+            : ($session['pricing_snapshot'] ?? null);
+
+        if (empty($pricingSnapshot)) {
+            $offer = $this->fetchOffer($offerId);
+            if ($offer === null) throw new RuntimeException('Offer expired or not found', 410);
+            $pricingSnapshot = $this->calculatePricing((float) $offer['total_amount'], strtoupper($offer['currency'] ?? 'GBP'));
+        }
+
+        $totalAmount = (float) ($pricingSnapshot['total'] ?? 0);
+        $currency    = strtoupper($pricingSnapshot['currency'] ?? 'GBP');
+
+        // Apply coupon.
+        $discountAmount = 0.0;
+        if ($couponCode !== null && $couponCode !== '') {
+            $coupon = $this->findActiveCoupon($couponCode);
+            if ($coupon) {
+                if ($coupon['discount_type'] === 'percentage') {
+                    $discountAmount = round($totalAmount * ((float) $coupon['discount_value'] / 100), 2);
+                } else {
+                    $discountAmount = min($totalAmount, (float) $coupon['discount_value']);
+                }
+                $totalAmount -= $discountAmount;
+                $totalAmount  = max(0, $totalAmount);
+                $pricingSnapshot['coupon_code']     = $couponCode;
+                $pricingSnapshot['discount_amount'] = $discountAmount;
+                $pricingSnapshot['total']           = $totalAmount;
+            }
+        }
+
+        // Validate required card fields.
+        $required = ['number', 'name', 'cvc', 'expiry_month', 'expiry_year',
+                     'address_line_1', 'address_city', 'address_region',
+                     'address_postal_code', 'address_country_code'];
+        foreach ($required as $f) {
+            if (empty($cardData[$f])) {
+                throw new RuntimeException('بيانات البطاقة غير مكتملة: ' . $f, 422);
+            }
+        }
+
+        // Create single-use Duffel card token.
+        try {
+            $cardResponse = $this->duffel->createCard([
+                'number'               => preg_replace('/\s/', '', $cardData['number']),
+                'name'                 => $cardData['name'],
+                'cvc'                  => $cardData['cvc'],
+                'expiry_month'         => str_pad((string) $cardData['expiry_month'], 2, '0', STR_PAD_LEFT),
+                'expiry_year'          => substr((string) $cardData['expiry_year'], -2),
+                'address_line_1'       => $cardData['address_line_1'],
+                'address_line_2'       => $cardData['address_line_2'] ?? '',
+                'address_city'         => $cardData['address_city'],
+                'address_region'       => $cardData['address_region'],
+                'address_postal_code'  => $cardData['address_postal_code'],
+                'address_country_code' => strtoupper($cardData['address_country_code']),
+                'multi_use'            => false,
+            ]);
+        } catch (\Throwable $e) {
+            error_log('[DUFFEL_CREATE_CARD_FAIL] ' . $e->getMessage());
+            throw new RuntimeException('فشل حفظ بيانات البطاقة. تأكد من صحة البيانات وحاول مجدداً.', 422);
+        }
+
+        $cardId = $cardResponse['data']['id'] ?? '';
+        if (empty($cardId)) {
+            throw new RuntimeException('لم يتم استلام معرف البطاقة من Duffel.', 502);
+        }
+
+        // Get selected services for 3DS context.
+        $servicesData = is_string($session['services_data'])
+            ? json_decode($session['services_data'], true)
+            : ($session['services_data'] ?? []);
+        $cleanServices = [];
+        foreach (($servicesData ?: []) as $svc) {
+            $sid = trim((string)($svc['id'] ?? ''));
+            $qty = (int)($svc['quantity'] ?? 1);
+            if ($sid !== '') $cleanServices[] = ['id' => $sid, 'quantity' => max(1, $qty)];
+        }
+
+        // Create 3DS session to authenticate the card for this offer.
+        try {
+            $tdsResponse = $this->duffel->createThreeDSecureSession([
+                'card_id'           => $cardId,
+                'resource_id'       => $offerId,
+                'resource_type'     => 'offer',
+                'services'          => $cleanServices,
+            ]);
+        } catch (\Throwable $e) {
+            // Clean up card token if 3DS creation fails.
+            try { $this->duffel->deleteCard($cardId); } catch (\Throwable) {}
+            error_log('[DUFFEL_CREATE_3DS_FAIL] card=' . $cardId . ' ' . $e->getMessage());
+            throw new RuntimeException('فشل إنشاء جلسة التحقق الأمني. يرجى المحاولة مجدداً.', 502);
+        }
+
+        $tdsData    = $tdsResponse['data'] ?? [];
+        $tdsId      = $tdsData['id']    ?? '';
+        $tdsToken   = $tdsData['token'] ?? '';
+        $redirectUrl = $tdsData['redirect_url'] ?? '';
+
+        // Persist card_id, 3DS session id, and updated pricing.
+        $idempotencyKey = bin2hex(random_bytes(32));
+        $this->sessionService->update($sessionKey, [
+            'duffel_card_id'      => $cardId,
+            'tds_session_id'      => $tdsId,
+            'idempotency_key'     => $idempotencyKey,
+            'coupon_code'         => $couponCode,
+            'pricing_snapshot'    => $pricingSnapshot,
+            'current_step'        => 'payment',
+        ]);
+
+        // Insert payment record so ops can track it.
+        try {
+            $this->db->prepare(
+                'INSERT INTO payments
+                   (booking_type, booking_id, user_id, payment_method,
+                    idempotency_key, amount, currency, status)
+                 VALUES (?, 0, ?, ?, ?, ?, ?, ?)'
+            )->execute([
+                'flight', $userId, 'duffel_card', $idempotencyKey,
+                number_format($totalAmount, 2, '.', ''), $currency, 'pending',
+            ]);
+        } catch (\Throwable) { /* non-critical if column schema differs */ }
+
+        return [
+            'card_id'                   => $cardId,
+            'three_d_secure_session_id' => $tdsId,
+            'three_d_secure_token'      => $tdsToken,
+            'redirect_url'              => $redirectUrl,
+            'amount'                    => $totalAmount,
+            'currency'                  => $currency,
+            'discount'                  => $discountAmount,
+        ];
+    }
+
+    // =========================================================================
+    // completeCardBooking — Step 2: after 3DS auth, create Duffel order
+    // =========================================================================
+
+    /**
+     * Called by payment.html after the 3DS redirect returns with status=authenticated.
+     * Verifies 3DS status, calls priceOffer, then createOrder with payment type 'card'.
+     */
+    public function completeCardBooking(string $sessionKey, string $tdsSessionId, int $userId): array
+    {
+        $session = $this->requireSession($sessionKey, $userId);
+
+        $storedTdsId = $session['tds_session_id'] ?? '';
+        if ($storedTdsId !== $tdsSessionId) {
+            throw new RuntimeException('جلسة التحقق الأمني غير مطابقة.', 422);
+        }
+
+        // Verify 3DS session is authenticated.
+        try {
+            $tdsResponse = $this->duffel->getThreeDSecureSession($tdsSessionId);
+            $tdsStatus   = $tdsResponse['data']['status'] ?? '';
+        } catch (\Throwable $e) {
+            throw new RuntimeException('فشل التحقق من جلسة الأمان. يرجى المحاولة مجدداً.', 502);
+        }
+
+        if ($tdsStatus !== 'authenticated') {
+            throw new RuntimeException('فشل التحقق الأمني للبطاقة (3D Secure). يرجى المحاولة مجدداً.', 422);
+        }
+
+        $cardId  = $session['duffel_card_id'] ?? '';
+        $offerId = $session['provider_offer_id'] ?? '';
+
+        if (empty($cardId) || empty($offerId)) {
+            throw new RuntimeException('بيانات الجلسة غير مكتملة.', 422);
+        }
+
+        // Delegate to completeBooking with card payment type.
+        return $this->completeBooking($sessionKey, '', 'card', $cardId);
+    }
+
+    // =========================================================================
+    // completeBooking  (called by WebhookController or after card 3DS)
+    // =========================================================================
+
+    public function completeBooking(
+        string $sessionKey,
+        string $paymentIntentId,
+        string $paymentType = 'balance',
+        string $cardId = ''
+    ): array
+    {
+        // For card payments, look up by session_key directly.
+        // For Stripe/balance payments, look up by payment_intent_id.
+        if ($paymentType === 'card' || $sessionKey !== '') {
+            $stmt = $this->db->prepare(
+                'SELECT * FROM booking_sessions
+                 WHERE session_key = :sk AND booking_type = :bt
+                 LIMIT 1'
+            );
+            $stmt->execute([':sk' => $sessionKey, ':bt' => 'flight']);
+        } else {
+            $stmt = $this->db->prepare(
+                'SELECT * FROM booking_sessions
+                 WHERE payment_intent_id = :pi AND booking_type = :bt
+                 LIMIT 1'
+            );
+            $stmt->execute([':pi' => $paymentIntentId, ':bt' => 'flight']);
+        }
         $session = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        // For Stripe/balance: fall back to payment_intent_id lookup when session_key didn't match.
+        if (!$session && $paymentType !== 'card' && $paymentIntentId !== '') {
+            $stmt = $this->db->prepare(
+                'SELECT * FROM booking_sessions
+                 WHERE payment_intent_id = :pi AND booking_type = :bt
+                 LIMIT 1'
+            );
+            $stmt->execute([':pi' => $paymentIntentId, ':bt' => 'flight']);
+            $session = $stmt->fetch(PDO::FETCH_ASSOC);
+        }
+
         if (!$session) {
-            throw new RuntimeException('Booking session not found for payment intent.', 404);
+            throw new RuntimeException('Booking session not found.', 404);
         }
 
         $passengersData = is_string($session['passengers_data'])
@@ -475,8 +701,10 @@ class FlightBookingService
         // Call priceOffer to get the EXACT amount Duffel will accept in createOrder.
         // priceOffer locks the price on Duffel's side; getOffer does not — Duffel
         // recalculates internally on createOrder and can diverge from a plain GET.
+        // For card payments, intended_payment_methods must be ['card']; for balance it's ['balance'].
+        $intendedMethods = ($paymentType === 'card') ? ['card'] : ['balance'];
         try {
-            $priceResponse  = $this->duffel->priceOffer($offerId, ['balance'], $cleanServices);
+            $priceResponse  = $this->duffel->priceOffer($offerId, $intendedMethods, $cleanServices);
             $pricedData     = $priceResponse['data'] ?? [];
             $pricedAmount   = $pricedData['total_amount']    ?? null;
             $pricedCurrency = strtoupper($pricedData['total_currency'] ?? $offer['currency'] ?? 'GBP');
@@ -494,14 +722,24 @@ class FlightBookingService
         error_log('[AMOUNT_CHECK] offer_cached=' . $offer['total_amount']
             . ' priced=' . $pricedAmount
             . ' currency=' . $pricedCurrency
+            . ' payment_type=' . $paymentType
             . ' services_count=' . count($cleanServices));
 
-        // Build Duffel payment payload using the freshly fetched amount.
-        $duffelPayments = [[
-            'type'     => 'balance',
-            'amount'   => (string) $pricedAmount,
-            'currency' => $pricedCurrency,
-        ]];
+        // Build Duffel payment payload using the locked price.
+        if ($paymentType === 'card' && $cardId !== '') {
+            $duffelPayments = [[
+                'type'     => 'card',
+                'amount'   => (string) $pricedAmount,
+                'currency' => $pricedCurrency,
+                'card_id'  => $cardId,
+            ]];
+        } else {
+            $duffelPayments = [[
+                'type'     => 'balance',
+                'amount'   => (string) $pricedAmount,
+                'currency' => $pricedCurrency,
+            ]];
+        }
 
         // Attach metadata for traceability in Duffel dashboard.
         $metadata = [
@@ -576,13 +814,19 @@ class FlightBookingService
                 throw new RuntimeException($parts['customer'], $mapped->getCode() ?: 409);
             }
 
-            // All other Duffel failures: auto-refund the Stripe charge.
-            // Deterministic idempotency key prevents duplicate refunds on retry.
-            $this->autoRefundStripeOnDuffelFailure(
-                $paymentIntentId,
-                'auto_refund_' . md5($paymentIntentId),
-                $parts['internal']
-            );
+            // For card payments: delete the card token on failure (already expired in 25 min anyway).
+            if ($paymentType === 'card' && $cardId !== '') {
+                try { $this->duffel->deleteCard($cardId); } catch (\Throwable) {}
+            }
+
+            // For Stripe/balance payments: auto-refund the Stripe charge.
+            if ($paymentType !== 'card' && $paymentIntentId !== '') {
+                $this->autoRefundStripeOnDuffelFailure(
+                    $paymentIntentId,
+                    'auto_refund_' . md5($paymentIntentId),
+                    $parts['internal']
+                );
+            }
 
             throw new RuntimeException($parts['customer'], $mapped->getCode() ?: 502);
         }
