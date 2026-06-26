@@ -108,8 +108,8 @@ async function doLookup(e) {
         </div>
         <div class="result-row"><span class="result-label">المسافر</span><span class="result-value">${b.passenger_name || b.traveler_name || lastName}</span></div>
         <div class="result-row"><span class="result-label">الحالة</span><span class="status-badge ${statusClass}">${statusLabel}</span></div>
-        <div class="result-row"><span class="result-label">الوجهة</span><span class="result-value">${b.origin || ''} → ${b.destination || ''}</span></div>
-        <div class="result-row"><span class="result-label">تاريخ السفر</span><span class="result-value">${b.departure_date || b.travel_date || '--'}</span></div>
+        <div class="result-row"><span class="result-label">الوجهة</span><span class="result-value">${b.origin_airport || b.origin || ''} → ${b.destination_airport || b.destination || ''}</span></div>
+        <div class="result-row"><span class="result-label">تاريخ السفر</span><span class="result-value">${(b.departure_at || b.departure_date || b.travel_date || '').substring(0,10) || '--'}</span></div>
         <div class="result-row"><span class="result-label">نوع الحجز</span><span class="result-value">${b.type === 'flight' || b.booking_number?.startsWith('FM') ? '✈️ رحلة' : '🏨 فندق'}</span></div>
       </div>`;
   } catch(err) {
