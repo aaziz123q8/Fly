@@ -630,9 +630,14 @@ async function shareWhatsApp() {
   btn.textContent = '⏳ جاري تحضير التذكرة…';
 
   try {
+    if (typeof html2canvas === 'undefined') throw new Error('lib');
     const canvas = await html2canvas(document.getElementById('ticketCard'), {
-      scale: 2, useCORS: true, allowTaint: false,
-      backgroundColor: '#ffffff', logging: false,
+      scale: 2,
+      useCORS: false,
+      allowTaint: true,
+      backgroundColor: '#ffffff',
+      logging: false,
+      ignoreElements: el => el.tagName === 'IMG' && el.src && !el.src.startsWith(location.origin),
     });
     const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
     const file = new File([blob], 'flymasar-ticket.png', {type: 'image/png'});
@@ -644,14 +649,17 @@ async function shareWhatsApp() {
       return;
     }
 
-    // Desktop fallback: download the image
+    // Desktop / fallback: download the image
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'flymasar-ticket.png'; a.click();
     URL.revokeObjectURL(url);
     setTimeout(() => alert('تم حفظ صورة التذكرة — أرفقها في واتساب يدوياً'), 300);
   } catch(e) {
-    alert('تعذر تحضير التذكرة، يرجى استخدام زر الطباعة وحفظها كـ PDF');
+    // html2canvas unavailable or failed — fall back to print-to-PDF hint
+    if (confirm('لا يمكن التقاط صورة التذكرة تلقائياً.\nهل تريد فتح نافذة الطباعة لحفظها كـ PDF؟')) {
+      window.print();
+    }
   }
 
   btn.disabled = false; btn.textContent = '💬 مشاركة واتساب';
