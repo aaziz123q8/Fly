@@ -283,8 +283,9 @@
       const amount = b.total_amount || b.total_price;
       const currency = b.currency || 'ر.س';
       const canCancel = b.status === 'confirmed';
+      const canChange = b.status === 'confirmed' && (b.available_actions || []).includes('change');
       return `
-    <div class="booking-item">
+    <div class="booking-item" style="flex-wrap:wrap;gap:10px">
       <div class="booking-icon">✈️</div>
       <div class="booking-info">
         <div class="booking-title">${origin} → ${dest}</div>
@@ -293,9 +294,11 @@
           ${b.flight_number ? `&nbsp;|&nbsp; رحلة: ${b.flight_number}` : ''}
         </div>
       </div>
-      <div style="margin-right:auto;display:flex;align-items:center;gap:12px">
+      <div style="margin-right:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
         ${badgeHtml(b.status || 'pending')}
         <div class="booking-price">${amount ? Number(amount).toLocaleString('ar-SA') + ' ' + currency : '—'}</div>
+        <a href="confirmation.html?ref=${ref}" class="btn btn-sm btn-outline">🎫 التذكرة</a>
+        ${canChange ? `<button class="btn btn-sm btn-ghost" onclick="initiateChange(${b.id})">✏️ تعديل</button>` : ''}
         ${canCancel ? `<button class="btn btn-sm btn-danger" onclick="initiateCancel(${b.id})">إلغاء</button>` : ''}
       </div>
     </div>`;
@@ -413,6 +416,39 @@
   }
 
   // =========================================================================
+  // Change flight flow
+  // =========================================================================
+
+  async function initiateChange(bookingId) {
+    const modal = document.getElementById('changeModal');
+    const body  = document.getElementById('changeModalBody');
+    modal.style.display = 'flex';
+    body.innerHTML = '<div style="text-align:center;padding:24px">جارٍ تحميل بيانات الرحلة…</div>';
+    try {
+      const res = await Api.get(`/api/flights/bookings/${bookingId}`, true);
+      const b   = res.booking || res;
+      const segs = b.segments || [];
+      const dep  = segs[0]?.departure_at ? new Date(segs[0].departure_at).toLocaleDateString('ar-KW',{day:'numeric',month:'long',year:'numeric'}) : '—';
+      body.innerHTML = `
+        <p style="color:#555;margin-bottom:16px">يمكنك طلب تغيير رحلتك عبر التواصل معنا مباشرة.</p>
+        <div style="background:#f0f5ff;border-radius:10px;padding:14px;margin-bottom:16px;font-size:.9rem">
+          <div style="font-weight:700;color:#0f2444;margin-bottom:6px">تفاصيل الحجز الحالي</div>
+          <div>${b.origin_airport||''} → ${b.destination_airport||''} &nbsp;|&nbsp; ${dep}</div>
+          <div style="color:#888;font-size:.8rem;margin-top:4px">رقم الحجز: ${b.booking_reference||''}</div>
+        </div>
+        <a href="https://wa.me/96565002080?text=${encodeURIComponent('أريد تغيير رحلتي\nرقم الحجز: ' + (b.booking_reference||'') + '\nمن: ' + (b.origin_airport||'') + ' إلى: ' + (b.destination_airport||''))}"
+           target="_blank" class="btn btn-primary" style="width:100%;text-align:center;display:block">
+          💬 تواصل معنا على واتساب لتعديل الرحلة
+        </a>`;
+    } catch(e) {
+      body.innerHTML = `<div style="color:#dc2626">${e.message || 'تعذر تحميل البيانات'}</div>`;
+    }
+  }
+
+  function closeChangeModal() {
+    document.getElementById('changeModal').style.display = 'none';
+  }
+
   // Cancellation flow
   // =========================================================================
 
@@ -500,6 +536,20 @@
   loadHotelBookings();
   loadProfile();
 </script>
+
+<!-- Change Flight Modal -->
+<div id="changeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:28px;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <h3 style="margin:0;color:#1B4F8E">✏️ تعديل الرحلة</h3>
+      <button onclick="closeChangeModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888">×</button>
+    </div>
+    <div id="changeModalBody"></div>
+    <div style="margin-top:16px;text-align:left">
+      <button onclick="closeChangeModal()" style="padding:10px 20px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;cursor:pointer">إغلاق</button>
+    </div>
+  </div>
+</div>
 
 <!-- Cancellation Modal -->
 <div id="cancelModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
