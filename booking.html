@@ -468,6 +468,31 @@
 
   let _cdInterval = null;
 
+  async function tryRefreshOffer() {
+    if (!flightId) return false;
+    const timerEl = document.getElementById('cdTimer');
+    const badgeEl = document.getElementById('payReqBadge');
+    const bar     = document.getElementById('offerCountdown');
+    timerEl.textContent = '⏳';
+    badgeEl.textContent = 'جاري تجديد سعر العرض…';
+    try {
+      const res2 = await Api.post('/api/flights/checkout/start', { offer_id: flightId }, true);
+      sessionKey = res2.session_key;
+      flightData = res2.offer || res2;
+      window._offerExpired = false;
+      const btn2 = document.getElementById('bookBtn');
+      if (btn2) { btn2.disabled = false; btn2.style.opacity = '1'; }
+      const payReq2 = flightData.payment_requirements || null;
+      const newExpiry = res2.offer_expires_at || flightData.expires_at || null;
+      if (newExpiry) startOfferCountdown(newExpiry, payReq2);
+      bar.className = 'ok';
+      badgeEl.textContent = '✅ تم تجديد السعر';
+      return true;
+    } catch(e) {
+      return false;
+    }
+  }
+
   function startOfferCountdown(expiresAt, payReq) {
     const bar     = document.getElementById('offerCountdown');
     const timerEl = document.getElementById('cdTimer');
@@ -497,13 +522,19 @@
       const now  = Date.now();
       const diff = expMs - now;
       if (diff <= 0) {
-        window._offerExpired = true;
         clearInterval(_cdInterval);
         timerEl.textContent = '00:00';
         bar.className = 'expired';
         bar.style.display = 'flex';
-        const btn = document.getElementById('bookBtn');
-        if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
+        badgeEl.textContent = 'جاري تجديد العرض تلقائياً…';
+        tryRefreshOffer().then(ok => {
+          if (!ok) {
+            window._offerExpired = true;
+            const btn = document.getElementById('bookBtn');
+            if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
+            badgeEl.textContent = 'انتهت صلاحية هذا العرض — ابحث عن رحلة جديدة';
+          }
+        });
         return;
       }
       const totalSecs = Math.floor(diff / 1000);
@@ -797,11 +828,14 @@
     if (!sessionKey) {
       alert('جاري تحميل تفاصيل الرحلة، يرجى الانتظار'); return;
     }
-    // Block if offer has expired
+    // If offer expired, try to refresh before blocking
     if (window._offerExpired) {
-      alert('انتهت صلاحية هذا العرض. سيتم إعادة توجيهك للبحث عن رحلات جديدة.');
-      window.location.href = 'flights.html';
-      return;
+      const refreshed = await tryRefreshOffer();
+      if (!refreshed) {
+        alert('انتهت صلاحية هذا العرض. سيتم إعادة توجيهك للبحث عن رحلات جديدة.');
+        window.location.href = 'flights.html';
+        return;
+      }
     }
     // Validate contact email before proceeding
     const _cemail = document.getElementById('contactEmail')?.value?.trim() || '';
