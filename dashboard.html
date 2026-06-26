@@ -285,15 +285,22 @@
       const actions  = Array.isArray(b.available_actions) ? b.available_actions : [];
       const status   = b.status || 'pending';
 
-      // Determine which action buttons to show based on Duffel available_actions
+      // Show action buttons for confirmed bookings
+      // Prefer available_actions from Duffel; fall back to showing all buttons for confirmed bookings
+      const isConfirmed = status === 'confirmed';
+      const canChange   = isConfirmed && (actions.length === 0 || actions.includes('change'));
+      const canBags     = isConfirmed && (actions.length === 0 || actions.includes('add_baggage'));
+      const canSeats    = isConfirmed && (actions.length === 0 || actions.includes('add_seats'));
+      const canCancel   = isConfirmed && (actions.length === 0 || actions.includes('cancel'));
+
       const btnTicket  = `<a href="confirmation.html?ref=${ref}" class="btn btn-sm btn-outline">🎫 التذكرة</a>`;
-      const btnChange  = (status==='confirmed' && actions.includes('change'))
+      const btnChange  = canChange
         ? `<button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="openChangeModal(${b.id},'${origin}','${dest}')">✏️ تغيير الرحلة</button>` : '';
-      const btnBags    = (status==='confirmed' && actions.includes('add_baggage'))
+      const btnBags    = canBags
         ? `<button class="btn btn-sm" style="background:#f0fdf4;color:#15803d;border:1px solid #86efac" onclick="openServicesModal(${b.id},'baggage')">🧳 إضافة أمتعة</button>` : '';
-      const btnSeats   = (status==='confirmed' && actions.includes('add_seats'))
+      const btnSeats   = canSeats
         ? `<button class="btn btn-sm" style="background:#faf5ff;color:#7e22ce;border:1px solid #d8b4fe" onclick="openServicesModal(${b.id},'seat')">💺 اختيار مقعد</button>` : '';
-      const btnCancel  = (status==='confirmed' && (actions.includes('cancel') || actions.length===0))
+      const btnCancel  = canCancel
         ? `<button class="btn btn-sm btn-danger" onclick="initiateCancel(${b.id})">إلغاء</button>` : '';
 
       return `

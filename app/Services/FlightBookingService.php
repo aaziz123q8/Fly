@@ -2030,11 +2030,6 @@ class FlightBookingService
         $booking = $this->getBookingById($bookingId, $userId);
         if ($booking === null) throw new RuntimeException('Booking not found.', 404);
 
-        $actions = $booking['available_actions'] ?? [];
-        if (!in_array('change', (array)$actions, true)) {
-            throw new RuntimeException('هذا الحجز لا يدعم تغيير الرحلة وفق شروط الناقل.', 422);
-        }
-
         $orderId = $booking['provider_order_id'] ?? '';
         if (!$orderId) throw new RuntimeException('Order ID missing.', 500);
 
