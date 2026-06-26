@@ -6,64 +6,189 @@
   <title>تم الحجز — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
   <style>
-    .confirm-page { background:var(--bg); min-height:100vh; padding:48px 0 90px; }
-    .confirm-card { background:#fff; border-radius:20px; box-shadow:var(--shadow); padding:44px 40px; max-width:640px; margin:0 auto; }
-    @media(max-width:640px) { .confirm-card { padding:28px 18px; } }
-    .success-icon { width:88px; height:88px; background:linear-gradient(135deg,#16a34a,#22c55e); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.4rem; margin:0 auto 20px; box-shadow:0 8px 24px rgba(22,163,74,.3); }
+    /* ── Screen layout ───────────────────────────────────────────── */
+    .confirm-page { background:var(--bg); min-height:100vh; padding:32px 0 100px; }
+    .confirm-wrap { max-width:700px; margin:0 auto; }
 
-    /* References block */
-    .refs-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:20px 0; }
-    @media(max-width:480px) { .refs-grid { grid-template-columns:1fr; } }
-    .ref-box { border-radius:12px; padding:16px; text-align:center; }
-    .ref-box.primary { background:#eff6ff; border:2px solid #bfdbfe; }
-    .ref-box.airline { background:#fefce8; border:2px solid #fde68a; }
-    .ref-label { font-size:.72rem; color:var(--text-muted); font-weight:600; margin-bottom:4px; }
-    .ref-num { font-size:1.5rem; font-weight:800; letter-spacing:2px; }
-    .ref-box.primary .ref-num { color:var(--primary); }
-    .ref-box.airline .ref-num { color:#92400e; }
+    .success-hero { text-align:center; margin-bottom:24px; }
+    .success-icon { width:80px; height:80px; background:linear-gradient(135deg,#16a34a,#22c55e);
+      border-radius:50%; display:flex; align-items:center; justify-content:center;
+      font-size:2.2rem; margin:0 auto 14px; box-shadow:0 8px 24px rgba(22,163,74,.3); }
 
-    /* Void window banner */
-    .void-banner { background:#ecfdf5; border:1.5px solid #6ee7b7; border-radius:12px; padding:14px 16px; margin:16px 0; display:flex; align-items:flex-start; gap:10px; }
-    .void-banner.expired { background:#fff7ed; border-color:#fed7aa; }
+    /* ── Ticket card ─────────────────────────────────────────────── */
+    #ticketCard {
+      background:#fff; border-radius:20px; box-shadow:0 4px 24px rgba(0,0,0,.1);
+      overflow:hidden; margin-bottom:20px;
+    }
 
-    /* Tickets section */
-    .ticket-item { display:flex; align-items:center; gap:10px; padding:10px 14px; background:#f0f5ff; border-radius:10px; margin-bottom:8px; }
-    .ticket-num { font-family:monospace; font-size:1rem; font-weight:700; color:var(--primary); letter-spacing:1px; }
-    .ticket-type { font-size:.75rem; color:var(--text-muted); }
+    /* header strip */
+    .tk-header {
+      background:linear-gradient(135deg,#0f2444,#1B4F8E);
+      color:#fff; padding:22px 28px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .tk-brand { font-size:1.3rem; font-weight:800; letter-spacing:.5px; }
+    .tk-brand span { color:#F5A623; }
+    .tk-status-badge {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:6px 16px; border-radius:50px; font-size:.82rem; font-weight:700;
+    }
+    .badge-confirmed { background:#22c55e; color:#fff; }
+    .badge-pending   { background:#f59e0b; color:#fff; }
+    .badge-cancelled { background:#ef4444; color:#fff; }
 
-    /* Info rows */
-    .info-section { border:1px solid #e5e7eb; border-radius:12px; overflow:hidden; margin:16px 0; }
-    .info-row { display:flex; justify-content:space-between; padding:10px 14px; font-size:.88rem; border-bottom:1px solid #f0f2f5; }
-    .info-row:last-child { border-bottom:none; }
-    .info-label { color:var(--text-muted); }
-    .info-val { font-weight:600; }
+    /* references */
+    .tk-refs {
+      display:grid; grid-template-columns:1fr 1fr; gap:0;
+      border-bottom:1px solid #f0f0f0;
+    }
+    .tk-ref {
+      padding:18px 24px; text-align:center;
+    }
+    .tk-ref:first-child { border-left:1px solid #f0f0f0; }
+    .tk-ref-label { font-size:.7rem; color:#888; font-weight:600; margin-bottom:4px; text-transform:uppercase; letter-spacing:.5px; }
+    .tk-ref-num { font-size:1.4rem; font-weight:900; letter-spacing:2px; }
+    .tk-ref.fm .tk-ref-num { color:#1B4F8E; }
+    .tk-ref.pnr .tk-ref-num { color:#92400e; }
 
-    /* Conditions */
-    .cond-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:12px 0; }
+    /* flight route */
+    .tk-route {
+      padding:24px 28px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid #f0f0f0;
+      background:#fafbff;
+    }
+    .tk-airport { text-align:center; }
+    .tk-iata { font-size:2.4rem; font-weight:900; color:#0f2444; line-height:1; }
+    .tk-city { font-size:.78rem; color:#888; margin-top:4px; }
+    .tk-time { font-size:1.1rem; font-weight:700; color:#1B4F8E; margin-top:8px; }
+    .tk-date-small { font-size:.75rem; color:#888; }
+    .tk-arrow { text-align:center; flex:1; padding:0 12px; }
+    .tk-arrow-line {
+      display:flex; align-items:center; gap:4px; justify-content:center;
+    }
+    .tk-arrow-line hr { flex:1; border:none; border-top:2px dashed #cbd5e1; }
+    .tk-arrow-icon { font-size:1.4rem; color:#1B4F8E; }
+    .tk-duration { font-size:.75rem; color:#888; text-align:center; margin-top:6px; }
+    .tk-airline-row { text-align:center; margin-top:8px; }
+    .tk-airline-logo { height:28px; object-fit:contain; }
+    .tk-flight-num { font-size:.8rem; color:#555; font-weight:600; }
+
+    /* segments */
+    .tk-section { padding:18px 28px; border-bottom:1px solid #f0f0f0; }
+    .tk-section-title {
+      font-size:.78rem; font-weight:700; color:#1B4F8E;
+      text-transform:uppercase; letter-spacing:.5px;
+      margin-bottom:12px; display:flex; align-items:center; gap:6px;
+    }
+    .segment-row {
+      display:grid; grid-template-columns:auto 1fr auto;
+      gap:10px; align-items:start;
+      padding:10px 0; border-bottom:1px solid #f5f5f5;
+    }
+    .segment-row:last-child { border-bottom:none; }
+    .seg-dot { width:10px; height:10px; border-radius:50%; background:#1B4F8E; margin-top:4px; flex-shrink:0; }
+    .seg-info { font-size:.85rem; }
+    .seg-route { font-weight:700; color:#0f2444; }
+    .seg-detail { color:#888; font-size:.78rem; margin-top:2px; }
+    .seg-times { text-align:left; font-size:.82rem; color:#555; font-weight:600; white-space:nowrap; }
+
+    /* passengers */
+    .pax-row {
+      display:flex; align-items:center; gap:12px;
+      padding:10px 0; border-bottom:1px solid #f5f5f5;
+      font-size:.85rem;
+    }
+    .pax-row:last-child { border-bottom:none; }
+    .pax-avatar {
+      width:36px; height:36px; border-radius:50%;
+      background:linear-gradient(135deg,#1B4F8E,#3b82f6);
+      color:#fff; display:flex; align-items:center; justify-content:center;
+      font-weight:700; font-size:.9rem; flex-shrink:0;
+    }
+    .pax-name { font-weight:700; color:#0f2444; }
+    .pax-meta { color:#888; font-size:.75rem; }
+    .pax-ticket { font-family:monospace; font-size:.78rem; color:#1B4F8E; font-weight:700; }
+
+    /* baggage */
+    .bag-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+    @media(max-width:480px) { .bag-grid { grid-template-columns:1fr 1fr; } }
+    .bag-item {
+      background:#f0f5ff; border-radius:10px; padding:12px; text-align:center;
+    }
+    .bag-icon { font-size:1.4rem; margin-bottom:4px; }
+    .bag-label { font-size:.72rem; color:#888; }
+    .bag-val { font-size:.88rem; font-weight:700; color:#1B4F8E; }
+
+    /* conditions */
+    .cond-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
     @media(max-width:480px) { .cond-grid { grid-template-columns:1fr; } }
-    .cond-box { border-radius:10px; padding:12px; text-align:center; font-size:.82rem; }
-    .cond-box.allowed { background:#f0fdf4; border:1.5px solid #bbf7d0; }
-    .cond-box.forbidden { background:#fff1f2; border:1.5px solid #fecdd3; }
+    .cond-box { border-radius:10px; padding:14px; text-align:center; font-size:.82rem; }
+    .cond-allowed { background:#f0fdf4; border:1.5px solid #bbf7d0; }
+    .cond-forbidden { background:#fff1f2; border:1.5px solid #fecdd3; }
     .cond-icon { font-size:1.4rem; margin-bottom:4px; }
     .cond-name { font-weight:700; margin-bottom:2px; }
-    .cond-penalty { font-size:.75rem; color:var(--text-muted); }
+    .cond-penalty { font-size:.73rem; color:#888; margin-top:2px; }
 
-    /* Actions */
-    .actions { display:flex; gap:10px; margin-top:24px; flex-wrap:wrap; }
-    .actions .btn { flex:1; min-width:130px; }
+    /* instructions */
+    .instr-list { list-style:none; padding:0; margin:0; }
+    .instr-list li { display:flex; gap:10px; padding:8px 0; font-size:.84rem; border-bottom:1px solid #f5f5f5; }
+    .instr-list li:last-child { border-bottom:none; }
+    .instr-icon { font-size:1.1rem; flex-shrink:0; margin-top:1px; }
 
-    /* Sync button */
-    .sync-btn { display:inline-flex; align-items:center; gap:6px; font-size:.78rem; color:var(--text-muted); background:none; border:1px solid #e5e7eb; border-radius:8px; padding:5px 12px; cursor:pointer; margin-top:8px; transition:.2s; }
-    .sync-btn:hover { background:#f0f5ff; color:var(--primary); border-color:var(--primary); }
+    /* footer strip */
+    .tk-footer {
+      background:#0f2444; color:#fff;
+      padding:16px 28px;
+      display:flex; align-items:center; justify-content:space-between;
+      font-size:.8rem;
+    }
+    .tk-footer-contact { display:flex; align-items:center; gap:6px; }
+    .tk-footer-contact a { color:#F5A623; text-decoration:none; font-weight:700; }
+    .tk-footer-site { color:rgba(255,255,255,.6); }
+
+    /* action buttons */
+    .action-bar {
+      display:flex; gap:10px; flex-wrap:wrap;
+    }
+    .action-bar .btn { flex:1; min-width:120px; }
+
+    /* sync btn */
+    .sync-btn {
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:.78rem; color:#888; background:none;
+      border:1px solid #e5e7eb; border-radius:8px;
+      padding:5px 12px; cursor:pointer; transition:.2s;
+    }
+    .sync-btn:hover { background:#f0f5ff; color:#1B4F8E; border-color:#1B4F8E; }
 
     .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
-    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:80px; } }
     .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:.7rem; }
     .bnav-icon { font-size:1.4rem; }
+
+    /* ── Print / PDF styles ──────────────────────────────────────── */
+    @media print {
+      * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+      body, html { margin:0; padding:0; background:#fff !important; }
+      .navbar, .bottom-nav, .action-bar, .sync-btn, .success-hero, .print-hide { display:none !important; }
+      .confirm-page { padding:0 !important; background:#fff !important; }
+      .confirm-wrap { max-width:100% !important; }
+      #ticketCard { box-shadow:none !important; border-radius:0 !important; border:1px solid #ddd; }
+      .tk-header { background:linear-gradient(135deg,#0f2444,#1B4F8E) !important; -webkit-print-color-adjust:exact; }
+      .badge-confirmed { background:#22c55e !important; }
+      .tk-footer { background:#0f2444 !important; }
+      .bag-item { background:#f0f5ff !important; }
+      .cond-allowed { background:#f0fdf4 !important; }
+      .cond-forbidden { background:#fff1f2 !important; }
+      .tk-route { background:#fafbff !important; }
+      a { text-decoration:none !important; }
+      @page { margin:10mm; size:A4; }
+    }
   </style>
 </head>
 <body>
-<nav class="navbar">
+<nav class="navbar print-hide">
   <div class="container" style="display:flex;align-items:center;justify-content:space-between">
     <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
     <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
@@ -72,79 +197,144 @@
 
 <div class="confirm-page">
   <div class="container">
-    <div class="confirm-card">
+    <div class="confirm-wrap">
 
-      <div style="text-align:center;margin-bottom:24px">
+      <!-- Success header (screen only) -->
+      <div class="success-hero print-hide">
         <div class="success-icon">✅</div>
-        <h1 style="color:var(--primary);font-size:1.7rem;margin:0 0 6px">تم الحجز بنجاح!</h1>
-        <p style="color:var(--text-muted);margin:0">سيصلك تأكيد الحجز على بريدك الإلكتروني خلال دقائق</p>
+        <h1 style="color:#0f2444;font-size:1.7rem;margin:0 0 6px">تم الحجز بنجاح!</h1>
+        <p style="color:#888;margin:0 0 20px">سيصلك تأكيد الحجز على بريدك الإلكتروني خلال دقائق</p>
       </div>
 
-      <!-- Booking References -->
-      <div class="refs-grid">
-        <div class="ref-box primary">
-          <div class="ref-label">رقم حجز فلاي مسار</div>
-          <div class="ref-num" id="confirmRef">—</div>
+      <!-- ════ TICKET CARD ════ -->
+      <div id="ticketCard">
+
+        <!-- Header -->
+        <div class="tk-header">
+          <div class="tk-brand">✈️ <span>فلاي</span> مسار</div>
+          <div id="statusBadge" class="tk-status-badge badge-confirmed">✅ مؤكد</div>
         </div>
-        <div class="ref-box airline" id="pnrBox" style="display:none">
-          <div class="ref-label">رقم حجز الناقل (PNR)</div>
-          <div class="ref-num" id="confirmPnr">—</div>
+
+        <!-- References -->
+        <div class="tk-refs">
+          <div class="tk-ref fm">
+            <div class="tk-ref-label">رقم حجز فلاي مسار</div>
+            <div class="tk-ref-num" id="refFm">—</div>
+          </div>
+          <div class="tk-ref pnr" id="pnrBox" style="display:none">
+            <div class="tk-ref-label">رقم الحجز لدى الناقل (PNR)</div>
+            <div class="tk-ref-num" id="refPnr">—</div>
+          </div>
         </div>
-      </div>
 
-      <!-- Void window -->
-      <div id="voidBanner" style="display:none" class="void-banner">
-        <span style="font-size:1.3rem">🆓</span>
-        <div>
-          <div style="font-weight:700;font-size:.88rem;color:#065f46" id="voidTitle">الإلغاء المجاني متاح</div>
-          <div style="font-size:.8rem;color:#047857" id="voidDesc"></div>
+        <!-- Flight route (filled by JS) -->
+        <div class="tk-route" id="routeRow" style="display:none">
+          <div class="tk-airport">
+            <div class="tk-iata" id="depIata">—</div>
+            <div class="tk-city" id="depCity"></div>
+            <div class="tk-time" id="depTime"></div>
+            <div class="tk-date-small" id="depDate"></div>
+          </div>
+          <div class="tk-arrow">
+            <div class="tk-airline-row" id="airlineRow"></div>
+            <div class="tk-arrow-line">
+              <hr><span class="tk-arrow-icon">✈</span><hr>
+            </div>
+            <div class="tk-duration" id="durationText"></div>
+          </div>
+          <div class="tk-airport" style="text-align:center">
+            <div class="tk-iata" id="arrIata">—</div>
+            <div class="tk-city" id="arrCity"></div>
+            <div class="tk-time" id="arrTime"></div>
+            <div class="tk-date-small" id="arrDate"></div>
+          </div>
         </div>
-      </div>
 
-      <!-- Electronic Tickets -->
-      <div id="ticketsSection" style="display:none">
-        <div style="font-size:.85rem;font-weight:700;color:var(--primary);margin:16px 0 8px">🎫 التذاكر الإلكترونية</div>
-        <div id="ticketsList"></div>
-      </div>
+        <!-- Segments detail -->
+        <div class="tk-section" id="segSection" style="display:none">
+          <div class="tk-section-title">✈️ تفاصيل الرحلة</div>
+          <div id="segList"></div>
+        </div>
 
-      <!-- Booking Info -->
-      <div class="info-section" id="bookingInfo">
-        <div class="info-row"><span class="info-label">الحالة</span><span class="info-val" style="color:#16a34a">مؤكد ✅</span></div>
-        <div class="info-row" id="rowFlight" style="display:none"><span class="info-label">الرحلة</span><span class="info-val" id="valFlight">—</span></div>
-        <div class="info-row" id="rowDate" style="display:none"><span class="info-label">تاريخ السفر</span><span class="info-val" id="valDate">—</span></div>
-        <div class="info-row" id="rowPaid" style="display:none"><span class="info-label">تاريخ الدفع</span><span class="info-val" id="valPaid">—</span></div>
-      </div>
+        <!-- Electronic tickets -->
+        <div class="tk-section" id="etSection" style="display:none">
+          <div class="tk-section-title">🎫 التذاكر الإلكترونية</div>
+          <div id="etList"></div>
+        </div>
 
-      <!-- Conditions (Refund / Change) -->
-      <div id="condSection" style="display:none">
-        <div style="font-size:.85rem;font-weight:700;color:var(--primary);margin:16px 0 8px">📋 شروط التذكرة</div>
-        <div class="cond-grid" id="condGrid"></div>
-      </div>
+        <!-- Passengers -->
+        <div class="tk-section" id="paxSection" style="display:none">
+          <div class="tk-section-title">👤 بيانات المسافرين</div>
+          <div id="paxList"></div>
+        </div>
 
-      <!-- Email notice -->
-      <div style="background:#fef3c7;border-radius:12px;padding:14px 16px;margin-top:16px;display:flex;gap:10px;align-items:flex-start">
+        <!-- Baggage -->
+        <div class="tk-section" id="bagSection" style="display:none">
+          <div class="tk-section-title">🧳 الأمتعة</div>
+          <div class="bag-grid" id="bagGrid"></div>
+        </div>
+
+        <!-- Conditions -->
+        <div class="tk-section" id="condSection" style="display:none">
+          <div class="tk-section-title">📋 شروط التذكرة</div>
+          <div class="cond-grid" id="condGrid"></div>
+        </div>
+
+        <!-- Travel instructions -->
+        <div class="tk-section">
+          <div class="tk-section-title">📌 تعليمات السفر</div>
+          <ul class="instr-list">
+            <li><span class="instr-icon">🕐</span><span>يُنصح بالحضور إلى المطار قبل ساعتين على الأقل من موعد الإقلاع للرحلات الداخلية وثلاث ساعات للدولية.</span></li>
+            <li><span class="instr-icon">🪪</span><span>تأكد من حمل جواز سفرك ساري المفعول. يجب أن يكون صالحاً لمدة لا تقل عن 6 أشهر من تاريخ السفر.</span></li>
+            <li><span class="instr-icon">🧳</span><span>تحقق من سياسة الأمتعة الخاصة بالناقل — الوزن والأبعاد المسموح بها.</span></li>
+            <li><span class="instr-icon">📲</span><span>احتفظ برقم الحجز في مكان آمن وأحضر نسخة من هذه التذكرة عند السفر.</span></li>
+            <li><span class="instr-icon">💬</span><span>للاستفسار أو التعديل تواصل معنا على واتساب: <strong>+96565002080</strong></span></li>
+          </ul>
+        </div>
+
+        <!-- Footer -->
+        <div class="tk-footer">
+          <div class="tk-footer-contact">
+            <span>💬</span>
+            <span>واتساب: <a href="https://wa.me/96565002080">+965 6500 2080</a></span>
+          </div>
+          <div class="tk-footer-site">flymasar.com</div>
+        </div>
+
+      </div>
+      <!-- ════ END TICKET CARD ════ -->
+
+      <!-- Email notice (screen only) -->
+      <div class="print-hide" style="background:#fef3c7;border-radius:12px;padding:14px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:flex-start">
         <span style="font-size:1.2rem">📧</span>
         <div>
           <div style="font-weight:700;color:#92400e;font-size:.88rem">تحقق من بريدك الإلكتروني</div>
-          <div style="font-size:.8rem;color:#92400e">أُرسل إليك تأكيد الحجز مع التذكرة الإلكترونية. إذا لم تجده تحقق من مجلد البريد غير المرغوب فيه.</div>
+          <div style="font-size:.8rem;color:#92400e">سيصلك تأكيد الحجز مع التذكرة الإلكترونية. إذا لم تجده تحقق من مجلد البريد غير المرغوب فيه.</div>
         </div>
       </div>
 
-      <div style="text-align:center">
+      <!-- Sync btn -->
+      <div style="text-align:center;margin-bottom:12px" class="print-hide">
         <button class="sync-btn" onclick="syncBooking()" id="syncBtn" style="display:none">🔄 تحديث من Duffel</button>
       </div>
 
-      <div class="actions">
-        <a href="dashboard.html" class="btn btn-primary">📋 حجوزاتي</a>
-        <button class="btn btn-outline" onclick="shareWhatsApp()">💬 مشاركة واتساب</button>
+      <!-- Action buttons -->
+      <div class="action-bar print-hide">
+        <button class="btn btn-primary" onclick="printTicket()">🖨️ طباعة / PDF</button>
+        <button class="btn btn-outline" id="waBtn" onclick="shareWhatsApp()">💬 مشاركة واتساب</button>
+        <a href="dashboard.html" class="btn btn-ghost">📋 حجوزاتي</a>
         <a href="index.html" class="btn btn-ghost">🏠 الرئيسية</a>
+      </div>
+
+      <div class="print-hide" style="font-size:.75rem;color:#aaa;text-align:center;margin-top:10px">
+        لإرسال التذكرة عبر واتساب: اضغط "طباعة / PDF" → احفظ كـ PDF → ثم أرفقه في واتساب
       </div>
 
     </div>
   </div>
 </div>
 
-<nav class="bottom-nav">
+<nav class="bottom-nav print-hide">
   <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
   <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
   <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
@@ -154,224 +344,310 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>
-  const urlP      = new URLSearchParams(window.location.search);
-  const ref       = urlP.get('ref') || '';
-  const bid       = urlP.get('bid') || '';
-  const sessionKey = urlP.get('session') || '';
-  const piId       = urlP.get('pi')      || '';
+const urlP       = new URLSearchParams(window.location.search);
+const ref        = urlP.get('ref') || '';
+const bid        = urlP.get('bid') || '';
+const sessionKey = urlP.get('session') || '';
+const piId       = urlP.get('pi') || '';
 
-  if (ref) document.getElementById('confirmRef').textContent = ref;
+if (ref) document.getElementById('refFm').textContent = ref;
 
-  let _bookingId = bid || null;
+let _booking = null;
 
-  function fmtDate(str) {
-    if (!str) return '—';
-    try { return new Date(str).toLocaleString('ar-KW', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}); }
-    catch(e) { return str; }
+// ── Helpers ──────────────────────────────────────────────────────
+function fmtTime(str) {
+  if (!str) return '';
+  try { return new Date(str).toLocaleTimeString('ar-KW', {hour:'2-digit', minute:'2-digit', hour12:true}); }
+  catch(e) { return ''; }
+}
+function fmtDate(str) {
+  if (!str) return '';
+  try { return new Date(str).toLocaleDateString('ar-KW', {day:'numeric', month:'long', year:'numeric'}); }
+  catch(e) { return str; }
+}
+function fmtDateTime(str) {
+  if (!str) return '—';
+  try { return new Date(str).toLocaleString('ar-KW', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true}); }
+  catch(e) { return str; }
+}
+function durationMins(dep, arr) {
+  try {
+    const d = Math.round((new Date(arr) - new Date(dep)) / 60000);
+    if (d <= 0) return '';
+    return `${Math.floor(d/60)}س ${d%60}د`;
+  } catch(e) { return ''; }
+}
+function airlineLogoUrl(iata) {
+  if (!iata) return '';
+  return `https://pics.avs.io/200/80/${iata.toUpperCase()}.png`;
+}
+function paxTypeLabel(t) {
+  return {adult:'بالغ', child:'طفل', infant:'رضيع'}[t] || t;
+}
+function statusLabel(s) {
+  return {confirmed:'✅ مؤكد', pending:'⏳ قيد المعالجة', cancelled:'❌ ملغي',
+          awaiting_payment:'⏳ بانتظار الدفع', failed:'❌ فشل'}[s] || s;
+}
+function statusClass(s) {
+  if (s === 'confirmed') return 'badge-confirmed';
+  if (s === 'cancelled' || s === 'failed') return 'badge-cancelled';
+  return 'badge-pending';
+}
+
+// ── Render ───────────────────────────────────────────────────────
+function renderBooking(b) {
+  _booking = b;
+
+  // FM reference
+  if (b.booking_reference) document.getElementById('refFm').textContent = b.booking_reference;
+
+  // Status
+  const badge = document.getElementById('statusBadge');
+  badge.textContent = statusLabel(b.status || 'confirmed');
+  badge.className = 'tk-status-badge ' + statusClass(b.status || 'confirmed');
+
+  // PNR
+  if (b.duffel_booking_reference) {
+    document.getElementById('refPnr').textContent = b.duffel_booking_reference;
+    document.getElementById('pnrBox').style.display = 'block';
   }
 
-  function renderBooking(b) {
-    // Primary airline PNR
-    if (b.duffel_booking_reference) {
-      document.getElementById('confirmPnr').textContent = b.duffel_booking_reference;
-      document.getElementById('pnrBox').style.display = 'block';
-    }
+  // ── Route (use first segment if available) ──────────────────
+  const segs = b.segments || [];
+  const firstSeg = segs[0];
+  const lastSeg  = segs[segs.length - 1];
 
-    // Additional per-airline PNRs (multi-carrier itineraries)
-    const refs = Array.isArray(b.booking_references) ? b.booking_references : [];
-    const extraRefs = refs.filter(r => r.value && r.value !== b.duffel_booking_reference);
-    if (extraRefs.length) {
-      const container = document.getElementById('pnrBox');
-      extraRefs.forEach(r => {
-        const row = document.createElement('div');
-        row.style.cssText = 'font-size:.78rem;color:var(--text-muted);margin-top:4px';
-        row.textContent   = (r.airline_iata_code ? r.airline_iata_code + ' • ' : '') + r.value;
-        container.appendChild(row);
-      });
-    }
+  if (b.origin_airport || firstSeg) {
+    const depAirport = (firstSeg ? firstSeg.origin_airport : null) || b.origin_airport || '';
+    const arrAirport = (lastSeg  ? lastSeg.destination_airport : null) || b.destination_airport || '';
+    const depAt = (firstSeg ? firstSeg.departure_at : null) || b.departure_at || '';
+    const arrAt = (lastSeg  ? lastSeg.arrival_at : null) || '';
+    const airlineCode = firstSeg ? (firstSeg.airline_code || '') : '';
 
-    // Route
-    if (b.origin_airport && b.destination_airport) {
-      document.getElementById('rowFlight').style.display = 'flex';
-      document.getElementById('valFlight').textContent = b.origin_airport + ' → ' + b.destination_airport;
-    }
-
-    // Departure
-    if (b.departure_at) {
-      document.getElementById('rowDate').style.display = 'flex';
-      document.getElementById('valDate').textContent = fmtDate(b.departure_at);
-    }
-
-    // Paid at
-    if (b.paid_at) {
-      document.getElementById('rowPaid').style.display = 'flex';
-      document.getElementById('valPaid').textContent = fmtDate(b.paid_at);
-    }
-
-    // Void window
-    if (b.void_window_ends_at) {
-      const voidEnd = new Date(b.void_window_ends_at);
-      const banner  = document.getElementById('voidBanner');
-      const title   = document.getElementById('voidTitle');
-      const desc    = document.getElementById('voidDesc');
-      banner.style.display = 'flex';
-      if (voidEnd > new Date()) {
-        title.textContent = 'الإلغاء المجاني متاح';
-        desc.textContent  = 'يمكنك إلغاء هذا الحجز مجاناً حتى ' + fmtDate(b.void_window_ends_at);
-        banner.className  = 'void-banner';
-      } else {
-        banner.className  = 'void-banner expired';
-        title.textContent = 'انتهت نافذة الإلغاء المجاني';
-        desc.textContent  = 'انتهت في ' + fmtDate(b.void_window_ends_at) + ' — قد تنطبق رسوم إلغاء';
-        document.getElementById('voidTitle').style.color = '#9a3412';
-        document.getElementById('voidDesc').style.color  = '#b45309';
+    if (depAirport || arrAirport) {
+      document.getElementById('routeRow').style.display = 'flex';
+      document.getElementById('depIata').textContent = depAirport;
+      document.getElementById('arrIata').textContent = arrAirport;
+      if (depAt) {
+        document.getElementById('depTime').textContent = fmtTime(depAt);
+        document.getElementById('depDate').textContent = fmtDate(depAt);
+      }
+      if (arrAt) {
+        document.getElementById('arrTime').textContent = fmtTime(arrAt);
+        document.getElementById('arrDate').textContent = fmtDate(arrAt);
+        if (depAt) document.getElementById('durationText').textContent = durationMins(depAt, arrAt);
+      }
+      // Airline logo
+      if (airlineCode) {
+        document.getElementById('airlineRow').innerHTML =
+          `<img src="${airlineLogoUrl(airlineCode)}" class="tk-airline-logo" alt="${airlineCode}"
+               onerror="this.style.display='none'">
+           <div class="tk-flight-num">${firstSeg?.flight_number || airlineCode}</div>`;
       }
     }
-
-    // Electronic tickets (from documents)
-    const docs = b.documents || [];
-    const tickets = docs.filter(d => d.document_type === 'electronic_ticket');
-    if (tickets.length) {
-      document.getElementById('ticketsSection').style.display = 'block';
-      document.getElementById('ticketsList').innerHTML = tickets.map(t =>
-        `<div class="ticket-item">
-           <span style="font-size:1.4rem">🎟️</span>
-           <div>
-             <div class="ticket-num">${t.unique_identifier}</div>
-             <div class="ticket-type">تذكرة إلكترونية</div>
-           </div>
-         </div>`
-      ).join('');
-    }
-
-    // Also show ticket numbers from passengers
-    const paxTickets = (b.passengers || []).filter(p => p.ticket_number);
-    if (!tickets.length && paxTickets.length) {
-      document.getElementById('ticketsSection').style.display = 'block';
-      document.getElementById('ticketsList').innerHTML = paxTickets.map(p =>
-        `<div class="ticket-item">
-           <span style="font-size:1.4rem">🎟️</span>
-           <div>
-             <div class="ticket-num">${p.ticket_number}</div>
-             <div class="ticket-type">${p.first_name} ${p.last_name}</div>
-           </div>
-         </div>`
-      ).join('');
-    }
-
-    // Conditions
-    const refCond    = b.refund_conditions;
-    const chgCond    = b.change_conditions;
-    if (refCond || chgCond) {
-      document.getElementById('condSection').style.display = 'block';
-      const grid = document.getElementById('condGrid');
-      const condHtml = (label, icon, cond) => {
-        if (!cond) return '';
-        const allowed   = cond.allowed !== false;
-        const penalty   = (cond.penalty_amount && parseFloat(cond.penalty_amount) > 0)
-          ? `غرامة: ${cond.penalty_currency || ''} ${parseFloat(cond.penalty_amount).toFixed(2)}` : '';
-        return `<div class="cond-box ${allowed ? 'allowed' : 'forbidden'}">
-          <div class="cond-icon">${icon}</div>
-          <div class="cond-name">${label}</div>
-          <div style="font-size:.8rem;font-weight:700;color:${allowed ? '#15803d' : '#b91c1c'}">${allowed ? 'مسموح' : 'غير مسموح'}</div>
-          ${penalty ? `<div class="cond-penalty">${penalty}</div>` : ''}
-        </div>`;
-      };
-      grid.innerHTML =
-        condHtml('استرداد قبل السفر', '💰', refCond) +
-        condHtml('تغيير قبل السفر', '✏️', chgCond);
-    }
-
-    // Show sync button
-    if (b.id) {
-      _bookingId = b.id;
-      document.getElementById('syncBtn').style.display = 'inline-flex';
-    }
   }
 
-  async function loadBooking() {
-    if (!Auth.isLoggedIn()) return;
+  // ── Segments ────────────────────────────────────────────────
+  if (segs.length) {
+    document.getElementById('segSection').style.display = 'block';
+    document.getElementById('segList').innerHTML = segs.map(s => {
+      const logo = s.airline_code ? `<img src="${airlineLogoUrl(s.airline_code)}" style="height:20px;object-fit:contain;vertical-align:middle;margin-left:4px" onerror="this.style.display='none'">` : '';
+      return `<div class="segment-row">
+        <div class="seg-dot"></div>
+        <div class="seg-info">
+          <div class="seg-route">${s.origin_airport || ''} ← ${s.destination_airport || ''}</div>
+          <div class="seg-detail">
+            ${logo}${s.flight_number || ''} · ${s.aircraft_type || ''}<br>
+            <span>المغادرة: ${fmtDateTime(s.departure_at)}</span><br>
+            <span>الوصول: ${fmtDateTime(s.arrival_at)}</span>
+          </div>
+        </div>
+        <div class="seg-times">${durationMins(s.departure_at, s.arrival_at)}</div>
+      </div>`;
+    }).join('');
+  }
 
-    // Try by explicit ref/bid first
-    const key = bid || ref;
-    if (key) {
+  // ── Electronic tickets ───────────────────────────────────────
+  const docs = (b.documents || []).filter(d => d.document_type === 'electronic_ticket');
+  const paxTickets = (b.passengers || []).filter(p => p.ticket_number);
+  const allTickets = docs.length ? docs : paxTickets.map(p => ({
+    unique_identifier: p.ticket_number,
+    _paxName: p.first_name + ' ' + p.last_name,
+  }));
+  if (allTickets.length) {
+    document.getElementById('etSection').style.display = 'block';
+    document.getElementById('etList').innerHTML = allTickets.map(t =>
+      `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f5f5f5">
+         <span style="font-size:1.2rem">🎟️</span>
+         <div>
+           <div style="font-family:monospace;font-weight:700;color:#1B4F8E;font-size:.95rem">${t.unique_identifier}</div>
+           ${t._paxName ? `<div style="font-size:.75rem;color:#888">${t._paxName}</div>` : ''}
+         </div>
+       </div>`
+    ).join('');
+  }
+
+  // ── Passengers ───────────────────────────────────────────────
+  const pax = b.passengers || [];
+  if (pax.length) {
+    document.getElementById('paxSection').style.display = 'block';
+    document.getElementById('paxList').innerHTML = pax.map((p, i) => {
+      const initials = ((p.first_name||'')[0]||'') + ((p.last_name||'')[0]||'');
+      const ticket = p.ticket_number ? `<div class="pax-ticket">🎫 ${p.ticket_number}</div>` : '';
+      return `<div class="pax-row">
+        <div class="pax-avatar">${initials.toUpperCase()}</div>
+        <div style="flex:1">
+          <div class="pax-name">${p.first_name || ''} ${p.last_name || ''}</div>
+          <div class="pax-meta">${paxTypeLabel(p.passenger_type)} · ${p.nationality || ''} · ${p.date_of_birth || ''}</div>
+          ${ticket}
+        </div>
+        <div style="font-size:.75rem;color:#aaa">${i+1}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Baggage (show from segments' passenger baggage if available) ─
+  const cabin = b.cabin_class || '';
+  const baggageItems = [
+    { icon:'🎒', label:'حقيبة المقصورة', val: cabin === 'business' || cabin === 'first' ? '2 × 10 كغ' : '1 × 7 كغ' },
+    { icon:'🧳', label:'حقيبة المسجّلة', val: cabin === 'economy' ? '23 كغ' : cabin === 'premium_economy' ? '2 × 23 كغ' : cabin === 'business' || cabin === 'first' ? '2 × 32 كغ' : '23 كغ' },
+    { icon:'🍼', label:'حقيبة الرضيع', val: b.infants_count > 0 ? '10 كغ' : 'لا يوجد' },
+  ];
+  // Always show baggage section
+  document.getElementById('bagSection').style.display = 'block';
+  document.getElementById('bagGrid').innerHTML = baggageItems.map(item =>
+    `<div class="bag-item">
+       <div class="bag-icon">${item.icon}</div>
+       <div class="bag-label">${item.label}</div>
+       <div class="bag-val">${item.val}</div>
+     </div>`
+  ).join('');
+
+  // ── Conditions ───────────────────────────────────────────────
+  const refCond = b.refund_conditions;
+  const chgCond = b.change_conditions;
+  if (refCond || chgCond) {
+    document.getElementById('condSection').style.display = 'block';
+    const condBox = (label, icon, cond) => {
+      if (!cond) return '';
+      const allowed  = cond.allowed !== false;
+      const penalty  = (cond.penalty_amount && parseFloat(cond.penalty_amount) > 0)
+        ? `غرامة: ${cond.penalty_currency || ''} ${parseFloat(cond.penalty_amount).toFixed(2)}` : '';
+      return `<div class="cond-box ${allowed ? 'cond-allowed' : 'cond-forbidden'}">
+        <div class="cond-icon">${icon}</div>
+        <div class="cond-name">${label}</div>
+        <div style="font-size:.82rem;font-weight:700;color:${allowed ? '#15803d' : '#b91c1c'}">${allowed ? 'مسموح' : 'غير مسموح'}</div>
+        ${penalty ? `<div class="cond-penalty">${penalty}</div>` : ''}
+      </div>`;
+    };
+    document.getElementById('condGrid').innerHTML =
+      condBox('استرداد قبل السفر', '💰', refCond) +
+      condBox('تغيير قبل السفر', '✏️', chgCond);
+  }
+
+  // Show sync button
+  if (b.id) {
+    document.getElementById('syncBtn').style.display = 'inline-flex';
+  }
+}
+
+// ── Load booking ─────────────────────────────────────────────────
+async function loadBooking() {
+  if (!Auth.isLoggedIn()) return;
+
+  // 1. Try by bid or ref
+  const key = bid || ref;
+  if (key) {
+    try {
+      const res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
+      const b = res.booking || res;
+      if (b && b.id) { renderBooking(b); return; }
+    } catch(e) {}
+  }
+
+  // 2. confirmCheckout polling (after Stripe redirect)
+  if (sessionKey && piId) {
+    const delays = [1000, 2000, 4000, 8000];
+    for (let delay of delays) {
+      await new Promise(r => setTimeout(r, delay));
       try {
-        const res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
-        const b   = res.booking || res;
-        if (b && b.id) { renderBooking(b); return; }
-      } catch(e) { /* fall through to other strategies */ }
-    }
-
-    // If session+pi provided, poll confirmCheckout to get the booking ref
-    if (sessionKey && piId) {
-      const delays = [1000, 2000, 4000, 8000];
-      for (let i = 0; i < delays.length; i++) {
-        await new Promise(r => setTimeout(r, delays[i]));
-        try {
-          const cr = await Api.post('/api/flights/checkout/confirm', {
-            session_key: sessionKey, payment_intent_id: piId,
-          }, true);
-          if (cr.status === 'confirmed') {
-            const bookRef = cr.booking_reference || cr.duffel_booking_reference || '';
-            if (bookRef) document.getElementById('confirmRef').textContent = bookRef;
-            if (cr.duffel_booking_reference) {
-              document.getElementById('confirmPnr').textContent = cr.duffel_booking_reference;
-              document.getElementById('pnrBox').style.display  = 'block';
-            }
-            // Load full booking details
-            if (cr.booking_id) {
-              try {
-                const res2 = await Api.get('/api/flights/bookings/' + cr.booking_id, true);
-                const b2   = res2.booking || res2;
-                if (b2 && b2.id) renderBooking(b2);
-              } catch(e2) { /* non-critical */ }
-            }
-            return;
+        const cr = await Api.post('/api/flights/checkout/confirm', {
+          session_key: sessionKey, payment_intent_id: piId,
+        }, true);
+        if (cr.status === 'confirmed') {
+          if (cr.booking_reference) document.getElementById('refFm').textContent = cr.booking_reference;
+          if (cr.booking_id) {
+            try {
+              const res2 = await Api.get('/api/flights/bookings/' + cr.booking_id, true);
+              const b2 = res2.booking || res2;
+              if (b2 && b2.id) { renderBooking(b2); return; }
+            } catch(e2) {}
           }
-        } catch(e) { break; }
-      }
-    }
-
-    // Last resort: fetch most recent booking for this user
-    try {
-      const res = await Api.get('/api/flights/bookings', true);
-      const bookings = res.bookings || res.data || res || [];
-      if (bookings.length) {
-        const b = bookings[0];
-        if (b.booking_reference && !ref) {
-          document.getElementById('confirmRef').textContent = b.booking_reference;
+          return;
         }
-        renderBooking(b);
-      }
-    } catch(e) { /* silent */ }
-  }
-
-  async function syncBooking() {
-    if (!_bookingId) return;
-    const btn = document.getElementById('syncBtn');
-    btn.disabled = true;
-    btn.textContent = '⏳ جاري التحديث…';
-    try {
-      const res = await Api.post('/api/flights/bookings/' + _bookingId + '/sync', {}, true);
-      const b   = res.booking || res;
-      renderBooking(b);
-      btn.textContent = '✅ تم التحديث';
-      setTimeout(() => { btn.disabled = false; btn.textContent = '🔄 تحديث من Duffel'; }, 3000);
-    } catch(e) {
-      btn.disabled = false;
-      btn.textContent = '🔄 تحديث من Duffel';
-      alert('تعذر التحديث: ' + (e.message || 'يرجى المحاولة لاحقاً'));
+      } catch(e) { break; }
     }
   }
 
-  function shareWhatsApp() {
-    const pnr = document.getElementById('confirmPnr').textContent;
-    const pnrLine = pnr && pnr !== '—' ? `\nرقم حجز الناقل: ${pnr}` : '';
-    const msg = `✈️ تم حجز رحلتي عبر فلاي مسار!\nرقم الحجز: ${ref}${pnrLine}\nاحجز رحلتك الآن: https://flymasar.com`;
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg));
-  }
+  // 3. Most recent booking fallback
+  try {
+    const res = await Api.get('/api/flights/bookings', true);
+    const bookings = res.bookings || res.data || res || [];
+    if (bookings.length) { renderBooking(bookings[0]); }
+  } catch(e) {}
+}
 
-  loadBooking();
+// ── Sync ─────────────────────────────────────────────────────────
+async function syncBooking() {
+  if (!_booking?.id) return;
+  const btn = document.getElementById('syncBtn');
+  btn.disabled = true; btn.textContent = '⏳ جاري التحديث…';
+  try {
+    const res = await Api.post('/api/flights/bookings/' + _booking.id + '/sync', {}, true);
+    renderBooking(res.booking || res);
+    btn.textContent = '✅ تم التحديث';
+    setTimeout(() => { btn.disabled = false; btn.textContent = '🔄 تحديث من Duffel'; }, 3000);
+  } catch(e) {
+    btn.disabled = false; btn.textContent = '🔄 تحديث من Duffel';
+    alert('تعذر التحديث: ' + (e.message || 'يرجى المحاولة لاحقاً'));
+  }
+}
+
+// ── Print / PDF ──────────────────────────────────────────────────
+function printTicket() {
+  window.print();
+}
+
+// ── WhatsApp ─────────────────────────────────────────────────────
+function shareWhatsApp() {
+  const b = _booking || {};
+  const fm  = document.getElementById('refFm').textContent;
+  const pnr = b.duffel_booking_reference || '';
+  const route = (b.origin_airport && b.destination_airport)
+    ? `${b.origin_airport} ← ${b.destination_airport}` : '';
+  const depDate = b.departure_at ? fmtDate(b.departure_at) : '';
+  const segs = b.segments || [];
+  const airline = segs[0]?.flight_number || '';
+
+  let msg = `✈️ *تذكرة فلاي مسار*\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `📋 رقم الحجز: *${fm}*\n`;
+  if (pnr) msg += `🔢 رقم PNR: *${pnr}*\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+  if (route)    msg += `🗺️ الرحلة: ${route}\n`;
+  if (airline)  msg += `✈️ رقم الرحلة: ${airline}\n`;
+  if (depDate)  msg += `📅 تاريخ السفر: ${depDate}\n`;
+  const paxCount = (b.adults_count || 0) + (b.children_count || 0);
+  if (paxCount)  msg += `👥 المسافرون: ${paxCount}\n`;
+  if (b.total_amount) msg += `💰 المبلغ: ${b.currency || 'GBP'} ${parseFloat(b.total_amount).toFixed(2)}\n`;
+  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
+  msg += `💬 للاستفسار: wa.me/96565002080\n`;
+  msg += `🌐 flymasar.com`;
+
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg));
+}
+
+loadBooking();
 </script>
 </body>
 </html>

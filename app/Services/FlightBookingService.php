@@ -1775,42 +1775,51 @@ class FlightBookingService
             $newStatus = 'cancelled';
         }
 
+        // Base fields — always exist (migration 017).
         $this->db->prepare(
-            'UPDATE flight_bookings SET
-                duffel_booking_reference      = COALESCE(:duffel_ref, duffel_booking_reference),
-                booking_references            = COALESCE(:booking_references, booking_references),
-                paid_at                       = COALESCE(:paid_at, paid_at),
-                payment_required_by           = :payment_required_by,
-                price_guarantee_expires_at    = :price_guarantee_expires_at,
-                void_window_ends_at           = :void_window_ends_at,
-                available_actions             = :available_actions,
-                live_mode                     = :live_mode,
-                refund_conditions             = COALESCE(:refund_conditions, refund_conditions),
-                change_conditions             = COALESCE(:change_conditions, change_conditions),
-                cancellation_refund_to        = COALESCE(:refund_to, cancellation_refund_to),
-                cancellation_expires_at       = COALESCE(:cancel_exp, cancellation_expires_at),
-                cancellation_refund_amount    = COALESCE(:refund_amount, cancellation_refund_amount),
-                status                        = :status,
-                synced_at                     = NOW(),
-                updated_at                    = NOW()
-             WHERE id = :id'
-        )->execute([
-            ':duffel_ref'                  => $duffelBookingRef,
-            ':booking_references'          => $bookingReferencesSync,
-            ':paid_at'                     => $paidAt,
-            ':payment_required_by'         => $paymentRequiredBy,
-            ':price_guarantee_expires_at'  => $priceGuaranteeExpiresAt,
-            ':void_window_ends_at'         => $voidWindowEndsAt,
-            ':available_actions'           => $availableActions,
-            ':live_mode'                   => $liveMode,
-            ':refund_conditions'           => $refundConditions,
-            ':change_conditions'           => $changeConditions,
-            ':refund_to'                   => $cancellationRefundTo,
-            ':cancel_exp'                  => $cancellationExpiresAt,
-            ':refund_amount'               => $cancellationRefundAmt,
-            ':status'                      => $newStatus,
-            ':id'                          => $bookingId,
-        ]);
+            'UPDATE flight_bookings SET status = :status, updated_at = NOW() WHERE id = :id'
+        )->execute([':status' => $newStatus, ':id' => $bookingId]);
+
+        // Extended Duffel fields — migration 075. Wrapped in try/catch so sync
+        // succeeds even if migration 075 has not been applied to the live database.
+        try {
+            $this->db->prepare(
+                'UPDATE flight_bookings SET
+                    duffel_booking_reference      = COALESCE(:duffel_ref, duffel_booking_reference),
+                    booking_references            = COALESCE(:booking_references, booking_references),
+                    paid_at                       = COALESCE(:paid_at, paid_at),
+                    payment_required_by           = :payment_required_by,
+                    price_guarantee_expires_at    = :price_guarantee_expires_at,
+                    void_window_ends_at           = :void_window_ends_at,
+                    available_actions             = :available_actions,
+                    live_mode                     = :live_mode,
+                    refund_conditions             = COALESCE(:refund_conditions, refund_conditions),
+                    change_conditions             = COALESCE(:change_conditions, change_conditions),
+                    cancellation_refund_to        = COALESCE(:refund_to, cancellation_refund_to),
+                    cancellation_expires_at       = COALESCE(:cancel_exp, cancellation_expires_at),
+                    cancellation_refund_amount    = COALESCE(:refund_amount, cancellation_refund_amount),
+                    synced_at                     = NOW()
+                 WHERE id = :id'
+            )->execute([
+                ':duffel_ref'                  => $duffelBookingRef,
+                ':booking_references'          => $bookingReferencesSync,
+                ':paid_at'                     => $paidAt,
+                ':payment_required_by'         => $paymentRequiredBy,
+                ':price_guarantee_expires_at'  => $priceGuaranteeExpiresAt,
+                ':void_window_ends_at'         => $voidWindowEndsAt,
+                ':available_actions'           => $availableActions,
+                ':live_mode'                   => $liveMode,
+                ':refund_conditions'           => $refundConditions,
+                ':change_conditions'           => $changeConditions,
+                ':refund_to'                   => $cancellationRefundTo,
+                ':cancel_exp'                  => $cancellationExpiresAt,
+                ':refund_amount'               => $cancellationRefundAmt,
+                ':id'                          => $bookingId,
+            ]);
+        } catch (\Throwable $syncExtEx) {
+            error_log('[SYNC_EXT_FIELDS_SKIP] booking_id=' . $bookingId
+                . ' migration_075_not_applied=true | ' . $syncExtEx->getMessage());
+        }
 
         // Sync documents.
         $documents = $order['documents'] ?? [];
