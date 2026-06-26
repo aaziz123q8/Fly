@@ -633,6 +633,14 @@ class DuffelAdapter
         return $this->get('/air/order_changes/' . urlencode($orderChangeId));
     }
 
+    /**
+     * List available services (bags, seats, meals) for an existing order.
+     */
+    public function getAvailableServices(string $orderId): array
+    {
+        return $this->get('/air/orders/' . urlencode($orderId) . '/available_services');
+    }
+
     // =========================================================================
     // Airline Credits
     // =========================================================================

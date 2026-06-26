@@ -2022,6 +2022,147 @@ class FlightBookingService
     }
 
     // =========================================================================
+    // searchFlightChange — Step 1: get available alternative flights
+    // =========================================================================
+
+    public function searchFlightChange(int $bookingId, int $userId, string $newDate): array
+    {
+        $booking = $this->getBookingById($bookingId, $userId);
+        if ($booking === null) throw new RuntimeException('Booking not found.', 404);
+
+        $actions = $booking['available_actions'] ?? [];
+        if (!in_array('change', (array)$actions, true)) {
+            throw new RuntimeException('هذا الحجز لا يدعم تغيير الرحلة وفق شروط الناقل.', 422);
+        }
+
+        $orderId = $booking['provider_order_id'] ?? '';
+        if (!$orderId) throw new RuntimeException('Order ID missing.', 500);
+
+        // Fetch live order to get slice IDs
+        $orderResp = $this->duffel->getOrder($orderId);
+        $order     = $orderResp['data'] ?? [];
+        $slices    = $order['slices'] ?? [];
+        if (empty($slices)) throw new RuntimeException('No slices found for this order.', 500);
+
+        // Build slices: remove existing outbound, add new date same route
+        $removeSlices = array_map(fn($s) => ['slice_id' => $s['id']], $slices);
+        $addSlices    = array_map(fn($s) => [
+            'origin'         => $s['origin']['iata_code']      ?? $booking['origin_airport'],
+            'destination'    => $s['destination']['iata_code'] ?? $booking['destination_airport'],
+            'departure_date' => $newDate,
+            'cabin_class'    => $booking['cabin_class'] ?? 'economy',
+        ], $slices);
+
+        $crResp = $this->duffel->createOrderChangeRequest($orderId, [
+            'add'    => $addSlices,
+            'remove' => $removeSlices,
+        ]);
+        $cr   = $crResp['data'] ?? [];
+        $crId = $cr['id'] ?? null;
+        if (!$crId) throw new RuntimeException('Failed to create change request.', 502);
+
+        $offersResp = $this->duffel->listOrderChangeOffers($crId, 30, null, null, 'change_total_amount');
+        $offers     = $offersResp['data'] ?? [];
+
+        return [
+            'change_request_id' => $crId,
+            'offers'            => array_map(fn($o) => [
+                'id'                    => $o['id'],
+                'change_total_amount'   => $o['change_total_amount']  ?? '0.00',
+                'change_total_currency' => $o['change_total_currency'] ?? 'GBP',
+                'new_total_amount'      => $o['new_total_amount']      ?? null,
+                'slices'                => array_map(fn($s) => [
+                    'origin'        => $s['origin']['iata_code']         ?? '',
+                    'destination'   => $s['destination']['iata_code']    ?? '',
+                    'departure_at'  => $s['segments'][0]['departing_at'] ?? '',
+                    'arrival_at'    => $s['segments'][count($s['segments'])-1]['arriving_at'] ?? '',
+                    'airline'       => $s['segments'][0]['operating_carrier']['iata_code'] ?? '',
+                    'flight_number' => $s['segments'][0]['operating_carrier']['iata_code']
+                                     . ($s['segments'][0]['operating_carrier_flight_number'] ?? ''),
+                    'duration'      => $s['duration'] ?? '',
+                    'stops'         => count($s['segments']) - 1,
+                ], $o['slices'] ?? []),
+            ], $offers),
+        ];
+    }
+
+    // =========================================================================
+    // confirmFlightChange — Step 2: confirm chosen change offer
+    // =========================================================================
+
+    public function confirmFlightChange(int $bookingId, int $userId, string $changeOfferId): array
+    {
+        $booking = $this->getBookingById($bookingId, $userId);
+        if ($booking === null) throw new RuntimeException('Booking not found.', 404);
+
+        // Create pending order change
+        $ocResp     = $this->duffel->createOrderChange($changeOfferId);
+        $oc         = $ocResp['data'] ?? [];
+        $ocId       = $oc['id'] ?? null;
+        if (!$ocId) throw new RuntimeException('Failed to create order change.', 502);
+
+        $changeDiff = (float)($oc['change_total_amount']  ?? 0);
+        $currency   = $oc['change_total_currency'] ?? 'GBP';
+
+        $payment = null;
+        if ($changeDiff > 0) {
+            // Upgrade costs extra — pay via Duffel balance in test mode
+            $payment = [
+                'type'     => 'balance',
+                'currency' => $currency,
+                'amount'   => number_format($changeDiff, 2, '.', ''),
+            ];
+        }
+
+        $confirmed = $this->duffel->confirmOrderChange($ocId, $payment);
+        if (empty($confirmed['data'])) throw new RuntimeException('Change confirmation failed.', 502);
+
+        // Re-sync booking from Duffel to get updated status/segments
+        $updated = $this->syncFromDuffel($bookingId, $userId);
+
+        return [
+            'status'       => 'changed',
+            'change_diff'  => $changeDiff,
+            'currency'     => $currency,
+            'booking'      => $updated,
+        ];
+    }
+
+    // =========================================================================
+    // getAvailableServices — bags, seats, meals for an existing order
+    // =========================================================================
+
+    public function getAvailableServices(int $bookingId, int $userId): array
+    {
+        $booking = $this->getBookingById($bookingId, $userId);
+        if ($booking === null) throw new RuntimeException('Booking not found.', 404);
+
+        $orderId = $booking['provider_order_id'] ?? '';
+        if (!$orderId) throw new RuntimeException('Order ID missing.', 500);
+
+        $resp     = $this->duffel->getAvailableServices($orderId);
+        $services = $resp['data'] ?? [];
+
+        // Group by type
+        $grouped = [];
+        foreach ($services as $svc) {
+            $type = $svc['type'] ?? 'other';
+            $grouped[$type][] = [
+                'id'           => $svc['id'],
+                'type'         => $type,
+                'total_amount' => $svc['total_amount']   ?? '0.00',
+                'currency'     => $svc['total_currency'] ?? 'GBP',
+                'maximum_quantity' => $svc['maximum_quantity'] ?? 1,
+                'metadata'     => $svc['metadata'] ?? [],
+                'passenger_ids'=> $svc['passenger_ids'] ?? [],
+                'segment_ids'  => $svc['segment_ids']   ?? [],
+            ];
+        }
+
+        return ['services' => $grouped, 'order_id' => $orderId];
+    }
+
+    // =========================================================================
     // Private helpers
     // =========================================================================
 

@@ -287,6 +287,21 @@ $router->group('api/flights', function (Router $r): void {
     $r->post('/bookings/:id/cancel/confirm', function (Request $req): void {
         (new FlightController())->confirmCancelBooking($req);
     }, [AuthMiddleware::handle()]);
+
+    // Flight change: Step 1 — search alternatives (auth required).
+    $r->post('/bookings/:id/change/search', function (Request $req): void {
+        (new FlightController())->searchFlightChange($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Flight change: Step 2 — confirm selected offer (auth required).
+    $r->post('/bookings/:id/change/confirm', function (Request $req): void {
+        (new FlightController())->confirmFlightChange($req);
+    }, [AuthMiddleware::handle()]);
+
+    // Available ancillary services (bags/seats) for a booking.
+    $r->get('/bookings/:id/services', function (Request $req): void {
+        (new FlightController())->getAvailableServices($req);
+    }, [AuthMiddleware::handle()]);
 });
 
 // ---------------------------------------------------------------------------

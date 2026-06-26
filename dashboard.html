@@ -276,30 +276,44 @@
       return;
     }
     el.innerHTML = bookings.map(b => {
-      const origin = b.origin_airport || b.origin || b.from || '—';
-      const dest   = b.destination_airport || b.destination || b.to || '—';
-      const ref    = b.booking_reference || b.booking_ref || b.id || '—';
-      const dep    = b.departure_at ? new Date(b.departure_at).toLocaleDateString('ar-SA') : (b.departure_date || b.date || '—');
-      const amount = b.total_amount || b.total_price;
-      const currency = b.currency || 'ر.س';
-      const canCancel = b.status === 'confirmed';
-      const canChange = b.status === 'confirmed' && (b.available_actions || []).includes('change');
+      const origin   = b.origin_airport || b.origin || '—';
+      const dest     = b.destination_airport || b.destination || '—';
+      const ref      = b.booking_reference || b.id || '—';
+      const dep      = b.departure_at ? new Date(b.departure_at).toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'}) : '—';
+      const amount   = b.total_amount || b.total_price;
+      const currency = b.currency || 'GBP';
+      const actions  = Array.isArray(b.available_actions) ? b.available_actions : [];
+      const status   = b.status || 'pending';
+
+      // Determine which action buttons to show based on Duffel available_actions
+      const btnTicket  = `<a href="confirmation.html?ref=${ref}" class="btn btn-sm btn-outline">🎫 التذكرة</a>`;
+      const btnChange  = (status==='confirmed' && actions.includes('change'))
+        ? `<button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="openChangeModal(${b.id},'${origin}','${dest}')">✏️ تغيير الرحلة</button>` : '';
+      const btnBags    = (status==='confirmed' && actions.includes('add_baggage'))
+        ? `<button class="btn btn-sm" style="background:#f0fdf4;color:#15803d;border:1px solid #86efac" onclick="openServicesModal(${b.id},'baggage')">🧳 إضافة أمتعة</button>` : '';
+      const btnSeats   = (status==='confirmed' && actions.includes('add_seats'))
+        ? `<button class="btn btn-sm" style="background:#faf5ff;color:#7e22ce;border:1px solid #d8b4fe" onclick="openServicesModal(${b.id},'seat')">💺 اختيار مقعد</button>` : '';
+      const btnCancel  = (status==='confirmed' && (actions.includes('cancel') || actions.length===0))
+        ? `<button class="btn btn-sm btn-danger" onclick="initiateCancel(${b.id})">إلغاء</button>` : '';
+
       return `
-    <div class="booking-item" style="flex-wrap:wrap;gap:10px">
+    <div class="booking-item" style="flex-wrap:wrap;gap:10px;align-items:flex-start">
       <div class="booking-icon">✈️</div>
-      <div class="booking-info">
+      <div class="booking-info" style="flex:1;min-width:180px">
         <div class="booking-title">${origin} → ${dest}</div>
         <div class="booking-meta">
-          رقم الحجز: ${ref} &nbsp;|&nbsp; ${dep}
-          ${b.flight_number ? `&nbsp;|&nbsp; رحلة: ${b.flight_number}` : ''}
+          ${ref} &nbsp;|&nbsp; ${dep}
+          ${b.duffel_booking_reference ? `&nbsp;|&nbsp; PNR: <strong>${b.duffel_booking_reference}</strong>` : ''}
         </div>
       </div>
-      <div style="margin-right:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-        ${badgeHtml(b.status || 'pending')}
-        <div class="booking-price">${amount ? Number(amount).toLocaleString('ar-SA') + ' ' + currency : '—'}</div>
-        <a href="confirmation.html?ref=${ref}" class="btn btn-sm btn-outline">🎫 التذكرة</a>
-        ${canChange ? `<button class="btn btn-sm btn-ghost" onclick="initiateChange(${b.id})">✏️ تعديل</button>` : ''}
-        ${canCancel ? `<button class="btn btn-sm btn-danger" onclick="initiateCancel(${b.id})">إلغاء</button>` : ''}
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${badgeHtml(status)}
+          <div class="booking-price">${amount ? parseFloat(amount).toFixed(2)+' '+currency : '—'}</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          ${btnTicket}${btnChange}${btnBags}${btnSeats}${btnCancel}
+        </div>
       </div>
     </div>`;
     }).join('');
@@ -416,37 +430,139 @@
   }
 
   // =========================================================================
+  // =========================================================================
   // Change flight flow
   // =========================================================================
 
-  async function initiateChange(bookingId) {
+  let _changeBookingId = null;
+  let _changeOffers    = [];
+
+  function openChangeModal(bookingId, origin, dest) {
+    _changeBookingId = bookingId;
+    _changeOffers    = [];
     const modal = document.getElementById('changeModal');
-    const body  = document.getElementById('changeModalBody');
     modal.style.display = 'flex';
-    body.innerHTML = '<div style="text-align:center;padding:24px">جارٍ تحميل بيانات الرحلة…</div>';
-    try {
-      const res = await Api.get(`/api/flights/bookings/${bookingId}`, true);
-      const b   = res.booking || res;
-      const segs = b.segments || [];
-      const dep  = segs[0]?.departure_at ? new Date(segs[0].departure_at).toLocaleDateString('ar-KW',{day:'numeric',month:'long',year:'numeric'}) : '—';
-      body.innerHTML = `
-        <p style="color:#555;margin-bottom:16px">يمكنك طلب تغيير رحلتك عبر التواصل معنا مباشرة.</p>
-        <div style="background:#f0f5ff;border-radius:10px;padding:14px;margin-bottom:16px;font-size:.9rem">
-          <div style="font-weight:700;color:#0f2444;margin-bottom:6px">تفاصيل الحجز الحالي</div>
-          <div>${b.origin_airport||''} → ${b.destination_airport||''} &nbsp;|&nbsp; ${dep}</div>
-          <div style="color:#888;font-size:.8rem;margin-top:4px">رقم الحجز: ${b.booking_reference||''}</div>
-        </div>
-        <a href="https://wa.me/96565002080?text=${encodeURIComponent('أريد تغيير رحلتي\nرقم الحجز: ' + (b.booking_reference||'') + '\nمن: ' + (b.origin_airport||'') + ' إلى: ' + (b.destination_airport||''))}"
-           target="_blank" class="btn btn-primary" style="width:100%;text-align:center;display:block">
-          💬 تواصل معنا على واتساب لتعديل الرحلة
-        </a>`;
-    } catch(e) {
-      body.innerHTML = `<div style="color:#dc2626">${e.message || 'تعذر تحميل البيانات'}</div>`;
-    }
+    document.getElementById('changeStep1').style.display = 'block';
+    document.getElementById('changeStep2').style.display = 'none';
+    document.getElementById('changeRouteLabel').textContent = `${origin} → ${dest}`;
+    // Set min date to tomorrow
+    const inp = document.getElementById('changeNewDate');
+    const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+    inp.min = tomorrow.toISOString().split('T')[0];
+    inp.value = '';
+    document.getElementById('changeSearchErr').textContent = '';
   }
 
   function closeChangeModal() {
     document.getElementById('changeModal').style.display = 'none';
+    _changeBookingId = null; _changeOffers = [];
+  }
+
+  async function searchChangeOffers() {
+    const date = document.getElementById('changeNewDate').value;
+    if (!date) { document.getElementById('changeSearchErr').textContent = 'اختر تاريخاً'; return; }
+    const btn = document.getElementById('changeSearchBtn');
+    btn.disabled = true; btn.textContent = '⏳ جاري البحث…';
+    document.getElementById('changeSearchErr').textContent = '';
+    try {
+      const res = await Api.post(`/api/flights/bookings/${_changeBookingId}/change/search`, {new_date: date}, true);
+      _changeOffers = res.offers || [];
+      renderChangeOffers(_changeOffers);
+      document.getElementById('changeStep1').style.display = 'none';
+      document.getElementById('changeStep2').style.display = 'block';
+    } catch(e) {
+      document.getElementById('changeSearchErr').textContent = e.message || 'تعذر البحث عن رحلات بديلة';
+    }
+    btn.disabled = false; btn.textContent = '🔍 بحث';
+  }
+
+  function renderChangeOffers(offers) {
+    const el = document.getElementById('changeOffersList');
+    if (!offers.length) { el.innerHTML = '<p style="color:#888;text-align:center;padding:16px">لا توجد رحلات بديلة متاحة لهذا التاريخ</p>'; return; }
+    el.innerHTML = offers.map((o,i) => {
+      const sl   = o.slices?.[0] || {};
+      const dep  = sl.departure_at ? new Date(sl.departure_at).toLocaleTimeString('ar-KW',{hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+      const arr  = sl.arrival_at  ? new Date(sl.arrival_at ).toLocaleTimeString('ar-KW',{hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+      const diff = parseFloat(o.change_total_amount || 0);
+      const diffStr = diff === 0 ? '<span style="color:#16a34a;font-weight:700">مجاناً</span>'
+        : diff > 0 ? `<span style="color:#dc2626;font-weight:700">+ ${diff.toFixed(2)} ${o.change_total_currency}</span>`
+        : `<span style="color:#16a34a;font-weight:700">استرداد ${Math.abs(diff).toFixed(2)} ${o.change_total_currency}</span>`;
+      return `<div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:.2s"
+        onclick="confirmChangeOffer('${o.id}',this)"
+        onmouseover="this.style.borderColor='#1B4F8E'" onmouseout="this.style.borderColor='#e5e7eb'">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:700;font-size:.95rem">${sl.airline||''} ${sl.flight_number||''}</div>
+            <div style="color:#888;font-size:.82rem">${dep} — ${arr} &nbsp;|&nbsp; ${sl.stops===0?'مباشر':sl.stops+' توقف'}</div>
+          </div>
+          <div style="text-align:left">${diffStr}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function confirmChangeOffer(offerId, el) {
+    if (!confirm('هل تريد تأكيد تغيير الرحلة؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
+    el.style.opacity = '.5'; el.style.pointerEvents = 'none';
+    try {
+      const res = await Api.post(`/api/flights/bookings/${_changeBookingId}/change/confirm`, {change_offer_id: offerId}, true);
+      closeChangeModal();
+      showToast('تم تغيير الرحلة بنجاح ✅', 'success');
+      loadFlightBookings();
+    } catch(e) {
+      el.style.opacity = '1'; el.style.pointerEvents = 'auto';
+      showToast(e.message || 'تعذر تأكيد التغيير', 'error');
+    }
+  }
+
+  // =========================================================================
+  // Available services (bags / seats)
+  // =========================================================================
+
+  let _servicesBookingId = null;
+
+  async function openServicesModal(bookingId, filterType) {
+    _servicesBookingId = bookingId;
+    const modal = document.getElementById('servicesModal');
+    const body  = document.getElementById('servicesModalBody');
+    modal.style.display = 'flex';
+    body.innerHTML = '<div style="text-align:center;padding:24px">⏳ جاري تحميل الخدمات المتاحة…</div>';
+    try {
+      const res      = await Api.get(`/api/flights/bookings/${bookingId}/services`, true);
+      const grouped  = res.services || {};
+      const typeMap  = {baggage:'🧳 أمتعة إضافية', seat:'💺 مقاعد', meal:'🍽️ وجبات', other:'➕ خدمات أخرى'};
+      const types    = filterType ? [filterType] : Object.keys(grouped);
+      let html = '';
+      for (const type of types) {
+        const svcs = grouped[type] || [];
+        if (!svcs.length) continue;
+        html += `<div style="font-weight:700;color:#1B4F8E;margin:12px 0 8px">${typeMap[type]||type}</div>`;
+        html += svcs.map(s => {
+          const meta = s.metadata || {};
+          const label = meta.name || meta.description || meta.maximum_weight_kg && `${meta.maximum_weight_kg} كغ` || type;
+          return `<div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #e5e7eb;border-radius:8px;padding:10px 14px;margin-bottom:6px">
+            <div>
+              <div style="font-weight:600;font-size:.88rem">${label}</div>
+              <div style="color:#888;font-size:.75rem">${meta.description||''}</div>
+            </div>
+            <div style="font-weight:700;color:#0f2444;font-size:.9rem">${parseFloat(s.total_amount).toFixed(2)} ${s.currency}</div>
+          </div>`;
+        }).join('');
+      }
+      if (!html) html = '<p style="color:#888;text-align:center;padding:16px">لا توجد خدمات إضافية متاحة لهذا الحجز</p>';
+      html += `<div style="margin-top:16px;padding:12px;background:#fef3c7;border-radius:8px;font-size:.82rem;color:#92400e">
+        ℹ️ لإضافة خدمة تواصل معنا عبر واتساب وسنضيفها لك فوراً
+        <br><a href="https://wa.me/96565002080" target="_blank" style="color:#1B4F8E;font-weight:700">💬 +96565002080</a>
+      </div>`;
+      body.innerHTML = html;
+    } catch(e) {
+      body.innerHTML = `<div style="color:#dc2626;padding:12px">${e.message||'تعذر تحميل الخدمات'}</div>`;
+    }
+  }
+
+  function closeServicesModal() {
+    document.getElementById('servicesModal').style.display = 'none';
+    _servicesBookingId = null;
   }
 
   // Cancellation flow
@@ -539,14 +655,43 @@
 
 <!-- Change Flight Modal -->
 <div id="changeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
-  <div style="background:#fff;border-radius:12px;padding:28px;max-width:460px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+  <div style="background:#fff;border-radius:12px;padding:28px;max-width:500px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <h3 style="margin:0;color:#1B4F8E">✏️ تعديل الرحلة</h3>
+      <h3 style="margin:0;color:#1B4F8E">✏️ تغيير الرحلة</h3>
       <button onclick="closeChangeModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888">×</button>
     </div>
-    <div id="changeModalBody"></div>
+    <!-- Step 1: pick date -->
+    <div id="changeStep1">
+      <p style="color:#555;margin:0 0 14px">الرحلة: <strong id="changeRouteLabel"></strong></p>
+      <label style="display:block;font-weight:600;margin-bottom:6px;color:#374151">اختر التاريخ الجديد</label>
+      <input id="changeNewDate" type="date" style="width:100%;padding:10px;border:1.5px solid #d1d5db;border-radius:8px;font-size:1rem;box-sizing:border-box;margin-bottom:10px">
+      <div id="changeSearchErr" style="color:#dc2626;font-size:.85rem;min-height:18px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="closeChangeModal()" style="padding:10px 18px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;cursor:pointer">إلغاء</button>
+        <button id="changeSearchBtn" onclick="searchChangeOffers()" style="padding:10px 22px;background:#1B4F8E;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700">🔍 بحث</button>
+      </div>
+    </div>
+    <!-- Step 2: pick offer -->
+    <div id="changeStep2" style="display:none">
+      <p style="color:#555;margin:0 0 12px;font-size:.9rem">اختر رحلة بديلة — انقر لتأكيد التغيير</p>
+      <div id="changeOffersList"></div>
+      <div style="margin-top:14px;text-align:left">
+        <button onclick="document.getElementById('changeStep1').style.display='block';document.getElementById('changeStep2').style.display='none'" style="padding:8px 16px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;cursor:pointer">← رجوع</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Services Modal -->
+<div id="servicesModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:28px;max-width:500px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <h3 style="margin:0;color:#1B4F8E">🧳 الخدمات الإضافية</h3>
+      <button onclick="closeServicesModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888">×</button>
+    </div>
+    <div id="servicesModalBody"></div>
     <div style="margin-top:16px;text-align:left">
-      <button onclick="closeChangeModal()" style="padding:10px 20px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;cursor:pointer">إغلاق</button>
+      <button onclick="closeServicesModal()" style="padding:10px 20px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;cursor:pointer">إغلاق</button>
     </div>
   </div>
 </div>

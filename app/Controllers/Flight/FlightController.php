@@ -367,4 +367,63 @@ class FlightController
             Response::error($e->getMessage(), $e->getCode() ?: 400);
         }
     }
+
+    /**
+     * Flight change Step 1: search available alternative flights.
+     */
+    public function searchFlightChange(Request $request): void
+    {
+        $errors = $request->validate(['new_date' => 'required']);
+        if (!empty($errors)) Response::validationError($errors);
+
+        $id      = (int) $request->param('id');
+        $newDate = (string) $request->input('new_date');
+        $user    = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
+
+        try {
+            $result = $this->bookingService->searchFlightChange($id, (int) $user['id'], $newDate);
+            Response::json($result);
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        }
+    }
+
+    /**
+     * Flight change Step 2: confirm selected change offer.
+     */
+    public function confirmFlightChange(Request $request): void
+    {
+        $errors = $request->validate(['change_offer_id' => 'required']);
+        if (!empty($errors)) Response::validationError($errors);
+
+        $id            = (int) $request->param('id');
+        $changeOfferId = (string) $request->input('change_offer_id');
+        $user          = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
+
+        try {
+            $result = $this->bookingService->confirmFlightChange($id, (int) $user['id'], $changeOfferId);
+            Response::json($result);
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        }
+    }
+
+    /**
+     * Get available ancillary services (bags/seats) for a booking.
+     */
+    public function getAvailableServices(Request $request): void
+    {
+        $id   = (int) $request->param('id');
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
+
+        try {
+            $result = $this->bookingService->getAvailableServices($id, (int) $user['id']);
+            Response::json($result);
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        }
+    }
 }
