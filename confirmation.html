@@ -625,38 +625,43 @@ function printTicket() {
 
 // ── WhatsApp ─────────────────────────────────────────────────────
 function _buildWaText() {
-  const b   = _booking || {};
-  const fm  = document.getElementById('refFm').textContent;
-  const pnr = b.duffel_booking_reference
+  const b    = _booking || {};
+  const fm   = document.getElementById('refFm').textContent;
+  const pnr  = b.duffel_booking_reference
     || (Array.isArray(b.booking_references) && b.booking_references[0]) || '';
-  const route = (b.origin_airport && b.destination_airport)
-    ? `${b.origin_airport} ✈️ ${b.destination_airport}` : '';
-  const depDate = b.departure_at ? fmtDate(b.departure_at) : '';
-  const segs  = b.segments || [];
-  const flNum = segs[0]?.flight_number || '';
-  const depT  = segs[0]?.departure_at  ? fmtTime(segs[0].departure_at) : '';
-  const arrT  = (segs[segs.length-1]?.arrival_at) ? fmtTime(segs[segs.length-1].arrival_at) : '';
-  const paxCount = (b.adults_count || 0) + (b.children_count || 0) + (b.infants_count || 0);
+  const segs    = b.segments || [];
+  const origin  = (segs[0]?.origin_airport)      || b.origin_airport      || '';
+  const dest    = (segs[segs.length-1]?.destination_airport) || b.destination_airport || '';
+  const depAt   = segs[0]?.departure_at  || b.departure_at || '';
+  const arrAt   = segs[segs.length-1]?.arrival_at || '';
+  const flNum   = segs[0]?.flight_number || '';
+  const depDate = depAt ? fmtDate(depAt) : '';
+  const depT    = depAt ? fmtTime(depAt) : '';
+  const arrT    = arrAt ? fmtTime(arrAt) : '';
+  const paxCount = (b.adults_count||0) + (b.children_count||0) + (b.infants_count||0);
+  const amount  = b.total_amount ? `${b.currency||'GBP'} ${parseFloat(b.total_amount).toFixed(2)}` : '';
+  const statusTxt = {confirmed:'مؤكد ✅', pending:'قيد المعالجة ⏳', cancelled:'ملغي ❌'}[b.status] || '';
 
-  let msg = `✈️ *تذكرة سفر — فلاي مسار*\n`;
-  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `🔖 رقم الحجز: *${fm}*\n`;
-  if (pnr)    msg += `🔢 رقم PNR: *${pnr}*\n`;
-  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-  if (route)  msg += `🗺️  الرحلة: *${route}*\n`;
-  if (flNum)  msg += `✈️  رقم الطائرة: ${flNum}\n`;
-  if (depDate) msg += `📅  تاريخ السفر: ${depDate}\n`;
-  if (depT && arrT) msg += `🕐  ${depT} ← ${arrT}\n`;
-  if (paxCount)    msg += `👥  المسافرون: ${paxCount} مسافر\n`;
-  if (b.total_amount) {
-    msg += `💰  المبلغ المدفوع: ${b.currency || ''} ${parseFloat(b.total_amount).toFixed(2)}\n`;
-  }
-  const status = {confirmed:'✅ مؤكد', pending:'⏳ قيد المعالجة', cancelled:'❌ ملغي'}[b.status] || b.status || '';
-  if (status) msg += `📌  الحالة: ${status}\n`;
-  msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `💬 للاستفسار والتعديل:\n`;
+  const line = '―――――――――――――――――――――';
+
+  let msg = `✈️ *فلاي مسار — تذكرة سفر إلكترونية*\n${line}\n`;
+  msg += `*${fm}*`;
+  if (pnr) msg += `   |   PNR: *${pnr}*`;
+  msg += `\n${line}\n`;
+
+  if (origin && dest) msg += `${origin}  ›  ${dest}\n`;
+  if (depDate)        msg += `${depDate}\n`;
+  if (depT && arrT)   msg += `${depT}  —  ${arrT}\n`;
+  if (flNum)          msg += `رقم الرحلة: ${flNum}\n`;
+  if (paxCount)       msg += `المسافرون: ${paxCount}\n`;
+  if (amount)         msg += `المبلغ: ${amount}\n`;
+  if (statusTxt)      msg += `الحالة: ${statusTxt}\n`;
+
+  msg += `${line}\n`;
+  msg += `للاستفسار والتعديل:\n`;
   msg += `wa.me/96565002080\n`;
-  msg += `🌐 flymasar.com`;
+  msg += `flymasar.com`;
+
   return msg;
 }
 
