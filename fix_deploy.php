@@ -23,14 +23,28 @@ pre{white-space:pre-wrap;word-break:break-all}
 echo '<h2>🛠 Flymasar Fix Script</h2><pre>';
 
 // ── Load database config ──────────────────────────────────────────────────────
-$configFile = dirname(__DIR__) . '/config/database.php';
-$altConfig  = __DIR__          . '/../config/database.php';
+// Try all plausible paths — covers both "all in public_html" and
+// "config one level above public_html" Hostinger layouts.
+$candidates = [
+    __DIR__          . '/config/database.php',        // public_html/config/database.php
+    dirname(__DIR__) . '/config/database.php',        // one level up (classic layout)
+    __DIR__          . '/../config/database.php',     // same as above via relative
+    dirname(dirname(__DIR__)) . '/config/database.php', // two levels up (rare)
+];
 
-if (file_exists($configFile)) {
-    $cfg = require $configFile;
-} elseif (file_exists($altConfig)) {
-    $cfg = require $altConfig;
-} else {
+$cfg = null;
+foreach ($candidates as $path) {
+    if (file_exists($path)) {
+        echo '<span class="info">Config found: ' . htmlspecialchars($path) . '</span>' . PHP_EOL;
+        $cfg = require $path;
+        break;
+    }
+}
+
+if ($cfg === null) {
+    echo '<span class="warn">⚠ config/database.php not found — checked paths:</span>' . PHP_EOL;
+    foreach ($candidates as $p) echo '  ' . htmlspecialchars($p) . PHP_EOL;
+    echo '<span class="warn">Trying environment variables…</span>' . PHP_EOL;
     $cfg = [
         'host'     => getenv('DB_HOST')     ?: 'localhost',
         'port'     => (int)(getenv('DB_PORT') ?: 3306),
