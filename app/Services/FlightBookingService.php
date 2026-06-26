@@ -2135,8 +2135,15 @@ class FlightBookingService
         $orderId = $booking['provider_order_id'] ?? '';
         if (!$orderId) throw new RuntimeException('Order ID missing.', 500);
 
-        $resp     = $this->duffel->getAvailableServices($orderId);
-        $services = $resp['data'] ?? [];
+        // Duffel: fetch order with available_services included
+        try {
+            $resp = $this->duffel->getAvailableServices($orderId);
+            $services = $resp['data'] ?? [];
+        } catch (\Throwable $e) {
+            // Fallback: get order and extract available_services from it
+            $orderResp = $this->duffel->getOrder($orderId);
+            $services  = $orderResp['data']['available_services'] ?? [];
+        }
 
         // Group by type
         $grouped = [];

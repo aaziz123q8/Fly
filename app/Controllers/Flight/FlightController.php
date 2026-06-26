@@ -384,8 +384,10 @@ class FlightController
         try {
             $result = $this->bookingService->searchFlightChange($id, (int) $user['id'], $newDate);
             Response::json($result);
-        } catch (\RuntimeException $e) {
-            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        } catch (\Throwable $e) {
+            $code = $e->getCode();
+            $msg  = $e->getMessage() ?: 'تعذر البحث عن رحلات بديلة';
+            Response::error($msg, ($code >= 400 && $code < 600) ? $code : 422);
         }
     }
 
@@ -405,8 +407,10 @@ class FlightController
         try {
             $result = $this->bookingService->confirmFlightChange($id, (int) $user['id'], $changeOfferId);
             Response::json($result);
-        } catch (\RuntimeException $e) {
-            Response::error($e->getMessage(), $e->getCode() ?: 400);
+        } catch (\Throwable $e) {
+            $code = $e->getCode();
+            $msg  = $e->getMessage() ?: 'تعذر تأكيد تغيير الرحلة';
+            Response::error($msg, ($code >= 400 && $code < 600) ? $code : 422);
         }
     }
 
