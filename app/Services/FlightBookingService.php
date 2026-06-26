@@ -1100,6 +1100,15 @@ class FlightBookingService
         $totalAmount = $offer['total_amount'];
         $currency    = strtoupper($offer['currency'] ?? 'GBP');
 
+        // Ensure Duffel provider row exists (id=1). Uses INSERT IGNORE so it is
+        // a no-op when the row already exists — safe to call on every booking.
+        try {
+            $this->db->exec(
+                "INSERT IGNORE INTO providers (id, name, type, is_active)
+                 VALUES (1, 'Duffel', 'flight', 1)"
+            );
+        } catch (\Throwable) {}
+
         // Insert flight_bookings row — base columns only (guaranteed to exist in migration 017).
         // Extended Duffel fields are written in a separate UPDATE below so the booking
         // succeeds even if migration 075 has not yet been applied to the live database.

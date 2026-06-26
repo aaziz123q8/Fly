@@ -58,6 +58,8 @@ try {
 
 // ── Migration 075 SQL statements ──────────────────────────────────────────────
 $statements = [
+    // providers seed — Duffel provider must exist for FK on flight_bookings
+    "INSERT IGNORE INTO providers (id, name, type, is_active) VALUES (1, 'Duffel', 'flight', 1)",
     // flight_bookings columns
     "ALTER TABLE flight_bookings ADD COLUMN provider_offer_id            VARCHAR(100)  NULL          COMMENT 'Duffel offer ID'",
     "ALTER TABLE flight_bookings ADD COLUMN pending_cancellation_id      VARCHAR(100)  NULL          COMMENT 'Duffel cancellation ID pending'",
@@ -154,6 +156,15 @@ echo PHP_EOL . '<b>── Migration result: '
 
 // ── Verify critical columns ───────────────────────────────────────────────────
 echo '<b>── Verifying critical columns ────────────────────────</b>' . PHP_EOL;
+
+// Verify providers row
+$provRow = $pdo->query("SELECT id FROM providers WHERE id = 1")->fetch();
+if ($provRow) {
+    echo '<span class="ok">✓</span> providers row id=1 (Duffel)' . PHP_EOL;
+} else {
+    echo '<span class="err">✗ MISSING: providers row id=1</span>' . PHP_EOL;
+    $allOk = false;
+}
 
 $checks = [
     ['flight_bookings',  'duffel_booking_reference'],
