@@ -478,7 +478,17 @@
       document.getElementById('changeStep1').style.display = 'none';
       document.getElementById('changeStep2').style.display = 'block';
     } catch(e) {
-      document.getElementById('changeSearchErr').textContent = e.message || 'تعذر البحث عن رحلات بديلة';
+      const msg = e.message || 'تعذر البحث عن رحلات بديلة';
+      const isNotChangeable = msg.includes('لا يدعم التغيير') || msg.includes('not_changeable');
+      document.getElementById('changeSearchErr').innerHTML = isNotChangeable
+        ? `<div style="background:#fef3c7;border-radius:8px;padding:12px;text-align:center;font-size:.85rem;color:#92400e">
+            ⚠️ ${msg}<br><br>
+            <a href="https://wa.me/96565002080" target="_blank"
+               style="display:inline-block;background:#25D366;color:#fff;padding:8px 18px;border-radius:6px;text-decoration:none;font-weight:700;margin-top:4px">
+              💬 تواصل معنا عبر واتساب
+            </a>
+           </div>`
+        : `<span style="color:#dc2626">${msg}</span>`;
     }
     btn.disabled = false; btn.textContent = '🔍 بحث';
   }

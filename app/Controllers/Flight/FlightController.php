@@ -386,8 +386,18 @@ class FlightController
             Response::json($result);
         } catch (\Throwable $e) {
             $code = $e->getCode();
-            $msg  = $e->getMessage() ?: 'تعذر البحث عن رحلات بديلة';
-            Response::error($msg, ($code >= 400 && $code < 600) ? $code : 422);
+            $raw  = $e->getMessage();
+            // Translate known Duffel error codes to friendly Arabic messages
+            if (str_contains($raw, 'order_not_changeable') || str_contains($raw, 'cannot be changed')) {
+                $msg = 'هذا الحجز لا يدعم التغيير الإلكتروني عبر الناقل الجوي. يرجى التواصل معنا عبر واتساب لتعديل رحلتك.';
+                $code = 422;
+            } elseif (str_contains($raw, 'no_availability') || str_contains($raw, 'no_flights')) {
+                $msg = 'لا توجد رحلات بديلة متاحة في هذا التاريخ.';
+                $code = 422;
+            } else {
+                $msg = 'تعذر البحث عن رحلات بديلة. ' . preg_replace('/\{.*\}/s', '', $raw);
+            }
+            Response::error(trim($msg), ($code >= 400 && $code < 600) ? $code : 422);
         }
     }
 
