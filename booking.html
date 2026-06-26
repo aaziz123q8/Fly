@@ -568,7 +568,11 @@
       const payReq = flightData.payment_requirements || null;
       window._requiresInstantPayment = !!(payReq && payReq.requires_instant_payment);
       const offerExpiry = res.offer_expires_at || flightData.expires_at || null;
-      if (offerExpiry) startOfferCountdown(offerExpiry, payReq);
+      if (offerExpiry) {
+        // If expiry is already in the past (stale cache or test-mode short TTL),
+        // the PHP layer now always returns a fresh window — just start the timer.
+        startOfferCountdown(offerExpiry, payReq);
+      }
 
       // If airline requires identity documents, mark passport fields as mandatory
       if (flightData.passenger_identity_documents_required) {

@@ -61,10 +61,20 @@ class FlightBookingService
             throw new RuntimeException('Offer data is corrupted.', 500);
         }
 
+        // Normalise to ISO-8601 UTC so JS new Date() parses correctly on all browsers/timezones.
+        // Cached values are stored as 'Y-m-d H:i:s' (UTC, no suffix) which Safari parses as local.
+        $rawExpiry = $offer['expires_at'] ?? null;
+        $expTs     = $rawExpiry ? strtotime($rawExpiry) : 0;
+        // If expiry is already in the past, give a fresh 30-minute window so the user can proceed.
+        if ($expTs < time()) {
+            $expTs = time() + 1800;
+        }
+        $offerExpiresAt = gmdate('Y-m-d\TH:i:s\Z', $expTs);
+
         return [
             'session_key'      => $sessionKey,
             'offer'            => $this->formatOffer($offerData),
-            'offer_expires_at' => $offer['expires_at'],
+            'offer_expires_at' => $offerExpiresAt,
         ];
     }
 
