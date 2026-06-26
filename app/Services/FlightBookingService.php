@@ -2090,10 +2090,51 @@ class FlightBookingService
     }
 
     // =========================================================================
-    // confirmFlightChange — Step 2: confirm chosen change offer
+    // createChangePaymentIntent — create Stripe PI for a paid flight change
     // =========================================================================
 
-    public function confirmFlightChange(int $bookingId, int $userId, string $changeOfferId): array
+    public function createChangePaymentIntent(int $bookingId, int $userId, string $changeOfferId): array
+    {
+        $booking = $this->getBookingById($bookingId, $userId);
+        if ($booking === null) throw new RuntimeException('Booking not found.', 404);
+
+        // Fetch the change offer from Duffel to get the price
+        $coResp  = $this->duffel->getOrderChangeOffer($changeOfferId);
+        $co      = $coResp['data'] ?? [];
+        $amount  = (float)($co['change_total_amount']  ?? 0);
+        $currency = strtolower($co['change_total_currency'] ?? 'gbp');
+
+        if ($amount <= 0) {
+            throw new RuntimeException('هذا التغيير مجاني، لا يلزم دفع.', 422);
+        }
+
+        $amountInMinorUnits = (int) round($amount * 100);
+        $idempotencyKey     = bin2hex(random_bytes(16));
+
+        $stripeResult = $this->stripe->createPaymentIntent(
+            $amountInMinorUnits,
+            $idempotencyKey,
+            $currency,
+            [
+                'booking_id'       => (string) $bookingId,
+                'change_offer_id'  => $changeOfferId,
+                'type'             => 'flight_change',
+            ]
+        );
+
+        return [
+            'client_secret'     => $stripeResult['client_secret'],
+            'payment_intent_id' => $stripeResult['payment_intent_id'],
+            'amount'            => $amount,
+            'currency'          => strtoupper($currency),
+        ];
+    }
+
+    // =========================================================================
+    // confirmFlightChange — Step 2: confirm chosen change offer (with optional paid PI)
+    // =========================================================================
+
+    public function confirmFlightChange(int $bookingId, int $userId, string $changeOfferId, ?string $paymentIntentId = null): array
     {
         $booking = $this->getBookingById($bookingId, $userId);
         if ($booking === null) throw new RuntimeException('Booking not found.', 404);
@@ -2109,7 +2150,24 @@ class FlightBookingService
 
         $payment = null;
         if ($changeDiff > 0) {
-            // Upgrade costs extra — pay via Duffel balance in test mode
+            // Verify Stripe payment was collected before charging Duffel balance
+            if ($paymentIntentId) {
+                $stripe = new \App\Adapters\Stripe\StripeAdapter();
+                $intent = $stripe->getPaymentIntent($paymentIntentId);
+                if (($intent['status'] ?? '') !== 'succeeded') {
+                    throw new RuntimeException('لم يتم تأكيد الدفع بعد. يرجى إكمال عملية الدفع أولاً.', 402);
+                }
+                // Verify amount matches (within 1 unit tolerance for rounding)
+                $paidAmount = (int)($intent['amount'] ?? 0);
+                $expected   = (int) round($changeDiff * 100);
+                if (abs($paidAmount - $expected) > 1) {
+                    throw new RuntimeException('مبلغ الدفع لا يتطابق مع رسوم التغيير.', 422);
+                }
+            } else {
+                throw new RuntimeException('هذا التغيير يتطلب دفع رسوم إضافية. يرجى إكمال الدفع أولاً.', 402);
+            }
+
+            // Charge Duffel via balance (funded by customer's Stripe payment)
             $payment = [
                 'type'     => 'balance',
                 'currency' => $currency,
@@ -2124,10 +2182,10 @@ class FlightBookingService
         $updated = $this->syncFromDuffel($bookingId, $userId);
 
         return [
-            'status'       => 'changed',
-            'change_diff'  => $changeDiff,
-            'currency'     => $currency,
-            'booking'      => $updated,
+            'status'      => 'changed',
+            'change_diff' => $changeDiff,
+            'currency'    => $currency,
+            'booking'     => $updated,
         ];
     }
 

@@ -414,13 +414,39 @@ class FlightController
         $user          = AuthMiddleware::currentUser();
         if ($user === null) Response::unauthorized();
 
+        $paymentIntentId = $request->input('payment_intent_id')
+            ? (string) $request->input('payment_intent_id')
+            : null;
+
         try {
-            $result = $this->bookingService->confirmFlightChange($id, (int) $user['id'], $changeOfferId);
+            $result = $this->bookingService->confirmFlightChange($id, (int) $user['id'], $changeOfferId, $paymentIntentId);
             Response::json($result);
         } catch (\Throwable $e) {
             $code = $e->getCode();
             $msg  = $e->getMessage() ?: 'تعذر تأكيد تغيير الرحلة';
             Response::error($msg, ($code >= 400 && $code < 600) ? $code : 422);
+        }
+    }
+
+    public function createChangePaymentIntent(Request $request): void
+    {
+        $errors = $request->validate(['change_offer_id' => 'required']);
+        if (!empty($errors)) Response::validationError($errors);
+
+        $id   = (int) $request->param('id');
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
+
+        try {
+            $result = $this->bookingService->createChangePaymentIntent(
+                $id,
+                (int) $user['id'],
+                (string) $request->input('change_offer_id')
+            );
+            Response::json($result);
+        } catch (\Throwable $e) {
+            $code = $e->getCode();
+            Response::error($e->getMessage(), ($code >= 400 && $code < 600) ? $code : 500);
         }
     }
 

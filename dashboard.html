@@ -6,6 +6,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <title>حجوزاتي — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
+  <script src="https://js.stripe.com/v3/"></script>
   <script src="js/dark-mode.js"></script>
   <style>
     .app-overlay{display:none;position:fixed!important;inset:0;background:rgba(0,0,0,.55);z-index:9998}
@@ -441,8 +442,12 @@
   // Change flight flow
   // =========================================================================
 
-  let _changeBookingId = null;
-  let _changeOffers    = [];
+  let _changeBookingId     = null;
+  let _changeOffers        = [];
+  let _changePendingOffer  = null; // {id, amount, currency}
+  let _stripeChange        = null;
+  let _stripeChangeCard    = null;
+  let _stripeChangePiId    = null;
 
   function openChangeModal(bookingId, origin, dest) {
     _changeBookingId = bookingId;
@@ -462,7 +467,11 @@
 
   function closeChangeModal() {
     document.getElementById('changeModal').style.display = 'none';
-    _changeBookingId = null; _changeOffers = [];
+    _changeBookingId = null; _changeOffers = []; _changePendingOffer = null;
+    if (_stripeChangeCard) { try { _stripeChangeCard.destroy(); } catch(e){} _stripeChangeCard = null; }
+    document.getElementById('changeStep3').style.display = 'none';
+    document.getElementById('changeStep2').style.display = 'none';
+    document.getElementById('changeStep1').style.display = 'block';
   }
 
   async function searchChangeOffers() {
@@ -519,16 +528,95 @@
   }
 
   async function confirmChangeOffer(offerId, el) {
-    if (!confirm('هل تريد تأكيد تغيير الرحلة؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
-    el.style.opacity = '.5'; el.style.pointerEvents = 'none';
+    // Find offer amount from the stored list
+    const offer = _changeOffers.find(o => o.id === offerId) || {};
+    const diff  = parseFloat(offer.change_total_amount || 0);
+
+    if (diff > 0) {
+      // Paid change: need Stripe payment first
+      el.style.opacity = '.5'; el.style.pointerEvents = 'none';
+      try {
+        const piRes = await Api.post(`/api/flights/bookings/${_changeBookingId}/change/payment-intent`, {change_offer_id: offerId}, true);
+        _changePendingOffer = {id: offerId, amount: piRes.amount, currency: piRes.currency};
+        _stripeChangePiId   = null;
+        // Mount Stripe card element
+        await mountChangeStripe(piRes.client_secret, piRes.amount, piRes.currency);
+        // Move to step 3
+        document.getElementById('changeStep2').style.display = 'none';
+        document.getElementById('changeStep3').style.display = 'block';
+      } catch(e) {
+        el.style.opacity = '1'; el.style.pointerEvents = 'auto';
+        showToast(e.message || 'تعذر تحميل صفحة الدفع', 'error');
+      }
+    } else {
+      // Free change: confirm directly
+      if (!confirm('هل تريد تأكيد تغيير الرحلة؟ هذا الإجراء لا يمكن التراجع عنه.')) return;
+      el.style.opacity = '.5'; el.style.pointerEvents = 'none';
+      try {
+        await Api.post(`/api/flights/bookings/${_changeBookingId}/change/confirm`, {change_offer_id: offerId}, true);
+        closeChangeModal();
+        showToast('تم تغيير الرحلة بنجاح ✅', 'success');
+        loadFlightBookings();
+      } catch(e) {
+        el.style.opacity = '1'; el.style.pointerEvents = 'auto';
+        showToast(e.message || 'تعذر تأكيد التغيير', 'error');
+      }
+    }
+  }
+
+  async function mountChangeStripe(clientSecret, amount, currency) {
+    // Load Stripe publishable key
+    if (!_stripeChange) {
+      const cfg = await fetch('/api/config/stripe-key').then(r => r.json());
+      _stripeChange = Stripe(cfg.publishable_key);
+    }
+    document.getElementById('changeFeeLabel').textContent =
+      `${parseFloat(amount).toFixed(2)} ${currency}`;
+    const elements = _stripeChange.elements();
+    if (_stripeChangeCard) _stripeChangeCard.destroy();
+    _stripeChangeCard = elements.create('card', {style:{base:{fontSize:'16px',color:'#1B4F8E'}}});
+    _stripeChangeCard.mount('#changeCardElement');
+    // Store clientSecret on the card element for later use
+    _stripeChangeCard._clientSecret = clientSecret;
+    document.getElementById('changePaymentErr').textContent = '';
+  }
+
+  async function submitChangePay() {
+    if (!_stripeChange || !_stripeChangeCard || !_changePendingOffer) return;
+    const btn = document.getElementById('changePayBtn');
+    btn.disabled = true; btn.textContent = '⏳ جاري الدفع…';
+    document.getElementById('changePaymentErr').textContent = '';
+
+    const {paymentIntent, error} = await _stripeChange.confirmCardPayment(
+      _stripeChangeCard._clientSecret,
+      {payment_method: {card: _stripeChangeCard}}
+    );
+
+    if (error) {
+      document.getElementById('changePaymentErr').textContent = error.message || 'فشل الدفع';
+      btn.disabled = false; btn.textContent = '🔒 ادفع وغيّر الرحلة';
+      return;
+    }
+
+    if (paymentIntent.status !== 'succeeded') {
+      document.getElementById('changePaymentErr').textContent = 'لم يكتمل الدفع، يرجى المحاولة مرة أخرى';
+      btn.disabled = false; btn.textContent = '🔒 ادفع وغيّر الرحلة';
+      return;
+    }
+
+    // Payment succeeded — confirm the change
+    btn.textContent = '⏳ جاري تأكيد التغيير…';
     try {
-      const res = await Api.post(`/api/flights/bookings/${_changeBookingId}/change/confirm`, {change_offer_id: offerId}, true);
+      await Api.post(`/api/flights/bookings/${_changeBookingId}/change/confirm`, {
+        change_offer_id:    _changePendingOffer.id,
+        payment_intent_id:  paymentIntent.id,
+      }, true);
       closeChangeModal();
-      showToast('تم تغيير الرحلة بنجاح ✅', 'success');
+      showToast('تم الدفع وتغيير الرحلة بنجاح ✅', 'success');
       loadFlightBookings();
     } catch(e) {
-      el.style.opacity = '1'; el.style.pointerEvents = 'auto';
-      showToast(e.message || 'تعذر تأكيد التغيير', 'error');
+      document.getElementById('changePaymentErr').textContent = e.message || 'تم الدفع لكن تعذر تأكيد التغيير — تواصل معنا';
+      btn.disabled = false; btn.textContent = '🔒 ادفع وغيّر الرحلة';
     }
   }
 
@@ -694,6 +782,18 @@
       <div id="changeOffersList"></div>
       <div style="margin-top:14px;text-align:left">
         <button onclick="document.getElementById('changeStep1').style.display='block';document.getElementById('changeStep2').style.display='none'" style="padding:8px 16px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;cursor:pointer">← رجوع</button>
+      </div>
+    </div>
+    <!-- Step 3: payment for paid changes -->
+    <div id="changeStep3" style="display:none">
+      <div style="background:#fef3c7;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:.88rem;color:#92400e">
+        ⚠️ هذا التغيير يتطلب رسوم إضافية قدرها <strong id="changeFeeLabel"></strong>
+      </div>
+      <div id="changeCardElement" style="border:1.5px solid #d1d5db;border-radius:8px;padding:14px;background:#fff;margin-bottom:12px"></div>
+      <div id="changePaymentErr" style="color:#dc2626;font-size:.83rem;min-height:18px;margin-bottom:8px"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="document.getElementById('changeStep2').style.display='block';document.getElementById('changeStep3').style.display='none'" style="padding:10px 16px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;cursor:pointer">← رجوع</button>
+        <button id="changePayBtn" onclick="submitChangePay()" style="padding:10px 24px;background:#1B4F8E;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700">🔒 ادفع وغيّر الرحلة</button>
       </div>
     </div>
   </div>

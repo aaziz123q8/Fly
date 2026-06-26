@@ -293,6 +293,11 @@ $router->group('api/flights', function (Router $r): void {
         (new FlightController())->searchFlightChange($req);
     }, [AuthMiddleware::handle()]);
 
+    // Flight change: payment intent for paid changes.
+    $r->post('/bookings/:id/change/payment-intent', function (Request $req): void {
+        (new FlightController())->createChangePaymentIntent($req);
+    }, [AuthMiddleware::handle()]);
+
     // Flight change: Step 2 — confirm selected offer (auth required).
     $r->post('/bookings/:id/change/confirm', function (Request $req): void {
         (new FlightController())->confirmFlightChange($req);
