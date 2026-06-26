@@ -1831,6 +1831,73 @@ class FlightBookingService
                 . ' migration_075_not_applied=true | ' . $syncExtEx->getMessage());
         }
 
+        // Sync segments: replace all existing segments with current Duffel slices/segments.
+        $slices = $order['slices'] ?? [];
+        if (!empty($slices)) {
+            // Delete old segments first.
+            $this->db->prepare('DELETE FROM flight_booking_segments WHERE booking_id = :id')
+                     ->execute([':id' => $bookingId]);
+
+            $sStmt = $this->db->prepare(
+                'INSERT INTO flight_booking_segments
+                   (booking_id, slice_index, segment_order,
+                    origin_airport, destination_airport,
+                    departure_at, arrival_at,
+                    flight_number, airline_code, aircraft_type)
+                 VALUES
+                   (:booking_id, :slice_index, :segment_order,
+                    :origin, :destination,
+                    :departing_at, :arriving_at,
+                    :flight_number, :carrier, :aircraft)'
+            );
+            $firstDeparture = null;
+            $firstOrigin    = null;
+            $firstDest      = null;
+
+            foreach ($slices as $sliceIdx => $slice) {
+                foreach (($slice['segments'] ?? []) as $segIdx => $seg) {
+                    $depAt = $seg['departing_at'] ?? '1970-01-01 00:00:00';
+                    $arrAt = $seg['arriving_at']  ?? '1970-01-01 00:00:00';
+                    if ($sliceIdx === 0 && $segIdx === 0) {
+                        $firstDeparture = $depAt;
+                        $firstOrigin    = $seg['origin']['iata_code']      ?? null;
+                        $firstDest      = $seg['destination']['iata_code'] ?? null;
+                    }
+                    // Track the final destination of the outbound slice.
+                    if ($sliceIdx === 0) {
+                        $firstDest = $seg['destination']['iata_code'] ?? $firstDest;
+                    }
+                    try {
+                        $sStmt->execute([
+                            ':booking_id'    => $bookingId,
+                            ':slice_index'   => $sliceIdx,
+                            ':segment_order' => $segIdx + 1,
+                            ':origin'        => $seg['origin']['iata_code']              ?? '',
+                            ':destination'   => $seg['destination']['iata_code']         ?? '',
+                            ':departing_at'  => $depAt,
+                            ':arriving_at'   => $arrAt,
+                            ':carrier'       => $seg['marketing_carrier']['iata_code']   ?? ($seg['operating_carrier']['iata_code'] ?? ''),
+                            ':flight_number' => ($seg['marketing_carrier']['iata_code']  ?? ($seg['operating_carrier']['iata_code'] ?? ''))
+                                              . ($seg['marketing_carrier_flight_number'] ?? ($seg['operating_carrier_flight_number'] ?? '')),
+                            ':aircraft'      => $seg['aircraft']['iata_code']            ?? null,
+                        ]);
+                    } catch (\Throwable) { /* non-critical */ }
+                }
+            }
+
+            // Update booking-level departure_at, origin, destination to match new flight.
+            if ($firstDeparture && $firstDeparture !== '1970-01-01 00:00:00') {
+                try {
+                    $fields = ['departure_at = :dep', 'updated_at = NOW()'];
+                    $params = [':dep' => $firstDeparture, ':id' => $bookingId];
+                    if ($firstOrigin) { $fields[] = 'origin_airport = :orig'; $params[':orig'] = $firstOrigin; }
+                    if ($firstDest)   { $fields[] = 'destination_airport = :dest'; $params[':dest'] = $firstDest; }
+                    $this->db->prepare('UPDATE flight_bookings SET ' . implode(', ', $fields) . ' WHERE id = :id')
+                             ->execute($params);
+                } catch (\Throwable) { /* non-critical */ }
+            }
+        }
+
         // Sync documents.
         $documents = $order['documents'] ?? [];
         if (!empty($documents)) {
@@ -1848,8 +1915,7 @@ class FlightBookingService
                             'UPDATE flight_booking_passengers
                              SET ticket_number = :tn
                              WHERE booking_id = :bid
-                               AND provider_passenger_id = :pid
-                               AND ticket_number IS NULL'
+                               AND provider_passenger_id = :pid'
                         )->execute([':tn' => $doc['unique_identifier'], ':bid' => $bookingId, ':pid' => $opId]);
                     } catch (\Throwable) { /* non-critical */ }
                     break;
