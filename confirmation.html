@@ -694,8 +694,8 @@ async function shareWhatsApp() {
     // fall through to text share
   }
 
-  // Desktop / fallback: open WhatsApp Web with text
-  window.open('https://wa.me/96565002080?text=' + encodeURIComponent(_buildWaText()), '_blank');
+  // Desktop / fallback: open WhatsApp Web — no phone so user picks recipient
+  window.open('https://wa.me/?text=' + encodeURIComponent(_buildWaText()), '_blank');
   btn.disabled = false;
   btn.textContent = '💬 مشاركة واتساب';
 }
