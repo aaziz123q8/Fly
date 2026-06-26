@@ -327,7 +327,7 @@
       </div>
 
       <div class="print-hide" style="font-size:.75rem;color:#aaa;text-align:center;margin-top:10px">
-        على الجوال: زر واتساب يرسل صورة التذكرة مباشرة · على الكمبيوتر: اضغط "طباعة / PDF" → احفظ كـ PDF → أرفقه في واتساب
+        زر واتساب يحوّل التذكرة إلى صورة وترسلها لمن تشاء
       </div>
 
     </div>
@@ -624,85 +624,37 @@ function printTicket() {
 }
 
 // ── WhatsApp ─────────────────────────────────────────────────────
-function _buildWaText() {
-  const b    = _booking || {};
-  const fm   = document.getElementById('refFm').textContent;
-  const pnr  = b.duffel_booking_reference
-    || (Array.isArray(b.booking_references) && b.booking_references[0]) || '';
-  const segs    = b.segments || [];
-  const origin  = (segs[0]?.origin_airport)      || b.origin_airport      || '';
-  const dest    = (segs[segs.length-1]?.destination_airport) || b.destination_airport || '';
-  const depAt   = segs[0]?.departure_at  || b.departure_at || '';
-  const arrAt   = segs[segs.length-1]?.arrival_at || '';
-  const flNum   = segs[0]?.flight_number || '';
-  const depDate = depAt ? fmtDate(depAt) : '';
-  const depT    = depAt ? fmtTime(depAt) : '';
-  const arrT    = arrAt ? fmtTime(arrAt) : '';
-  const paxCount = (b.adults_count||0) + (b.children_count||0) + (b.infants_count||0);
-  const amount  = b.total_amount ? `${b.currency||'GBP'} ${parseFloat(b.total_amount).toFixed(2)}` : '';
-  const statusTxt = {confirmed:'مؤكد ✅', pending:'قيد المعالجة ⏳', cancelled:'ملغي ❌'}[b.status] || '';
-
-  const line = '―――――――――――――――――――――';
-
-  let msg = `✈️ *فلاي مسار — تذكرة سفر إلكترونية*\n${line}\n`;
-  msg += `*${fm}*`;
-  if (pnr) msg += `   |   PNR: *${pnr}*`;
-  msg += `\n${line}\n`;
-
-  if (origin && dest) msg += `${origin}  ›  ${dest}\n`;
-  if (depDate)        msg += `${depDate}\n`;
-  if (depT && arrT)   msg += `${depT}  —  ${arrT}\n`;
-  if (flNum)          msg += `رقم الرحلة: ${flNum}\n`;
-  if (paxCount)       msg += `المسافرون: ${paxCount}\n`;
-  if (amount)         msg += `المبلغ: ${amount}\n`;
-  if (statusTxt)      msg += `الحالة: ${statusTxt}\n`;
-
-  msg += `${line}\n`;
-  msg += `للاستفسار والتعديل:\n`;
-  msg += `wa.me/96565002080\n`;
-  msg += `flymasar.com`;
-
-  return msg;
-}
-
 async function shareWhatsApp() {
   const btn = document.getElementById('waBtn');
   btn.disabled = true;
-  btn.textContent = '⏳ جاري التحضير…';
+  btn.textContent = '⏳ جاري تحضير التذكرة…';
 
   try {
-    // On mobile: try to capture ticket as image and share via native share sheet
-    if (typeof html2canvas !== 'undefined' && navigator.canShare) {
-      const card = document.getElementById('ticketCard');
-      // Temporarily unhide card sections for capture
-      const canvas = await html2canvas(card, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-        logging: false,
-      });
-      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
-      const file = new File([blob], 'flymasar-ticket.png', {type: 'image/png'});
-      if (navigator.canShare({files: [file]})) {
-        await navigator.share({
-          files: [file],
-          title: 'تذكرة فلاي مسار',
-          text: _buildWaText(),
-        });
-        btn.disabled = false;
-        btn.textContent = '💬 مشاركة واتساب';
-        return;
-      }
+    const canvas = await html2canvas(document.getElementById('ticketCard'), {
+      scale: 2, useCORS: true, allowTaint: false,
+      backgroundColor: '#ffffff', logging: false,
+    });
+    const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+    const file = new File([blob], 'flymasar-ticket.png', {type: 'image/png'});
+
+    // Mobile: native share sheet → user picks WhatsApp or any app
+    if (navigator.canShare && navigator.canShare({files: [file]})) {
+      await navigator.share({ files: [file], title: 'تذكرة فلاي مسار' });
+      btn.disabled = false; btn.textContent = '💬 مشاركة واتساب';
+      return;
     }
+
+    // Desktop fallback: download the image
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'flymasar-ticket.png'; a.click();
+    URL.revokeObjectURL(url);
+    setTimeout(() => alert('تم حفظ صورة التذكرة — أرفقها في واتساب يدوياً'), 300);
   } catch(e) {
-    // fall through to text share
+    alert('تعذر تحضير التذكرة، يرجى استخدام زر الطباعة وحفظها كـ PDF');
   }
 
-  // Desktop / fallback: open WhatsApp Web — no phone so user picks recipient
-  window.open('https://wa.me/?text=' + encodeURIComponent(_buildWaText()), '_blank');
-  btn.disabled = false;
-  btn.textContent = '💬 مشاركة واتساب';
+  btn.disabled = false; btn.textContent = '💬 مشاركة واتساب';
 }
 
 loadBooking();
