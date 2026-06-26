@@ -1100,61 +1100,80 @@ class FlightBookingService
         $totalAmount = $offer['total_amount'];
         $currency    = strtoupper($offer['currency'] ?? 'GBP');
 
-        // Insert flight_bookings row (including all Sprint-1 Duffel order fields).
+        // Insert flight_bookings row — base columns only (guaranteed to exist in migration 017).
+        // Extended Duffel fields are written in a separate UPDATE below so the booking
+        // succeeds even if migration 075 has not yet been applied to the live database.
         $this->step('DB_INSERT_BOOKING', 'START', ['ref' => $bookingReference]);
         $bStmt = $this->db->prepare(
             'INSERT INTO flight_bookings
                (user_id, provider_id, booking_reference, provider_order_id,
-                duffel_booking_reference, booking_references,
                 trip_type, cabin_class, adults_count, children_count,
                 origin_airport, destination_airport, departure_at,
-                total_amount, currency, status,
-                paid_at, payment_required_by, price_guarantee_expires_at,
-                void_window_ends_at, available_actions,
-                live_mode, refund_conditions, change_conditions,
-                awaiting_payment, duffel_payment_failure,
-                synced_at)
+                total_amount, currency, status)
              VALUES
                (:user_id, 1, :ref, :provider_order_id,
-                :duffel_booking_ref, :booking_references,
                 :trip_type, :cabin_class, :adults, :children,
                 :origin, :dest, :departure_at,
-                :amount, :currency, :status,
-                :paid_at, :payment_required_by, :price_guarantee_expires_at,
-                :void_window_ends_at, :available_actions,
-                :live_mode, :refund_conditions, :change_conditions,
-                :awaiting_payment, :duffel_payment_failure,
-                NOW())'
+                :amount, :currency, :status)'
         );
         $bParams = [
-            ':user_id'                    => $userId,
-            ':ref'                        => $bookingReference,
-            ':provider_order_id'          => $providerOrderId,
-            ':duffel_booking_ref'         => $duffelBookingRef,
-            ':booking_references'         => $bookingReferences,
-            ':trip_type'                  => $tripType,
-            ':cabin_class'                => $cabinClass,
-            ':adults'                     => $adults,
-            ':children'                   => $children,
-            ':origin'                     => $origin,
-            ':dest'                       => $dest,
-            ':departure_at'               => $departureAt,
-            ':amount'                     => $totalAmount,
-            ':currency'                   => $currency,
-            ':status'                     => 'confirmed',
-            ':paid_at'                    => $paidAt,
-            ':payment_required_by'        => $paymentRequiredBy,
-            ':price_guarantee_expires_at' => $priceGuaranteeExpiresAt,
-            ':void_window_ends_at'        => $voidWindowEndsAt,
-            ':available_actions'          => $availableActions,
-            ':live_mode'                  => $liveMode,
-            ':refund_conditions'          => $refundConditions,
-            ':change_conditions'          => $changeConditions,
-            ':awaiting_payment'           => $awaitingPayment,
-            ':duffel_payment_failure'     => $duffelPaymentFailure,
+            ':user_id'           => $userId,
+            ':ref'               => $bookingReference,
+            ':provider_order_id' => $providerOrderId,
+            ':trip_type'         => $tripType,
+            ':cabin_class'       => $cabinClass,
+            ':adults'            => $adults,
+            ':children'          => $children,
+            ':origin'            => $origin,
+            ':dest'              => $dest,
+            ':departure_at'      => $departureAt,
+            ':amount'            => $totalAmount,
+            ':currency'          => $currency,
+            ':status'            => 'confirmed',
         ];
         $this->execStep('DB_INSERT_BOOKING', $bStmt, $bParams);
         $bookingId = (int) $this->db->lastInsertId();
+
+        // Write extended Duffel order fields added by migration 075.
+        // Wrapped in try/catch: if the columns do not exist yet the booking row is already
+        // committed above and the user has a confirmed booking — this is non-fatal.
+        try {
+            $this->db->prepare(
+                'UPDATE flight_bookings SET
+                    duffel_booking_reference   = :duffel_booking_ref,
+                    booking_references         = :booking_references,
+                    paid_at                    = :paid_at,
+                    payment_required_by        = :payment_required_by,
+                    price_guarantee_expires_at = :price_guarantee_expires_at,
+                    void_window_ends_at        = :void_window_ends_at,
+                    available_actions          = :available_actions,
+                    live_mode                  = :live_mode,
+                    refund_conditions          = :refund_conditions,
+                    change_conditions          = :change_conditions,
+                    awaiting_payment           = :awaiting_payment,
+                    duffel_payment_failure     = :duffel_payment_failure,
+                    synced_at                  = NOW()
+                 WHERE id = :id'
+            )->execute([
+                ':duffel_booking_ref'         => $duffelBookingRef,
+                ':booking_references'         => $bookingReferences,
+                ':paid_at'                    => $paidAt,
+                ':payment_required_by'        => $paymentRequiredBy,
+                ':price_guarantee_expires_at' => $priceGuaranteeExpiresAt,
+                ':void_window_ends_at'        => $voidWindowEndsAt,
+                ':available_actions'          => $availableActions,
+                ':live_mode'                  => $liveMode,
+                ':refund_conditions'          => $refundConditions,
+                ':change_conditions'          => $changeConditions,
+                ':awaiting_payment'           => $awaitingPayment,
+                ':duffel_payment_failure'     => $duffelPaymentFailure,
+                ':id'                         => $bookingId,
+            ]);
+            $this->step('DB_UPDATE_BOOKING_EXT', 'SUCCESS', ['booking_id' => $bookingId]);
+        } catch (\Throwable $extEx) {
+            error_log('[BOOKING_EXT_FIELDS_SKIP] booking_id=' . $bookingId
+                . ' migration_075_not_applied=true | ' . $extEx->getMessage());
+        }
 
         // Insert flight_booking_passengers (with Duffel passenger ID and ticket number).
         $pStmt = $this->db->prepare(
@@ -1351,7 +1370,7 @@ class FlightBookingService
         // Prefer lookup by payment_intent_id to avoid returning wrong booking in concurrent sessions
         if ($paymentIntentId !== '') {
             $stmt = $this->db->prepare(
-                'SELECT fb.id, fb.booking_reference, fb.duffel_booking_reference, fb.status
+                'SELECT fb.id, fb.booking_reference, fb.status
                  FROM flight_bookings fb
                  JOIN payments p ON p.booking_id = fb.id AND p.booking_type = "flight"
                  WHERE p.stripe_payment_intent_id = :pi AND fb.user_id = :uid
@@ -1362,25 +1381,25 @@ class FlightBookingService
             if ($row) {
                 return [
                     'status'                   => 'confirmed',
-                    'booking_reference'        => $row['booking_reference']        ?? '',
-                    'booking_id'               => $row['id']                       ?? null,
-                    'duffel_booking_reference' => $row['duffel_booking_reference'] ?? null,
+                    'booking_reference'        => $row['booking_reference'] ?? '',
+                    'booking_id'               => $row['id']               ?? null,
+                    'duffel_booking_reference' => null,
                 ];
             }
         }
 
         // Fallback: most recent booking for this user
         $stmt = $this->db->prepare(
-            'SELECT id, booking_reference, duffel_booking_reference, status
+            'SELECT id, booking_reference, status
              FROM flight_bookings WHERE user_id = :uid ORDER BY id DESC LIMIT 1'
         );
         $stmt->execute([':uid' => $userId]);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
         return [
             'status'                   => 'confirmed',
-            'booking_reference'        => $row['booking_reference']        ?? '',
-            'booking_id'               => $row['id']                       ?? null,
-            'duffel_booking_reference' => $row['duffel_booking_reference'] ?? null,
+            'booking_reference'        => $row['booking_reference'] ?? '',
+            'booking_id'               => $row['id']               ?? null,
+            'duffel_booking_reference' => null,
         ];
     }
 
