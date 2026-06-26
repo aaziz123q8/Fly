@@ -327,7 +327,7 @@
       </div>
 
       <div class="print-hide" style="font-size:.75rem;color:#aaa;text-align:center;margin-top:10px">
-        لإرسال التذكرة عبر واتساب: اضغط "طباعة / PDF" → احفظ كـ PDF → ثم أرفقه في واتساب
+        على الجوال: زر واتساب يرسل صورة التذكرة مباشرة · على الكمبيوتر: اضغط "طباعة / PDF" → احفظ كـ PDF → أرفقه في واتساب
       </div>
 
     </div>
@@ -343,6 +343,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 const urlP       = new URLSearchParams(window.location.search);
 const ref        = urlP.get('ref') || '';
@@ -406,9 +407,13 @@ function renderBooking(b) {
   badge.textContent = statusLabel(b.status || 'confirmed');
   badge.className = 'tk-status-badge ' + statusClass(b.status || 'confirmed');
 
-  // PNR
-  if (b.duffel_booking_reference) {
-    document.getElementById('refPnr').textContent = b.duffel_booking_reference;
+  // PNR — try multiple sources in priority order
+  const pnr = b.duffel_booking_reference
+    || (Array.isArray(b.booking_references) && b.booking_references[0])
+    || (typeof b.booking_references === 'string' && b.booking_references)
+    || null;
+  if (pnr) {
+    document.getElementById('refPnr').textContent = pnr;
     document.getElementById('pnrBox').style.display = 'block';
   }
 
@@ -619,32 +624,80 @@ function printTicket() {
 }
 
 // ── WhatsApp ─────────────────────────────────────────────────────
-function shareWhatsApp() {
-  const b = _booking || {};
+function _buildWaText() {
+  const b   = _booking || {};
   const fm  = document.getElementById('refFm').textContent;
-  const pnr = b.duffel_booking_reference || '';
+  const pnr = b.duffel_booking_reference
+    || (Array.isArray(b.booking_references) && b.booking_references[0]) || '';
   const route = (b.origin_airport && b.destination_airport)
-    ? `${b.origin_airport} ← ${b.destination_airport}` : '';
+    ? `${b.origin_airport} ✈️ ${b.destination_airport}` : '';
   const depDate = b.departure_at ? fmtDate(b.departure_at) : '';
-  const segs = b.segments || [];
-  const airline = segs[0]?.flight_number || '';
+  const segs  = b.segments || [];
+  const flNum = segs[0]?.flight_number || '';
+  const depT  = segs[0]?.departure_at  ? fmtTime(segs[0].departure_at) : '';
+  const arrT  = (segs[segs.length-1]?.arrival_at) ? fmtTime(segs[segs.length-1].arrival_at) : '';
+  const paxCount = (b.adults_count || 0) + (b.children_count || 0) + (b.infants_count || 0);
 
-  let msg = `✈️ *تذكرة فلاي مسار*\n`;
+  let msg = `✈️ *تذكرة سفر — فلاي مسار*\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `📋 رقم الحجز: *${fm}*\n`;
-  if (pnr) msg += `🔢 رقم PNR: *${pnr}*\n`;
+  msg += `🔖 رقم الحجز: *${fm}*\n`;
+  if (pnr)    msg += `🔢 رقم PNR: *${pnr}*\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-  if (route)    msg += `🗺️ الرحلة: ${route}\n`;
-  if (airline)  msg += `✈️ رقم الرحلة: ${airline}\n`;
-  if (depDate)  msg += `📅 تاريخ السفر: ${depDate}\n`;
-  const paxCount = (b.adults_count || 0) + (b.children_count || 0);
-  if (paxCount)  msg += `👥 المسافرون: ${paxCount}\n`;
-  if (b.total_amount) msg += `💰 المبلغ: ${b.currency || 'GBP'} ${parseFloat(b.total_amount).toFixed(2)}\n`;
+  if (route)  msg += `🗺️  الرحلة: *${route}*\n`;
+  if (flNum)  msg += `✈️  رقم الطائرة: ${flNum}\n`;
+  if (depDate) msg += `📅  تاريخ السفر: ${depDate}\n`;
+  if (depT && arrT) msg += `🕐  ${depT} ← ${arrT}\n`;
+  if (paxCount)    msg += `👥  المسافرون: ${paxCount} مسافر\n`;
+  if (b.total_amount) {
+    msg += `💰  المبلغ المدفوع: ${b.currency || ''} ${parseFloat(b.total_amount).toFixed(2)}\n`;
+  }
+  const status = {confirmed:'✅ مؤكد', pending:'⏳ قيد المعالجة', cancelled:'❌ ملغي'}[b.status] || b.status || '';
+  if (status) msg += `📌  الحالة: ${status}\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `💬 للاستفسار: wa.me/96565002080\n`;
+  msg += `💬 للاستفسار والتعديل:\n`;
+  msg += `wa.me/96565002080\n`;
   msg += `🌐 flymasar.com`;
+  return msg;
+}
 
-  window.open('https://wa.me/?text=' + encodeURIComponent(msg));
+async function shareWhatsApp() {
+  const btn = document.getElementById('waBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ جاري التحضير…';
+
+  try {
+    // On mobile: try to capture ticket as image and share via native share sheet
+    if (typeof html2canvas !== 'undefined' && navigator.canShare) {
+      const card = document.getElementById('ticketCard');
+      // Temporarily unhide card sections for capture
+      const canvas = await html2canvas(card, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        logging: false,
+      });
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      const file = new File([blob], 'flymasar-ticket.png', {type: 'image/png'});
+      if (navigator.canShare({files: [file]})) {
+        await navigator.share({
+          files: [file],
+          title: 'تذكرة فلاي مسار',
+          text: _buildWaText(),
+        });
+        btn.disabled = false;
+        btn.textContent = '💬 مشاركة واتساب';
+        return;
+      }
+    }
+  } catch(e) {
+    // fall through to text share
+  }
+
+  // Desktop / fallback: open WhatsApp Web with text
+  window.open('https://wa.me/96565002080?text=' + encodeURIComponent(_buildWaText()), '_blank');
+  btn.disabled = false;
+  btn.textContent = '💬 مشاركة واتساب';
 }
 
 loadBooking();
