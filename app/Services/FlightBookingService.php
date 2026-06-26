@@ -2066,6 +2066,7 @@ class FlightBookingService
                 'change_total_amount'   => $o['change_total_amount']  ?? '0.00',
                 'change_total_currency' => $o['change_total_currency'] ?? 'GBP',
                 'new_total_amount'      => $o['new_total_amount']      ?? null,
+                // Duffel change offer slices: {add:[...], remove:[...]}
                 'slices'                => array_map(function($s) {
                     $segs = $s['segments'] ?? [];
                     $last = !empty($segs) ? $segs[count($segs) - 1] : [];
@@ -2074,13 +2075,16 @@ class FlightBookingService
                         'destination'   => $s['destination']['iata_code'] ?? '',
                         'departure_at'  => $segs[0]['departing_at']        ?? '',
                         'arrival_at'    => $last['arriving_at']            ?? '',
-                        'airline'       => $segs[0]['operating_carrier']['iata_code'] ?? '',
-                        'flight_number' => ($segs[0]['operating_carrier']['iata_code'] ?? '')
-                                         . ($segs[0]['operating_carrier_flight_number'] ?? ''),
+                        'airline'       => $segs[0]['marketing_carrier']['iata_code']
+                                        ?? $segs[0]['operating_carrier']['iata_code'] ?? '',
+                        'flight_number' => ($segs[0]['marketing_carrier']['iata_code']
+                                        ?? $segs[0]['operating_carrier']['iata_code'] ?? '')
+                                         . ($segs[0]['marketing_carrier_flight_number']
+                                        ?? $segs[0]['operating_carrier_flight_number'] ?? ''),
                         'duration'      => $s['duration'] ?? '',
                         'stops'         => max(0, count($segs) - 1),
                     ];
-                }, $o['slices'] ?? []),
+                }, $o['slices']['add'] ?? $o['slices'] ?? []),
             ], $offers),
         ];
     }
