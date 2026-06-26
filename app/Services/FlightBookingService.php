@@ -2066,17 +2066,21 @@ class FlightBookingService
                 'change_total_amount'   => $o['change_total_amount']  ?? '0.00',
                 'change_total_currency' => $o['change_total_currency'] ?? 'GBP',
                 'new_total_amount'      => $o['new_total_amount']      ?? null,
-                'slices'                => array_map(fn($s) => [
-                    'origin'        => $s['origin']['iata_code']         ?? '',
-                    'destination'   => $s['destination']['iata_code']    ?? '',
-                    'departure_at'  => $s['segments'][0]['departing_at'] ?? '',
-                    'arrival_at'    => $s['segments'][count($s['segments'])-1]['arriving_at'] ?? '',
-                    'airline'       => $s['segments'][0]['operating_carrier']['iata_code'] ?? '',
-                    'flight_number' => $s['segments'][0]['operating_carrier']['iata_code']
-                                     . ($s['segments'][0]['operating_carrier_flight_number'] ?? ''),
-                    'duration'      => $s['duration'] ?? '',
-                    'stops'         => count($s['segments']) - 1,
-                ], $o['slices'] ?? []),
+                'slices'                => array_map(function($s) {
+                    $segs = $s['segments'] ?? [];
+                    $last = !empty($segs) ? $segs[count($segs) - 1] : [];
+                    return [
+                        'origin'        => $s['origin']['iata_code']      ?? '',
+                        'destination'   => $s['destination']['iata_code'] ?? '',
+                        'departure_at'  => $segs[0]['departing_at']        ?? '',
+                        'arrival_at'    => $last['arriving_at']            ?? '',
+                        'airline'       => $segs[0]['operating_carrier']['iata_code'] ?? '',
+                        'flight_number' => ($segs[0]['operating_carrier']['iata_code'] ?? '')
+                                         . ($segs[0]['operating_carrier_flight_number'] ?? ''),
+                        'duration'      => $s['duration'] ?? '',
+                        'stops'         => max(0, count($segs) - 1),
+                    ];
+                }, $o['slices'] ?? []),
             ], $offers),
         ];
     }
