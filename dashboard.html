@@ -297,17 +297,20 @@
       const dep      = b.departure_at ? new Date(b.departure_at).toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'}) : '—';
       const amount   = b.total_amount || b.total_price;
       const currency = b.currency || 'GBP';
-      const actions  = Array.isArray(b.available_actions) ? b.available_actions : [];
-      const refConds = b.refund_conditions || null;
-      const status   = b.status || 'pending';
+      // Use Duffel's available_actions and conditions as-is — no overrides
+      const actions   = Array.isArray(b.available_actions) ? b.available_actions : [];
+      const refConds  = b.refund_conditions || null;
+      const chgConds  = b.change_conditions || null;
+      const status    = b.status || 'pending';
 
       const isConfirmed = status === 'confirmed';
-      const canChange   = isConfirmed && (actions.length === 0 || actions.includes('change'));
-      const canBags     = isConfirmed && (actions.length === 0 || actions.includes('add_baggage'));
-      const canSeats    = isConfirmed && (actions.length === 0 || actions.includes('add_seats'));
-      // Cancel: only show when Duffel allows it AND refund policy permits refund
+      // Buttons follow Duffel available_actions directly
+      const canChange   = isConfirmed && actions.includes('change');
+      const canBags     = isConfirmed && actions.includes('add_baggage');
+      const canSeats    = isConfirmed && actions.includes('add_seats');
+      // Cancel: Duffel allows it AND refund_conditions.allowed is not false
       const refAllowed  = refConds ? refConds.allowed !== false : true;
-      const canCancel   = isConfirmed && (actions.length === 0 || actions.includes('cancel')) && refAllowed;
+      const canCancel   = isConfirmed && actions.includes('cancel') && refAllowed;
 
       const btnTicket  = `<a href="confirmation.html?ref=${ref}" class="btn btn-sm btn-outline">🎫 التذكرة</a>`;
       const btnInvoice = `<a href="invoice.html?ref=${ref}" class="btn btn-sm" style="background:#f0f9ff;color:#0369a1;border:1px solid #7dd3fc">🧾 الفاتورة</a>`;
