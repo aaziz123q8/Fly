@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>فاتورة — فلاي مسار</title>
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    body { background:#f5f7fa; min-height:100vh; padding:24px 0 80px; }
+
+    .inv-page { max-width:760px; margin:0 auto; padding:0 16px; }
+
+    /* ── Invoice card ── */
+    .inv-card {
+      background:#fff; border-radius:16px;
+      box-shadow:0 4px 24px rgba(0,0,0,.08);
+      overflow:hidden; margin-bottom:20px;
+    }
+
+    /* Header strip */
+    .inv-header {
+      background:linear-gradient(135deg,#0f2444,#1B4F8E);
+      color:#fff; padding:28px 32px;
+      display:flex; justify-content:space-between; align-items:flex-start;
+    }
+    .inv-logo { font-size:1.5rem; font-weight:900; }
+    .inv-logo span { color:#F5A623; }
+    .inv-logo-sub { font-size:.75rem; color:rgba(255,255,255,.6); margin-top:4px; }
+    .inv-meta { text-align:left; font-size:.82rem; color:rgba(255,255,255,.8); line-height:1.8; }
+    .inv-meta strong { color:#fff; font-size:1rem; display:block; margin-bottom:4px; }
+
+    /* Status banner */
+    .inv-status-bar {
+      padding:10px 32px;
+      font-size:.85rem; font-weight:700;
+      display:flex; align-items:center; gap:8px;
+    }
+    .inv-status-bar.confirmed { background:#dcfce7; color:#15803d; }
+    .inv-status-bar.cancelled { background:#fee2e2; color:#b91c1c; }
+    .inv-status-bar.pending   { background:#fef3c7; color:#92400e; }
+    .inv-status-bar.changed   { background:#eff6ff; color:#1d4ed8; }
+
+    /* Body */
+    .inv-body { padding:28px 32px; }
+
+    /* Section */
+    .inv-section { margin-bottom:24px; }
+    .inv-section-title {
+      font-size:.7rem; font-weight:800; color:#888;
+      text-transform:uppercase; letter-spacing:.8px;
+      border-bottom:2px solid #f0f0f0; padding-bottom:6px; margin-bottom:12px;
+    }
+
+    /* Two-col grid */
+    .inv-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .inv-field { }
+    .inv-field-label { font-size:.7rem; color:#888; font-weight:600; margin-bottom:2px; }
+    .inv-field-value { font-size:.92rem; font-weight:700; color:#0f2444; }
+    .inv-field-value.mono { font-family:monospace; font-size:1.05rem; letter-spacing:1px; color:#1B4F8E; }
+
+    /* Route */
+    .inv-route {
+      background:#f8faff; border-radius:12px; padding:20px 24px;
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:12px;
+    }
+    .inv-airport { text-align:center; }
+    .inv-iata { font-size:2rem; font-weight:900; color:#0f2444; }
+    .inv-city-label { font-size:.72rem; color:#888; }
+    .inv-time { font-size:1.1rem; font-weight:700; color:#1B4F8E; margin-top:4px; }
+    .inv-date-label { font-size:.75rem; color:#555; }
+    .inv-arrow { flex:1; text-align:center; color:#1B4F8E; font-size:1.4rem; }
+    .inv-duration { font-size:.72rem; color:#888; margin-top:2px; }
+
+    /* Segments table */
+    .seg-table { width:100%; border-collapse:collapse; font-size:.83rem; }
+    .seg-table th { background:#f0f5ff; color:#555; font-weight:700; padding:8px 12px; text-align:right; font-size:.72rem; }
+    .seg-table td { padding:8px 12px; border-bottom:1px solid #f5f5f5; color:#333; }
+    .seg-table tr:last-child td { border-bottom:none; }
+
+    /* Passengers table */
+    .pax-table { width:100%; border-collapse:collapse; font-size:.83rem; }
+    .pax-table th { background:#f0f5ff; color:#555; font-weight:700; padding:8px 12px; text-align:right; font-size:.72rem; }
+    .pax-table td { padding:8px 12px; border-bottom:1px solid #f5f5f5; color:#333; }
+    .pax-table tr:last-child td { border-bottom:none; }
+
+    /* Pricing */
+    .price-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:.88rem; }
+    .price-row:last-child { border-bottom:none; }
+    .price-total { display:flex; justify-content:space-between; padding:12px 0; margin-top:4px; border-top:2px solid #0f2444; font-size:1rem; font-weight:800; }
+
+    /* Refund */
+    .refund-box { background:#fff8f8; border:1px solid #fca5a5; border-radius:10px; padding:16px 20px; }
+    .refund-row { display:flex; justify-content:space-between; padding:6px 0; font-size:.88rem; border-bottom:1px dashed #fecaca; }
+    .refund-row:last-of-type { border-bottom:none; }
+
+    /* Conditions */
+    .cond-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid #f5f5f5; font-size:.85rem; }
+    .cond-row:last-child { border-bottom:none; }
+    .cond-badge { padding:3px 10px; border-radius:20px; font-size:.72rem; font-weight:700; }
+    .cond-allowed-badge { background:#dcfce7; color:#15803d; }
+    .cond-forbidden-badge { background:#fee2e2; color:#b91c1c; }
+
+    /* Footer */
+    .inv-footer {
+      background:#0f2444; color:rgba(255,255,255,.7);
+      padding:18px 32px; font-size:.75rem;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .inv-footer a { color:#F5A623; text-decoration:none; }
+
+    /* Action bar */
+    .action-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
+    .action-bar .btn { flex:1; min-width:120px; }
+
+    /* ── Print ── */
+    @media print {
+      * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+      body { background:#fff !important; padding:0; }
+      .action-bar, .navbar, .bottom-nav, .print-hide { display:none !important; }
+      .inv-page { max-width:100% !important; padding:0; }
+      .inv-card { box-shadow:none !important; border-radius:0 !important; border:1px solid #ddd; }
+      .inv-header { background:linear-gradient(135deg,#0f2444,#1B4F8E) !important; }
+      .inv-footer { background:#0f2444 !important; }
+      .inv-route { background:#f8faff !important; }
+      .refund-box { background:#fff8f8 !important; }
+      @page { margin:12mm; size:A4 portrait; }
+    }
+    @media(max-width:600px) {
+      .inv-header { flex-direction:column; gap:12px; }
+      .inv-meta { text-align:right; }
+      .inv-grid { grid-template-columns:1fr; }
+      .inv-body { padding:20px 20px; }
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar print-hide">
+  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
+    <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
+  </div>
+</nav>
+
+<div class="inv-page">
+
+  <!-- Action buttons -->
+  <div class="action-bar print-hide" style="margin-top:16px">
+    <button class="btn btn-primary" onclick="window.print()">🖨️ طباعة / PDF</button>
+    <a id="ticketLink" href="#" class="btn btn-outline">🎫 عرض التذكرة</a>
+    <a href="dashboard.html" class="btn btn-ghost">📋 حجوزاتي</a>
+  </div>
+
+  <div class="inv-card" id="invoiceCard">
+
+    <!-- Header -->
+    <div class="inv-header">
+      <div>
+        <div class="inv-logo">✈️ <span>فلاي</span> مسار</div>
+        <div class="inv-logo-sub">flymasar.com · +965 6500 2080</div>
+      </div>
+      <div class="inv-meta">
+        <strong id="invNum">فاتورة</strong>
+        <div id="invIssued"></div>
+        <div id="invEmail" style="color:rgba(255,255,255,.6)"></div>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="inv-status-bar confirmed" id="statusBar">
+      <span id="statusIcon">✅</span>
+      <span id="statusText">مؤكد</span>
+    </div>
+
+    <div class="inv-body">
+
+      <!-- Booking references -->
+      <div class="inv-section">
+        <div class="inv-section-title">بيانات الحجز</div>
+        <div class="inv-grid">
+          <div class="inv-field">
+            <div class="inv-field-label">رقم حجز فلاي مسار</div>
+            <div class="inv-field-value mono" id="fldRef">—</div>
+          </div>
+          <div class="inv-field" id="pnrBox" style="display:none">
+            <div class="inv-field-label">رقم الحجز لدى الناقل (PNR)</div>
+            <div class="inv-field-value mono" id="fldPnr">—</div>
+          </div>
+          <div class="inv-field">
+            <div class="inv-field-label">تاريخ الحجز</div>
+            <div class="inv-field-value" id="fldBookedAt">—</div>
+          </div>
+          <div class="inv-field" id="cabinBox" style="display:none">
+            <div class="inv-field-label">درجة السفر</div>
+            <div class="inv-field-value" id="fldCabin">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Route -->
+      <div class="inv-section" id="routeSection" style="display:none">
+        <div class="inv-section-title">تفاصيل الرحلة</div>
+        <div class="inv-route">
+          <div class="inv-airport">
+            <div class="inv-iata" id="depIata">—</div>
+            <div class="inv-city-label">المغادرة</div>
+            <div class="inv-time" id="depTime"></div>
+            <div class="inv-date-label" id="depDate"></div>
+          </div>
+          <div class="inv-arrow">
+            <div>✈️</div>
+            <div class="inv-duration" id="flightDur"></div>
+          </div>
+          <div class="inv-airport">
+            <div class="inv-iata" id="arrIata">—</div>
+            <div class="inv-city-label">الوصول</div>
+            <div class="inv-time" id="arrTime"></div>
+            <div class="inv-date-label" id="arrDate"></div>
+          </div>
+        </div>
+        <!-- Segments -->
+        <div id="segTableWrap" style="display:none;overflow-x:auto">
+          <table class="seg-table">
+            <thead>
+              <tr><th>الرحلة</th><th>من</th><th>إلى</th><th>المغادرة</th><th>الوصول</th><th>المدة</th></tr>
+            </thead>
+            <tbody id="segTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Passengers -->
+      <div class="inv-section" id="paxSection" style="display:none">
+        <div class="inv-section-title">المسافرون</div>
+        <div style="overflow-x:auto">
+          <table class="pax-table">
+            <thead>
+              <tr><th>#</th><th>الاسم</th><th>النوع</th><th>الجنسية</th><th>تاريخ الميلاد</th><th>رقم التذكرة</th></tr>
+            </thead>
+            <tbody id="paxTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pricing -->
+      <div class="inv-section" id="pricingSection" style="display:none">
+        <div class="inv-section-title">تفاصيل المبالغ</div>
+        <div id="priceRows"></div>
+        <div class="price-total">
+          <span>الإجمالي المدفوع</span>
+          <span id="priceTotal" style="color:#1B4F8E">—</span>
+        </div>
+      </div>
+
+      <!-- Refund (cancelled) -->
+      <div class="inv-section" id="refundSection" style="display:none">
+        <div class="inv-section-title" style="color:#b91c1c">معلومات الاسترداد</div>
+        <div class="refund-box">
+          <div id="refundRows"></div>
+          <div style="font-size:.75rem;color:#888;margin-top:8px">⏱️ يستغرق الاسترداد من 5 إلى 10 أيام عمل حسب سياسة البنك.</div>
+        </div>
+      </div>
+
+      <!-- Conditions -->
+      <div class="inv-section" id="condSection" style="display:none">
+        <div class="inv-section-title">شروط التذكرة</div>
+        <div id="condRows"></div>
+      </div>
+
+      <!-- Legal note -->
+      <div style="background:#f9fafb;border-radius:10px;padding:14px 16px;font-size:.75rem;color:#888;line-height:1.8">
+        <strong style="color:#555">ملاحظة قانونية:</strong> هذه الفاتورة صادرة من فلاي مسار بصفتها وكيلاً للسفر. التذكرة تخضع لشروط الناقل الجوي. في حالة النزاع يُرجع إلى رقم الحجز الموضح أعلاه.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="inv-footer">
+      <div>✈️ فلاي مسار — خدمة عملاء: <a href="https://wa.me/96565002080">+965 6500 2080</a></div>
+      <div>flymasar.com</div>
+    </div>
+
+  </div>
+</div>
+
+<nav class="bottom-nav print-hide">
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
+  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
+  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
+  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
+</nav>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+const urlP = new URLSearchParams(window.location.search);
+const ref  = urlP.get('ref') || '';
+const bid  = urlP.get('bid') || '';
+
+// Helpers
+function fmt(str) {
+  if (!str) return '—';
+  try { const d = new Date(str); return d.toLocaleDateString('ar-KW',{day:'numeric',month:'long',year:'numeric'}); }
+  catch(e) { return str; }
+}
+function fmtDT(str) {
+  if (!str) return '—';
+  try { const d = new Date(str);
+    return d.toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'})
+      + ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  } catch(e) { return str; }
+}
+function fmtTime(str) {
+  if (!str) return '';
+  try { const d = new Date(str); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+  catch(e) { return ''; }
+}
+function dur(dep, arr) {
+  try { const m = Math.round((new Date(arr)-new Date(dep))/60000); if(m<=0) return ''; return Math.floor(m/60)+'س '+m%60+'د'; }
+  catch(e) { return ''; }
+}
+function money(v, cur) { return parseFloat(v||0).toFixed(2) + ' ' + (cur||'GBP'); }
+function paxTypeAr(t) { return {adult:'بالغ',child:'طفل',infant:'رضيع'}[t]||t; }
+function cabinAr(c) { return {economy:'اقتصادية',premium_economy:'اقتصادية ممتازة',business:'رجال الأعمال',first:'الدرجة الأولى'}[c]||c||''; }
+const statusMap = {
+  confirmed:['✅','مؤكد','confirmed'],
+  pending:['⏳','معلق','pending'],
+  awaiting_payment:['⏳','في انتظار الدفع','pending'],
+  cancelled:['❌','ملغي','cancelled'],
+  cancellation_pending_refund:['❌','ملغي — استرداد قيد المعالجة','cancelled'],
+  cancellation_pending_manual_refund:['❌','ملغي — استرداد يدوي','cancelled'],
+  completed:['✅','مكتمل','confirmed'],
+  changed:['✏️','تم التغيير','changed'],
+  failed:['❌','فشل','cancelled'],
+};
+const refToLabels = {balance:'رصيد المحفظة', original_payment:'البطاقة الأصلية', voucher:'قسيمة ائتمان', arc_bsp_cash:'كاش'};
+
+function isCancelled(s) { return s==='cancelled'||s==='failed'||(s&&s.startsWith('cancellation_')); }
+
+function render(b) {
+  const cur = b.currency || 'GBP';
+  const st  = b.status || 'confirmed';
+  const [sIcon, sText, sCls] = statusMap[st] || ['ℹ️', st, 'pending'];
+
+  // Status bar
+  const bar = document.getElementById('statusBar');
+  bar.className = 'inv-status-bar ' + sCls;
+  document.getElementById('statusIcon').textContent = sIcon;
+  document.getElementById('statusText').textContent = sText;
+
+  // Invoice header
+  const ref = b.booking_reference || '';
+  document.getElementById('invNum').textContent = ref ? 'فاتورة رقم ' + ref : 'فاتورة';
+  document.getElementById('invIssued').textContent = 'تاريخ الإصدار: ' + new Date().toLocaleDateString('ar-KW',{day:'numeric',month:'long',year:'numeric'});
+  if (b.user_email) document.getElementById('invEmail').textContent = b.user_email;
+
+  // Ticket link
+  if (ref) document.getElementById('ticketLink').href = 'confirmation.html?ref=' + encodeURIComponent(ref);
+  else if (b.id) document.getElementById('ticketLink').href = 'confirmation.html?bid=' + b.id;
+
+  // References
+  if (ref) document.getElementById('fldRef').textContent = ref;
+  const pnr = b.duffel_booking_reference
+    || (Array.isArray(b.booking_references) && b.booking_references[0])
+    || (typeof b.booking_references === 'string' && b.booking_references)
+    || null;
+  if (pnr) { document.getElementById('fldPnr').textContent = pnr; document.getElementById('pnrBox').style.display=''; }
+  if (b.created_at) document.getElementById('fldBookedAt').textContent = fmtDT(b.created_at);
+  if (b.cabin_class) { document.getElementById('fldCabin').textContent = cabinAr(b.cabin_class); document.getElementById('cabinBox').style.display=''; }
+
+  // Route
+  const segs = b.segments || [];
+  const first = segs[0], last = segs[segs.length-1];
+  const depAirport = (first?.origin_airport) || b.origin_airport || '';
+  const arrAirport = (last?.destination_airport) || b.destination_airport || '';
+  const depAt = (first?.departure_at) || b.departure_at || '';
+  const arrAt = (last?.arrival_at) || '';
+  if (depAirport || arrAirport) {
+    document.getElementById('routeSection').style.display = 'block';
+    document.getElementById('depIata').textContent = depAirport;
+    document.getElementById('arrIata').textContent = arrAirport;
+    if (depAt) { document.getElementById('depTime').textContent = fmtTime(depAt); document.getElementById('depDate').textContent = fmt(depAt); }
+    if (arrAt) { document.getElementById('arrTime').textContent = fmtTime(arrAt); document.getElementById('arrDate').textContent = fmt(arrAt); }
+    if (depAt && arrAt) document.getElementById('flightDur').textContent = dur(depAt, arrAt);
+  }
+  if (segs.length) {
+    document.getElementById('segTableWrap').style.display = 'block';
+    document.getElementById('segTableBody').innerHTML = segs.map(s =>
+      `<tr>
+        <td><strong>${s.flight_number||'—'}</strong></td>
+        <td>${s.origin_airport||'—'}</td>
+        <td>${s.destination_airport||'—'}</td>
+        <td>${fmtDT(s.departure_at)}</td>
+        <td>${fmtDT(s.arrival_at)}</td>
+        <td>${dur(s.departure_at,s.arrival_at)||'—'}</td>
+      </tr>`
+    ).join('');
+  }
+
+  // Passengers
+  const pax = b.passengers || [];
+  if (pax.length) {
+    document.getElementById('paxSection').style.display = 'block';
+    document.getElementById('paxTableBody').innerHTML = pax.map((p,i) =>
+      `<tr>
+        <td>${i+1}</td>
+        <td><strong>${p.first_name||''} ${p.last_name||''}</strong></td>
+        <td>${paxTypeAr(p.passenger_type)}</td>
+        <td>${p.nationality||'—'}</td>
+        <td>${p.date_of_birth||'—'}</td>
+        <td style="font-family:monospace">${p.ticket_number||'—'}</td>
+      </tr>`
+    ).join('');
+  }
+
+  // Pricing
+  if (b.total_amount) {
+    document.getElementById('pricingSection').style.display = 'block';
+    const changeFee = parseFloat(b.change_fee_paid||0);
+    const baseFare  = parseFloat(b.total_amount) - changeFee;
+    let rows = `<div class="price-row"><span>سعر التذكرة الأصلي</span><span>${money(baseFare>0?baseFare:b.total_amount, cur)}</span></div>`;
+    if (changeFee > 0) {
+      rows += `<div class="price-row"><span>رسوم تغيير الرحلة</span><span style="color:#d97706">+ ${money(changeFee, cur)}</span></div>`;
+    }
+    if (isCancelled(st) && b.cancellation_refund_amount) {
+      rows += `<div class="price-row" style="color:#b91c1c"><span>مبلغ الاسترداد (مخصوم)</span><span>- ${money(b.cancellation_refund_amount, cur)}</span></div>`;
+    }
+    document.getElementById('priceRows').innerHTML = rows;
+    document.getElementById('priceTotal').textContent = money(b.total_amount, cur);
+  }
+
+  // Refund
+  if (isCancelled(st) && (b.cancellation_refund_amount || b.cancellation_refund_to)) {
+    document.getElementById('refundSection').style.display = 'block';
+    let rRows = '';
+    if (b.cancellation_refund_amount)
+      rRows += `<div class="refund-row"><span>مبلغ الاسترداد</span><strong style="color:#16a34a">${money(b.cancellation_refund_amount, cur)}</strong></div>`;
+    if (b.cancellation_refund_to)
+      rRows += `<div class="refund-row"><span>طريقة الاسترداد</span><span>${refToLabels[b.cancellation_refund_to]||b.cancellation_refund_to}</span></div>`;
+    document.getElementById('refundRows').innerHTML = rRows;
+  }
+
+  // Conditions
+  const refCond = b.refund_conditions, chgCond = b.change_conditions;
+  if (refCond || chgCond) {
+    document.getElementById('condSection').style.display = 'block';
+    const condRow = (label, cond) => {
+      if (!cond) return '';
+      const ok = cond.allowed !== false;
+      const pen = (cond.penalty_amount && parseFloat(cond.penalty_amount)>0)
+        ? ` — غرامة: ${cond.penalty_currency||''} ${parseFloat(cond.penalty_amount).toFixed(2)}` : '';
+      return `<div class="cond-row">
+        <span class="cond-badge ${ok?'cond-allowed-badge':'cond-forbidden-badge'}">${ok?'مسموح':'ممنوع'}</span>
+        <span>${label}${pen}</span>
+      </div>`;
+    };
+    document.getElementById('condRows').innerHTML =
+      condRow('الاسترداد قبل السفر', refCond) + condRow('تغيير الرحلة قبل السفر', chgCond);
+  }
+}
+
+// Load booking
+async function load() {
+  if (!Auth.isLoggedIn()) { window.location.href='login.html'; return; }
+  const key = bid || ref;
+  if (!key) { document.body.innerHTML='<div style="text-align:center;padding:60px;color:#888">لم يتم تحديد رقم الحجز.</div>'; return; }
+  try {
+    const res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
+    const b = res.booking || res;
+    render(b);
+  } catch(e) {
+    console.error(e);
+    document.getElementById('invoiceCard').innerHTML = '<div style="padding:40px;text-align:center;color:#888">تعذّر تحميل الفاتورة.</div>';
+  }
+}
+load();
+</script>
+</body>
+</html>

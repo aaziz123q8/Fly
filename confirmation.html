@@ -355,9 +355,9 @@
       <!-- Action buttons -->
       <div class="action-bar print-hide">
         <button class="btn btn-primary" onclick="printTicket()">🖨️ طباعة / PDF</button>
+        <a id="invoiceBtn" href="#" class="btn btn-outline">🧾 الفاتورة</a>
         <button class="btn btn-outline" id="waBtn" onclick="shareWhatsApp()">💬 مشاركة واتساب</button>
         <a href="dashboard.html" class="btn btn-ghost">📋 حجوزاتي</a>
-        <a href="index.html" class="btn btn-ghost">🏠 الرئيسية</a>
       </div>
 
       <div class="print-hide" style="font-size:.75rem;color:#aaa;text-align:center;margin-top:10px">
@@ -451,6 +451,10 @@ function renderBooking(b) {
   // Invoice print header
   document.getElementById('invDate').textContent = 'تاريخ الإصدار: ' + new Date().toLocaleDateString('ar-KW', {day:'numeric',month:'long',year:'numeric'});
   if (b.booking_reference) document.getElementById('invTitle').textContent = 'فاتورة رقم ' + b.booking_reference;
+
+  // Invoice page link
+  const invKey = b.booking_reference ? 'ref=' + encodeURIComponent(b.booking_reference) : ('bid=' + b.id);
+  document.getElementById('invoiceBtn').href = 'invoice.html?' + invKey;
 
   // Status
   const st = b.status || 'confirmed';

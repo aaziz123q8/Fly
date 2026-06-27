@@ -301,6 +301,7 @@
       const canCancel   = isConfirmed && (actions.length === 0 || actions.includes('cancel'));
 
       const btnTicket  = `<a href="confirmation.html?ref=${ref}" class="btn btn-sm btn-outline">🎫 التذكرة</a>`;
+      const btnInvoice = `<a href="invoice.html?ref=${ref}" class="btn btn-sm" style="background:#f0f9ff;color:#0369a1;border:1px solid #7dd3fc">🧾 الفاتورة</a>`;
       const btnChange  = canChange
         ? `<button class="btn btn-sm" style="background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc" onclick="openChangeModal(${b.id},'${origin}','${dest}')">✏️ تغيير الرحلة</button>` : '';
       const btnBags    = canBags
@@ -326,7 +327,7 @@
           <div class="booking-price">${amount ? parseFloat(amount).toFixed(2)+' '+currency : '—'}</div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-          ${btnTicket}${btnChange}${btnBags}${btnSeats}${btnCancel}
+          ${btnTicket}${btnInvoice}${btnChange}${btnBags}${btnSeats}${btnCancel}
         </div>
       </div>
     </div>`;
