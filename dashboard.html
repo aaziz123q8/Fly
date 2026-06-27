@@ -798,24 +798,26 @@
       if (hasRefund && expiresAt) {
         const alreadyExpired = expiresAt <= new Date();
         if (alreadyExpired) {
-          // Quote expired — auto-refresh from backend
-          body.innerHTML = '<div style="text-align:center;padding:24px">⏳ جارٍ تجديد اقتباس الإلغاء…</div>';
-          await initiateCancel(bookingId);
-          return;
+          const cdEl = document.getElementById('cancelExpiryCountdown');
+          if (cdEl) cdEl.textContent = 'انتهت الصلاحية';
+          document.getElementById('confirmCancelBtn').disabled = true;
+          document.getElementById('confirmCancelBtn').style.opacity = '0.4';
+        } else {
+          clearInterval(_cancelExpiryTimer);
+          _cancelExpiryTimer = setInterval(() => {
+            const rem = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+            const el = document.getElementById('cancelExpiryCountdown');
+            if (!el) { clearInterval(_cancelExpiryTimer); return; }
+            if (rem === 0) {
+              clearInterval(_cancelExpiryTimer);
+              el.textContent = 'انتهت الصلاحية';
+              const btn = document.getElementById('confirmCancelBtn');
+              if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
+            } else {
+              el.textContent = `${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')} دقيقة`;
+            }
+          }, 1000);
         }
-        clearInterval(_cancelExpiryTimer);
-        _cancelExpiryTimer = setInterval(() => {
-          const rem = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-          const el = document.getElementById('cancelExpiryCountdown');
-          if (!el) { clearInterval(_cancelExpiryTimer); return; }
-          if (rem === 0) {
-            clearInterval(_cancelExpiryTimer);
-            el.textContent = 'انتهت الصلاحية — سيتم تجديد الاقتباس…';
-            setTimeout(() => initiateCancel(bookingId), 1500);
-          } else {
-            el.textContent = `${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')} دقيقة`;
-          }
-        }, 1000);
       }
     } catch (err) {
       body.innerHTML = `<div style="color:#dc2626;padding:8px">${err.message || 'تعذر تحميل بيانات الإلغاء'}</div>`;
