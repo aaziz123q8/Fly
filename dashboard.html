@@ -732,23 +732,39 @@
       ]);
       const d = res.data || res;
       modal.dataset.cancellationId = d.cancellation_id || '';
-      const refundAmt = parseFloat(d.refund_amount || 0);
-      const refund   = refundAmt > 0 ? `${refundAmt.toFixed(2)} ${d.refund_currency || ''}` : 'لا يوجد استرداد';
-      const hasRefund = refundAmt > 0;
+      const refundAmt   = parseFloat(d.refund_amount   || 0);
+      const penaltyAmt  = d.penalty_amount !== null && d.penalty_amount !== undefined ? parseFloat(d.penalty_amount) : null;
+      const totalPaid   = d.total_paid     !== null && d.total_paid     !== undefined ? parseFloat(d.total_paid)     : null;
+      const cur         = (d.refund_currency || 'GBP').toUpperCase();
+      const penCur      = (d.penalty_currency || cur).toUpperCase();
+      const paidCur     = (d.total_paid_currency || cur).toUpperCase();
+      const hasRefund   = refundAmt > 0;
+      const hasPenalty  = penaltyAmt !== null && penaltyAmt > 0;
       const noRefundWarning = d.no_refund_warning || refundAmt === 0;
-      const walletBal = walletRes.balance ? `${parseFloat(walletRes.balance).toFixed(2)} ${walletRes.currency||'GBP'}` : '0.00';
-      const expiresAt = d.expires_at ? new Date(d.expires_at) : null;
-      const expiryStr = expiresAt ? expiresAt.toLocaleString('ar-SA') : '—';
+      const walletBal   = walletRes.balance ? `${parseFloat(walletRes.balance).toFixed(2)} ${walletRes.currency||'GBP'}` : '0.00';
+      const expiresAt   = d.expires_at ? new Date(d.expires_at) : null;
+      const expiryStr   = expiresAt ? expiresAt.toLocaleString('ar-SA') : '—';
 
       body.innerHTML = `
-        <p style="color:#555;margin-bottom:12px">هل تريد إلغاء هذا الحجز؟ يرجى مراجعة تفاصيل الاسترداد أدناه.</p>
-        <div style="background:${hasRefund ? '#fff8e1' : '#fff1f2'};border-radius:8px;padding:12px 16px;margin-bottom:14px">
-          <div style="display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:${hasRefund ? '6' : '0'}px">
-            <span style="color:${hasRefund ? '#92400e' : '#b91c1c'};font-weight:600">مبلغ الاسترداد:</span>
-            <strong style="color:${hasRefund ? '#16a34a' : '#b91c1c'}">${refund}</strong>
+        <p style="color:#555;margin-bottom:12px">يرجى مراجعة تفاصيل الاسترداد قبل المتابعة.</p>
+
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:14px;font-size:.88rem">
+          ${totalPaid !== null ? `
+          <div style="display:flex;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #e2e8f0;margin-bottom:8px">
+            <span style="color:#64748b">المبلغ المدفوع للحجز</span>
+            <span style="font-weight:700;color:#1e293b">${totalPaid.toFixed(2)} ${paidCur}</span>
+          </div>` : ''}
+          ${hasPenalty ? `
+          <div style="display:flex;justify-content:space-between;padding-bottom:8px;border-bottom:1px solid #e2e8f0;margin-bottom:8px">
+            <span style="color:#b45309">⚠️ غرامة الإلغاء (حسب شروط الناقل)</span>
+            <span style="font-weight:700;color:#b91c1c">− ${penaltyAmt.toFixed(2)} ${penCur}</span>
+          </div>` : ''}
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:${hasRefund ? '#15803d' : '#b91c1c'};font-weight:700">صافي الاسترداد</span>
+            <strong style="color:${hasRefund ? '#15803d' : '#b91c1c'};font-size:1rem">${hasRefund ? `${refundAmt.toFixed(2)} ${cur}` : 'لا يوجد استرداد'}</strong>
           </div>
-          ${hasRefund && expiresAt ? `<div style="font-size:.82rem;color:#b45309">
-            ⏰ ينتهي العرض: <span id="cancelExpiryCountdown" style="font-weight:700">${expiryStr}</span>
+          ${hasRefund && expiresAt ? `<div style="font-size:.78rem;color:#b45309;margin-top:8px">
+            ⏰ صالح حتى: <span id="cancelExpiryCountdown" style="font-weight:700">${expiryStr}</span>
           </div>` : ''}
         </div>
 

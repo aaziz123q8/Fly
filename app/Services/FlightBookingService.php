@@ -1577,14 +1577,22 @@ class FlightBookingService
         if (!empty($booking['pending_cancellation_id']) && !empty($booking['cancellation_expires_at'])) {
             if (new \DateTime($booking['cancellation_expires_at']) > new \DateTime()) {
                 // Return the existing pending cancellation rather than creating a new one
+                $rc = $booking['refund_conditions'] ?? null;
+                if (is_string($rc)) { $rc = json_decode($rc, true); }
+                $pen    = (is_array($rc) && isset($rc['penalty_amount']))   ? $rc['penalty_amount']   : null;
+                $penCur = (is_array($rc) && isset($rc['penalty_currency'])) ? strtoupper($rc['penalty_currency']) : strtoupper($booking['cancellation_refund_currency'] ?? ($booking['currency'] ?? 'GBP'));
                 return [
                     'cancellation_id'    => $booking['pending_cancellation_id'],
                     'refund_amount'      => $booking['cancellation_refund_amount']   ?? '0.00',
-                    'refund_currency'    => $booking['cancellation_refund_currency']  ?? ($booking['currency'] ?? 'GBP'),
+                    'refund_currency'    => strtoupper($booking['cancellation_refund_currency']  ?? ($booking['currency'] ?? 'GBP')),
                     'refund_to'          => $booking['cancellation_refund_to']        ?? 'original_payment_method',
                     'expires_at'         => $booking['cancellation_expires_at'],
                     'void_window_active' => false,
                     'no_refund_warning'  => $this->isNoRefundTicket($booking),
+                    'total_paid'         => $booking['total_amount'] ?? null,
+                    'total_paid_currency' => strtoupper($booking['currency'] ?? 'GBP'),
+                    'penalty_amount'     => $pen,
+                    'penalty_currency'   => $penCur,
                 ];
             }
         }
@@ -1602,6 +1610,12 @@ class FlightBookingService
             ? date('Y-m-d H:i:s', strtotime($cancellation['expires_at'])) : null;
 
         $refundAmount = $cancellation['refund_amount'] ?? '0.00';
+
+        // Extract penalty from stored refund_conditions (Duffel order data)
+        $refCond = $booking['refund_conditions'] ?? null;
+        if (is_string($refCond)) { $refCond = json_decode($refCond, true); }
+        $penaltyAmount   = (is_array($refCond) && isset($refCond['penalty_amount']))   ? $refCond['penalty_amount']   : null;
+        $penaltyCurrency = (is_array($refCond) && isset($refCond['penalty_currency'])) ? strtoupper($refCond['penalty_currency']) : strtoupper($cancellation['refund_currency'] ?? ($booking['currency'] ?? 'GBP'));
 
         $this->db->prepare(
             'UPDATE flight_bookings
@@ -1624,11 +1638,15 @@ class FlightBookingService
         return [
             'cancellation_id'   => $cancellation['id']    ?? null,
             'refund_amount'     => $refundAmount,
-            'refund_currency'   => $cancellation['refund_currency'] ?? ($booking['currency'] ?? 'GBP'),
+            'refund_currency'   => strtoupper($cancellation['refund_currency'] ?? ($booking['currency'] ?? 'GBP')),
             'refund_to'         => $cancellation['refund_to'] ?? 'original_payment_method',
             'expires_at'        => $cancellation['expires_at'] ?? null,
             'void_window_active' => $voidWindowActive,
             'no_refund_warning' => $this->isNoRefundTicket($booking),
+            'total_paid'        => $booking['total_amount'] ?? null,
+            'total_paid_currency' => strtoupper($booking['currency'] ?? 'GBP'),
+            'penalty_amount'    => $penaltyAmount,
+            'penalty_currency'  => $penaltyCurrency,
         ];
     }
 
