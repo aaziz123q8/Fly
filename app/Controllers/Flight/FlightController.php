@@ -228,14 +228,37 @@ class FlightController
         $user = AuthMiddleware::currentUser();
         if ($user === null) Response::unauthorized();
         try {
+            $walletAmount = (float) ($request->input('wallet_amount') ?? 0);
             $result = $this->bookingService->createPaymentIntent(
                 (string) $request->input('session_key'),
                 (int)    $user['id'],
-                $request->input('coupon_code') ? (string) $request->input('coupon_code') : null
+                $request->input('coupon_code') ? (string) $request->input('coupon_code') : null,
+                $walletAmount
             );
             Response::json($result);
         } catch (\RuntimeException $e) {
             Response::error($e->getMessage(), $e->getCode() ?: 400);
+        }
+    }
+
+    public function walletConfirm(Request $request): void
+    {
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) Response::unauthorized();
+
+        $sessionKey = (string) ($request->input('session_key') ?? '');
+        if (empty($sessionKey)) Response::error('session_key مطلوب.', 400);
+
+        try {
+            $result = $this->bookingService->walletCheckout(
+                $sessionKey,
+                (int) $user['id'],
+                $request->input('coupon_code') ? (string) $request->input('coupon_code') : null
+            );
+            Response::json(array_merge($result, ['status' => 'confirmed']));
+        } catch (\Throwable $e) {
+            $code = $e->getCode();
+            Response::error($e->getMessage(), ($code >= 400 && $code < 600) ? $code : 500);
         }
     }
 

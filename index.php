@@ -263,6 +263,11 @@ $router->group('api/flights', function (Router $r): void {
         (new FlightController())->confirmCheckout($req);
     }, [AuthMiddleware::handle()]);
 
+    // Checkout: full wallet payment — no Stripe (auth required).
+    $r->post('/checkout/wallet-confirm', function (Request $req): void {
+        (new FlightController())->walletConfirm($req);
+    }, [AuthMiddleware::handle()]);
+
     // Checkout: Duffel card payment — Step 1 tokenise card + create 3DS session (auth required).
     $r->post('/checkout/card/init', function (Request $req): void {
         (new FlightController())->initCardPayment($req);

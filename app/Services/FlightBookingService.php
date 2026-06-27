@@ -294,7 +294,8 @@ class FlightBookingService
     public function createPaymentIntent(
         string  $sessionKey,
         int     $userId,
-        ?string $couponCode = null
+        ?string $couponCode   = null,
+        float   $walletAmount = 0.0
     ): array {
         $session = $this->requireSession($sessionKey, $userId);
 
@@ -345,8 +346,25 @@ class FlightBookingService
             }
         }
 
+        // Mixed payment: validate wallet portion and reduce Stripe charge.
+        $walletAmount = max(0.0, min($walletAmount, $totalAmount));
+        if ($walletAmount > 0) {
+            $walletService = new WalletService($this->db);
+            $wallet = $walletService->getWallet($userId);
+            if ((float) $wallet['balance'] < $walletAmount) {
+                throw new RuntimeException('رصيد المحفظة غير كافٍ للمبلغ المطلوب.', 422);
+            }
+        }
+        $stripeAmount = round($totalAmount - $walletAmount, 2);
+        if ($stripeAmount < 0.5) {
+            throw new RuntimeException('المبلغ المتبقي للبطاقة أقل من الحد الأدنى. استخدم الدفع بالمحفظة بالكامل.', 422);
+        }
+        if ($walletAmount > 0) {
+            $pricingSnapshot['wallet_amount'] = $walletAmount;
+        }
+
         // Amount in pence (minor units).
-        $amountInPence = (int) round($totalAmount * 100);
+        $amountInPence = (int) round($stripeAmount * 100);
 
         $idempotencyKey = bin2hex(random_bytes(32));
 
@@ -362,9 +380,9 @@ class FlightBookingService
         $payStmt->execute([
             ':booking_type' => 'flight',
             ':user_id'      => $userId,
-            ':method'       => 'stripe',
+            ':method'       => $walletAmount > 0 ? 'mixed' : 'stripe',
             ':idem_key'     => $idempotencyKey,
-            ':amount'       => number_format($totalAmount, 2, '.', ''),
+            ':amount'       => number_format($stripeAmount, 2, '.', ''),
             ':currency'     => strtoupper($currency),
             ':status'       => 'pending',
         ]);
@@ -1359,11 +1377,31 @@ class FlightBookingService
             return ['status' => 'pending', 'message' => 'جارٍ معالجة الدفع…'];
         }
 
+        // Mixed payment: debit wallet for wallet portion before completing booking
+        $pricingSnap   = is_string($session['pricing_snapshot'] ?? null)
+            ? json_decode($session['pricing_snapshot'], true)
+            : ($session['pricing_snapshot'] ?? []);
+        $walletPortion = (float) ($pricingSnap['wallet_amount'] ?? 0);
+        $walletDebited = false;
+        $wCurrency     = strtoupper($pricingSnap['currency'] ?? 'GBP');
+        $walletService = null;
+        if ($walletPortion > 0.009) {
+            $walletService = new WalletService($this->db);
+            $walletService->debit($userId, $walletPortion, $wCurrency, 'دفع مختلط — حجز رحلة', $sessionKey);
+            $walletDebited = true;
+        }
+
         // Payment confirmed — complete booking synchronously
         try {
             $this->completeBooking($sessionKey, $paymentIntentId);
             return $this->fetchCompletedBookingResult($userId, $paymentIntentId);
         } catch (\Throwable $e) {
+            // Re-credit wallet portion if booking failed
+            if ($walletDebited && $walletService !== null) {
+                try {
+                    $walletService->credit($userId, $walletPortion, $wCurrency, 'استرداد دفع مختلط فاشل', $sessionKey);
+                } catch (\Throwable) {}
+            }
             $ctx = [
                 'session_key' => $sessionKey,
                 'pi'          => $paymentIntentId,
@@ -1420,6 +1458,100 @@ class FlightBookingService
             'booking_id'               => $row['id']               ?? null,
             'duffel_booking_reference' => null,
         ];
+    }
+
+    // =========================================================================
+    // walletCheckout — full wallet payment (no Stripe involved)
+    // =========================================================================
+
+    public function walletCheckout(string $sessionKey, int $userId, ?string $couponCode = null): array
+    {
+        $session = $this->requireSession($sessionKey, $userId);
+
+        if (!in_array($session['current_step'], ['payment', 'services', 'review'], true)) {
+            throw new RuntimeException('الجلسة ليست في خطوة الدفع.', 422);
+        }
+
+        $this->enforcePaymentDeadlines($session);
+
+        $pricingSnapshot = is_string($session['pricing_snapshot'])
+            ? json_decode($session['pricing_snapshot'], true)
+            : ($session['pricing_snapshot'] ?? null);
+
+        if (empty($pricingSnapshot)) {
+            $offerId = $session['provider_offer_id'] ?? '';
+            $offer   = $this->fetchOffer($offerId);
+            if ($offer === null) throw new RuntimeException('Offer expired or not found', 410);
+            $pricingSnapshot = $this->calculatePricing((float) $offer['total_amount'], strtoupper($offer['currency'] ?? 'GBP'));
+        }
+
+        $totalAmount = (float) ($pricingSnapshot['total'] ?? 0);
+        $currency    = strtoupper($pricingSnapshot['currency'] ?? 'GBP');
+
+        // Apply coupon if provided
+        $discountAmount = 0.0;
+        if ($couponCode !== null && $couponCode !== '') {
+            $coupon = $this->findActiveCoupon($couponCode);
+            if ($coupon) {
+                if ($coupon['discount_type'] === 'percentage') {
+                    $discountAmount = round($totalAmount * ((float) $coupon['discount_value'] / 100), 2);
+                } else {
+                    $discountAmount = min($totalAmount, (float) $coupon['discount_value']);
+                }
+                $totalAmount -= $discountAmount;
+                $totalAmount  = max(0, $totalAmount);
+                $pricingSnapshot['coupon_code']     = $couponCode;
+                $pricingSnapshot['discount_amount'] = $discountAmount;
+                $pricingSnapshot['total']           = $totalAmount;
+            }
+        }
+
+        // Debit wallet (throws if insufficient balance)
+        $walletService = new WalletService($this->db);
+        $walletService->debit($userId, $totalAmount, $currency, 'دفع حجز رحلة', $sessionKey);
+
+        // Insert payment record for audit trail
+        $this->db->prepare(
+            'INSERT INTO payments
+               (booking_type, booking_id, user_id, payment_method,
+                idempotency_key, amount, currency, status)
+             VALUES
+               (:booking_type, 0, :user_id, :method,
+                :idem_key, :amount, :currency, :status)'
+        )->execute([
+            ':booking_type' => 'flight',
+            ':user_id'      => $userId,
+            ':method'       => 'wallet',
+            ':idem_key'     => bin2hex(random_bytes(16)),
+            ':amount'       => number_format($totalAmount, 2, '.', ''),
+            ':currency'     => $currency,
+            ':status'       => 'succeeded',
+        ]);
+        $paymentId = (int) $this->db->lastInsertId();
+
+        // Mark session as payment step
+        $this->sessionService->update($sessionKey, [
+            'pricing_snapshot' => $pricingSnapshot,
+            'current_step'     => 'payment',
+        ]);
+
+        try {
+            $result = $this->completeBooking($sessionKey, '');
+        } catch (\Throwable $e) {
+            // Booking failed — re-credit wallet
+            try {
+                $walletService->credit($userId, $totalAmount, $currency, 'استرداد حجز فاشل', $sessionKey);
+            } catch (\Throwable) {}
+            throw $e;
+        }
+
+        // Link payment record to booking
+        if (!empty($result['booking_id'])) {
+            $this->db->prepare('UPDATE payments SET booking_id = :bid WHERE id = :id')
+                ->execute([':bid' => $result['booking_id'], ':id' => $paymentId]);
+        }
+
+        return $result;
     }
 
     // =========================================================================

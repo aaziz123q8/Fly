@@ -213,6 +213,42 @@
       0%,100% { opacity: .7; } 50% { opacity: .3; }
     }
 
+    /* ── Payment method tabs ─────────────────────────────── */
+    .pay-method-tabs {
+      display: flex; gap: 0; margin-bottom: 18px;
+      border: 1.5px solid var(--pay-border); border-radius: 12px; overflow: hidden;
+    }
+    .pay-method-tab {
+      flex: 1; padding: 11px 8px; font-family: inherit; font-size: 0.82rem; font-weight: 700;
+      border: none; background: #f8fafc; color: var(--pay-muted); cursor: pointer;
+      transition: background .15s, color .15s; text-align: center; line-height: 1.3;
+      border-left: 1px solid var(--pay-border);
+    }
+    .pay-method-tab:first-child { border-left: none; }
+    .pay-method-tab.active {
+      background: var(--pay-primary); color: #fff;
+    }
+    .pay-method-tab:disabled { opacity: .5; cursor: not-allowed; }
+    .wallet-info-box {
+      background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px;
+      padding: 12px 14px; margin-bottom: 14px; font-size: 0.85rem;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .wallet-info-box .w-lbl { color: #15803d; font-weight: 700; }
+    .wallet-info-box .w-bal { font-size: 1.05rem; font-weight: 900; color: #16a34a; }
+    .wallet-info-box.insufficient { background: #fef2f2; border-color: #fca5a5; }
+    .wallet-info-box.insufficient .w-lbl { color: #991b1b; }
+    .wallet-info-box.insufficient .w-bal { color: #dc2626; }
+    .mixed-slider-wrap { margin-bottom: 14px; }
+    .mixed-slider-wrap label { font-size: 0.8rem; font-weight: 600; color: #374151; display: block; margin-bottom: 6px; }
+    .mixed-slider { width: 100%; accent-color: var(--pay-primary); }
+    .mixed-split-row {
+      display: flex; justify-content: space-between; font-size: 0.8rem;
+      margin-top: 6px;
+    }
+    .mixed-split-wallet { color: #16a34a; font-weight: 700; }
+    .mixed-split-card   { color: #1a3c5e; font-weight: 700; }
+
     /* ── Card payment section ────────────────────────────── */
     .card-logos {
       display: flex; gap: 8px; margin-bottom: 16px;
@@ -460,57 +496,85 @@
       </div>
     </div>
 
-    <!-- Card payment -->
+    <!-- Payment method selector -->
     <div class="pcard">
       <div class="pcard-title">
-        <div class="pcard-title-icon">💳</div>
-        بيانات البطاقة
+        <div class="pcard-title-icon">💰</div>
+        طريقة الدفع
       </div>
 
-      <!-- Card type logos -->
-      <div class="card-logos">
-        <span class="card-logo-text card-logo-visa">VISA</span>
-        <span class="card-logo-text card-logo-mc">MC</span>
-        <span class="card-logo-text card-logo-amex">AMEX</span>
+      <!-- Payment method tabs -->
+      <div class="pay-method-tabs">
+        <button class="pay-method-tab active" id="tabCard"   onclick="setPayMethod('card')">💳<br>بطاقة</button>
+        <button class="pay-method-tab"         id="tabWallet" onclick="setPayMethod('wallet')">👛<br>محفظة</button>
+        <button class="pay-method-tab"         id="tabMixed"  onclick="setPayMethod('mixed')">💳+👛<br>مختلط</button>
       </div>
 
-      <!-- Test-mode card hint (hidden in live mode) -->
-      <div id="testCardBanner" style="display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.6;">
-        <div style="font-weight:600;color:#92400e;margin-bottom:6px;">🧪 وضع الاختبار — بيانات البطاقة التجريبية</div>
-        <table style="width:100%;border-collapse:collapse;font-family:monospace;font-size:12px;">
-          <tr style="color:#78350f;">
-            <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4000 0082 6000 0000')" title="انقر للملء التلقائي">4000 0082 6000 0000</td>
-            <td style="padding:2px 4px;color:#92400e;">🇬🇧 بريطانيا — ينجح</td>
-          </tr>
-          <tr style="color:#78350f;">
-            <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4000 0000 0000 3220')" title="انقر للملء التلقائي">4000 0000 0000 3220</td>
-            <td style="padding:2px 4px;color:#92400e;">🇺🇸 يُطلب 3D Secure — ينجح</td>
-          </tr>
-          <tr style="color:#78350f;">
-            <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4000 0000 0000 9995')" title="انقر للملء التلقائي">4000 0000 0000 9995</td>
-            <td style="padding:2px 4px;color:#92400e;">🇺🇸 يفشل — رصيد غير كافٍ</td>
-          </tr>
-          <tr style="color:#78350f;">
-            <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4242 4242 4242 4242')" title="انقر للملء التلقائي">4242 4242 4242 4242</td>
-            <td style="padding:2px 4px;color:#92400e;">🇺🇸 ينجح</td>
-          </tr>
-        </table>
-        <div style="color:#92400e;margin-top:6px;font-size:11px;font-family:sans-serif;">CVC: أي 3 أرقام &nbsp;·&nbsp; تاريخ الانتهاء: أي تاريخ مستقبلي &nbsp;·&nbsp; انقر على الرقم للملء التلقائي</div>
+      <!-- Wallet balance info box -->
+      <div class="wallet-info-box" id="walletInfoBox" style="display:none">
+        <span class="w-lbl">💰 رصيد محفظتك</span>
+        <span class="w-bal" id="walletBalanceDisplay">—</span>
       </div>
 
-      <!-- Cardholder name -->
-      <div class="form-group">
-        <label class="form-lbl" for="cardName">اسم حامل البطاقة</label>
-        <input type="text" class="form-inp" id="cardName"
-          placeholder="الاسم كما هو مكتوب على البطاقة"
-          autocomplete="cc-name" dir="ltr">
+      <!-- Mixed payment slider -->
+      <div class="mixed-slider-wrap" id="mixedSliderWrap" style="display:none">
+        <label>💡 حدد المبلغ من المحفظة</label>
+        <input type="range" class="mixed-slider" id="mixedSlider"
+          min="0" max="100" step="1" value="50"
+          oninput="onMixedSlider()">
+        <div class="mixed-split-row">
+          <span class="mixed-split-wallet">👛 من المحفظة: <span id="mixedWalletAmt">—</span></span>
+          <span class="mixed-split-card">💳 من البطاقة: <span id="mixedCardAmt">—</span></span>
+        </div>
       </div>
 
-      <!-- Stripe Elements card field -->
-      <div class="form-group">
-        <label class="form-lbl">بيانات البطاقة</label>
-        <div id="stripeCardElement" style="padding:12px 14px;border:1px solid #d1d5db;border-radius:10px;background:#fff;min-height:44px;direction:ltr"></div>
-        <div id="stripeCardError" style="color:#dc2626;font-size:0.8rem;margin-top:6px;display:none"></div>
+      <!-- Card section (shown for card + mixed) -->
+      <div id="cardSection">
+        <!-- Card type logos -->
+        <div class="card-logos">
+          <span class="card-logo-text card-logo-visa">VISA</span>
+          <span class="card-logo-text card-logo-mc">MC</span>
+          <span class="card-logo-text card-logo-amex">AMEX</span>
+        </div>
+
+        <!-- Test-mode card hint (hidden in live mode) -->
+        <div id="testCardBanner" style="display:none;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px;padding:12px 14px;margin-bottom:16px;font-size:13px;line-height:1.6;">
+          <div style="font-weight:600;color:#92400e;margin-bottom:6px;">🧪 وضع الاختبار — بيانات البطاقة التجريبية</div>
+          <table style="width:100%;border-collapse:collapse;font-family:monospace;font-size:12px;">
+            <tr style="color:#78350f;">
+              <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4000 0082 6000 0000')" title="انقر للملء التلقائي">4000 0082 6000 0000</td>
+              <td style="padding:2px 4px;color:#92400e;">🇬🇧 بريطانيا — ينجح</td>
+            </tr>
+            <tr style="color:#78350f;">
+              <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4000 0000 0000 3220')" title="انقر للملء التلقائي">4000 0000 0000 3220</td>
+              <td style="padding:2px 4px;color:#92400e;">🇺🇸 يُطلب 3D Secure — ينجح</td>
+            </tr>
+            <tr style="color:#78350f;">
+              <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4000 0000 0000 9995')" title="انقر للملء التلقائي">4000 0000 0000 9995</td>
+              <td style="padding:2px 4px;color:#92400e;">🇺🇸 يفشل — رصيد غير كافٍ</td>
+            </tr>
+            <tr style="color:#78350f;">
+              <td style="padding:2px 8px 2px 0;white-space:nowrap;cursor:pointer;" onclick="fillTestCard('4242 4242 4242 4242')" title="انقر للملء التلقائي">4242 4242 4242 4242</td>
+              <td style="padding:2px 4px;color:#92400e;">🇺🇸 ينجح</td>
+            </tr>
+          </table>
+          <div style="color:#92400e;margin-top:6px;font-size:11px;font-family:sans-serif;">CVC: أي 3 أرقام &nbsp;·&nbsp; تاريخ الانتهاء: أي تاريخ مستقبلي &nbsp;·&nbsp; انقر على الرقم للملء التلقائي</div>
+        </div>
+
+        <!-- Cardholder name -->
+        <div class="form-group">
+          <label class="form-lbl" for="cardName">اسم حامل البطاقة</label>
+          <input type="text" class="form-inp" id="cardName"
+            placeholder="الاسم كما هو مكتوب على البطاقة"
+            autocomplete="cc-name" dir="ltr">
+        </div>
+
+        <!-- Stripe Elements card field -->
+        <div class="form-group">
+          <label class="form-lbl">بيانات البطاقة</label>
+          <div id="stripeCardElement" style="padding:12px 14px;border:1px solid #d1d5db;border-radius:10px;background:#fff;min-height:44px;direction:ltr"></div>
+          <div id="stripeCardError" style="color:#dc2626;font-size:0.8rem;margin-top:6px;display:none"></div>
+        </div>
       </div>
 
       <!-- Error display -->
@@ -608,6 +672,105 @@ let discountGBP   = parseFloat(params.get('discount') || '0');
 let extraSvcGBP   = 0;
 
 function round2(n) { return Math.round(n * 100) / 100; }
+
+// ── Wallet state ───────────────────────────────────────────
+let walletBalance   = 0;
+let payMethod       = 'card'; // 'card' | 'wallet' | 'mixed'
+let mixedWalletAmt  = 0;      // actual GBP from wallet in mixed mode
+
+// ── Load wallet balance ────────────────────────────────────
+async function loadWalletBalance() {
+  try {
+    const data = await Api.get('/api/wallet/balance', true);
+    walletBalance = parseFloat(data.balance || 0);
+    updateWalletUI();
+  } catch(e) {
+    walletBalance = 0;
+  }
+}
+
+function getNetTotal() {
+  return Math.max(0, round2(amountGBP + extraSvcGBP - discountGBP));
+}
+
+function updateWalletUI() {
+  const net = getNetTotal();
+  const walletBox    = document.getElementById('walletInfoBox');
+  const balDisplay   = document.getElementById('walletBalanceDisplay');
+  const tabWallet    = document.getElementById('tabWallet');
+  const tabMixed     = document.getElementById('tabMixed');
+
+  if (walletBalance > 0) {
+    walletBox.style.display = 'flex';
+    balDisplay.textContent  = fmt(walletBalance);
+    const sufficient = walletBalance >= net;
+    walletBox.classList.toggle('insufficient', !sufficient);
+    walletBox.querySelector('.w-lbl').textContent = sufficient ? '💰 رصيد محفظتك' : '⚠️ رصيد محفظتك (غير كافٍ للكامل)';
+    tabWallet.disabled = !sufficient;
+  } else {
+    walletBox.style.display = 'none';
+    tabWallet.disabled = true;
+    tabMixed.disabled  = walletBalance <= 0;
+  }
+  updateMixedSlider();
+  updatePayBtn();
+}
+
+function setPayMethod(method) {
+  const net = getNetTotal();
+  if (method === 'wallet' && walletBalance < net) return;
+  if (method === 'mixed' && walletBalance <= 0)   return;
+  payMethod = method;
+
+  ['card','wallet','mixed'].forEach(m => {
+    document.getElementById('tab' + m.charAt(0).toUpperCase() + m.slice(1))
+      .classList.toggle('active', m === method);
+  });
+
+  const cardSec = document.getElementById('cardSection');
+  const mixWrap = document.getElementById('mixedSliderWrap');
+  const walBox  = document.getElementById('walletInfoBox');
+
+  cardSec.style.display  = (method === 'wallet') ? 'none' : 'block';
+  mixWrap.style.display  = (method === 'mixed')  ? 'block' : 'none';
+  walBox.style.display   = (walletBalance > 0)   ? 'flex'  : 'none';
+
+  if (method === 'mixed') updateMixedSlider();
+  updatePayBtn();
+}
+
+function updateMixedSlider() {
+  const net    = getNetTotal();
+  const slider = document.getElementById('mixedSlider');
+  const maxWallet = Math.min(walletBalance, net - 0.5);
+  if (maxWallet <= 0) { mixedWalletAmt = 0; return; }
+
+  slider.max = 100;
+  const pct = parseInt(slider.value);
+  mixedWalletAmt = round2(maxWallet * pct / 100);
+  const cardAmt  = round2(net - mixedWalletAmt);
+
+  document.getElementById('mixedWalletAmt').textContent = fmt(mixedWalletAmt);
+  document.getElementById('mixedCardAmt').textContent   = fmt(cardAmt);
+}
+
+function onMixedSlider() {
+  updateMixedSlider();
+}
+
+function updatePayBtn() {
+  const net = getNetTotal();
+  const labels = {
+    card:   '🔒 ادفع ' + fmt(net) + ' ببطاقتك',
+    wallet: '👛 ادفع ' + fmt(net) + ' من المحفظة',
+    mixed:  '💳+👛 ادفع الآن',
+  };
+  const lbl = labels[payMethod] || '🔒 ادفع الآن';
+  const btnTxt = document.getElementById('payBtnTxt');
+  const dTxt   = document.getElementById('desktopPayTxt');
+  if (btnTxt) btnTxt.textContent = lbl;
+  if (dTxt)   dTxt.textContent   = lbl;
+}
 
 // ── Stripe setup ────────────────────────────────────────────
 let stripe      = null;
@@ -832,6 +995,22 @@ function renderPriceRows() {
     </div>
   </div>`;
 
+  // Show wallet split if mixed mode
+  if (payMethod === 'mixed' && mixedWalletAmt > 0) {
+    html += `<div style="margin-top:10px;padding:10px 12px;background:#f0fdf4;border-radius:8px;font-size:.8rem">
+      <div style="display:flex;justify-content:space-between;color:#16a34a;font-weight:700">
+        <span>👛 من المحفظة</span><span>${fmt(mixedWalletAmt)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;color:#1a3c5e;font-weight:700;margin-top:4px">
+        <span>💳 من البطاقة</span><span>${fmt(round2(net - mixedWalletAmt))}</span>
+      </div>
+    </div>`;
+  } else if (payMethod === 'wallet') {
+    html += `<div style="margin-top:10px;padding:8px 12px;background:#f0fdf4;border-radius:8px;font-size:.8rem;color:#16a34a;font-weight:700;text-align:center">
+      👛 سيتم الخصم كاملاً من رصيد المحفظة
+    </div>`;
+  }
+
   document.getElementById('priceRows').innerHTML = html;
   document.getElementById('footerAmount').textContent = fmt(net);
 
@@ -844,6 +1023,8 @@ function renderPriceRows() {
     note.textContent  = '💳 سيتم تحصيل £' + net.toFixed(2) + ' (GBP) من بطاقتك. المبالغ بـ ' + cur + ' للعرض فقط.';
     note.style.display = 'block';
   }
+  updateWalletUI();
+  updatePayBtn();
 }
 
 async function loadPriceRows() {
@@ -863,6 +1044,7 @@ async function loadPriceRows() {
     const cost = parseFloat(res.services_cost_gbp ?? 0);
     if (cost > 0) extraSvcGBP = cost;
     renderPriceRows();
+    updateWalletUI();
   } catch(e) { /* non-fatal */ }
 }
 
@@ -880,6 +1062,7 @@ async function applyCoupon() {
       res.textContent = '✅ تم تطبيق الخصم: ' + fmt(discountGBP);
       res.className   = 'coupon-result coupon-ok';
       renderPriceRows();
+      updateWalletUI();
     } else {
       res.textContent = '❌ ' + (data.message || 'كود الخصم غير صالح');
       res.className   = 'coupon-result coupon-err';
@@ -919,31 +1102,57 @@ async function submitPayment() {
     showError('⚠️ انتهت صلاحية الجلسة. يرجى العودة وإعادة الاختيار.');
     return;
   }
-  if (!stripe || !stripeCard) {
-    showError('⚠️ لم يتم تحميل نظام الدفع. يرجى إعادة تحميل الصفحة.');
-    return;
-  }
 
-  const cardName   = document.getElementById('cardName').value.trim();
   const couponCode = document.getElementById('couponInput')?.value.trim() || '';
-
-  if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة.'); return; }
+  const dt         = document.getElementById('desktopPayTxt');
 
   setPayLoading(true);
   hideError();
 
-  const dt = document.getElementById('desktopPayTxt');
+  // ── Wallet-only payment ────────────────────────────────
+  if (payMethod === 'wallet') {
+    document.getElementById('payBtnTxt').textContent = '👛 جاري الدفع من المحفظة…';
+    if (dt) { dt.textContent = '👛 جاري الدفع من المحفظة…'; dt.classList.remove('hidden'); }
+    try {
+      const cr = await Api.post('/api/flights/checkout/wallet-confirm', {
+        session_key: sessionKey,
+        coupon_code: couponCode || null,
+      }, true);
+      const bookingRef = cr.booking_reference || '';
+      window.location.href = 'confirmation.html'
+        + '?session='    + encodeURIComponent(sessionKey)
+        + '&confirmed=1'
+        + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '');
+    } catch(e) {
+      showError('⚠️ ' + (e.message || 'فشل الدفع من المحفظة.'));
+      setPayLoading(false);
+    }
+    return;
+  }
+
+  // ── Card or Mixed payment — needs Stripe ───────────────
+  if (!stripe || !stripeCard) {
+    showError('⚠️ لم يتم تحميل نظام الدفع. يرجى إعادة تحميل الصفحة.');
+    setPayLoading(false);
+    return;
+  }
+
+  const cardName = document.getElementById('cardName').value.trim();
+  if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة.'); setPayLoading(false); return; }
 
   try {
     // Step 1: create Stripe PaymentIntent on the server.
     document.getElementById('payBtnTxt').textContent = '⏳ جاري إعداد الدفع…';
     if (dt) { dt.textContent = '⏳ جاري إعداد الدفع…'; dt.classList.remove('hidden'); }
 
+    const walletForServer = (payMethod === 'mixed') ? mixedWalletAmt : 0;
+
     let piRes;
     try {
       piRes = await Api.post('/api/flights/checkout/payment-intent', {
-        session_key:  sessionKey,
-        coupon_code:  couponCode || null,
+        session_key:   sessionKey,
+        coupon_code:   couponCode || null,
+        wallet_amount: walletForServer > 0 ? walletForServer : undefined,
       }, true);
     } catch(e) {
       showError('⚠️ ' + (e.message || 'فشل إنشاء طلب الدفع. يرجى المحاولة مجدداً.'));
@@ -961,8 +1170,11 @@ async function submitPayment() {
     }
 
     // Step 2: confirm the card payment via Stripe (handles 3DS automatically).
-    document.getElementById('payBtnTxt').textContent = '🔐 جاري التحقق من البطاقة…';
-    if (dt) dt.textContent = '🔐 جاري التحقق من البطاقة…';
+    const cardMsg = payMethod === 'mixed'
+      ? '🔐 جاري التحقق من البطاقة (' + fmt(round2(getNetTotal() - mixedWalletAmt)) + ')…'
+      : '🔐 جاري التحقق من البطاقة…';
+    document.getElementById('payBtnTxt').textContent = cardMsg;
+    if (dt) dt.textContent = cardMsg;
 
     const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(clientSecret, {
       payment_method: {
@@ -993,7 +1205,6 @@ async function submitPayment() {
         session_key:        sessionKey,
         payment_intent_id:  paymentIntentId,
       }, true);
-
       bookingRef = cr.duffel_booking_reference || cr.booking_reference || '';
     } catch(e) {
       showError(
@@ -1078,6 +1289,7 @@ if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
 initCurrency();
 loadPriceRows();
 loadFlightSummary();
+loadWalletBalance();
 </script>
 </body>
 </html>
