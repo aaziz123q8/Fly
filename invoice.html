@@ -452,11 +452,9 @@ function render(b) {
     const condRow = (label, cond) => {
       if (!cond) return '';
       const ok = cond.allowed !== false;
-      const pen = (cond.penalty_amount && parseFloat(cond.penalty_amount)>0)
-        ? ` — غرامة: ${cond.penalty_currency||''} ${parseFloat(cond.penalty_amount).toFixed(2)}` : '';
       return `<div class="cond-row">
         <span class="cond-badge ${ok?'cond-allowed-badge':'cond-forbidden-badge'}">${ok?'مسموح':'ممنوع'}</span>
-        <span>${label}${pen}</span>
+        <span>${label}</span>
       </div>`;
     };
     document.getElementById('condRows').innerHTML =
