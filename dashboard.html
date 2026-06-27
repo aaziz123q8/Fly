@@ -723,6 +723,8 @@
     const modal = document.getElementById('cancelModal');
     const body  = document.getElementById('cancelModalBody');
     body.innerHTML = '<div style="text-align:center;padding:24px">جارٍ تحميل بيانات الإلغاء…</div>';
+    document.getElementById('confirmCancelBtn').disabled = true;
+    document.getElementById('confirmCancelBtn').style.opacity = '0.4';
     modal.style.display = 'flex';
     try {
       // Fetch cancellation quote + wallet balance in parallel
@@ -764,7 +766,7 @@
             <span style="color:${hasRefund ? '#15803d' : '#b91c1c'};font-weight:700">صافي الاسترداد</span>
             <strong style="color:${hasRefund ? '#15803d' : '#b91c1c'};font-size:1.05rem">${hasRefund ? `${netRefund.toFixed(2)} ${cur}` : 'لا يوجد استرداد'}</strong>
           </div>
-          ${expiresAt ? `<div style="font-size:.78rem;color:#b45309;margin-top:8px">
+          ${(expiresAt && expiresAt > new Date()) ? `<div style="font-size:.78rem;color:#b45309;margin-top:8px">
             ⏰ صالح حتى: <span id="cancelExpiryCountdown" style="font-weight:700">${expiryStr}</span>
           </div>` : ''}
         </div>
@@ -798,6 +800,10 @@
           ⚠️ هذا الإجراء لا يمكن التراجع عنه. سيتم إلغاء حجزك مع شركة الطيران فور التأكيد.
         </div>`;
 
+      // Re-enable confirm button now that data is loaded
+      const confirmBtn = document.getElementById('confirmCancelBtn');
+      if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.style.opacity = '1'; }
+
       // Highlight selected radio
       body.querySelectorAll('input[name="refundPref"]').forEach(inp => {
         inp.addEventListener('change', () => {
@@ -808,28 +814,22 @@
       const checked = body.querySelector('input[name="refundPref"]:checked');
       if (checked) checked.closest('label').style.borderColor = '#1B4F8E';
 
-      if (expiresAt) {
-        const alreadyExpired = expiresAt <= new Date();
-        if (alreadyExpired) {
-          // Quote expired — auto-refresh by re-fetching a new Duffel quote
-          const cdEl = document.getElementById('cancelExpiryCountdown');
-          if (cdEl) cdEl.textContent = 'جارٍ تجديد العرض…';
-          setTimeout(() => initiateCancel(bookingId), 800);
-        } else {
-          clearInterval(_cancelExpiryTimer);
-          _cancelExpiryTimer = setInterval(() => {
-            const rem = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
-            const el = document.getElementById('cancelExpiryCountdown');
-            if (!el) { clearInterval(_cancelExpiryTimer); return; }
-            if (rem === 0) {
-              clearInterval(_cancelExpiryTimer);
-              // Refresh the quote automatically
-              initiateCancel(bookingId);
-            } else {
-              el.textContent = `${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')} دقيقة`;
-            }
-          }, 1000);
-        }
+      // Start countdown only if expires_at is in the future
+      if (expiresAt && expiresAt > new Date()) {
+        clearInterval(_cancelExpiryTimer);
+        _cancelExpiryTimer = setInterval(() => {
+          const rem = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+          const el = document.getElementById('cancelExpiryCountdown');
+          if (!el) { clearInterval(_cancelExpiryTimer); return; }
+          if (rem === 0) {
+            clearInterval(_cancelExpiryTimer);
+            el.textContent = 'انتهت الصلاحية';
+            const btn = document.getElementById('confirmCancelBtn');
+            if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
+          } else {
+            el.textContent = `${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')} دقيقة`;
+          }
+        }, 1000);
       }
     } catch (err) {
       body.innerHTML = `<div style="color:#dc2626;padding:8px">${err.message || 'تعذر تحميل بيانات الإلغاء'}</div>`;
