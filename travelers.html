@@ -598,22 +598,16 @@ function loadTesseract() {
   return new Promise((resolve, reject) => {
     if (window.Tesseract) { resolve(); return; }
     const s = document.createElement('script');
-    // Try unpkg first, fallback to jsdelivr
-    s.src = 'https://unpkg.com/tesseract.js@5/dist/tesseract.min.js';
+    s.src = '/js/tesseract.min.js';
     s.onload = () => resolve();
-    s.onerror = () => {
-      const s2 = document.createElement('script');
-      s2.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-      s2.onload = () => resolve();
-      s2.onerror = () => reject(new Error('تعذر تحميل محرك القراءة — تحقق من اتصال الإنترنت'));
-      document.head.appendChild(s2);
-    };
+    s.onerror = () => reject(new Error('تعذر تحميل محرك القراءة'));
     document.head.appendChild(s);
   });
 }
 
 async function runTesseractMRZ(imageData, onProgress) {
   const worker = await Tesseract.createWorker('eng', 1, {
+    workerPath: '/js/tesseract.worker.min.js',
     logger: m => { if (m.status === 'recognizing text') onProgress(m.progress); }
   });
   await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<' });
