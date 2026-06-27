@@ -505,23 +505,48 @@
   function renderChangeOffers(offers) {
     const el = document.getElementById('changeOffersList');
     if (!offers.length) { el.innerHTML = '<p style="color:#888;text-align:center;padding:16px">لا توجد رحلات بديلة متاحة لهذا التاريخ</p>'; return; }
-    el.innerHTML = offers.map((o,i) => {
+
+    // Deduplicate by flight_number + departure_at to avoid Duffel duplicates
+    const seen = new Set();
+    const unique = offers.filter(o => {
+      const sl = o.slices?.[0] || {};
+      const key = `${sl.flight_number}|${sl.departure_at}|${o.change_total_amount}`;
+      if (seen.has(key)) return false;
+      seen.add(key); return true;
+    });
+
+    const fmt = dt => {
+      if (!dt) return '—';
+      const d = new Date(dt);
+      const h = String(d.getHours()).padStart(2,'0');
+      const m = String(d.getMinutes()).padStart(2,'0');
+      return `${h}:${m}`;
+    };
+
+    el.innerHTML = unique.map(o => {
       const sl   = o.slices?.[0] || {};
-      const dep  = sl.departure_at ? new Date(sl.departure_at).toLocaleTimeString('ar-KW',{hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
-      const arr  = sl.arrival_at  ? new Date(sl.arrival_at ).toLocaleTimeString('ar-KW',{hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+      const dep  = fmt(sl.departure_at);
+      const arr  = fmt(sl.arrival_at);
       const diff = parseFloat(o.change_total_amount || 0);
-      const diffStr = diff === 0 ? '<span style="color:#16a34a;font-weight:700">مجاناً</span>'
-        : diff > 0 ? `<span style="color:#dc2626;font-weight:700">+ ${diff.toFixed(2)} ${o.change_total_currency}</span>`
-        : `<span style="color:#16a34a;font-weight:700">استرداد ${Math.abs(diff).toFixed(2)} ${o.change_total_currency}</span>`;
-      return `<div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:.2s"
+      const cur  = o.change_total_currency || 'GBP';
+      const diffStr = diff === 0
+        ? '<span style="color:#16a34a;font-weight:700">مجاناً</span>'
+        : diff > 0
+          ? `<span style="color:#dc2626;font-weight:700">+ ${diff.toFixed(2)} ${cur}</span>`
+          : `<span style="color:#16a34a;font-weight:700">استرداد ${Math.abs(diff).toFixed(2)} ${cur}</span>`;
+      const stopsLabel = sl.stops == null ? '' : sl.stops === 0 ? 'مباشر' : `${sl.stops} توقف`;
+      return `<div style="border:1.5px solid #e5e7eb;border-radius:10px;padding:14px 16px;margin-bottom:10px;cursor:pointer;transition:.15s"
         onclick="confirmChangeOffer('${o.id}',this)"
-        onmouseover="this.style.borderColor='#1B4F8E'" onmouseout="this.style.borderColor='#e5e7eb'">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-weight:700;font-size:.95rem">${sl.airline||''} ${sl.flight_number||''}</div>
-            <div style="color:#888;font-size:.82rem">${dep} — ${arr} &nbsp;|&nbsp; ${(sl.stops==null||sl.stops==='')?'—':sl.stops===0?'مباشر':sl.stops+' توقف'}</div>
+        onmouseover="this.style.borderColor='#1B4F8E';this.style.background='#f0f6ff'"
+        onmouseout="this.style.borderColor='#e5e7eb';this.style.background=''">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+          <div style="min-width:0">
+            <div style="font-weight:700;font-size:.95rem;color:#0f2444">${sl.airline || 'ZZ'} ${sl.flight_number || ''}</div>
+            <div style="color:#6b7280;font-size:.83rem;margin-top:2px">
+              ${dep} ← ${arr}${stopsLabel ? ' &nbsp;·&nbsp; ' + stopsLabel : ''}
+            </div>
           </div>
-          <div style="text-align:left">${diffStr}</div>
+          <div style="text-align:left;white-space:nowrap;flex-shrink:0">${diffStr}</div>
         </div>
       </div>`;
     }).join('');
@@ -687,8 +712,9 @@
       const d = res.data || res;
       // Store cancellation_id for confirm step.
       modal.dataset.cancellationId = d.cancellation_id || '';
-      const refund = d.refund_amount ? `${Number(d.refund_amount).toLocaleString('ar-SA')} ${d.refund_currency || ''}` : 'غير متاح';
-      const refundTo = d.refund_to || '—';
+      const refund = d.refund_amount ? `${parseFloat(d.refund_amount).toFixed(2)} ${d.refund_currency || ''}` : 'غير متاح';
+      const refundToMap = {balance:'رصيد المحفظة', original_payment:'البطاقة الأصلية', voucher:'قسيمة', arc_bsp_cash:'كاش'};
+      const refundTo = refundToMap[d.refund_to] || d.refund_to || '—';
       const expiresAt = d.expires_at ? new Date(d.expires_at) : null;
       const expiryStr = expiresAt ? expiresAt.toLocaleString('ar-SA') : '—';
       body.innerHTML = `
