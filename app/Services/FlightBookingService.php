@@ -1860,11 +1860,14 @@ class FlightBookingService
             ? date('Y-m-d H:i:s', strtotime($payStatus['price_guarantee_expires_at'])) : null;
         $voidWindowEndsAt        = !empty($order['void_window_ends_at'])
             ? date('Y-m-d H:i:s', strtotime($order['void_window_ends_at'])) : null;
-        $orderConditions         = $order['conditions'] ?? [];
-        $refundConditions        = isset($orderConditions['refund_before_departure'])
-            ? json_encode($orderConditions['refund_before_departure']) : null;
-        $changeConditions        = isset($orderConditions['change_before_departure'])
-            ? json_encode($orderConditions['change_before_departure']) : null;
+        // Always read conditions from Duffel — if key exists in response, write it (even null clears stale data)
+        $orderConditionsRaw      = array_key_exists('conditions', $order) ? ($order['conditions'] ?? []) : false;
+        $refundConditions        = ($orderConditionsRaw !== false && isset($orderConditionsRaw['refund_before_departure']))
+            ? json_encode($orderConditionsRaw['refund_before_departure']) : null;
+        $changeConditions        = ($orderConditionsRaw !== false && isset($orderConditionsRaw['change_before_departure']))
+            ? json_encode($orderConditionsRaw['change_before_departure']) : null;
+        // If Duffel returned the conditions key, always overwrite; otherwise keep existing via COALESCE
+        $conditionsKeyPresent    = $orderConditionsRaw !== false;
         $cancelledAt             = !empty($order['cancelled_at'])
             ? date('Y-m-d H:i:s', strtotime($order['cancelled_at'])) : null;
         $cancellation            = $order['cancellation']       ?? null;
@@ -1917,8 +1920,8 @@ class FlightBookingService
                     void_window_ends_at           = :void_window_ends_at,
                     available_actions             = :available_actions,
                     live_mode                     = :live_mode,
-                    refund_conditions             = COALESCE(:refund_conditions, refund_conditions),
-                    change_conditions             = COALESCE(:change_conditions, change_conditions),
+                    refund_conditions             = IF(:cond_present, :refund_conditions, refund_conditions),
+                    change_conditions             = IF(:cond_present2, :change_conditions, change_conditions),
                     cancellation_refund_to        = COALESCE(:refund_to, cancellation_refund_to),
                     cancellation_expires_at       = COALESCE(:cancel_exp, cancellation_expires_at),
                     cancellation_refund_amount    = COALESCE(:refund_amount, cancellation_refund_amount),
@@ -1933,6 +1936,8 @@ class FlightBookingService
                 ':void_window_ends_at'         => $voidWindowEndsAt,
                 ':available_actions'           => $availableActions,
                 ':live_mode'                   => $liveMode,
+                ':cond_present'                => $conditionsKeyPresent ? 1 : 0,
+                ':cond_present2'               => $conditionsKeyPresent ? 1 : 0,
                 ':refund_conditions'           => $refundConditions,
                 ':change_conditions'           => $changeConditions,
                 ':refund_to'                   => $cancellationRefundTo,
