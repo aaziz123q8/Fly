@@ -546,54 +546,50 @@ function setScanBtnsDisabled(disabled) {
 async function scanImageData(imageData) {
   const result = document.getElementById('scanResult');
   result.innerHTML = '';
-  setScanUI('جاري الاتصال بالخادم...', 20);
-  setScanBtnsDisabled(true);
 
-  // Animate progress while waiting
-  let pct = 20;
-  const ticker = setInterval(() => { pct = Math.min(pct + 5, 88); setScanUI(document.getElementById('scanStatus').textContent, pct); }, 700);
+  // Animate progress
+  let pct = 12;
+  setScanUI('جاري الاتصال بالخادم...', pct);
+  const ticker = setInterval(() => { pct = Math.min(pct + 4, 85); setScanUI(document.getElementById('scanStatus').textContent, pct); }, 700);
 
-  let usedFallback = false;
+  const done = (ok, msg) => {
+    clearInterval(ticker);
+    setScanUI(ok ? 'اكتمل ✓' : '', ok ? 100 : 0);
+    result.innerHTML = `<div class="scan-badge${ok ? '' : ' error'}">${ok ? '✅' : '⚠️'} ${msg}</div>`;
+    setScanBtnsDisabled(false);
+  };
 
+  // ── Try backend first (Claude Vision) ──
   try {
-    // ── Primary: backend Claude Vision API ──
     const res = await Api.post('/api/passport/scan', { image: imageData }, true);
     clearInterval(ticker);
-    setScanUI('اكتمل المسح ✓', 100);
+    setScanUI('اكتمل ✓', 100);
     applyScannedDataToForm(res.data || {});
-    result.innerHTML = `<div class="scan-badge">✅ تم استخراج البيانات بالذكاء الاصطناعي — راجع وتحقق قبل الحفظ</div>`;
+    done(true, 'تم استخراج البيانات بالذكاء الاصطناعي — راجع وتحقق قبل الحفظ');
+    return;
+  } catch(_) { clearInterval(ticker); }
 
-  } catch(backendErr) {
-    clearInterval(ticker);
-    // ── Fallback: client-side Tesseract.js OCR (MRZ) ──
-    // Works on Hostinger server (CDN not blocked there)
-    if (backendErr.status === 503 || backendErr.status === 502 || !navigator.onLine || String(backendErr.message).includes('غير مفعّلة')) {
-      usedFallback = true;
-      try {
-        setScanUI('جاري تحميل محرك القراءة...', 15);
-        await loadTesseract();
-        setScanUI('جاري المسح المحلي...', 35);
-        const parsed = await runTesseractMRZ(imageData, (p) => {
-          setScanUI('جاري القراءة... ' + Math.round(p * 100) + '%', 35 + Math.round(p * 55));
-        });
-        setScanUI('اكتمل المسح ✓', 100);
-        if (parsed) {
-          applyScannedDataToForm(parsed);
-          result.innerHTML = `<div class="scan-badge">✅ تم استخراج البيانات — راجع وتحقق قبل الحفظ</div>`;
-        } else {
-          setScanUI('', 0);
-          result.innerHTML = `<div class="scan-badge error">⚠️ لم يُتعرف على نص الوثيقة — حاول بصورة أوضح وبإضاءة جيدة</div>`;
-        }
-      } catch(ocrErr) {
-        setScanUI('', 0);
-        result.innerHTML = `<div class="scan-badge error">⚠️ ${ocrErr.message || 'فشل المسح'}</div>`;
-      }
+  // ── Fallback: Tesseract.js (client-side MRZ OCR) ──
+  let pct2 = 10;
+  const ticker2 = setInterval(() => { pct2 = Math.min(pct2 + 3, 88); document.getElementById('scanFill').style.width = pct2 + '%'; }, 600);
+  try {
+    setScanUI('جاري تحميل محرك القراءة...', 10);
+    await loadTesseract();
+    setScanUI('جاري المسح...', 35);
+    const parsed = await runTesseractMRZ(imageData, p => {
+      const v = 35 + Math.round(p * 55);
+      setScanUI('جاري القراءة ' + Math.round(p * 100) + '%', v);
+    });
+    clearInterval(ticker2);
+    if (parsed) {
+      applyScannedDataToForm(parsed);
+      done(true, 'تم استخراج البيانات — راجع وتحقق قبل الحفظ');
     } else {
-      setScanUI('', 0);
-      result.innerHTML = `<div class="scan-badge error">⚠️ ${backendErr.message || 'تعذر قراءة الوثيقة'}</div>`;
+      done(false, 'لم يُتعرف على نص الوثيقة — التقط صورة أوضح بإضاءة جيدة');
     }
-  } finally {
-    setScanBtnsDisabled(false);
+  } catch(err) {
+    clearInterval(ticker2);
+    done(false, err.message || 'فشل المسح — تعذر تحميل محرك القراءة');
   }
 }
 
@@ -705,27 +701,22 @@ function scanFile(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
 
-  // Resize large images before scanning to keep payload small
-  const img = new Image();
-  const url = URL.createObjectURL(file);
-  img.onload = () => {
-    URL.revokeObjectURL(url);
-    const MAX = 1600;
-    let w = img.width, h = img.height;
-    if (w > MAX || h > MAX) {
-      const r = Math.min(MAX/w, MAX/h);
-      w = Math.round(w*r); h = Math.round(h*r);
-    }
-    const canvas = document.createElement('canvas');
-    canvas.width = w; canvas.height = h;
-    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
-    scanImageData(dataUrl);
+  // Show immediate feedback so user knows it's working
+  setScanUI('جاري قراءة الصورة...', 10);
+  setScanBtnsDisabled(true);
+  document.getElementById('scanResult').innerHTML = '';
+
+  const reader = new FileReader();
+  reader.onload = e => scanImageData(e.target.result);
+  reader.onerror = () => {
+    setScanUI('', 0);
+    setScanBtnsDisabled(false);
+    showToast('تعذر قراءة الملف', 'error');
   };
-  img.onerror = () => { URL.revokeObjectURL(url); showToast('تعذر قراءة الصورة', 'error'); };
-  img.src = url;
-  // Reset so the same file/photo can be re-selected
-  setTimeout(() => { input.value = ''; }, 500);
+  reader.readAsDataURL(file);
+
+  // Reset input so same file can be picked again
+  setTimeout(() => { try { input.value = ''; } catch(e){} }, 1000);
 }
 
 /* ── Camera: handled natively by <input capture="environment"> — no getUserMedia needed ── */
