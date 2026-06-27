@@ -8,6 +8,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Helpers\Database;
 use App\Middleware\AuthMiddleware;
+use App\Services\FlightBookingService;
 
 class TravelerController
 {
@@ -183,6 +184,25 @@ class TravelerController
             }
         } catch (\PDOException $e) {
             throw $e;
+        }
+
+        Response::json(['error' => 'not_found', 'message' => 'لم يتم العثور على حجز بهذه البيانات.'], 404);
+    }
+
+    public function guestInvoice(Request $request): void
+    {
+        $ref      = strtoupper(trim($request->query('ref') ?? ''));
+        $lastName = trim($request->query('last_name') ?? '');
+
+        if (!$ref || !$lastName) {
+            Response::json(['error' => 'validation_error', 'message' => 'ref and last_name required.'], 422);
+        }
+
+        $service = new FlightBookingService();
+        $booking = $service->getBookingByReferenceGuest($ref, $lastName);
+        if ($booking) {
+            Response::json(['booking' => $booking]);
+            return;
         }
 
         Response::json(['error' => 'not_found', 'message' => 'لم يتم العثور على حجز بهذه البيانات.'], 404);

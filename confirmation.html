@@ -384,6 +384,7 @@ const ref        = urlP.get('ref') || '';
 const bid        = urlP.get('bid') || '';
 const sessionKey = urlP.get('session') || '';
 const piId       = urlP.get('pi') || '';
+const guestLN    = urlP.get('last_name') || '';
 
 if (ref) document.getElementById('refFm').textContent = ref;
 
@@ -668,17 +669,24 @@ function renderBooking(b) {
 
 // ── Load booking ─────────────────────────────────────────────────
 async function loadBooking() {
-  if (!Auth.isLoggedIn()) return;
-
   // 1. Try by bid or ref
   const key = bid || ref;
   if (key) {
     try {
-      const res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
-      const b = res.booking || res;
-      if (b && b.id) { renderBooking(b); return; }
+      let res;
+      if (Auth.isLoggedIn()) {
+        res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
+      } else if (ref && guestLN) {
+        res = await Api.get('/api/bookings/guest-invoice?ref=' + encodeURIComponent(ref) + '&last_name=' + encodeURIComponent(guestLN));
+      }
+      if (res) {
+        const b = res.booking || res;
+        if (b && b.id) { renderBooking(b); return; }
+      }
     } catch(e) {}
   }
+
+  if (!Auth.isLoggedIn()) return;
 
   // 2. confirmCheckout polling (after Stripe redirect)
   if (sessionKey && piId) {

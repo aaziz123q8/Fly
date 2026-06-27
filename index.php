@@ -406,6 +406,9 @@ $router->group('api/bookings', function (Router $r): void {
     $r->post('/lookup', function (Request $req): void {
         (new TravelerController())->lookupBooking($req);
     });
+    $r->get('/guest-invoice', function (Request $req): void {
+        (new TravelerController())->guestInvoice($req);
+    });
     $r->get('/my-flights', function (Request $req): void {
         (new FlightController())->listBookings($req);
     }, [AuthMiddleware::handle()]);

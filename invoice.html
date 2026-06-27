@@ -298,9 +298,10 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>
-const urlP = new URLSearchParams(window.location.search);
-const ref  = urlP.get('ref') || '';
-const bid  = urlP.get('bid') || '';
+const urlP     = new URLSearchParams(window.location.search);
+const ref      = urlP.get('ref') || '';
+const bid      = urlP.get('bid') || '';
+const guestLN  = urlP.get('last_name') || '';
 
 // Helpers
 function fmt(str) {
@@ -472,11 +473,17 @@ function render(b) {
 
 // Load booking
 async function load() {
-  if (!Auth.isLoggedIn()) { window.location.href='login.html'; return; }
   const key = bid || ref;
   if (!key) { document.body.innerHTML='<div style="text-align:center;padding:60px;color:#888">لم يتم تحديد رقم الحجز.</div>'; return; }
   try {
-    const res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
+    let res;
+    if (Auth.isLoggedIn()) {
+      res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
+    } else if (ref && guestLN) {
+      res = await Api.get('/api/bookings/guest-invoice?ref=' + encodeURIComponent(ref) + '&last_name=' + encodeURIComponent(guestLN));
+    } else {
+      window.location.href = 'login.html'; return;
+    }
     const b = res.booking || res;
     render(b);
   } catch(e) {

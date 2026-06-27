@@ -22,6 +22,8 @@
     .status-confirmed { background:#d1fae5; color:#065f46; }
     .status-pending { background:#fef3c7; color:#92400e; }
     .status-cancelled { background:#fee2e2; color:#991b1b; }
+    .print-actions { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+    .print-actions a { flex:1; min-width:140px; }
     .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
     @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
     .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
@@ -100,17 +102,27 @@ async function doLookup(e) {
     const b = res.booking || res;
     const statusClass = { confirmed:'status-confirmed', pending:'status-pending', cancelled:'status-cancelled' }[b.status] || 'status-pending';
     const statusLabel = { confirmed:'مؤكد ✅', pending:'قيد المعالجة ⏳', cancelled:'ملغي ❌' }[b.status] || b.status;
+    const isFlight = b.type === 'flight' || (b.booking_reference || b.booking_number || pnr).startsWith('FM');
+    const ref = encodeURIComponent(b.booking_reference || b.booking_number || pnr);
+    const bid = b.id ? '&bid=' + b.id : '';
+    const ln  = '&last_name=' + encodeURIComponent(lastName);
+    const invoiceUrl  = 'invoice.html?ref=' + ref + bid + ln;
+    const ticketUrl   = isFlight ? ('confirmation.html?ref=' + ref + bid + ln) : null;
     document.getElementById('lookupResult').innerHTML = `
       <div class="result-card">
         <div style="text-align:center;margin-bottom:20px">
           <div style="font-size:2rem;margin-bottom:8px">🎫</div>
-          <div style="font-size:1.3rem;font-weight:800;color:var(--primary)">${b.booking_number || pnr}</div>
+          <div style="font-size:1.3rem;font-weight:800;color:var(--primary)">${b.booking_reference || b.booking_number || pnr}</div>
         </div>
         <div class="result-row"><span class="result-label">المسافر</span><span class="result-value">${b.passenger_name || b.traveler_name || lastName}</span></div>
         <div class="result-row"><span class="result-label">الحالة</span><span class="status-badge ${statusClass}">${statusLabel}</span></div>
         <div class="result-row"><span class="result-label">الوجهة</span><span class="result-value">${b.origin_airport || b.origin || ''} → ${b.destination_airport || b.destination || ''}</span></div>
         <div class="result-row"><span class="result-label">تاريخ السفر</span><span class="result-value">${(b.departure_at || b.departure_date || b.travel_date || '').substring(0,10) || '--'}</span></div>
-        <div class="result-row"><span class="result-label">نوع الحجز</span><span class="result-value">${b.type === 'flight' || b.booking_number?.startsWith('FM') ? '✈️ رحلة' : '🏨 فندق'}</span></div>
+        <div class="result-row"><span class="result-label">نوع الحجز</span><span class="result-value">${isFlight ? '✈️ رحلة' : '🏨 فندق'}</span></div>
+        <div class="print-actions">
+          <a href="${invoiceUrl}" class="btn btn-primary" target="_blank">🧾 طباعة الفاتورة</a>
+          ${ticketUrl ? `<a href="${ticketUrl}" class="btn btn-outline" target="_blank">🎫 طباعة التذكرة</a>` : ''}
+        </div>
       </div>`;
   } catch(err) {
     document.getElementById('lookupResult').innerHTML = `

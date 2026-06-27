@@ -1654,6 +1654,22 @@ class FlightBookingService
         return $this->enrichBooking($booking);
     }
 
+    public function getBookingByReferenceGuest(string $bookingRef, string $lastName): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT fb.* FROM flight_bookings fb
+             JOIN flight_booking_passengers fbp ON fbp.booking_id = fb.id
+             WHERE fb.booking_reference = :ref AND LOWER(fbp.last_name) = LOWER(:ln)
+             LIMIT 1'
+        );
+        $stmt->execute([':ref' => $bookingRef, ':ln' => trim($lastName)]);
+        $booking = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$booking) {
+            return null;
+        }
+        return $this->enrichBooking($booking);
+    }
+
     private function enrichBooking(array $booking): array
     {
         $bookingId = (int) $booking['id'];
