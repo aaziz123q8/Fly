@@ -99,16 +99,16 @@
       font-weight:600; font-size:0.85rem; cursor:pointer; transition:all .2s;
       display:flex; align-items:center; justify-content:center; gap:8px;
     }
-    .scanner-btn:hover { background:#1B4F8E; color:#fff; border-color:#1B4F8E; }
+    .scanner-btn:hover:not(:disabled) { background:#1B4F8E; color:#fff; border-color:#1B4F8E; }
     .scanner-btn:disabled { opacity:.55; cursor:not-allowed; }
     .scanner-progress {
-      margin-top:14px; display:none;
+      margin-top:14px;
       background:#fff; border-radius:10px; padding:12px 16px;
       font-size:0.82rem; color:#1B4F8E; display:none; align-items:center; gap:10px;
     }
     .scanner-progress.visible { display:flex; }
     .scan-progress-bar { flex:1; height:6px; background:#e5e7eb; border-radius:4px; overflow:hidden; }
-    .scan-progress-fill { height:100%; background:linear-gradient(90deg,#1B4F8E,#7c3aed); border-radius:4px; width:0%; transition:width .3s; }
+    .scan-progress-fill { height:100%; background:linear-gradient(90deg,#1B4F8E,#7c3aed); border-radius:4px; width:0%; transition:width .4s; }
 
     /* ── Camera Modal ── */
     #cameraModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:2000; align-items:center; justify-content:center; padding:20px; }
@@ -550,159 +550,70 @@ async function deleteTraveler(id, idx) {
   }
 }
 
-/* ══════════════════════ OCR / Passport Scanner ══════════════════════ */
-
-function loadTesseract() {
-  return new Promise((resolve, reject) => {
-    if (window.Tesseract) { resolve(); return; }
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('فشل تحميل مكتبة OCR'));
-    document.head.appendChild(s);
-  });
-}
+/* ══════════════════════ Passport Scanner (backend AI) ══════════════════════ */
 
 async function scanImageData(imageData) {
   const progress = document.getElementById('scanProgress');
   const fill     = document.getElementById('scanFill');
   const status   = document.getElementById('scanStatus');
   const result   = document.getElementById('scanResult');
+  const btns     = document.querySelectorAll('.scanner-btn');
 
   progress.classList.add('visible');
-  status.textContent = 'جاري تحميل محرك القراءة...';
-  fill.style.width = '10%';
+  status.textContent = 'جاري إرسال الصورة للمعالجة...';
+  fill.style.width = '20%';
   result.innerHTML = '';
+  btns.forEach(b => b.disabled = true);
+
+  // Fake progress animation while waiting
+  let pct = 20;
+  const ticker = setInterval(() => {
+    pct = Math.min(pct + 6, 85);
+    fill.style.width = pct + '%';
+  }, 600);
 
   try {
-    await loadTesseract();
-    status.textContent = 'جاري المسح...';
-    fill.style.width = '30%';
-
-    const worker = await Tesseract.createWorker('eng', 1, {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          fill.style.width = (30 + Math.round(m.progress * 60)) + '%';
-        }
-      }
-    });
-    // MRZ characters only: uppercase letters, digits, and <
-    await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<' });
-    const { data: { text } } = await worker.recognize(imageData);
-    await worker.terminate();
-
+    const res = await Api.post('/api/passport/scan', { image: imageData }, true);
+    clearInterval(ticker);
     fill.style.width = '100%';
-    status.textContent = 'اكتمل المسح';
+    status.textContent = 'اكتمل المسح ✓';
 
-    const parsed = parseMRZ(text);
-    if (parsed) {
-      applyMRZToForm(parsed);
-      result.innerHTML = `<div class="scan-badge">✅ تم استخراج البيانات تلقائياً — راجع وتأكد من الدقة</div>`;
-    } else {
-      result.innerHTML = `<div class="scan-badge error">⚠️ لم يتم التعرف على MRZ — أدخل البيانات يدوياً أو أعد المسح بصورة أوضح</div>`;
-    }
+    const d = res.data || {};
+    applyScannedDataToForm(d);
+    result.innerHTML = `<div class="scan-badge">✅ تم استخراج البيانات — راجع وتحقق من الدقة قبل الحفظ</div>`;
   } catch(err) {
+    clearInterval(ticker);
     fill.style.width = '0%';
     progress.classList.remove('visible');
-    result.innerHTML = `<div class="scan-badge error">⚠️ ${err.message}</div>`;
+    const msg = err.message || 'تعذر قراءة الوثيقة';
+    result.innerHTML = `<div class="scan-badge error">⚠️ ${msg}</div>`;
+  } finally {
+    btns.forEach(b => b.disabled = false);
   }
 }
 
-function parseMRZ(text) {
-  // Clean: uppercase, keep A-Z 0-9 <
-  const lines = text.toUpperCase()
-    .replace(/[^A-Z0-9<\n]/g, '')
-    .split('\n')
-    .map(l => l.trim())
-    .filter(l => l.length >= 30);
-
-  // Find two consecutive MRZ lines of ~44 chars (TD3 passport)
-  let line1 = null, line2 = null;
-  for (let i = 0; i < lines.length - 1; i++) {
-    if (lines[i].length >= 38 && lines[i+1].length >= 38) {
-      line1 = lines[i].padEnd(44, '<').substring(0, 44);
-      line2 = lines[i+1].padEnd(44, '<').substring(0, 44);
-      break;
-    }
-  }
-  // Fallback: single long lines
-  if (!line1) {
-    const candidates = lines.filter(l => l.length >= 38);
-    if (candidates.length >= 2) {
-      line1 = candidates[0].padEnd(44,'<').substring(0,44);
-      line2 = candidates[1].padEnd(44,'<').substring(0,44);
-    }
-  }
-  if (!line1 || !line2) return null;
-
-  try {
-    // Line 1: P<COUNTRYNAME<<GIVENNAMES<<<…
-    const docType   = line1[0]; // P for passport
-    const country   = line1.substring(2, 5).replace(/</g,'');
-    const nameField = line1.substring(5);
-    const nameParts = nameField.split('<<');
-    const surname   = (nameParts[0] || '').replace(/</g,' ').trim();
-    const givenRaw  = (nameParts[1] || '').replace(/</g,' ').trim();
-    const givenParts = givenRaw.split(' ').filter(Boolean);
-    const firstName = givenParts[0] || '';
-    const middleName = givenParts.slice(1).join(' ') || '';
-
-    // Line 2: docNum(9) + check + nationality(3) + DOB(6) + check + sex(1) + expiry(6) + check ...
-    const docNum    = line2.substring(0, 9).replace(/</g,'');
-    const nat       = line2.substring(10, 13).replace(/</g,'');
-    const dobRaw    = line2.substring(13, 19);
-    const sex       = line2[20];
-    const expiryRaw = line2.substring(21, 27);
-
-    const parseDate = (yymmdd, isBirth) => {
-      if (!yymmdd || yymmdd.includes('<')) return '';
-      const yy = parseInt(yymmdd.substring(0,2));
-      const mm = yymmdd.substring(2,4);
-      const dd = yymmdd.substring(4,6);
-      const now = new Date().getFullYear() % 100;
-      let year;
-      if (isBirth) {
-        // DOB: if yy > current year (mod 100) → 1900s else 2000s
-        year = yy > now ? 1900 + yy : 2000 + yy;
-      } else {
-        // Expiry: always future
-        year = yy < now ? 2100 + yy : 2000 + yy;
-      }
-      return `${year}-${mm}-${dd}`;
-    };
-
-    return {
-      docType, country, surname, firstName, middleName,
-      docNum,
-      nationality: nat,
-      dob:    parseDate(dobRaw, true),
-      expiry: parseDate(expiryRaw, false),
-      sex:    sex === 'M' ? 'male' : sex === 'F' ? 'female' : '',
-    };
-  } catch(e) { return null; }
-}
-
-function applyMRZToForm(mrz) {
+function applyScannedDataToForm(d) {
   const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-  set('tFirst',   mrz.firstName);
-  set('tMiddle',  mrz.middleName);
-  set('tLast',    mrz.surname);
-  set('tDocNum',  mrz.docNum);
-  set('tDocExp',  mrz.expiry);
-  set('tDob',     mrz.dob);
-  if (mrz.sex) set('tGender', mrz.sex);
-  // Auto-select nationality by country code if possible
-  const natEl = document.getElementById('tNationality');
-  if (natEl && mrz.nationality) {
-    const opt = natEl.querySelector(`option[value="${mrz.nationality}"]`);
-    if (opt) natEl.value = mrz.nationality;
+  set('tFirst',      d.first_name);
+  set('tMiddle',     d.middle_name);
+  set('tLast',       d.surname);
+  set('tDocNum',     d.doc_number);
+  set('tDocExp',     d.doc_expiry);
+  set('tDob',        d.date_of_birth);
+  set('tDocCountry', d.doc_country);
+  if (d.gender) set('tGender', d.gender);
+  if (d.doc_type) {
+    const dtEl = document.getElementById('tDocType');
+    if (dtEl && ['passport','id_card','national_id'].includes(d.doc_type)) dtEl.value = d.doc_type;
   }
-  // Document country
-  set('tDocCountry', mrz.country);
-  // Auto-set title from gender
+  const natEl = document.getElementById('tNationality');
+  if (natEl && d.nationality) {
+    const opt = natEl.querySelector(`option[value="${d.nationality}"]`);
+    if (opt) natEl.value = d.nationality;
+  }
   const titleEl = document.getElementById('tTitle');
-  if (titleEl && !titleEl.value) {
-    titleEl.value = mrz.sex === 'female' ? 'ms' : mrz.sex === 'male' ? 'mr' : '';
+  if (titleEl && !titleEl.value && d.gender) {
+    titleEl.value = d.gender === 'female' ? 'ms' : 'mr';
   }
 }
 
@@ -718,17 +629,28 @@ function scanFile(input) {
 
 /* ── Camera ── */
 async function openCamera() {
-  const modal = document.getElementById('cameraModal');
-  const video = document.getElementById('camVideo');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showToast('الكاميرا غير مدعومة في هذا المتصفح — استخدم رفع الصورة بدلاً', 'error');
+    return;
+  }
+  const modal  = document.getElementById('cameraModal');
+  const video  = document.getElementById('camVideo');
+  const capBtn = document.getElementById('btnCapture');
   modal.classList.add('active');
+  capBtn.disabled = true;
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
     });
     video.srcObject = cameraStream;
+    await video.play();
+    capBtn.disabled = false;
   } catch(err) {
-    closeCamera();
-    showToast('تعذر الوصول إلى الكاميرا: ' + err.message, 'error');
+    modal.classList.remove('active');
+    const msg = err.name === 'NotAllowedError'
+      ? 'تم رفض إذن الكاميرا — يرجى السماح بالوصول في إعدادات المتصفح'
+      : 'تعذر فتح الكاميرا: ' + err.message;
+    showToast(msg, 'error');
   }
 }
 

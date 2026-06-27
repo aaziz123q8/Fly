@@ -107,24 +107,28 @@
 </div>
 
 <!-- Quick Stats -->
-<div style="background:white;border-bottom:1px solid var(--border);padding:8px 0">
+<div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:0">
   <div class="container">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px" class="stats-row">
-      <div style="text-align:center;padding:12px">
-        <div style="font-size:1.6rem;font-weight:800;color:var(--primary)" id="statFlights">—</div>
-        <div style="font-size:.82rem;color:var(--text-muted)">رحلات جوية</div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr)" class="stats-row">
+      <div style="text-align:center;padding:14px 8px;border-left:1px solid #f0f2f5;position:relative">
+        <div style="font-size:1.5rem;margin-bottom:2px">✈️</div>
+        <div style="font-size:1.4rem;font-weight:800;color:#1B4F8E;line-height:1" id="statFlights">—</div>
+        <div style="font-size:.72rem;color:#6b7280;margin-top:3px">رحلات</div>
       </div>
-      <div style="text-align:center;padding:12px">
-        <div style="font-size:1.6rem;font-weight:800;color:var(--secondary)" id="statHotels">—</div>
-        <div style="font-size:.82rem;color:var(--text-muted)">فنادق</div>
+      <div style="text-align:center;padding:14px 8px;border-left:1px solid #f0f2f5">
+        <div style="font-size:1.5rem;margin-bottom:2px">🏨</div>
+        <div style="font-size:1.4rem;font-weight:800;color:#E8A020;line-height:1" id="statHotels">—</div>
+        <div style="font-size:.72rem;color:#6b7280;margin-top:3px">فنادق</div>
       </div>
-      <div style="text-align:center;padding:12px">
-        <div style="font-size:1.6rem;font-weight:800;color:var(--success)" id="statUpcoming">—</div>
-        <div style="font-size:.82rem;color:var(--text-muted)">قادمة</div>
+      <div style="text-align:center;padding:14px 8px;border-left:1px solid #f0f2f5">
+        <div style="font-size:1.5rem;margin-bottom:2px">📅</div>
+        <div style="font-size:1.4rem;font-weight:800;color:#16a34a;line-height:1" id="statUpcoming">—</div>
+        <div style="font-size:.72rem;color:#6b7280;margin-top:3px">قادمة</div>
       </div>
-      <div style="text-align:center;padding:12px">
-        <div style="font-size:1.6rem;font-weight:800;color:var(--text)" id="statCompleted">—</div>
-        <div style="font-size:.82rem;color:var(--text-muted)">مكتملة</div>
+      <div style="text-align:center;padding:14px 8px">
+        <div style="font-size:1.5rem;margin-bottom:2px">✅</div>
+        <div style="font-size:1.4rem;font-weight:800;color:#6b7280;line-height:1" id="statCompleted">—</div>
+        <div style="font-size:.72rem;color:#6b7280;margin-top:3px">مكتملة</div>
       </div>
     </div>
   </div>
@@ -133,12 +137,27 @@
 <!-- Main Content -->
 <div class="dashboard-page">
   <div class="container">
+
+    <!-- Quick Actions -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px;padding-top:20px">
+      <a href="index.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(27,79,142,.07);text-decoration:none;color:#1B4F8E;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <span style="font-size:1.6rem">✈️</span>حجز رحلة
+      </a>
+      <a href="hotels.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(27,79,142,.07);text-decoration:none;color:#E8A020;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <span style="font-size:1.6rem">🏨</span>حجز فندق
+      </a>
+      <a href="travelers.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(27,79,142,.07);text-decoration:none;color:#7c3aed;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <span style="font-size:1.6rem">👥</span>مسافروني
+      </a>
+      <a href="lookup.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(27,79,142,.07);text-decoration:none;color:#0369a1;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        <span style="font-size:1.6rem">🔍</span>استعلام
+      </a>
+    </div>
+
     <div class="tabs">
       <button class="tab active" onclick="switchTab('flights', this)">✈️ رحلاتي</button>
       <button class="tab" onclick="switchTab('hotels', this)">🏨 فنادقي</button>
       <button class="tab" onclick="switchTab('profile', this)">👤 ملفي</button>
-      <a href="travelers.html" class="tab" style="text-decoration:none">👥 مسافروني</a>
-      <a href="lookup.html" class="tab" style="text-decoration:none">🔍 استعلام</a>
     </div>
 
     <!-- Flights Tab -->
@@ -161,22 +180,27 @@
 
     <!-- Profile Tab -->
     <div id="tab-profile" class="tab-panel">
-      <div class="card" style="max-width:560px">
-        <div class="card-header">
-          <span>المعلومات الشخصية</span>
-          <button class="btn btn-ghost btn-sm" onclick="editProfile()">تعديل</button>
-        </div>
-        <div class="card-body">
-          <div id="profileInfo">
-            <div class="loading-state" style="padding:20px">
-              <div class="spinner"></div>
+      <div style="max-width:580px">
+
+        <!-- Profile Card -->
+        <div style="background:#fff;border-radius:18px;box-shadow:0 2px 14px rgba(27,79,142,.08);overflow:hidden;margin-bottom:16px">
+          <div style="background:linear-gradient(135deg,#1B4F8E,#2563eb);padding:20px 24px;display:flex;align-items:center;gap:14px">
+            <div style="width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.2);border:2.5px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:#fff;flex-shrink:0" id="profileAvatarLg">م</div>
+            <div>
+              <div style="font-size:1.1rem;font-weight:700;color:#fff" id="profileNameLg">—</div>
+              <div style="font-size:.8rem;color:rgba(255,255,255,.75)" id="profileEmailLg">—</div>
+            </div>
+          </div>
+          <div style="padding:20px 24px">
+            <div id="profileInfo">
+              <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
             </div>
           </div>
         </div>
-      </div>
-      <div class="card" style="max-width:560px;margin-top:20px">
-        <div class="card-header"><span>تغيير كلمة المرور</span></div>
-        <div class="card-body">
+
+        <!-- Change Password -->
+        <div style="background:#fff;border-radius:18px;box-shadow:0 2px 14px rgba(27,79,142,.08);padding:24px">
+          <div style="font-size:1rem;font-weight:700;color:#1B4F8E;margin-bottom:18px;display:flex;align-items:center;gap:8px">🔒 تغيير كلمة المرور</div>
           <form onsubmit="changePassword(event)">
             <div class="form-group">
               <label class="form-label">كلمة المرور الحالية</label>
@@ -193,6 +217,7 @@
             <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
           </form>
         </div>
+
       </div>
     </div>
   </div>
@@ -322,23 +347,27 @@
         ? `<button class="btn btn-sm btn-danger" onclick="initiateCancel(${b.id})">إلغاء</button>` : '';
 
       return `
-    <div class="booking-item" style="flex-wrap:wrap;gap:10px;align-items:flex-start">
-      <div class="booking-icon">✈️</div>
-      <div class="booking-info" style="flex:1;min-width:180px">
-        <div class="booking-title">${origin} → ${dest}</div>
-        <div class="booking-meta">
-          ${ref} &nbsp;|&nbsp; ${dep}
-          ${b.duffel_booking_reference ? `&nbsp;|&nbsp; PNR: <strong>${b.duffel_booking_reference}</strong>` : ''}
+    <div style="background:#fff;border-radius:16px;box-shadow:0 2px 14px rgba(27,79,142,.07);margin-bottom:12px;overflow:hidden;transition:box-shadow .2s" onmouseover="this.style.boxShadow='0 6px 24px rgba(27,79,142,.13)'" onmouseout="this.style.boxShadow='0 2px 14px rgba(27,79,142,.07)'">
+      <div style="padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:160px">
+          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#1B4F8E,#2563eb);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">✈️</div>
+          <div>
+            <div style="font-weight:700;font-size:.95rem;color:#0f2444">${origin} ← ${dest}</div>
+            <div style="font-size:.78rem;color:#6b7280;margin-top:2px">
+              ${dep} &nbsp;|&nbsp; <span dir="ltr">${ref}</span>
+              ${b.duffel_booking_reference ? `&nbsp;|&nbsp; PNR: <strong>${b.duffel_booking_reference}</strong>` : ''}
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <div style="display:flex;align-items:center;gap:8px">
+            ${badgeHtml(status)}
+            <div style="font-weight:800;color:#1B4F8E;font-size:.95rem">${amount ? parseFloat(amount).toFixed(2)+' '+currency : '—'}</div>
+          </div>
         </div>
       </div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
-        <div style="display:flex;align-items:center;gap:8px">
-          ${badgeHtml(status)}
-          <div class="booking-price">${amount ? parseFloat(amount).toFixed(2)+' '+currency : '—'}</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">
-          ${btnTicket}${btnInvoice}${btnChange}${btnBags}${btnSeats}${btnCancel}
-        </div>
+      <div style="padding:10px 20px 14px;border-top:1px solid #f4f6fb;display:flex;gap:6px;flex-wrap:wrap">
+        ${btnTicket}${btnInvoice}${btnChange}${btnBags}${btnSeats}${btnCancel}
       </div>
     </div>`;
     }).join('');
@@ -357,19 +386,19 @@
       return;
     }
     el.innerHTML = bookings.map(b => `
-    <div class="booking-item">
-      <div class="booking-icon">🏨</div>
-      <div class="booking-info">
-        <div class="booking-title">${b.hotel_name || b.name || 'فندق'}</div>
-        <div class="booking-meta">
-          ${b.city || ''} &nbsp;|&nbsp;
-          ${b.check_in || '—'} → ${b.check_out || '—'}
-          ${b.rooms ? `&nbsp;|&nbsp; ${b.rooms} غرفة` : ''}
+    <div style="background:#fff;border-radius:16px;box-shadow:0 2px 14px rgba(27,79,142,.07);margin-bottom:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:160px">
+        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#E8A020,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">🏨</div>
+        <div>
+          <div style="font-weight:700;font-size:.95rem;color:#0f2444">${b.hotel_name || b.name || 'فندق'}</div>
+          <div style="font-size:.78rem;color:#6b7280;margin-top:2px">
+            ${b.city ? b.city + ' &nbsp;|&nbsp; ' : ''}${b.check_in || '—'} → ${b.check_out || '—'}${b.rooms ? ` &nbsp;|&nbsp; ${b.rooms} غرفة` : ''}
+          </div>
         </div>
       </div>
-      <div style="margin-right:auto;display:flex;align-items:center;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
         ${badgeHtml(b.status || 'pending')}
-        <div class="booking-price">${b.total_price ? Number(b.total_price).toLocaleString('ar-SA') + ' ر.س' : '—'}</div>
+        <div style="font-weight:800;color:#E8A020;font-size:.95rem">${b.total_price ? Number(b.total_price).toLocaleString('ar-SA') + ' ر.س' : '—'}</div>
       </div>
     </div>`).join('');
   }
@@ -402,26 +431,37 @@
     }
   }
 
+  function renderProfileFields(u) {
+    const field = (label, val, icon='') => val
+      ? `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f4f6fb">
+           <span style="width:22px;text-align:center;font-size:1rem;flex-shrink:0">${icon}</span>
+           <div><div style="font-size:.72rem;color:#9ca3af;margin-bottom:1px">${label}</div><div style="font-weight:600;color:#1a202c">${val}</div></div>
+         </div>`
+      : '';
+    const fullName = [u.first_name, u.middle_name, u.last_name].filter(Boolean).join(' ') || '—';
+    const iniLg   = (u.first_name || u.email || '?')[0].toUpperCase();
+    const el      = document.getElementById('profileInfo');
+    const av      = document.getElementById('profileAvatarLg');
+    const nm      = document.getElementById('profileNameLg');
+    const em      = document.getElementById('profileEmailLg');
+    if (av) av.textContent = iniLg;
+    if (nm) nm.textContent = fullName;
+    if (em) em.textContent = u.email || '';
+    el.innerHTML = `
+      ${field('الاسم الكامل', fullName, '👤')}
+      ${field('البريد الإلكتروني', u.email, '📧')}
+      ${field('رقم الهاتف', u.phone, '📱')}
+      ${field('تاريخ التسجيل', u.created_at ? new Date(u.created_at).toLocaleDateString('ar-KW',{day:'numeric',month:'long',year:'numeric'}) : '', '📅')}
+    `.replace(/border-bottom[^;]*;([^}]*}[^<]*<\/div>)(?=\s*$)/, '$1'); // remove last border
+  }
+
   async function loadProfile() {
     const el = document.getElementById('profileInfo');
     try {
       const res = await Api.get('/api/auth/me', true);
-      const u = res.user || res;
-      el.innerHTML = `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-          <div><div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px">الاسم الأول</div><div style="font-weight:600">${u.first_name || '—'}</div></div>
-          <div><div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px">الاسم الأخير</div><div style="font-weight:600">${u.last_name || '—'}</div></div>
-          <div><div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px">البريد الإلكتروني</div><div style="font-weight:600">${u.email || '—'}</div></div>
-          <div><div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px">رقم الهاتف</div><div style="font-weight:600">${u.phone || '—'}</div></div>
-        </div>`;
+      renderProfileFields(res.user || res);
     } catch {
-      if (user) {
-        el.innerHTML = `
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-            <div><div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px">الاسم</div><div style="font-weight:600">${user.first_name || ''} ${user.last_name || ''}</div></div>
-            <div><div style="font-size:.78rem;color:var(--text-muted);margin-bottom:4px">البريد الإلكتروني</div><div style="font-weight:600">${user.email || '—'}</div></div>
-          </div>`;
-      }
+      if (user) renderProfileFields(user);
     }
   }
 

@@ -57,6 +57,7 @@ use App\Controllers\Admin\AdminPaymentsController;
 use App\Controllers\Admin\AdminSupportController;
 use App\Controllers\Admin\AdminUsersController;
 use App\Controllers\Traveler\TravelerController;
+use App\Controllers\Passport\PassportController;
 use App\Controllers\Admin\AdminAuthController;
 use App\Controllers\Admin\AdminBookingsController;
 use App\Controllers\Admin\AdminCmsController;
@@ -364,6 +365,11 @@ $router->group('api/hotels', function (Router $r): void {
 // ---------------------------------------------------------------------------
 // Routes — Travelers (traveler-facing)
 // ---------------------------------------------------------------------------
+
+// Passport / ID scan (uses Claude Vision API)
+$router->post('api/passport/scan', function (Request $req): void {
+    (new PassportController())->scan($req);
+}, [AuthMiddleware::handle()]);
 
 $router->group('api/travelers', function (Router $r): void {
     $r->get('/', function (Request $req): void {
