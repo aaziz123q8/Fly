@@ -808,13 +808,13 @@
       const checked = body.querySelector('input[name="refundPref"]:checked');
       if (checked) checked.closest('label').style.borderColor = '#1B4F8E';
 
-      if (hasRefund && expiresAt) {
+      if (expiresAt) {
         const alreadyExpired = expiresAt <= new Date();
         if (alreadyExpired) {
+          // Quote expired — auto-refresh by re-fetching a new Duffel quote
           const cdEl = document.getElementById('cancelExpiryCountdown');
-          if (cdEl) cdEl.textContent = 'انتهت الصلاحية';
-          document.getElementById('confirmCancelBtn').disabled = true;
-          document.getElementById('confirmCancelBtn').style.opacity = '0.4';
+          if (cdEl) cdEl.textContent = 'جارٍ تجديد العرض…';
+          setTimeout(() => initiateCancel(bookingId), 800);
         } else {
           clearInterval(_cancelExpiryTimer);
           _cancelExpiryTimer = setInterval(() => {
@@ -823,9 +823,8 @@
             if (!el) { clearInterval(_cancelExpiryTimer); return; }
             if (rem === 0) {
               clearInterval(_cancelExpiryTimer);
-              el.textContent = 'انتهت الصلاحية';
-              const btn = document.getElementById('confirmCancelBtn');
-              if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; }
+              // Refresh the quote automatically
+              initiateCancel(bookingId);
             } else {
               el.textContent = `${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')} دقيقة`;
             }
