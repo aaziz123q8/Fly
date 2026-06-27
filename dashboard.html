@@ -297,22 +297,18 @@
       const dep      = b.departure_at ? new Date(b.departure_at).toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'}) : '—';
       const amount   = b.total_amount || b.total_price;
       const currency = b.currency || 'GBP';
-      // Source of truth: Duffel order.conditions (change/refund policy)
-      // available_actions = API endpoints available, NOT airline policy
+      // Both frontend and backend use available_actions from Duffel as the gate
       const actions   = Array.isArray(b.available_actions) ? b.available_actions : [];
       const refConds  = b.refund_conditions || null;
       const chgConds  = b.change_conditions || null;
       const status    = b.status || 'pending';
 
       const isConfirmed = status === 'confirmed';
-      // change_conditions is the airline's actual policy — use it as primary
-      const canChange = isConfirmed && (chgConds ? chgConds.allowed !== false : false);
-      // bags/seats: no conditions equivalent, use available_actions
+      // available_actions controls which buttons show (matches backend Guard 3)
+      const canChange = isConfirmed && actions.includes('change') && (chgConds ? chgConds.allowed !== false : true);
       const canBags   = isConfirmed && actions.includes('add_baggage');
       const canSeats  = isConfirmed && actions.includes('add_seats');
-      // cancel: refund_conditions is primary; if missing fall back to available_actions
-      const refAllowed = refConds ? refConds.allowed !== false : actions.includes('cancel');
-      const canCancel  = isConfirmed && refAllowed;
+      const canCancel = isConfirmed && actions.includes('cancel') && (refConds ? refConds.allowed !== false : true);
 
       const btnTicket  = `<a href="confirmation.html?ref=${ref}" class="btn btn-sm btn-outline">🎫 التذكرة</a>`;
       const btnInvoice = `<a href="invoice.html?ref=${ref}" class="btn btn-sm" style="background:#f0f9ff;color:#0369a1;border:1px solid #7dd3fc">🧾 الفاتورة</a>`;
