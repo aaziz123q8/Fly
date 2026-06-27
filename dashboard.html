@@ -255,8 +255,14 @@
   }
 
   const statusLabels = {
-    confirmed: ['مؤكد', 'success'], pending: ['معلق', 'warning'],
-    cancelled: ['ملغي', 'danger'], completed: ['مكتمل', 'info'],
+    confirmed:                        ['مؤكد ✅',        'success'],
+    pending:                          ['معلق ⏳',         'warning'],
+    awaiting_payment:                 ['في انتظار الدفع','warning'],
+    cancelled:                        ['ملغي ❌',         'danger'],
+    cancellation_pending_refund:      ['ملغي - استرداد قيد المعالجة', 'danger'],
+    cancellation_pending_manual_refund:['ملغي - استرداد يدوي', 'danger'],
+    completed:                        ['مكتمل',          'info'],
+    changed:                          ['تم التغيير',     'info'],
   };
 
   function badgeHtml(status) {

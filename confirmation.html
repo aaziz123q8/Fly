@@ -199,11 +199,11 @@
   <div class="container">
     <div class="confirm-wrap">
 
-      <!-- Success header (screen only) -->
-      <div class="success-hero print-hide">
-        <div class="success-icon">✅</div>
-        <h1 style="color:#0f2444;font-size:1.7rem;margin:0 0 6px">تم الحجز بنجاح!</h1>
-        <p style="color:#888;margin:0 0 20px">سيصلك تأكيد الحجز على بريدك الإلكتروني خلال دقائق</p>
+      <!-- Success/Status header (screen only) -->
+      <div id="statusHero" class="success-hero print-hide">
+        <div id="heroIcon" class="success-icon">✅</div>
+        <h1 id="heroTitle" style="color:#0f2444;font-size:1.7rem;margin:0 0 6px">تم الحجز بنجاح!</h1>
+        <p id="heroSubtitle" style="color:#888;margin:0 0 20px">سيصلك تأكيد الحجز على بريدك الإلكتروني خلال دقائق</p>
       </div>
 
       <!-- ════ TICKET CARD ════ -->
@@ -386,13 +386,25 @@ function paxTypeLabel(t) {
   return {adult:'بالغ', child:'طفل', infant:'رضيع'}[t] || t;
 }
 function statusLabel(s) {
-  return {confirmed:'✅ مؤكد', pending:'⏳ قيد المعالجة', cancelled:'❌ ملغي',
-          awaiting_payment:'⏳ بانتظار الدفع', failed:'❌ فشل'}[s] || s;
+  return {
+    confirmed:'✅ مؤكد',
+    pending:'⏳ قيد المعالجة',
+    awaiting_payment:'⏳ بانتظار الدفع',
+    cancelled:'❌ ملغي',
+    cancellation_pending_refund:'❌ ملغي - استرداد قيد المعالجة',
+    cancellation_pending_manual_refund:'❌ ملغي - استرداد يدوي',
+    completed:'✅ مكتمل',
+    changed:'✏️ تم التغيير',
+    failed:'❌ فشل',
+  }[s] || s;
 }
 function statusClass(s) {
-  if (s === 'confirmed') return 'badge-confirmed';
-  if (s === 'cancelled' || s === 'failed') return 'badge-cancelled';
+  if (s === 'confirmed' || s === 'completed' || s === 'changed') return 'badge-confirmed';
+  if (s === 'cancelled' || s === 'failed' || s?.startsWith('cancellation_')) return 'badge-cancelled';
   return 'badge-pending';
+}
+function isCancelledStatus(s) {
+  return s === 'cancelled' || s === 'failed' || (s && s.startsWith('cancellation_'));
 }
 
 // ── Render ───────────────────────────────────────────────────────
@@ -403,9 +415,19 @@ function renderBooking(b) {
   if (b.booking_reference) document.getElementById('refFm').textContent = b.booking_reference;
 
   // Status
+  const st = b.status || 'confirmed';
   const badge = document.getElementById('statusBadge');
-  badge.textContent = statusLabel(b.status || 'confirmed');
-  badge.className = 'tk-status-badge ' + statusClass(b.status || 'confirmed');
+  badge.textContent = statusLabel(st);
+  badge.className = 'tk-status-badge ' + statusClass(st);
+
+  // Hero header — show cancelled state prominently
+  if (isCancelledStatus(st)) {
+    document.getElementById('heroIcon').textContent = '❌';
+    document.getElementById('heroTitle').textContent = 'تم إلغاء الحجز';
+    document.getElementById('heroTitle').style.color = '#c0392b';
+    document.getElementById('heroSubtitle').textContent = 'هذا الحجز ملغي. إذا كنت تنتظر استرداد المبلغ، سيتم معالجته خلال 5-10 أيام عمل.';
+    document.getElementById('statusHero').style.background = 'linear-gradient(135deg,#fff5f5,#ffe0e0)';
+  }
 
   // PNR — try multiple sources in priority order
   const pnr = b.duffel_booking_reference

@@ -1779,10 +1779,17 @@ class FlightBookingService
         $cancellationExpiresAt   = !empty($cancellation['expires_at'])
             ? date('Y-m-d H:i:s', strtotime($cancellation['expires_at'])) : null;
 
-        // Determine status change.
+        // Determine status from Duffel order.status field + cancelled_at
+        $duffelOrderStatus = strtolower($order['status'] ?? '');
         $newStatus = $booking['status'];
-        if ($cancelledAt && $newStatus !== 'cancelled') {
-            $newStatus = 'cancelled';
+
+        if ($cancelledAt || $duffelOrderStatus === 'cancelled') {
+            // Never downgrade from a more specific cancellation status
+            if (!in_array($newStatus, ['cancellation_pending_refund', 'cancellation_pending_manual_refund'], true)) {
+                $newStatus = 'cancelled';
+            }
+        } elseif ($duffelOrderStatus === 'confirmed' && in_array($newStatus, ['pending', 'awaiting_payment'], true)) {
+            $newStatus = 'confirmed';
         }
 
         // Base fields — always exist (migration 017).
