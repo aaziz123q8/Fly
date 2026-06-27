@@ -110,7 +110,6 @@
     .scan-progress-bar { flex:1; height:6px; background:#e5e7eb; border-radius:4px; overflow:hidden; }
     .scan-progress-fill { height:100%; background:linear-gradient(90deg,#1B4F8E,#7c3aed); border-radius:4px; width:0%; transition:width .4s; }
 
-    /* Camera modal styles moved inline to the element */
 
     /* ── Form Sections ── */
     .form-section { margin-bottom:4px; }
@@ -187,14 +186,15 @@
       <div class="scanner-box">
         <div class="scanner-box-title">📷 مسح جواز السفر أو الهوية تلقائياً</div>
         <div class="scanner-btns">
-          <!-- Camera: direct onclick, no hidden input tricks -->
-          <button class="scanner-btn" id="btnCamera" type="button" onclick="openCamera()">
+          <!-- Camera: native OS camera via capture attribute — works on ALL mobile browsers without getUserMedia -->
+          <label class="scanner-btn" style="cursor:pointer;margin:0">
             <span>📸</span><span>التقاط بالكاميرا</span>
-          </button>
-          <!-- Upload: use <label> wrapping the input — works on all mobile browsers -->
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" onchange="scanFile(this)">
+          </label>
+          <!-- Gallery / file picker: no capture → opens gallery on mobile, file dialog on desktop -->
           <label class="scanner-btn" style="cursor:pointer;margin:0">
             <span>🖼</span><span>رفع صورة</span>
-            <input type="file" id="passportFile" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="scanFile(this)">
+            <input type="file" id="galleryInput" accept="image/*" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0" onchange="scanFile(this)">
           </label>
         </div>
         <div class="scanner-progress" id="scanProgress">
@@ -330,26 +330,6 @@
   </div>
 </div>
 
-<!-- ════════ Camera Modal ════════ -->
-<div id="cameraModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;align-items:center;justify-content:center;padding:16px">
-  <div id="cameraBox" style="background:#111;border-radius:16px;width:100%;max-width:500px;overflow:hidden">
-    <div style="padding:12px 18px;background:#000;color:#fff;display:flex;justify-content:space-between;align-items:center">
-      <span id="camStatus" style="font-size:.88rem;font-weight:600">جاري تشغيل الكاميرا...</span>
-      <button onclick="closeCamera()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center">✕</button>
-    </div>
-    <div style="position:relative;background:#000;min-height:200px">
-      <video id="camVideo" autoplay playsinline muted style="width:100%;display:block;max-height:360px;object-fit:cover"></video>
-      <!-- MRZ guide overlay -->
-      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:88%;height:32%;border:2.5px solid #38bdf8;border-radius:6px;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,.35)"></div>
-      <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);color:#fff;font-size:.72rem;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:20px;white-space:nowrap">ضع المنطقة السفلى من الجواز داخل الإطار</div>
-    </div>
-    <canvas id="camCanvas" style="display:none"></canvas>
-    <div style="padding:14px;display:flex;justify-content:center;gap:12px">
-      <button type="button" onclick="closeCamera()" style="padding:11px 20px;border:1.5px solid rgba(255,255,255,.3);background:transparent;color:#fff;border-radius:10px;cursor:pointer;font-size:.88rem">إلغاء</button>
-      <button type="button" class="btn btn-primary" onclick="captureCamera()" id="btnCapture" style="padding:11px 32px;font-size:.95rem" disabled>📸 التقاط</button>
-    </div>
-  </div>
-</div>
 
 <!-- Bottom Nav -->
 <nav class="bottom-nav">
@@ -365,8 +345,6 @@
 if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=travelers.html';
 
 let travelers = [];
-let cameraStream = null;
-let tesseractReady = false;
 
 /* ══════════════════════ Data ══════════════════════ */
 async function loadTravelers() {
@@ -555,12 +533,14 @@ function setScanUI(statusText, pct) {
 }
 
 function setScanBtnsDisabled(disabled) {
-  document.getElementById('btnCamera').disabled = disabled;
-  // label wraps the file input — disable/enable the input inside
-  const fi = document.getElementById('passportFile');
-  fi.disabled = disabled;
-  fi.closest('label').style.opacity = disabled ? '.55' : '1';
-  fi.closest('label').style.pointerEvents = disabled ? 'none' : '';
+  // Disable all file inputs + their labels during scanning
+  ['cameraInput', 'galleryInput'].forEach(id => {
+    const fi = document.getElementById(id);
+    if (!fi) return;
+    fi.disabled = disabled;
+    fi.closest('label').style.opacity = disabled ? '.55' : '1';
+    fi.closest('label').style.pointerEvents = disabled ? 'none' : '';
+  });
 }
 
 async function scanImageData(imageData) {
@@ -744,75 +724,11 @@ function scanFile(input) {
   };
   img.onerror = () => { URL.revokeObjectURL(url); showToast('تعذر قراءة الصورة', 'error'); };
   img.src = url;
-  input.value = ''; // allow re-selecting same file
+  // Reset so the same file/photo can be re-selected
+  setTimeout(() => { input.value = ''; }, 500);
 }
 
-/* ── Camera ── */
-async function openCamera() {
-  if (!window.isSecureContext) {
-    showToast('الكاميرا تتطلب HTTPS — استخدم رفع الصورة بدلاً', 'error');
-    return;
-  }
-  if (!navigator.mediaDevices?.getUserMedia) {
-    // On some mobile browsers, try the older API
-    const legacyGetUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
-    if (!legacyGetUserMedia) {
-      showToast('الكاميرا غير مدعومة في هذا المتصفح — استخدم رفع الصورة', 'error');
-      return;
-    }
-  }
-
-  const modal    = document.getElementById('cameraModal');
-  const video    = document.getElementById('camVideo');
-  const capBtn   = document.getElementById('btnCapture');
-  const camStatus = document.getElementById('camStatus');
-
-  modal.style.display = 'flex';
-  capBtn.disabled = true;
-  if (camStatus) camStatus.textContent = 'جاري تشغيل الكاميرا...';
-
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
-      audio: false
-    });
-    video.srcObject = cameraStream;
-    // Don't await play() — autoplay attribute handles it; just enable button once metadata loads
-    video.onloadedmetadata = () => {
-      capBtn.disabled = false;
-      if (camStatus) camStatus.textContent = 'وجّه الكاميرا نحو صفحة الجواز';
-    };
-  } catch(err) {
-    modal.style.display = 'none';
-    let msg = 'تعذر فتح الكاميرا';
-    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-      msg = 'تم رفض إذن الكاميرا — اضغط على أيقونة الكاميرا في شريط العنوان واسمح بالوصول';
-    } else if (err.name === 'NotFoundError') {
-      msg = 'لا توجد كاميرا على هذا الجهاز — استخدم رفع الصورة';
-    }
-    showToast(msg, 'error');
-  }
-}
-
-function closeCamera() {
-  document.getElementById('cameraModal').style.display = 'none';
-  const v = document.getElementById('camVideo');
-  if (v) { v.srcObject = null; v.onloadedmetadata = null; }
-  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
-}
-
-function captureCamera() {
-  const video  = document.getElementById('camVideo');
-  const canvas = document.getElementById('camCanvas');
-  const w = video.videoWidth  || 1280;
-  const h = video.videoHeight || 720;
-  canvas.width  = w;
-  canvas.height = h;
-  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
-  closeCamera();
-  scanImageData(dataUrl);
-}
+/* ── Camera: handled natively by <input capture="environment"> — no getUserMedia needed ── */
 
 /* ══════════════════════ Toast ══════════════════════ */
 function showToast(msg, type = 'info') {
