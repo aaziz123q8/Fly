@@ -110,17 +110,7 @@
     .scan-progress-bar { flex:1; height:6px; background:#e5e7eb; border-radius:4px; overflow:hidden; }
     .scan-progress-fill { height:100%; background:linear-gradient(90deg,#1B4F8E,#7c3aed); border-radius:4px; width:0%; transition:width .4s; }
 
-    /* ── Camera Modal ── */
-    #cameraModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:2000; align-items:center; justify-content:center; padding:20px; }
-    #cameraModal.active { display:flex; }
-    #cameraBox { background:#111; border-radius:16px; width:100%; max-width:500px; overflow:hidden; }
-    #cameraBox video { width:100%; display:block; max-height:340px; object-fit:cover; }
-    .cam-guide {
-      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-      width:90%; max-width:380px; height:160px;
-      border:3px solid #38bdf8; border-radius:8px; pointer-events:none;
-    }
-    #cameraBox .cam-footer { padding:16px; display:flex; justify-content:center; gap:12px; }
+    /* Camera modal styles moved inline to the element */
 
     /* ── Form Sections ── */
     .form-section { margin-bottom:4px; }
@@ -197,13 +187,15 @@
       <div class="scanner-box">
         <div class="scanner-box-title">📷 مسح جواز السفر أو الهوية تلقائياً</div>
         <div class="scanner-btns">
-          <button class="scanner-btn" id="btnCamera" onclick="openCamera()">
+          <!-- Camera: direct onclick, no hidden input tricks -->
+          <button class="scanner-btn" id="btnCamera" type="button" onclick="openCamera()">
             <span>📸</span><span>التقاط بالكاميرا</span>
           </button>
-          <button class="scanner-btn" onclick="document.getElementById('passportFile').click()">
+          <!-- Upload: use <label> wrapping the input — works on all mobile browsers -->
+          <label class="scanner-btn" style="cursor:pointer;margin:0">
             <span>🖼</span><span>رفع صورة</span>
-          </button>
-          <input type="file" id="passportFile" accept="image/*" style="display:none" onchange="scanFile(this)">
+            <input type="file" id="passportFile" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="scanFile(this)">
+          </label>
         </div>
         <div class="scanner-progress" id="scanProgress">
           <span id="scanStatus">جاري المسح...</span>
@@ -339,19 +331,22 @@
 </div>
 
 <!-- ════════ Camera Modal ════════ -->
-<div id="cameraModal">
-  <div id="cameraBox">
-    <div style="padding:16px 20px;background:#000;color:#fff;display:flex;justify-content:space-between;align-items:center">
-      <span style="font-weight:700">📷 وجّه الكاميرا نحو صفحة الجواز</span>
-      <button onclick="closeCamera()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem">✕</button>
+<div id="cameraModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;align-items:center;justify-content:center;padding:16px">
+  <div id="cameraBox" style="background:#111;border-radius:16px;width:100%;max-width:500px;overflow:hidden">
+    <div style="padding:12px 18px;background:#000;color:#fff;display:flex;justify-content:space-between;align-items:center">
+      <span id="camStatus" style="font-size:.88rem;font-weight:600">جاري تشغيل الكاميرا...</span>
+      <button onclick="closeCamera()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center">✕</button>
     </div>
-    <div style="position:relative">
-      <video id="camVideo" autoplay playsinline muted></video>
-      <div class="cam-guide"></div>
+    <div style="position:relative;background:#000;min-height:200px">
+      <video id="camVideo" autoplay playsinline muted style="width:100%;display:block;max-height:360px;object-fit:cover"></video>
+      <!-- MRZ guide overlay -->
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:88%;height:32%;border:2.5px solid #38bdf8;border-radius:6px;pointer-events:none;box-shadow:0 0 0 9999px rgba(0,0,0,.35)"></div>
+      <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);color:#fff;font-size:.72rem;background:rgba(0,0,0,.6);padding:3px 10px;border-radius:20px;white-space:nowrap">ضع المنطقة السفلى من الجواز داخل الإطار</div>
     </div>
     <canvas id="camCanvas" style="display:none"></canvas>
-    <div class="cam-footer">
-      <button class="btn btn-primary" onclick="captureCamera()" id="btnCapture" style="padding:12px 32px;font-size:1rem">📸 التقاط</button>
+    <div style="padding:14px;display:flex;justify-content:center;gap:12px">
+      <button type="button" onclick="closeCamera()" style="padding:11px 20px;border:1.5px solid rgba(255,255,255,.3);background:transparent;color:#fff;border-radius:10px;cursor:pointer;font-size:.88rem">إلغاء</button>
+      <button type="button" class="btn btn-primary" onclick="captureCamera()" id="btnCapture" style="padding:11px 32px;font-size:.95rem" disabled>📸 التقاط</button>
     </div>
   </div>
 </div>
@@ -550,46 +545,154 @@ async function deleteTraveler(id, idx) {
   }
 }
 
-/* ══════════════════════ Passport Scanner (backend AI) ══════════════════════ */
+/* ══════════════════════ Passport Scanner ══════════════════════ */
+
+function setScanUI(statusText, pct) {
+  const p = document.getElementById('scanProgress');
+  document.getElementById('scanStatus').textContent = statusText;
+  document.getElementById('scanFill').style.width = pct + '%';
+  if (pct > 0) p.classList.add('visible'); else p.classList.remove('visible');
+}
+
+function setScanBtnsDisabled(disabled) {
+  document.getElementById('btnCamera').disabled = disabled;
+  // label wraps the file input — disable/enable the input inside
+  const fi = document.getElementById('passportFile');
+  fi.disabled = disabled;
+  fi.closest('label').style.opacity = disabled ? '.55' : '1';
+  fi.closest('label').style.pointerEvents = disabled ? 'none' : '';
+}
 
 async function scanImageData(imageData) {
-  const progress = document.getElementById('scanProgress');
-  const fill     = document.getElementById('scanFill');
-  const status   = document.getElementById('scanStatus');
-  const result   = document.getElementById('scanResult');
-  const btns     = document.querySelectorAll('.scanner-btn');
-
-  progress.classList.add('visible');
-  status.textContent = 'جاري إرسال الصورة للمعالجة...';
-  fill.style.width = '20%';
+  const result = document.getElementById('scanResult');
   result.innerHTML = '';
-  btns.forEach(b => b.disabled = true);
+  setScanUI('جاري الاتصال بالخادم...', 20);
+  setScanBtnsDisabled(true);
 
-  // Fake progress animation while waiting
+  // Animate progress while waiting
   let pct = 20;
-  const ticker = setInterval(() => {
-    pct = Math.min(pct + 6, 85);
-    fill.style.width = pct + '%';
-  }, 600);
+  const ticker = setInterval(() => { pct = Math.min(pct + 5, 88); setScanUI(document.getElementById('scanStatus').textContent, pct); }, 700);
+
+  let usedFallback = false;
 
   try {
+    // ── Primary: backend Claude Vision API ──
     const res = await Api.post('/api/passport/scan', { image: imageData }, true);
     clearInterval(ticker);
-    fill.style.width = '100%';
-    status.textContent = 'اكتمل المسح ✓';
+    setScanUI('اكتمل المسح ✓', 100);
+    applyScannedDataToForm(res.data || {});
+    result.innerHTML = `<div class="scan-badge">✅ تم استخراج البيانات بالذكاء الاصطناعي — راجع وتحقق قبل الحفظ</div>`;
 
-    const d = res.data || {};
-    applyScannedDataToForm(d);
-    result.innerHTML = `<div class="scan-badge">✅ تم استخراج البيانات — راجع وتحقق من الدقة قبل الحفظ</div>`;
-  } catch(err) {
+  } catch(backendErr) {
     clearInterval(ticker);
-    fill.style.width = '0%';
-    progress.classList.remove('visible');
-    const msg = err.message || 'تعذر قراءة الوثيقة';
-    result.innerHTML = `<div class="scan-badge error">⚠️ ${msg}</div>`;
+    // ── Fallback: client-side Tesseract.js OCR (MRZ) ──
+    // Works on Hostinger server (CDN not blocked there)
+    if (backendErr.status === 503 || backendErr.status === 502 || !navigator.onLine || String(backendErr.message).includes('غير مفعّلة')) {
+      usedFallback = true;
+      try {
+        setScanUI('جاري تحميل محرك القراءة...', 15);
+        await loadTesseract();
+        setScanUI('جاري المسح المحلي...', 35);
+        const parsed = await runTesseractMRZ(imageData, (p) => {
+          setScanUI('جاري القراءة... ' + Math.round(p * 100) + '%', 35 + Math.round(p * 55));
+        });
+        setScanUI('اكتمل المسح ✓', 100);
+        if (parsed) {
+          applyScannedDataToForm(parsed);
+          result.innerHTML = `<div class="scan-badge">✅ تم استخراج البيانات — راجع وتحقق قبل الحفظ</div>`;
+        } else {
+          setScanUI('', 0);
+          result.innerHTML = `<div class="scan-badge error">⚠️ لم يُتعرف على نص الوثيقة — حاول بصورة أوضح وبإضاءة جيدة</div>`;
+        }
+      } catch(ocrErr) {
+        setScanUI('', 0);
+        result.innerHTML = `<div class="scan-badge error">⚠️ ${ocrErr.message || 'فشل المسح'}</div>`;
+      }
+    } else {
+      setScanUI('', 0);
+      result.innerHTML = `<div class="scan-badge error">⚠️ ${backendErr.message || 'تعذر قراءة الوثيقة'}</div>`;
+    }
   } finally {
-    btns.forEach(b => b.disabled = false);
+    setScanBtnsDisabled(false);
   }
+}
+
+/* ── Tesseract.js loader + MRZ runner ── */
+function loadTesseract() {
+  return new Promise((resolve, reject) => {
+    if (window.Tesseract) { resolve(); return; }
+    const s = document.createElement('script');
+    // Try unpkg first, fallback to jsdelivr
+    s.src = 'https://unpkg.com/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s2.onload = () => resolve();
+      s2.onerror = () => reject(new Error('تعذر تحميل محرك القراءة — تحقق من اتصال الإنترنت'));
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s);
+  });
+}
+
+async function runTesseractMRZ(imageData, onProgress) {
+  const worker = await Tesseract.createWorker('eng', 1, {
+    logger: m => { if (m.status === 'recognizing text') onProgress(m.progress); }
+  });
+  await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<' });
+  const { data: { text } } = await worker.recognize(imageData);
+  await worker.terminate();
+  return parseMRZText(text);
+}
+
+function parseMRZText(text) {
+  const lines = text.toUpperCase().replace(/[^A-Z0-9<\n]/g, '').split('\n')
+    .map(l => l.trim()).filter(l => l.length >= 30);
+
+  let L1 = null, L2 = null;
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (lines[i].length >= 38 && lines[i+1].length >= 38) {
+      L1 = lines[i].padEnd(44,'<').substring(0,44);
+      L2 = lines[i+1].padEnd(44,'<').substring(0,44);
+      break;
+    }
+  }
+  if (!L1) {
+    const c = lines.filter(l => l.length >= 38);
+    if (c.length >= 2) { L1 = c[0].padEnd(44,'<').substring(0,44); L2 = c[1].padEnd(44,'<').substring(0,44); }
+  }
+  if (!L1 || !L2) return null;
+
+  try {
+    const country   = L1.substring(2,5).replace(/</g,'');
+    const nameField = L1.substring(5);
+    const [surPart, givenPart=''] = nameField.split('<<');
+    const surname   = surPart.replace(/</g,' ').trim();
+    const givens    = givenPart.replace(/</g,' ').trim().split(' ').filter(Boolean);
+    const docNum    = L2.substring(0,9).replace(/</g,'');
+    const nat       = L2.substring(10,13).replace(/</g,'');
+    const dobRaw    = L2.substring(13,19);
+    const sex       = L2[20];
+    const expRaw    = L2.substring(21,27);
+
+    const parseYMD = (yymmdd, isBirth) => {
+      if (!yymmdd || yymmdd.includes('<')) return '';
+      const yy = parseInt(yymmdd.substring(0,2));
+      const mm = yymmdd.substring(2,4); const dd = yymmdd.substring(4,6);
+      const now = new Date().getFullYear() % 100;
+      const year = isBirth ? (yy > now ? 1900+yy : 2000+yy) : (yy < now ? 2100+yy : 2000+yy);
+      return `${year}-${mm}-${dd}`;
+    };
+
+    return {
+      first_name: givens[0] || '', middle_name: givens.slice(1).join(' '),
+      surname, nationality: nat, doc_country: country,
+      doc_number: docNum, date_of_birth: parseYMD(dobRaw,true),
+      doc_expiry: parseYMD(expRaw,false),
+      gender: sex==='M'?'male':sex==='F'?'female':'', doc_type:'passport',
+    };
+  } catch { return null; }
 }
 
 function applyScannedDataToForm(d) {
@@ -621,51 +724,92 @@ function applyScannedDataToForm(d) {
 function scanFile(input) {
   if (!input.files || !input.files[0]) return;
   const file = input.files[0];
-  const reader = new FileReader();
-  reader.onload = e => scanImageData(e.target.result);
-  reader.readAsDataURL(file);
-  input.value = ''; // reset so same file can be selected again
+
+  // Resize large images before scanning to keep payload small
+  const img = new Image();
+  const url = URL.createObjectURL(file);
+  img.onload = () => {
+    URL.revokeObjectURL(url);
+    const MAX = 1600;
+    let w = img.width, h = img.height;
+    if (w > MAX || h > MAX) {
+      const r = Math.min(MAX/w, MAX/h);
+      w = Math.round(w*r); h = Math.round(h*r);
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+    scanImageData(dataUrl);
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); showToast('تعذر قراءة الصورة', 'error'); };
+  img.src = url;
+  input.value = ''; // allow re-selecting same file
 }
 
 /* ── Camera ── */
 async function openCamera() {
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showToast('الكاميرا غير مدعومة في هذا المتصفح — استخدم رفع الصورة بدلاً', 'error');
+  if (!window.isSecureContext) {
+    showToast('الكاميرا تتطلب HTTPS — استخدم رفع الصورة بدلاً', 'error');
     return;
   }
-  const modal  = document.getElementById('cameraModal');
-  const video  = document.getElementById('camVideo');
-  const capBtn = document.getElementById('btnCapture');
-  modal.classList.add('active');
+  if (!navigator.mediaDevices?.getUserMedia) {
+    // On some mobile browsers, try the older API
+    const legacyGetUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia;
+    if (!legacyGetUserMedia) {
+      showToast('الكاميرا غير مدعومة في هذا المتصفح — استخدم رفع الصورة', 'error');
+      return;
+    }
+  }
+
+  const modal    = document.getElementById('cameraModal');
+  const video    = document.getElementById('camVideo');
+  const capBtn   = document.getElementById('btnCapture');
+  const camStatus = document.getElementById('camStatus');
+
+  modal.style.display = 'flex';
   capBtn.disabled = true;
+  if (camStatus) camStatus.textContent = 'جاري تشغيل الكاميرا...';
+
   try {
     cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
     });
     video.srcObject = cameraStream;
-    await video.play();
-    capBtn.disabled = false;
+    // Don't await play() — autoplay attribute handles it; just enable button once metadata loads
+    video.onloadedmetadata = () => {
+      capBtn.disabled = false;
+      if (camStatus) camStatus.textContent = 'وجّه الكاميرا نحو صفحة الجواز';
+    };
   } catch(err) {
-    modal.classList.remove('active');
-    const msg = err.name === 'NotAllowedError'
-      ? 'تم رفض إذن الكاميرا — يرجى السماح بالوصول في إعدادات المتصفح'
-      : 'تعذر فتح الكاميرا: ' + err.message;
+    modal.style.display = 'none';
+    let msg = 'تعذر فتح الكاميرا';
+    if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+      msg = 'تم رفض إذن الكاميرا — اضغط على أيقونة الكاميرا في شريط العنوان واسمح بالوصول';
+    } else if (err.name === 'NotFoundError') {
+      msg = 'لا توجد كاميرا على هذا الجهاز — استخدم رفع الصورة';
+    }
     showToast(msg, 'error');
   }
 }
 
 function closeCamera() {
-  document.getElementById('cameraModal').classList.remove('active');
+  document.getElementById('cameraModal').style.display = 'none';
+  const v = document.getElementById('camVideo');
+  if (v) { v.srcObject = null; v.onloadedmetadata = null; }
   if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
 }
 
 function captureCamera() {
   const video  = document.getElementById('camVideo');
   const canvas = document.getElementById('camCanvas');
-  canvas.width  = video.videoWidth  || 640;
-  canvas.height = video.videoHeight || 480;
-  canvas.getContext('2d').drawImage(video, 0, 0);
-  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  const w = video.videoWidth  || 1280;
+  const h = video.videoHeight || 720;
+  canvas.width  = w;
+  canvas.height = h;
+  canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
   closeCamera();
   scanImageData(dataUrl);
 }
