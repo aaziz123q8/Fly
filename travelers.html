@@ -85,32 +85,6 @@
     .modal-close:hover { background:rgba(255,255,255,.3); }
     .modal-body { padding:24px; }
 
-    /* ── Scanner Section ── */
-    .scanner-box {
-      background:linear-gradient(135deg,#f0f5ff,#e8f4fd);
-      border:2px dashed #93c5fd; border-radius:16px;
-      padding:20px; margin-bottom:24px;
-    }
-    .scanner-box-title { font-size:0.85rem; font-weight:700; color:#1B4F8E; margin-bottom:14px; display:flex; align-items:center; gap:6px; }
-    .scanner-btns { display:flex; gap:10px; flex-wrap:wrap; }
-    .scanner-btn {
-      flex:1; min-width:130px; padding:12px 16px; border-radius:12px;
-      border:2px solid #93c5fd; background:#fff; color:#1B4F8E;
-      font-weight:600; font-size:0.85rem; cursor:pointer; transition:all .2s;
-      display:flex; align-items:center; justify-content:center; gap:8px;
-    }
-    .scanner-btn:hover:not(:disabled) { background:#1B4F8E; color:#fff; border-color:#1B4F8E; }
-    .scanner-btn:disabled { opacity:.55; cursor:not-allowed; }
-    .scanner-progress {
-      margin-top:14px;
-      background:#fff; border-radius:10px; padding:12px 16px;
-      font-size:0.82rem; color:#1B4F8E; display:none; align-items:center; gap:10px;
-    }
-    .scanner-progress.visible { display:flex; }
-    .scan-progress-bar { flex:1; height:6px; background:#e5e7eb; border-radius:4px; overflow:hidden; }
-    .scan-progress-fill { height:100%; background:linear-gradient(90deg,#1B4F8E,#7c3aed); border-radius:4px; width:0%; transition:width .4s; }
-
-
     /* ── Form Sections ── */
     .form-section { margin-bottom:4px; }
     .form-section-title {
@@ -181,28 +155,6 @@
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="modal-body">
-
-      <!-- Scanner Section -->
-      <div class="scanner-box">
-        <div class="scanner-box-title">📷 مسح جواز السفر أو الهوية تلقائياً</div>
-        <div class="scanner-btns">
-          <!-- Camera: native OS camera via capture attribute — works on ALL mobile browsers without getUserMedia -->
-          <label class="scanner-btn" style="cursor:pointer;margin:0">
-            <span>📸</span><span>التقاط بالكاميرا</span>
-            <input type="file" id="cameraInput" accept="image/*" capture="environment" style="position:absolute;opacity:0;width:0;height:0;overflow:hidden" onchange="scanFile(this)">
-          </label>
-          <!-- Gallery / file picker: no capture → opens gallery on mobile, file dialog on desktop -->
-          <label class="scanner-btn" style="cursor:pointer;margin:0">
-            <span>🖼</span><span>رفع صورة</span>
-            <input type="file" id="galleryInput" accept="image/*" style="position:absolute;width:0;height:0;overflow:hidden;opacity:0" onchange="scanFile(this)">
-          </label>
-        </div>
-        <div class="scanner-progress" id="scanProgress">
-          <span id="scanStatus">جاري المسح...</span>
-          <div class="scan-progress-bar"><div class="scan-progress-fill" id="scanFill"></div></div>
-        </div>
-        <div id="scanResult"></div>
-      </div>
 
       <!-- Form -->
       <form onsubmit="saveTraveler(event)">
@@ -456,9 +408,6 @@ function openModal(traveler = null) {
   if (!ph.startsWith('+') && (traveler?.phone||'').startsWith('+'))
     ph = (traveler.phone||'').replace(/\s+/g,'');
   set('tPhone', ph);
-  // Reset scanner
-  document.getElementById('scanResult').innerHTML = '';
-  document.getElementById('scanProgress').classList.remove('visible');
   document.getElementById('travelerModal').classList.add('active');
   document.body.style.overflow = 'hidden';
 }
@@ -522,198 +471,6 @@ async function deleteTraveler(id, idx) {
     showToast(err.message || 'فشل الحذف', 'error');
   }
 }
-
-/* ══════════════════════ Passport Scanner ══════════════════════ */
-
-function setScanUI(statusText, pct) {
-  const p = document.getElementById('scanProgress');
-  document.getElementById('scanStatus').textContent = statusText;
-  document.getElementById('scanFill').style.width = pct + '%';
-  if (pct > 0) p.classList.add('visible'); else p.classList.remove('visible');
-}
-
-function setScanBtnsDisabled(disabled) {
-  // Disable all file inputs + their labels during scanning
-  ['cameraInput', 'galleryInput'].forEach(id => {
-    const fi = document.getElementById(id);
-    if (!fi) return;
-    fi.disabled = disabled;
-    fi.closest('label').style.opacity = disabled ? '.55' : '1';
-    fi.closest('label').style.pointerEvents = disabled ? 'none' : '';
-  });
-}
-
-async function scanImageData(imageData) {
-  const result = document.getElementById('scanResult');
-  result.innerHTML = '';
-
-  // Animate progress
-  let pct = 12;
-  setScanUI('جاري الاتصال بالخادم...', pct);
-  const ticker = setInterval(() => { pct = Math.min(pct + 4, 85); setScanUI(document.getElementById('scanStatus').textContent, pct); }, 700);
-
-  const done = (ok, msg) => {
-    clearInterval(ticker);
-    setScanUI(ok ? 'اكتمل ✓' : '', ok ? 100 : 0);
-    result.innerHTML = `<div class="scan-badge${ok ? '' : ' error'}">${ok ? '✅' : '⚠️'} ${msg}</div>`;
-    setScanBtnsDisabled(false);
-  };
-
-  // ── Try backend first (Claude Vision) ──
-  try {
-    const res = await Api.post('/api/passport/scan', { image: imageData }, true);
-    clearInterval(ticker);
-    setScanUI('اكتمل ✓', 100);
-    applyScannedDataToForm(res.data || {});
-    done(true, 'تم استخراج البيانات بالذكاء الاصطناعي — راجع وتحقق قبل الحفظ');
-    return;
-  } catch(_) { clearInterval(ticker); }
-
-  // ── Fallback: Tesseract.js (client-side MRZ OCR) ──
-  let pct2 = 10;
-  const ticker2 = setInterval(() => { pct2 = Math.min(pct2 + 3, 88); document.getElementById('scanFill').style.width = pct2 + '%'; }, 600);
-  try {
-    setScanUI('جاري تحميل محرك القراءة...', 10);
-    await loadTesseract();
-    setScanUI('جاري المسح...', 35);
-    const parsed = await runTesseractMRZ(imageData, p => {
-      const v = 35 + Math.round(p * 55);
-      setScanUI('جاري القراءة ' + Math.round(p * 100) + '%', v);
-    });
-    clearInterval(ticker2);
-    if (parsed) {
-      applyScannedDataToForm(parsed);
-      done(true, 'تم استخراج البيانات — راجع وتحقق قبل الحفظ');
-    } else {
-      done(false, 'لم يُتعرف على نص الوثيقة — التقط صورة أوضح بإضاءة جيدة');
-    }
-  } catch(err) {
-    clearInterval(ticker2);
-    done(false, err.message || 'فشل المسح — تعذر تحميل محرك القراءة');
-  }
-}
-
-/* ── Tesseract.js loader + MRZ runner ── */
-function loadTesseract() {
-  return new Promise((resolve, reject) => {
-    if (window.Tesseract) { resolve(); return; }
-    const s = document.createElement('script');
-    s.src = '/js/tesseract.min.js';
-    s.onload = () => resolve();
-    s.onerror = () => reject(new Error('تعذر تحميل محرك القراءة'));
-    document.head.appendChild(s);
-  });
-}
-
-async function runTesseractMRZ(imageData, onProgress) {
-  const worker = await Tesseract.createWorker('eng', 1, {
-    workerPath: '/js/tesseract.worker.min.js',
-    logger: m => { if (m.status === 'recognizing text') onProgress(m.progress); }
-  });
-  await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<' });
-  const { data: { text } } = await worker.recognize(imageData);
-  await worker.terminate();
-  return parseMRZText(text);
-}
-
-function parseMRZText(text) {
-  const lines = text.toUpperCase().replace(/[^A-Z0-9<\n]/g, '').split('\n')
-    .map(l => l.trim()).filter(l => l.length >= 30);
-
-  let L1 = null, L2 = null;
-  for (let i = 0; i < lines.length - 1; i++) {
-    if (lines[i].length >= 38 && lines[i+1].length >= 38) {
-      L1 = lines[i].padEnd(44,'<').substring(0,44);
-      L2 = lines[i+1].padEnd(44,'<').substring(0,44);
-      break;
-    }
-  }
-  if (!L1) {
-    const c = lines.filter(l => l.length >= 38);
-    if (c.length >= 2) { L1 = c[0].padEnd(44,'<').substring(0,44); L2 = c[1].padEnd(44,'<').substring(0,44); }
-  }
-  if (!L1 || !L2) return null;
-
-  try {
-    const country   = L1.substring(2,5).replace(/</g,'');
-    const nameField = L1.substring(5);
-    const [surPart, givenPart=''] = nameField.split('<<');
-    const surname   = surPart.replace(/</g,' ').trim();
-    const givens    = givenPart.replace(/</g,' ').trim().split(' ').filter(Boolean);
-    const docNum    = L2.substring(0,9).replace(/</g,'');
-    const nat       = L2.substring(10,13).replace(/</g,'');
-    const dobRaw    = L2.substring(13,19);
-    const sex       = L2[20];
-    const expRaw    = L2.substring(21,27);
-
-    const parseYMD = (yymmdd, isBirth) => {
-      if (!yymmdd || yymmdd.includes('<')) return '';
-      const yy = parseInt(yymmdd.substring(0,2));
-      const mm = yymmdd.substring(2,4); const dd = yymmdd.substring(4,6);
-      const now = new Date().getFullYear() % 100;
-      const year = isBirth ? (yy > now ? 1900+yy : 2000+yy) : (yy < now ? 2100+yy : 2000+yy);
-      return `${year}-${mm}-${dd}`;
-    };
-
-    return {
-      first_name: givens[0] || '', middle_name: givens.slice(1).join(' '),
-      surname, nationality: nat, doc_country: country,
-      doc_number: docNum, date_of_birth: parseYMD(dobRaw,true),
-      doc_expiry: parseYMD(expRaw,false),
-      gender: sex==='M'?'male':sex==='F'?'female':'', doc_type:'passport',
-    };
-  } catch { return null; }
-}
-
-function applyScannedDataToForm(d) {
-  const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
-  set('tFirst',      d.first_name);
-  set('tMiddle',     d.middle_name);
-  set('tLast',       d.surname);
-  set('tDocNum',     d.doc_number);
-  set('tDocExp',     d.doc_expiry);
-  set('tDob',        d.date_of_birth);
-  set('tDocCountry', d.doc_country);
-  if (d.gender) set('tGender', d.gender);
-  if (d.doc_type) {
-    const dtEl = document.getElementById('tDocType');
-    if (dtEl && ['passport','id_card','national_id'].includes(d.doc_type)) dtEl.value = d.doc_type;
-  }
-  const natEl = document.getElementById('tNationality');
-  if (natEl && d.nationality) {
-    const opt = natEl.querySelector(`option[value="${d.nationality}"]`);
-    if (opt) natEl.value = d.nationality;
-  }
-  const titleEl = document.getElementById('tTitle');
-  if (titleEl && !titleEl.value && d.gender) {
-    titleEl.value = d.gender === 'female' ? 'ms' : 'mr';
-  }
-}
-
-/* ── File Upload ── */
-function scanFile(input) {
-  if (!input.files || !input.files[0]) return;
-  const file = input.files[0];
-
-  // Show immediate feedback so user knows it's working
-  setScanUI('جاري قراءة الصورة...', 10);
-  setScanBtnsDisabled(true);
-  document.getElementById('scanResult').innerHTML = '';
-
-  const reader = new FileReader();
-  reader.onload = e => scanImageData(e.target.result);
-  reader.onerror = () => {
-    setScanUI('', 0);
-    setScanBtnsDisabled(false);
-    showToast('تعذر قراءة الملف', 'error');
-  };
-  reader.readAsDataURL(file);
-
-  // Reset input so same file can be picked again
-  setTimeout(() => { try { input.value = ''; } catch(e){} }, 1000);
-}
-
-/* ── Camera: handled natively by <input capture="environment"> — no getUserMedia needed ── */
 
 /* ══════════════════════ Toast ══════════════════════ */
 function showToast(msg, type = 'info') {
