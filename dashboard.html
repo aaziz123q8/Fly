@@ -93,8 +93,16 @@
 <!-- Dashboard Header -->
 <div class="dashboard-header">
   <div class="container">
-    <h1 id="greetingMsg">مرحباً 👋</h1>
-    <p>إدارة حجوزاتك ومتابعة رحلاتك في مكان واحد</p>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div>
+        <h1 id="greetingMsg">مرحباً 👋</h1>
+        <p>إدارة حجوزاتك ومتابعة رحلاتك في مكان واحد</p>
+      </div>
+      <div id="walletCard" onclick="openWalletModal()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:10px 18px;cursor:pointer;text-align:center;backdrop-filter:blur(4px);min-width:130px">
+        <div style="font-size:.72rem;color:rgba(255,255,255,.8);margin-bottom:2px">👛 رصيد المحفظة</div>
+        <div id="walletBalanceDisplay" style="font-size:1.2rem;font-weight:900;color:#fff">—</div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -715,30 +723,64 @@
     body.innerHTML = '<div style="text-align:center;padding:24px">جارٍ تحميل بيانات الإلغاء…</div>';
     modal.style.display = 'flex';
     try {
-      const res = await Api.post(`/api/flights/bookings/${bookingId}/cancel`, {}, true);
+      // Fetch cancellation quote + wallet balance in parallel
+      const [res, walletRes] = await Promise.all([
+        Api.post(`/api/flights/bookings/${bookingId}/cancel`, {}, true),
+        Api.get('/api/wallet/balance', true).catch(() => ({ balance: '0.00', currency: 'GBP' })),
+      ]);
       const d = res.data || res;
-      // Store cancellation_id for confirm step.
       modal.dataset.cancellationId = d.cancellation_id || '';
-      const refund = d.refund_amount ? `${parseFloat(d.refund_amount).toFixed(2)} ${d.refund_currency || ''}` : 'غير متاح';
-      const refundToMap = {balance:'رصيد المحفظة', original_payment:'البطاقة الأصلية', voucher:'قسيمة', arc_bsp_cash:'كاش'};
-      const refundTo = refundToMap[d.refund_to] || d.refund_to || '—';
+      const refund   = d.refund_amount ? `${parseFloat(d.refund_amount).toFixed(2)} ${d.refund_currency || ''}` : 'غير متاح';
+      const hasRefund = d.refund_amount && parseFloat(d.refund_amount) > 0;
+      const walletBal = walletRes.balance ? `${parseFloat(walletRes.balance).toFixed(2)} ${walletRes.currency||'GBP'}` : '0.00';
       const expiresAt = d.expires_at ? new Date(d.expires_at) : null;
       const expiryStr = expiresAt ? expiresAt.toLocaleString('ar-SA') : '—';
+
       body.innerHTML = `
         <p style="color:#555;margin-bottom:12px">هل تريد إلغاء هذا الحجز؟ يرجى مراجعة تفاصيل الاسترداد أدناه.</p>
-        <div style="background:#fff8e1;border-radius:8px;padding:12px 16px;margin-bottom:16px">
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:.9rem">
-            <div><span style="color:#92400e;font-weight:600">مبلغ الاسترداد:</span><br>${refund}</div>
-            <div><span style="color:#92400e;font-weight:600">طريقة الاسترداد:</span><br>${refundTo}</div>
+        <div style="background:#fff8e1;border-radius:8px;padding:12px 16px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;font-size:.9rem;margin-bottom:6px">
+            <span style="color:#92400e;font-weight:600">مبلغ الاسترداد:</span>
+            <strong style="color:#16a34a">${refund}</strong>
           </div>
-          <div style="margin-top:10px;font-size:.82rem;color:#b45309">
+          <div style="font-size:.82rem;color:#b45309">
             ⏰ ينتهي العرض: <span id="cancelExpiryCountdown" style="font-weight:700">${expiryStr}</span>
           </div>
         </div>
-        <div class="alert-warning" style="background:#fef3c7;border-radius:6px;padding:10px 14px;font-size:.85rem;color:#92400e;margin-bottom:0">
+
+        ${hasRefund ? `
+        <div style="margin-bottom:14px">
+          <div style="font-size:.85rem;font-weight:700;color:#333;margin-bottom:8px">اختر طريقة الاسترداد:</div>
+          <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;margin-bottom:8px;transition:.2s" id="lbl_card">
+            <input type="radio" name="refundPref" value="original_payment" checked style="margin-top:3px;accent-color:#1B4F8E">
+            <div>
+              <div style="font-weight:700;font-size:.9rem">💳 استرداد إلى البطاقة الأصلية</div>
+              <div style="font-size:.77rem;color:#888">يصلك المبلغ إلى بطاقتك خلال 5-10 أيام عمل</div>
+            </div>
+          </label>
+          <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:2px solid #e5e7eb;border-radius:10px;cursor:pointer;transition:.2s" id="lbl_wallet">
+            <input type="radio" name="refundPref" value="wallet" style="margin-top:3px;accent-color:#1B4F8E">
+            <div>
+              <div style="font-weight:700;font-size:.9rem">👛 استرداد إلى رصيد المحفظة</div>
+              <div style="font-size:.77rem;color:#888">فوري — رصيدك الحالي: <strong>${walletBal}</strong></div>
+            </div>
+          </label>
+        </div>` : ''}
+
+        <div style="background:#fef3c7;border-radius:6px;padding:10px 14px;font-size:.83rem;color:#92400e">
           ⚠️ هذا الإجراء لا يمكن التراجع عنه. سيتم إلغاء حجزك مع شركة الطيران فور التأكيد.
         </div>`;
-      // Start countdown timer.
+
+      // Highlight selected radio
+      body.querySelectorAll('input[name="refundPref"]').forEach(inp => {
+        inp.addEventListener('change', () => {
+          body.querySelectorAll('label[id^="lbl_"]').forEach(l => l.style.borderColor = '#e5e7eb');
+          inp.closest('label').style.borderColor = '#1B4F8E';
+        });
+      });
+      const checked = body.querySelector('input[name="refundPref"]:checked');
+      if (checked) checked.closest('label').style.borderColor = '#1B4F8E';
+
       if (expiresAt) {
         clearInterval(_cancelExpiryTimer);
         _cancelExpiryTimer = setInterval(() => {
@@ -750,8 +792,7 @@
             el.textContent = 'انتهت الصلاحية';
             document.getElementById('confirmCancelBtn').disabled = true;
           } else {
-            const m = Math.floor(rem / 60), s = rem % 60;
-            el.textContent = `${m}:${String(s).padStart(2,'0')} دقيقة`;
+            el.textContent = `${Math.floor(rem/60)}:${String(rem%60).padStart(2,'0')} دقيقة`;
           }
         }, 1000);
       }
@@ -770,14 +811,19 @@
     const modal = document.getElementById('cancelModal');
     const cancellationId = modal.dataset.cancellationId;
     if (!_cancelBookingId || !cancellationId) return;
+    const selected = document.querySelector('input[name="refundPref"]:checked');
+    const refundPreference = selected ? selected.value : 'original_payment';
     const btn = document.getElementById('confirmCancelBtn');
     btn.disabled = true;
     btn.textContent = 'جارٍ الإلغاء…';
     try {
-      await Api.post(`/api/flights/bookings/${_cancelBookingId}/cancel/confirm`, { cancellation_id: cancellationId }, true);
+      await Api.post(`/api/flights/bookings/${_cancelBookingId}/cancel/confirm`,
+        { cancellation_id: cancellationId, refund_preference: refundPreference }, true);
       closeCancelModal();
-      showToast('تم إلغاء الحجز بنجاح', 'success');
+      const msg = refundPreference === 'wallet' ? 'تم الإلغاء وإضافة المبلغ لمحفظتك فوراً ✅' : 'تم إلغاء الحجز — سيصلك الاسترداد خلال 5-10 أيام';
+      showToast(msg, 'success');
       loadFlightBookings();
+      loadWalletBalance();
     } catch (err) {
       btn.disabled = false;
       btn.textContent = 'تأكيد الإلغاء';
@@ -785,10 +831,63 @@
     }
   }
 
+  // ── Wallet ────────────────────────────────────────────────────
+  async function loadWalletBalance() {
+    try {
+      const res = await Api.get('/api/wallet/balance', true);
+      const bal = parseFloat(res.balance||0).toFixed(2);
+      const cur = res.currency || 'GBP';
+      document.getElementById('walletBalanceDisplay').textContent = `${bal} ${cur}`;
+      document.getElementById('walletCard').style.display = 'block';
+    } catch(e) { /* not critical */ }
+  }
+
+  async function openWalletModal() {
+    const modal = document.getElementById('walletModal');
+    modal.style.display = 'flex';
+    const body = document.getElementById('walletModalBody');
+    body.innerHTML = '<div style="text-align:center;padding:24px">جارٍ التحميل…</div>';
+    try {
+      const [balRes, txRes] = await Promise.all([
+        Api.get('/api/wallet/balance', true),
+        Api.get('/api/wallet/transactions', true),
+      ]);
+      const bal = parseFloat(balRes.balance||0).toFixed(2);
+      const cur = balRes.currency || 'GBP';
+      const txs = txRes.transactions || [];
+      body.innerHTML = `
+        <div style="text-align:center;background:linear-gradient(135deg,#0f2444,#1B4F8E);color:#fff;border-radius:12px;padding:20px;margin-bottom:20px">
+          <div style="font-size:.8rem;opacity:.8;margin-bottom:4px">الرصيد المتاح</div>
+          <div style="font-size:2rem;font-weight:900">${bal} ${cur}</div>
+        </div>
+        <div style="font-size:.85rem;font-weight:700;color:#555;margin-bottom:10px">آخر المعاملات</div>
+        ${txs.length === 0 ? '<div style="color:#aaa;text-align:center;padding:16px">لا توجد معاملات حتى الآن</div>' : ''}
+        ${txs.slice(0,20).map(t => {
+          const isCredit = t.type === 'credit';
+          const date = new Date(t.created_at).toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'});
+          return `<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f0">
+            <div style="width:36px;height:36px;border-radius:50%;background:${isCredit?'#dcfce7':'#fee2e2'};display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0">${isCredit?'↑':'↓'}</div>
+            <div style="flex:1">
+              <div style="font-size:.85rem;font-weight:600">${t.description||'معاملة'}</div>
+              <div style="font-size:.72rem;color:#aaa">${date}</div>
+            </div>
+            <div style="font-weight:700;color:${isCredit?'#16a34a':'#dc2626'}">${isCredit?'+':'−'}${parseFloat(t.amount).toFixed(2)} ${t.currency||cur}</div>
+          </div>`;
+        }).join('')}`;
+    } catch(e) {
+      body.innerHTML = '<div style="color:#dc2626;padding:16px">تعذر تحميل بيانات المحفظة</div>';
+    }
+  }
+
+  function closeWalletModal() {
+    document.getElementById('walletModal').style.display = 'none';
+  }
+
   // Load data
   loadFlightBookings();
   loadHotelBookings();
   loadProfile();
+  loadWalletBalance();
 </script>
 
 <!-- Change Flight Modal -->
@@ -860,5 +959,16 @@
     </div>
   </div>
 </div>
+<!-- Wallet Modal -->
+<div id="walletModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:16px;padding:28px;max-width:480px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:85vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <h3 style="margin:0;color:#0f2444">👛 محفظتي</h3>
+      <button onclick="closeWalletModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#999">×</button>
+    </div>
+    <div id="walletModalBody"></div>
+  </div>
+</div>
+
 </body>
 </html>

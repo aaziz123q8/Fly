@@ -693,6 +693,15 @@ $router->group('api/admin/cms/pages', function (Router $r): void {
 });
 
 // ---------------------------------------------------------------------------
+// Routes — Wallet
+// ---------------------------------------------------------------------------
+
+$router->group('api/wallet', function (Router $r): void {
+    $r->get('/balance',      fn(Request $req) => (new \App\Controllers\Api\WalletController())->getBalance($req));
+    $r->get('/transactions', fn(Request $req) => (new \App\Controllers\Api\WalletController())->getTransactions($req));
+}, [AuthMiddleware::handle()]);
+
+// ---------------------------------------------------------------------------
 // Routes — PWA Push Subscriptions
 // ---------------------------------------------------------------------------
 

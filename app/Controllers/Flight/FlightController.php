@@ -377,13 +377,17 @@ class FlightController
         $errors = $request->validate(['cancellation_id' => 'required']);
         if (!empty($errors)) Response::validationError($errors);
 
-        $id             = (int) $request->param('id');
-        $cancellationId = (string) $request->input('cancellation_id');
-        $user           = AuthMiddleware::currentUser();
+        $id               = (int) $request->param('id');
+        $cancellationId   = (string) $request->input('cancellation_id');
+        $refundPreference = (string) ($request->input('refund_preference') ?? 'original_payment');
+        if (!in_array($refundPreference, ['wallet', 'original_payment'], true)) {
+            $refundPreference = 'original_payment';
+        }
+        $user = AuthMiddleware::currentUser();
         if ($user === null) Response::unauthorized();
 
         try {
-            $result = $this->bookingService->confirmCancelBooking($id, $cancellationId, (int) $user['id']);
+            $result = $this->bookingService->confirmCancelBooking($id, $cancellationId, (int) $user['id'], $refundPreference);
             Response::json($result);
         } catch (\RuntimeException $e) {
             Response::error($e->getMessage(), $e->getCode() ?: 400);

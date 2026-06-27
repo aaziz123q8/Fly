@@ -1606,7 +1606,7 @@ class FlightBookingService
     // confirmCancelBooking — Step 2: commit the cancellation
     // =========================================================================
 
-    public function confirmCancelBooking(int $bookingId, string $cancellationId, int $userId): array
+    public function confirmCancelBooking(int $bookingId, string $cancellationId, int $userId, string $refundPreference = 'original_payment'): array
     {
         $booking = $this->getBookingById($bookingId, $userId);
         if ($booking === null) {
@@ -1630,8 +1630,14 @@ class FlightBookingService
             ? date('Y-m-d H:i:s', strtotime($confirmResponse['data']['confirmed_at']))
             : date('Y-m-d H:i:s');
 
-        // Attempt Stripe refund before marking the booking as cancelled.
-        // If the refund fails, we set status to 'cancellation_pending_refund' so staff can retry.
+        // Save customer refund preference
+        try {
+            $this->db->prepare(
+                'UPDATE flight_bookings SET refund_preference = :pref WHERE id = :id'
+            )->execute([':pref' => $refundPreference, ':id' => $bookingId]);
+        } catch (\Throwable $e) { /* column may not exist on older deploys */ }
+
+        // Load original payment record
         $payStmt = $this->db->prepare(
             'SELECT id, stripe_payment_intent_id, amount, currency FROM payments
              WHERE booking_type = :bt AND booking_id = :bid AND status = :status
@@ -1643,19 +1649,40 @@ class FlightBookingService
         $refundId    = null;
         $finalStatus = 'cancelled';
 
-        if ($payment && !empty($payment['stripe_payment_intent_id'])) {
-            // Determine the exact refund amount using Duffel's refund_amount.
-            // If Duffel only refunds part (airline penalty), Stripe must match.
-            $duffelRefundAmount   = $booking['cancellation_refund_amount']   ?? null;
-            $duffelRefundCurrency = strtoupper($booking['cancellation_refund_currency'] ?? $booking['currency'] ?? 'GBP');
+        $duffelRefundAmount   = $booking['cancellation_refund_amount']   ?? null;
+        $duffelRefundCurrency = strtoupper($booking['cancellation_refund_currency'] ?? $booking['currency'] ?? 'GBP');
+
+        // ── Option A: refund to internal wallet ───────────────────
+        if ($refundPreference === 'wallet' && $duffelRefundAmount !== null && (float)$duffelRefundAmount > 0) {
+            try {
+                $walletService = new WalletService($this->db);
+                $walletService->credit(
+                    $userId,
+                    (float) $duffelRefundAmount,
+                    $duffelRefundCurrency,
+                    'استرداد إلغاء حجز ' . ($booking['booking_reference'] ?? $bookingId),
+                    $booking['booking_reference'] ?? (string)$bookingId
+                );
+                // Mark original payment as wallet-refunded
+                if ($payment) {
+                    $this->db->prepare(
+                        'UPDATE payments SET status = :s, updated_at = NOW() WHERE id = :id'
+                    )->execute([':s' => 'refunded_to_wallet', ':id' => $payment['id']]);
+                }
+            } catch (\Throwable $e) {
+                error_log('[WALLET_CREDIT_FAILED] BookingID=' . $bookingId . ' | ' . $e->getMessage());
+                $finalStatus = 'cancellation_pending_refund';
+            }
+        }
+        // ── Option B: refund to original payment method (Stripe) ──
+        elseif ($payment && !empty($payment['stripe_payment_intent_id'])) {
             $stripeChargeCurrency = strtoupper($payment['currency'] ?? 'GBP');
 
             // Currency mismatch: cannot safely convert — flag for manual processing.
             if ($duffelRefundAmount !== null && $duffelRefundCurrency !== $stripeChargeCurrency) {
                 error_log(sprintf(
                     '[MANUAL_REFUND_REQUIRED] BookingID=%d DuffelRefund=%s %s StripeCharge=%s %s',
-                    $bookingId,
-                    $duffelRefundAmount, $duffelRefundCurrency,
+                    $bookingId, $duffelRefundAmount, $duffelRefundCurrency,
                     $payment['amount'], $stripeChargeCurrency
                 ));
                 $this->db->prepare(
@@ -1663,8 +1690,6 @@ class FlightBookingService
                 )->execute([':s' => 'refund_pending_manual', ':id' => $payment['id']]);
                 $finalStatus = 'cancellation_pending_manual_refund';
             } else {
-                // Convert Duffel refund_amount (decimal) to Stripe minor units (pence/cents).
-                // null → full refund (e.g. void window / fee-free cancellation).
                 $refundAmountMinor = $duffelRefundAmount !== null
                     ? (int) round((float) $duffelRefundAmount * 100)
                     : null;
@@ -1679,13 +1704,10 @@ class FlightBookingService
                     $refundId = $refund['id'] ?? null;
 
                     $this->db->prepare(
-                        'UPDATE payments
-                         SET status = :status, stripe_refund_id = :rid, updated_at = NOW()
+                        'UPDATE payments SET status = :status, stripe_refund_id = :rid, updated_at = NOW()
                          WHERE id = :id'
                     )->execute([':status' => 'refunded', ':rid' => $refundId, ':id' => $payment['id']]);
                 } catch (\Throwable $e) {
-                    // Duffel cancellation succeeded but Stripe refund failed.
-                    // Ops team must manually refund.
                     error_log('[REFUND_FAILED] BookingID=' . $bookingId . ' | ' . $e->getMessage());
                     $finalStatus = 'cancellation_pending_refund';
                     $this->db->prepare(
