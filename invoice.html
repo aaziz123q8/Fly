@@ -113,6 +113,13 @@
     .action-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
     .action-bar .btn { flex:1; min-width:120px; }
 
+    /* ── Bottom Nav ── */
+    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:#6b7280; font-size:0.7rem; }
+    .bnav-item:hover { color:#1B4F8E; }
+    .bnav-icon { font-size:1.4rem; }
+
     /* ── Print ── */
     @media print {
       * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
