@@ -614,41 +614,51 @@ function renderBooking(b) {
       condBox('تغيير قبل السفر', '✏️', chgCond);
   }
 
-  // ── Pricing summary ─────────────────────────────────────────────
+  // ── Pricing summary (what was paid — never subtract refund here) ──
   if (b.total_amount) {
     document.getElementById('pricingSection').style.display = 'block';
-    const cur = b.currency || 'GBP';
-    const fmt = (v) => `${parseFloat(v).toFixed(2)} ${cur}`;
+    const cur2 = b.currency || 'GBP';
+    const fmt2 = (v) => `${parseFloat(v).toFixed(2)} ${cur2}`;
+    const changeFee2 = parseFloat(b.change_fee_paid || 0);
+    const baseFare2  = parseFloat(b.total_amount) - changeFee2;
     let rows = `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f0f0f0;padding:4px 0">
-      <span style="color:#555">إجمالي التذكرة</span>
-      <strong>${fmt(b.total_amount)}</strong></div>`;
-    if (b.change_fee_paid && parseFloat(b.change_fee_paid) > 0) {
+      <span style="color:#555">سعر التذكرة</span>
+      <strong>${fmt2(baseFare2 > 0 ? baseFare2 : b.total_amount)}</strong></div>`;
+    if (changeFee2 > 0) {
       rows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0">
         <span style="color:#555">رسوم تغيير الرحلة</span>
-        <span style="color:#d97706">+ ${fmt(b.change_fee_paid)}</span></div>`;
+        <span style="color:#d97706">+ ${fmt2(changeFee2)}</span></div>`;
     }
     rows += `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:1rem">
       <span style="font-weight:700">الإجمالي المدفوع</span>
-      <strong style="color:#1B4F8E;font-size:1.05rem">${fmt(parseFloat(b.total_amount) + parseFloat(b.change_fee_paid || 0))}</strong></div>`;
+      <strong style="color:#1B4F8E;font-size:1.05rem">${fmt2(b.total_amount)}</strong></div>`;
     document.getElementById('pricingRows').innerHTML = rows;
   }
 
-  // ── Refund section (when cancelled) ─────────────────────────────
+  // ── Refund section (when cancelled) ──────────────────────────────
   if (isCancelledStatus(b.status)) {
-    const refAmt = b.cancellation_refund_amount;
-    const refTo  = b.cancellation_refund_to;
-    const refToLabels = {balance:'رصيد المحفظة', original_payment:'البطاقة الأصلية', voucher:'قسيمة ائتمان', arc_bsp_cash:'كاش'};
-    if (refAmt || refTo) {
-      document.getElementById('refundSection').style.display = 'block';
-      const cur = b.currency || 'GBP';
-      let rRows = '';
-      if (refAmt) rRows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fee2e2">
-        <span>مبلغ الاسترداد</span><strong style="color:#16a34a">${parseFloat(refAmt).toFixed(2)} ${cur}</strong></div>`;
-      if (refTo) rRows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fee2e2">
-        <span>طريقة الاسترداد</span><span>${refToLabels[refTo] || refTo}</span></div>`;
-      rRows += `<div style="font-size:.78rem;color:#888;margin-top:6px">⏱️ يستغرق الاسترداد من 5 إلى 10 أيام عمل حسب سياسة البنك.</div>`;
-      document.getElementById('refundRows').innerHTML = rRows;
+    document.getElementById('refundSection').style.display = 'block';
+    const cur3 = b.currency || 'GBP';
+    const refToLabels = {balance:'رصيد المحفظة', original_payment:'البطاقة الأصلية', voucher:'قسيمة ائتمان', arc_bsp_cash:'كاش', wallet:'رصيد المحفظة'};
+    const refAmt3 = parseFloat(b.cancellation_refund_amount || 0);
+    const noRefund = b.refund_conditions && b.refund_conditions.allowed === false;
+    let rRows = '';
+    if (noRefund || refAmt3 === 0) {
+      rRows = `<div style="color:#b91c1c;font-weight:700;font-size:.88rem">⛔ هذه التذكرة غير قابلة للاسترداد وفق شروط الناقل الجوي.</div>`;
+    } else {
+      rRows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fee2e2">
+        <span>مبلغ الاسترداد</span><strong style="color:#16a34a">${refAmt3.toFixed(2)} ${cur3}</strong></div>`;
+      if (b.cancellation_refund_to || b.refund_preference) {
+        const method = b.refund_preference === 'wallet' ? 'wallet' : (b.cancellation_refund_to || '');
+        rRows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fee2e2">
+          <span>طريقة الاسترداد</span><span>${refToLabels[method] || method}</span></div>`;
+      }
+      if (b.refund_preference === 'wallet')
+        rRows += `<div style="font-size:.78rem;color:#16a34a;margin-top:6px">✅ تم إضافة المبلغ لرصيد المحفظة فوراً.</div>`;
+      else
+        rRows += `<div style="font-size:.78rem;color:#888;margin-top:6px">⏱️ يستغرق الاسترداد من 5 إلى 10 أيام عمل حسب سياسة البنك.</div>`;
     }
+    document.getElementById('refundRows').innerHTML = rRows;
   }
 
   // Show sync button

@@ -412,30 +412,36 @@ function render(b) {
     ).join('');
   }
 
-  // Pricing
+  // Pricing — show what was actually paid (never subtract refund here)
   if (b.total_amount) {
     document.getElementById('pricingSection').style.display = 'block';
-    const changeFee = parseFloat(b.change_fee_paid||0);
+    const changeFee = parseFloat(b.change_fee_paid || 0);
     const baseFare  = parseFloat(b.total_amount) - changeFee;
-    let rows = `<div class="price-row"><span>سعر التذكرة الأصلي</span><span>${money(baseFare>0?baseFare:b.total_amount, cur)}</span></div>`;
+    let rows = `<div class="price-row"><span>سعر التذكرة</span><span>${money(baseFare > 0 ? baseFare : b.total_amount, cur)}</span></div>`;
     if (changeFee > 0) {
       rows += `<div class="price-row"><span>رسوم تغيير الرحلة</span><span style="color:#d97706">+ ${money(changeFee, cur)}</span></div>`;
-    }
-    if (isCancelled(st) && b.cancellation_refund_amount) {
-      rows += `<div class="price-row" style="color:#b91c1c"><span>مبلغ الاسترداد (مخصوم)</span><span>- ${money(b.cancellation_refund_amount, cur)}</span></div>`;
     }
     document.getElementById('priceRows').innerHTML = rows;
     document.getElementById('priceTotal').textContent = money(b.total_amount, cur);
   }
 
-  // Refund
-  if (isCancelled(st) && (b.cancellation_refund_amount || b.cancellation_refund_to)) {
+  // Refund section — only shown when cancelled AND there is an actual refund amount > 0
+  const refundAmt = parseFloat(b.cancellation_refund_amount || 0);
+  const noRefundPolicy = b.refund_conditions && b.refund_conditions.allowed === false;
+  if (isCancelled(st)) {
     document.getElementById('refundSection').style.display = 'block';
     let rRows = '';
-    if (b.cancellation_refund_amount)
-      rRows += `<div class="refund-row"><span>مبلغ الاسترداد</span><strong style="color:#16a34a">${money(b.cancellation_refund_amount, cur)}</strong></div>`;
-    if (b.cancellation_refund_to)
-      rRows += `<div class="refund-row"><span>طريقة الاسترداد</span><span>${refToLabels[b.cancellation_refund_to]||b.cancellation_refund_to}</span></div>`;
+    if (noRefundPolicy || refundAmt === 0) {
+      rRows = `<div style="color:#b91c1c;font-weight:700;padding:6px 0">⛔ هذه التذكرة غير قابلة للاسترداد وفق شروط الناقل الجوي.</div>`;
+    } else {
+      rRows += `<div class="refund-row"><span>مبلغ الاسترداد</span><strong style="color:#16a34a">${money(refundAmt, cur)}</strong></div>`;
+      if (b.cancellation_refund_to)
+        rRows += `<div class="refund-row"><span>طريقة الاسترداد</span><span>${refToLabels[b.cancellation_refund_to] || b.cancellation_refund_to}</span></div>`;
+      if (b.refund_preference === 'wallet')
+        rRows += `<div style="font-size:.75rem;color:#16a34a;margin-top:6px">✅ تم إضافة المبلغ لرصيد المحفظة فوراً.</div>`;
+      else
+        rRows += `<div style="font-size:.75rem;color:#888;margin-top:6px">⏱️ يستغرق الاسترداد من 5 إلى 10 أيام عمل حسب سياسة البنك.</div>`;
+    }
     document.getElementById('refundRows').innerHTML = rRows;
   }
 
