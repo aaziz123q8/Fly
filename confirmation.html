@@ -593,13 +593,16 @@ function renderBooking(b) {
   ).join('');
 
   // ── Conditions ───────────────────────────────────────────────
-  const refCond = b.refund_conditions;
-  const chgCond = b.change_conditions;
-  if (refCond || chgCond) {
+  // available_actions from Duffel is ground truth; conditions DB data may be stale
+  const acts = Array.isArray(b.available_actions) ? b.available_actions : [];
+  const hasActions = acts.length > 0;
+  // Determine allowed state: if actions list exists, it overrides DB conditions
+  const refAllowed = hasActions ? acts.includes('cancel') : (b.refund_conditions ? b.refund_conditions.allowed !== false : null);
+  const chgAllowed = hasActions ? acts.includes('change') : (b.change_conditions ? b.change_conditions.allowed !== false : null);
+  if (refAllowed !== null || chgAllowed !== null) {
     document.getElementById('condSection').style.display = 'block';
-    const condBox = (label, icon, cond) => {
-      if (!cond) return '';
-      const allowed = cond.allowed !== false;
+    const condBox = (label, icon, allowed) => {
+      if (allowed === null) return '';
       return `<div class="cond-box ${allowed ? 'cond-allowed' : 'cond-forbidden'}">
         <div class="cond-icon">${icon}</div>
         <div class="cond-name">${label}</div>
@@ -607,8 +610,8 @@ function renderBooking(b) {
       </div>`;
     };
     document.getElementById('condGrid').innerHTML =
-      condBox('استرداد قبل السفر', '💰', refCond) +
-      condBox('تغيير قبل السفر', '✏️', chgCond);
+      condBox('استرداد قبل السفر', '💰', refAllowed) +
+      condBox('تغيير قبل السفر', '✏️', chgAllowed);
   }
 
   // ── Pricing summary (what was paid — never subtract refund here) ──
@@ -638,7 +641,7 @@ function renderBooking(b) {
     const cur3 = b.currency || 'GBP';
     const refToLabels = {balance:'رصيد المحفظة', original_payment:'البطاقة الأصلية', voucher:'قسيمة ائتمان', arc_bsp_cash:'كاش', wallet:'رصيد المحفظة'};
     const refAmt3 = parseFloat(b.cancellation_refund_amount || 0);
-    const noRefund = b.refund_conditions && b.refund_conditions.allowed === false;
+    const noRefund = refAllowed === false;
     let rRows = '';
     if (noRefund || refAmt3 === 0) {
       rRows = `<div style="color:#b91c1c;font-weight:700;font-size:.88rem">⛔ هذه التذكرة غير قابلة للاسترداد وفق شروط الناقل الجوي.</div>`;
