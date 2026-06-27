@@ -298,7 +298,7 @@ class FlightController
         // Auto-sync each booking with Duffel (non-fatal if it fails)
         $userId = (int) $user['id'];
         $bookings = array_map(function (array $b) use ($userId): array {
-            if (empty($b['duffel_order_id'])) return $b;
+            if (empty($b['provider_order_id'])) return $b;
             try {
                 return $this->bookingService->syncFromDuffel((int) $b['id'], $userId);
             } catch (\Throwable $e) {
@@ -323,7 +323,7 @@ class FlightController
         if ($booking === null) Response::notFound('Booking not found.');
 
         // Auto-sync with Duffel to get latest status on every view
-        if (!empty($booking['duffel_order_id'])) {
+        if (!empty($booking['provider_order_id'])) {
             try {
                 $booking = $this->bookingService->syncFromDuffel((int) $booking['id'], (int) $user['id']);
             } catch (\Throwable $e) {
