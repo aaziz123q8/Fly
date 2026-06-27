@@ -297,20 +297,17 @@
       const dep      = b.departure_at ? new Date(b.departure_at).toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'}) : '—';
       const amount   = b.total_amount || b.total_price;
       const currency = b.currency || 'GBP';
-      const actions    = Array.isArray(b.available_actions) ? b.available_actions : [];
-      const refConds   = b.refund_conditions || null;
-      const refAllowed = refConds ? refConds.allowed !== false : true;
-      const status     = b.status || 'pending';
+      const actions  = Array.isArray(b.available_actions) ? b.available_actions : [];
+      const refConds = b.refund_conditions || null;
+      const status   = b.status || 'pending';
 
-      const isConfirmed  = status === 'confirmed';
-      const canChange    = isConfirmed && (actions.length === 0 || actions.includes('change'));
-      const canBags      = isConfirmed && (actions.length === 0 || actions.includes('add_baggage'));
-      const canSeats     = isConfirmed && (actions.length === 0 || actions.includes('add_seats'));
-      // Cancel allowed only when: Duffel permits it AND refund policy allows it
-      const cancelInActions = actions.length === 0 || actions.includes('cancel');
-      const canCancel    = isConfirmed && cancelInActions && refAllowed;
-      // Show greyed button when Duffel allows cancel action but policy forbids refund
-      const showCancelDisabled = isConfirmed && cancelInActions && !refAllowed;
+      const isConfirmed = status === 'confirmed';
+      const canChange   = isConfirmed && (actions.length === 0 || actions.includes('change'));
+      const canBags     = isConfirmed && (actions.length === 0 || actions.includes('add_baggage'));
+      const canSeats    = isConfirmed && (actions.length === 0 || actions.includes('add_seats'));
+      // Cancel: only show when Duffel allows it AND refund policy permits refund
+      const refAllowed  = refConds ? refConds.allowed !== false : true;
+      const canCancel   = isConfirmed && (actions.length === 0 || actions.includes('cancel')) && refAllowed;
 
       const btnTicket  = `<a href="confirmation.html?ref=${ref}" class="btn btn-sm btn-outline">🎫 التذكرة</a>`;
       const btnInvoice = `<a href="invoice.html?ref=${ref}" class="btn btn-sm" style="background:#f0f9ff;color:#0369a1;border:1px solid #7dd3fc">🧾 الفاتورة</a>`;
@@ -321,10 +318,7 @@
       const btnSeats   = canSeats
         ? `<button class="btn btn-sm" style="background:#faf5ff;color:#7e22ce;border:1px solid #d8b4fe" onclick="openServicesModal(${b.id},'seat')">💺 اختيار مقعد</button>` : '';
       const btnCancel  = canCancel
-        ? `<button class="btn btn-sm btn-danger" onclick="initiateCancel(${b.id})">إلغاء</button>`
-        : showCancelDisabled
-          ? `<button class="btn btn-sm" disabled title="هذه التذكرة غير قابلة للاسترداد — الإلغاء غير متاح" style="opacity:.45;cursor:not-allowed;background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5">🚫 إلغاء غير متاح</button>`
-          : '';
+        ? `<button class="btn btn-sm btn-danger" onclick="initiateCancel(${b.id})">إلغاء</button>` : '';
 
       return `
     <div class="booking-item" style="flex-wrap:wrap;gap:10px;align-items:flex-start">
