@@ -6,25 +6,142 @@
   <title>المسافرون — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
   <style>
-    .page-bg { background:var(--bg); min-height:100vh; padding:32px 0 80px; }
-    .traveler-card { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:20px 24px; margin-bottom:16px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
-    .traveler-avatar { width:52px; height:52px; background:var(--primary); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.3rem; font-weight:800; flex-shrink:0; }
-    .traveler-info { flex:1; }
-    .traveler-name { font-size:1rem; font-weight:700; margin-bottom:4px; }
-    .traveler-meta { font-size:0.82rem; color:var(--text-muted); display:flex; gap:12px; flex-wrap:wrap; }
-    .traveler-actions { display:flex; gap:8px; }
-    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; padding:20px; }
+    /* ── Page Layout ── */
+    .page-bg { background:var(--bg,#f4f6fb); min-height:100vh; padding:32px 0 100px; }
+
+    /* ── Hero Header ── */
+    .travelers-hero {
+      background:linear-gradient(135deg,#1B4F8E 0%,#2563eb 60%,#7c3aed 100%);
+      border-radius:20px; padding:32px 28px; margin-bottom:28px;
+      color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    }
+    .travelers-hero h1 { margin:0 0 6px; font-size:1.6rem; font-weight:800; }
+    .travelers-hero p  { margin:0; font-size:0.9rem; opacity:.85; }
+    .hero-icon { font-size:3.5rem; opacity:.35; }
+
+    /* ── Stats Bar ── */
+    .stats-bar {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:24px;
+    }
+    .stat-card {
+      background:#fff; border-radius:14px; padding:16px 18px;
+      box-shadow:0 2px 12px rgba(27,79,142,.07); text-align:center;
+    }
+    .stat-card .stat-num { font-size:1.8rem; font-weight:800; color:var(--primary,#1B4F8E); line-height:1; }
+    .stat-card .stat-lbl { font-size:0.75rem; color:var(--text-muted,#6b7280); margin-top:4px; }
+
+    /* ── Traveler Cards ── */
+    .travelers-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
+    .traveler-card {
+      background:#fff; border-radius:18px;
+      box-shadow:0 2px 16px rgba(27,79,142,.08);
+      padding:0; overflow:hidden; transition:transform .2s,box-shadow .2s;
+    }
+    .traveler-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(27,79,142,.14); }
+    .traveler-card-header {
+      background:linear-gradient(135deg,#1B4F8E,#2563eb);
+      padding:18px 20px 14px; display:flex; align-items:center; gap:14px;
+    }
+    .traveler-avatar {
+      width:52px; height:52px; background:rgba(255,255,255,.2);
+      border:2.5px solid rgba(255,255,255,.5);
+      color:#fff; border-radius:50%; display:flex; align-items:center;
+      justify-content:center; font-size:1.4rem; font-weight:800; flex-shrink:0;
+    }
+    .traveler-header-info { flex:1; min-width:0; }
+    .traveler-name { font-size:1rem; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .traveler-type-badge { display:inline-block; background:rgba(255,255,255,.2); color:#fff; font-size:0.7rem; border-radius:20px; padding:2px 10px; margin-top:4px; }
+    .traveler-card-body { padding:16px 20px; }
+    .traveler-detail { display:flex; align-items:center; gap:8px; font-size:0.82rem; color:var(--text-muted,#6b7280); margin-bottom:8px; }
+    .traveler-detail:last-of-type { margin-bottom:0; }
+    .traveler-detail .detail-icon { width:20px; text-align:center; flex-shrink:0; }
+    .traveler-detail .detail-val { font-weight:600; color:var(--text,#1a202c); }
+    .traveler-card-footer { padding:12px 20px; border-top:1px solid #f0f2f5; display:flex; gap:8px; justify-content:flex-end; }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align:center; padding:60px 20px; background:#fff;
+      border-radius:20px; box-shadow:0 2px 16px rgba(27,79,142,.07);
+    }
+    .empty-state .empty-icon { font-size:4rem; margin-bottom:16px; opacity:.6; }
+    .empty-state h3 { color:var(--primary,#1B4F8E); margin-bottom:8px; }
+    .empty-state p  { color:var(--text-muted,#6b7280); margin-bottom:24px; font-size:0.9rem; }
+
+    /* ── Modal ── */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:1000; align-items:flex-start; justify-content:center; padding:20px; overflow-y:auto; }
     .modal-overlay.active { display:flex; }
-    .modal { background:#fff; border-radius:20px; padding:28px; width:100%; max-width:580px; max-height:90vh; overflow-y:auto; }
-    .modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
-    .modal-header h2 { margin:0; color:var(--primary); font-size:1.2rem; }
-    .close-btn { background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted); line-height:1; }
-    .form-row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    @media(max-width:600px) { .form-row2 { grid-template-columns:1fr; } }
+    .modal {
+      background:#fff; border-radius:20px; width:100%; max-width:620px;
+      margin:auto; animation:slideUp .25s ease; box-shadow:0 20px 60px rgba(0,0,0,.2);
+    }
+    @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
+    .modal-header {
+      background:linear-gradient(135deg,#1B4F8E,#2563eb);
+      padding:24px 24px 20px; border-radius:20px 20px 0 0;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .modal-header h2 { margin:0; color:#fff; font-size:1.15rem; font-weight:700; }
+    .modal-close { background:rgba(255,255,255,.15); border:none; color:#fff; width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; transition:background .15s; }
+    .modal-close:hover { background:rgba(255,255,255,.3); }
+    .modal-body { padding:24px; }
+
+    /* ── Scanner Section ── */
+    .scanner-box {
+      background:linear-gradient(135deg,#f0f5ff,#e8f4fd);
+      border:2px dashed #93c5fd; border-radius:16px;
+      padding:20px; margin-bottom:24px;
+    }
+    .scanner-box-title { font-size:0.85rem; font-weight:700; color:#1B4F8E; margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+    .scanner-btns { display:flex; gap:10px; flex-wrap:wrap; }
+    .scanner-btn {
+      flex:1; min-width:130px; padding:12px 16px; border-radius:12px;
+      border:2px solid #93c5fd; background:#fff; color:#1B4F8E;
+      font-weight:600; font-size:0.85rem; cursor:pointer; transition:all .2s;
+      display:flex; align-items:center; justify-content:center; gap:8px;
+    }
+    .scanner-btn:hover { background:#1B4F8E; color:#fff; border-color:#1B4F8E; }
+    .scanner-btn:disabled { opacity:.55; cursor:not-allowed; }
+    .scanner-progress {
+      margin-top:14px; display:none;
+      background:#fff; border-radius:10px; padding:12px 16px;
+      font-size:0.82rem; color:#1B4F8E; display:none; align-items:center; gap:10px;
+    }
+    .scanner-progress.visible { display:flex; }
+    .scan-progress-bar { flex:1; height:6px; background:#e5e7eb; border-radius:4px; overflow:hidden; }
+    .scan-progress-fill { height:100%; background:linear-gradient(90deg,#1B4F8E,#7c3aed); border-radius:4px; width:0%; transition:width .3s; }
+
+    /* ── Camera Modal ── */
+    #cameraModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:2000; align-items:center; justify-content:center; padding:20px; }
+    #cameraModal.active { display:flex; }
+    #cameraBox { background:#111; border-radius:16px; width:100%; max-width:500px; overflow:hidden; }
+    #cameraBox video { width:100%; display:block; max-height:340px; object-fit:cover; }
+    .cam-guide {
+      position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+      width:90%; max-width:380px; height:160px;
+      border:3px solid #38bdf8; border-radius:8px; pointer-events:none;
+    }
+    #cameraBox .cam-footer { padding:16px; display:flex; justify-content:center; gap:12px; }
+
+    /* ── Form Sections ── */
+    .form-section { margin-bottom:4px; }
+    .form-section-title {
+      font-size:0.78rem; font-weight:700; color:var(--text-muted,#6b7280);
+      text-transform:uppercase; letter-spacing:.04em;
+      margin:20px 0 12px; padding-bottom:6px;
+      border-bottom:1.5px solid #f0f2f5; display:flex; align-items:center; gap:6px;
+    }
+    .form-row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media(max-width:560px) { .form-row2 { grid-template-columns:1fr; } }
+
+    /* ── Bottom Nav ── */
     .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
-    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
-    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
+    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:72px; } .stats-bar { grid-template-columns:repeat(3,1fr); } }
+    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted,#6b7280); font-size:0.7rem; }
     .bnav-icon { font-size:1.4rem; }
+
+    /* ── Scan Result Badge ── */
+    .scan-badge { display:inline-flex; align-items:center; gap:6px; background:#dcfce7; color:#15803d; border-radius:20px; font-size:0.78rem; font-weight:600; padding:4px 12px; margin-top:10px; }
+    .scan-badge.error { background:#fee2e2; color:#b91c1c; }
   </style>
 </head>
 <body>
@@ -40,114 +157,149 @@
 
 <div class="page-bg">
   <div class="container">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+
+    <!-- Hero -->
+    <div class="travelers-hero">
       <div>
-        <h1 style="font-size:1.5rem;font-weight:800;color:var(--primary);margin:0 0 4px">👥 المسافرون</h1>
-        <p style="color:var(--text-muted);margin:0;font-size:0.9rem">أضف وأدر بيانات المسافرين لتسريع الحجز</p>
+        <h1>👥 المسافرون</h1>
+        <p>أضف وأدر بيانات مسافريك — وفّر الوقت في كل حجز</p>
       </div>
-      <button class="btn btn-primary" onclick="openModal()">+ إضافة مسافر</button>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+        <button class="btn" style="background:#fff;color:#1B4F8E;font-weight:700;border-radius:12px;padding:10px 20px" onclick="openModal()">+ إضافة مسافر</button>
+      </div>
     </div>
 
-    <div id="travelersList">
-      <div style="text-align:center;padding:40px"><div class="spinner"></div></div>
+    <!-- Stats -->
+    <div class="stats-bar" id="statsBar" style="display:none">
+      <div class="stat-card"><div class="stat-num" id="statTotal">0</div><div class="stat-lbl">مسافرون</div></div>
+      <div class="stat-card"><div class="stat-num" id="statValid">0</div><div class="stat-lbl">وثائق سارية</div></div>
+      <div class="stat-card"><div class="stat-num" id="statExpiring">0</div><div class="stat-lbl">تنتهي قريباً</div></div>
     </div>
+
+    <!-- List -->
+    <div id="travelersList">
+      <div style="text-align:center;padding:60px"><div class="spinner"></div></div>
+    </div>
+
   </div>
 </div>
 
-<!-- Modal -->
+<!-- ════════ Traveler Modal ════════ -->
 <div class="modal-overlay" id="travelerModal">
   <div class="modal">
     <div class="modal-header">
       <h2 id="modalTitle">إضافة مسافر</h2>
-      <button class="close-btn" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <form onsubmit="saveTraveler(event)">
-      <input type="hidden" id="travelerId">
-      <!-- Row 0: Title + Gender -->
-      <div class="form-row2">
-        <div class="form-group">
-          <label class="form-label">اللقب <span style="color:red">*</span></label>
-          <select class="form-control" id="tTitle" required>
-            <option value="">اختر</option>
-            <option value="mr">Mr — السيد</option>
-            <option value="ms">Ms — السيدة</option>
-            <option value="mrs">Mrs — المتزوجة</option>
-            <option value="miss">Miss — الآنسة</option>
-            <option value="dr">Dr — دكتور/ة</option>
-          </select>
+    <div class="modal-body">
+
+      <!-- Scanner Section -->
+      <div class="scanner-box">
+        <div class="scanner-box-title">📷 مسح جواز السفر أو الهوية تلقائياً</div>
+        <div class="scanner-btns">
+          <button class="scanner-btn" id="btnCamera" onclick="openCamera()">
+            <span>📸</span><span>التقاط بالكاميرا</span>
+          </button>
+          <button class="scanner-btn" onclick="document.getElementById('passportFile').click()">
+            <span>🖼</span><span>رفع صورة</span>
+          </button>
+          <input type="file" id="passportFile" accept="image/*" style="display:none" onchange="scanFile(this)">
         </div>
-        <div class="form-group">
-          <label class="form-label">الجنس <span style="color:red">*</span></label>
-          <select class="form-control" id="tGender" required>
-            <option value="">اختر</option>
-            <option value="male">ذكر</option>
-            <option value="female">أنثى</option>
-          </select>
+        <div class="scanner-progress" id="scanProgress">
+          <span id="scanStatus">جاري المسح...</span>
+          <div class="scan-progress-bar"><div class="scan-progress-fill" id="scanFill"></div></div>
         </div>
+        <div id="scanResult"></div>
       </div>
-      <!-- Row 1: Names -->
-      <div class="form-row2">
-        <div class="form-group">
-          <label class="form-label">الاسم الأول (بالإنجليزي) <span style="color:red">*</span></label>
-          <input type="text" class="form-control" id="tFirst" required placeholder="First Name" dir="ltr">
+
+      <!-- Form -->
+      <form onsubmit="saveTraveler(event)">
+        <input type="hidden" id="travelerId">
+
+        <div class="form-section-title">👤 المعلومات الشخصية</div>
+        <div class="form-row2">
+          <div class="form-group">
+            <label class="form-label">اللقب <span style="color:red">*</span></label>
+            <select class="form-control" id="tTitle" required>
+              <option value="">اختر</option>
+              <option value="mr">Mr — السيد</option>
+              <option value="ms">Ms — السيدة</option>
+              <option value="mrs">Mrs — المتزوجة</option>
+              <option value="miss">Miss — الآنسة</option>
+              <option value="dr">Dr — دكتور/ة</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">الجنس <span style="color:red">*</span></label>
+            <select class="form-control" id="tGender" required>
+              <option value="">اختر</option>
+              <option value="male">ذكر</option>
+              <option value="female">أنثى</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row2">
+          <div class="form-group">
+            <label class="form-label">الاسم الأول (إنجليزي) <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="tFirst" required placeholder="First Name" dir="ltr">
+          </div>
+          <div class="form-group">
+            <label class="form-label">الاسم الأوسط</label>
+            <input type="text" class="form-control" id="tMiddle" placeholder="Middle Name" dir="ltr">
+          </div>
+        </div>
+        <div class="form-row2">
+          <div class="form-group">
+            <label class="form-label">الاسم الأخير (إنجليزي) <span style="color:red">*</span></label>
+            <input type="text" class="form-control" id="tLast" required placeholder="Last Name" dir="ltr">
+          </div>
+          <div class="form-group">
+            <label class="form-label">الجنسية <span style="color:red">*</span></label>
+            <select class="form-control" id="tNationality" required>
+              <option value="">اختر</option>
+              <option value="DZA">جزائري</option><option value="BHR">بحريني</option>
+              <option value="EGY">مصري</option><option value="ARE">إماراتي</option>
+              <option value="JOR">أردني</option><option value="KWT">كويتي</option>
+              <option value="LBN">لبناني</option><option value="LBY">ليبي</option>
+              <option value="MRT">موريتاني</option><option value="MAR">مغربي</option>
+              <option value="OMN">عماني</option><option value="PSE">فلسطيني</option>
+              <option value="QAT">قطري</option><option value="SAU">سعودي</option>
+              <option value="SDN">سوداني</option><option value="SYR">سوري</option>
+              <option value="TUN">تونسي</option><option value="YEM">يمني</option>
+              <option value="USA">أمريكي</option><option value="GBR">بريطاني</option>
+              <option value="FRA">فرنسي</option><option value="DEU">ألماني</option>
+              <option value="IND">هندي</option><option value="PAK">باكستاني</option>
+              <option value="PHL">فلبيني</option><option value="TUR">تركي</option>
+              <option value="IRN">إيراني</option><option value="IDN">إندونيسي</option>
+              <option value="MYS">ماليزي</option><option value="BGD">بنغلاديشي</option>
+              <option value="ETH">إثيوبي</option><option value="KEN">كيني</option>
+              <option value="NGA">نيجيري</option><option value="ZAF">جنوب أفريقي</option>
+              <option value="CAN">كندي</option><option value="AUS">أسترالي</option>
+              <option value="CHN">صيني</option><option value="JPN">ياباني</option>
+              <option value="KOR">كوري</option><option value="RUS">روسي</option>
+              <option value="ESP">إسباني</option><option value="ITA">إيطالي</option>
+              <option value="NLD">هولندي</option><option value="SWE">سويدي</option>
+              <option value="OTH">أخرى</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row2">
+          <div class="form-group">
+            <label class="form-label">تاريخ الميلاد <span style="color:red">*</span></label>
+            <input type="date" class="form-control" id="tDob" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">البريد الإلكتروني</label>
+            <input type="email" class="form-control" id="tEmail" placeholder="email@example.com">
+          </div>
         </div>
         <div class="form-group">
-          <label class="form-label">الاسم الأوسط</label>
-          <input type="text" class="form-control" id="tMiddle" placeholder="Middle Name" dir="ltr">
+          <label class="form-label">رقم الهاتف <span style="color:red">*</span></label>
+          <input type="tel" class="form-control" id="tPhone" placeholder="+96599123456" required dir="ltr">
+          <div style="font-size:0.73rem;color:var(--text-muted);margin-top:3px">بصيغة دولية مع رمز الدولة (مثال: +96599123456)</div>
         </div>
-      </div>
-      <div class="form-row2">
-        <div class="form-group">
-          <label class="form-label">الاسم الأخير (بالإنجليزي) <span style="color:red">*</span></label>
-          <input type="text" class="form-control" id="tLast" required placeholder="Last Name" dir="ltr">
-        </div>
-        <div class="form-group">
-          <label class="form-label">الجنسية <span style="color:red">*</span></label>
-          <select class="form-control" id="tNationality" required>
-            <option value="">اختر الجنسية</option>
-            <option value="DZA">جزائري</option><option value="BHR">بحريني</option>
-            <option value="EGY">مصري</option><option value="ARE">إماراتي</option>
-            <option value="JOR">أردني</option><option value="KWT">كويتي</option>
-            <option value="LBN">لبناني</option><option value="LBY">ليبي</option>
-            <option value="MRT">موريتاني</option><option value="MAR">مغربي</option>
-            <option value="OMN">عماني</option><option value="PSE">فلسطيني</option>
-            <option value="QAT">قطري</option><option value="SAU">سعودي</option>
-            <option value="SDN">سوداني</option><option value="SYR">سوري</option>
-            <option value="TUN">تونسي</option><option value="YEM">يمني</option>
-            <option value="USA">أمريكي</option><option value="GBR">بريطاني</option>
-            <option value="FRA">فرنسي</option><option value="DEU">ألماني</option>
-            <option value="IND">هندي</option><option value="PAK">باكستاني</option>
-            <option value="PHL">فلبيني</option><option value="TUR">تركي</option>
-            <option value="IRN">إيراني</option><option value="IDN">إندونيسي</option>
-            <option value="MYS">ماليزي</option><option value="BGD">بنغلاديشي</option>
-            <option value="ETH">إثيوبي</option><option value="KEN">كيني</option>
-            <option value="NGA">نيجيري</option><option value="ZAF">جنوب أفريقي</option>
-            <option value="CAN">كندي</option><option value="AUS">أسترالي</option>
-            <option value="CHN">صيني</option><option value="JPN">ياباني</option>
-            <option value="KOR">كوري</option><option value="RUS">روسي</option>
-            <option value="ESP">إسباني</option><option value="ITA">إيطالي</option>
-            <option value="NLD">هولندي</option><option value="SWE">سويدي</option>
-            <option value="OTH">أخرى</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-row2">
-        <div class="form-group">
-          <label class="form-label">تاريخ الميلاد <span style="color:red">*</span></label>
-          <input type="date" class="form-control" id="tDob" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label">البريد الإلكتروني</label>
-          <input type="email" class="form-control" id="tEmail" placeholder="email@example.com">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">رقم الهاتف <span style="color:red">*</span></label>
-        <input type="tel" class="form-control" id="tPhone" placeholder="+96599123456" required dir="ltr">
-        <div style="font-size:0.73rem;color:var(--text-muted);margin-top:3px">بصيغة دولية مع رمز الدولة (مثال: +96599123456)</div>
-      </div>
-      <div style="border-top:1px solid #f0f2f5;margin:20px 0;padding-top:20px">
-        <div style="font-weight:600;color:var(--text-muted);font-size:0.85rem;margin-bottom:12px">وثيقة السفر</div>
+
+        <div class="form-section-title">🪪 وثيقة السفر</div>
         <div class="form-row2">
           <div class="form-group">
             <label class="form-label">نوع الوثيقة <span style="color:red">*</span></label>
@@ -159,7 +311,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">رقم الوثيقة <span style="color:red">*</span></label>
-            <input type="text" class="form-control" id="tDocNum" required placeholder="Document Number">
+            <input type="text" class="form-control" id="tDocNum" required placeholder="Document Number" dir="ltr">
           </div>
         </div>
         <div class="form-row2">
@@ -174,17 +326,37 @@
         </div>
         <div class="form-group">
           <label class="form-label">الدولة المصدرة</label>
-          <input type="text" class="form-control" id="tDocCountry" placeholder="مثال: Kuwait">
+          <input type="text" class="form-control" id="tDocCountry" placeholder="مثال: Kuwait" dir="ltr">
         </div>
-      </div>
-      <div style="display:flex;gap:12px;margin-top:4px">
-        <button type="submit" class="btn btn-primary" style="flex:1" id="saveBtn">حفظ المسافر</button>
-        <button type="button" class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-      </div>
-    </form>
+
+        <div style="display:flex;gap:12px;margin-top:20px">
+          <button type="submit" class="btn btn-primary" style="flex:1" id="saveBtn">💾 حفظ المسافر</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
+<!-- ════════ Camera Modal ════════ -->
+<div id="cameraModal">
+  <div id="cameraBox">
+    <div style="padding:16px 20px;background:#000;color:#fff;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-weight:700">📷 وجّه الكاميرا نحو صفحة الجواز</span>
+      <button onclick="closeCamera()" style="background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1rem">✕</button>
+    </div>
+    <div style="position:relative">
+      <video id="camVideo" autoplay playsinline muted></video>
+      <div class="cam-guide"></div>
+    </div>
+    <canvas id="camCanvas" style="display:none"></canvas>
+    <div class="cam-footer">
+      <button class="btn btn-primary" onclick="captureCamera()" id="btnCapture" style="padding:12px 32px;font-size:1rem">📸 التقاط</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
 <nav class="bottom-nav">
   <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
   <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
@@ -195,151 +367,402 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>
-  if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=travelers.html';
+if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=travelers.html';
 
-  let travelers = [];
+let travelers = [];
+let cameraStream = null;
+let tesseractReady = false;
 
-  async function loadTravelers() {
-    const el = document.getElementById('travelersList');
-    try {
-      const res = await Api.get('/api/travelers', true);
-      travelers = res.data || res.travelers || (Array.isArray(res) ? res : []);
-      renderTravelers();
-    } catch(err) {
-      el.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted)"><div style="font-size:2.5rem;margin-bottom:12px">👥</div><p>${err.message||'تعذر تحميل المسافرين'}</p></div>`;
-    }
+/* ══════════════════════ Data ══════════════════════ */
+async function loadTravelers() {
+  const el = document.getElementById('travelersList');
+  try {
+    const res = await Api.get('/api/travelers', true);
+    travelers = res.data || res.travelers || (Array.isArray(res) ? res : []);
+    renderTravelers();
+  } catch(err) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>${err.message || 'تعذر تحميل المسافرين'}</p></div>`;
   }
+}
 
-  function renderTravelers() {
-    const el = document.getElementById('travelersList');
-    if (!travelers.length) {
-      el.innerHTML = `<div style="text-align:center;padding:60px 20px;background:#fff;border-radius:16px;box-shadow:var(--shadow)">
-        <div style="font-size:3rem;margin-bottom:16px">👤</div>
-        <h3 style="color:var(--primary);margin-bottom:8px">لا يوجد مسافرون</h3>
-        <p style="color:var(--text-muted);margin-bottom:24px">أضف مسافريك لتسريع عملية الحجز</p>
+function renderTravelers() {
+  const el = document.getElementById('travelersList');
+  const stats = document.getElementById('statsBar');
+
+  if (!travelers.length) {
+    stats.style.display = 'none';
+    el.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">👤</div>
+        <h3>لا يوجد مسافرون بعد</h3>
+        <p>أضف مسافريك لتسريع عملية الحجز — يمكنك مسح الجواز تلقائياً!</p>
         <button class="btn btn-primary" onclick="openModal()">+ إضافة مسافر</button>
       </div>`;
-      return;
-    }
-    el.innerHTML = travelers.map((t,i)=>`
+    return;
+  }
+
+  // Compute stats
+  const today = new Date();
+  const soon  = new Date(); soon.setMonth(soon.getMonth() + 6);
+  let validCount = 0, expiringCount = 0;
+  travelers.forEach(t => {
+    if (!t.document_expiry) return;
+    const exp = new Date(t.document_expiry);
+    if (exp > today) { validCount++; if (exp <= soon) expiringCount++; }
+  });
+  document.getElementById('statTotal').textContent    = travelers.length;
+  document.getElementById('statValid').textContent    = validCount;
+  document.getElementById('statExpiring').textContent = expiringCount;
+  stats.style.display = 'grid';
+
+  const natMap = {DZA:'جزائري',BHR:'بحريني',EGY:'مصري',ARE:'إماراتي',JOR:'أردني',KWT:'كويتي',LBN:'لبناني',LBY:'ليبي',MRT:'موريتاني',MAR:'مغربي',OMN:'عماني',PSE:'فلسطيني',QAT:'قطري',SAU:'سعودي',SDN:'سوداني',SYR:'سوري',TUN:'تونسي',YEM:'يمني',USA:'أمريكي',GBR:'بريطاني',FRA:'فرنسي',DEU:'ألماني',IND:'هندي',PAK:'باكستاني',PHL:'فلبيني',TUR:'تركي',IRN:'إيراني',IDN:'إندونيسي',MYS:'ماليزي',BGD:'بنغلاديشي',ETH:'إثيوبي',KEN:'كيني',NGA:'نيجيري',ZAF:'جنوب أفريقي',CAN:'كندي',AUS:'أسترالي',CHN:'صيني',JPN:'ياباني',KOR:'كوري',RUS:'روسي',ESP:'إسباني',ITA:'إيطالي',NLD:'هولندي',SWE:'سويدي',OTH:'أخرى'};
+  const docMap = {passport:'جواز سفر',id_card:'بطاقة مدنية',national_id:'هوية وطنية'};
+
+  el.innerHTML = `<div class="travelers-grid">${travelers.map((t,i) => {
+    const initials = ((t.first_name||'?')[0] + (t.last_name||'?')[0]).toUpperCase();
+    const expDate  = t.document_expiry ? new Date(t.document_expiry) : null;
+    const expired  = expDate && expDate < today;
+    const expiring = expDate && !expired && expDate <= soon;
+    const expLabel = expDate ? expDate.toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'}) : '—';
+    const expColor = expired ? '#dc2626' : expiring ? '#d97706' : '#15803d';
+    const expIcon  = expired ? '🔴' : expiring ? '🟡' : '🟢';
+    const fullName = [t.title ? t.title.toUpperCase()+'.' : '', t.first_name||'', t.middle_name||'', t.last_name||''].filter(Boolean).join(' ');
+    return `
       <div class="traveler-card">
-        <div class="traveler-avatar">${(t.first_name||'?')[0].toUpperCase()}</div>
-        <div class="traveler-info">
-          <div class="traveler-name">${t.title ? t.title.toUpperCase()+'. ' : ''}${t.first_name||''} ${t.middle_name||''} ${t.last_name||''}</div>
-          <div class="traveler-meta">
-            ${t.nationality ? `<span>🌍 ${t.nationality}</span>` : ''}
-            ${t.date_of_birth ? `<span>🎂 ${t.date_of_birth}</span>` : ''}
-            ${t.document_number ? `<span>🪪 ${t.document_number}</span>` : ''}
-            ${t.document_expiry ? `<span>📅 ينتهي: ${t.document_expiry}</span>` : ''}
+        <div class="traveler-card-header">
+          <div class="traveler-avatar">${initials}</div>
+          <div class="traveler-header-info">
+            <div class="traveler-name">${fullName}</div>
+            <span class="traveler-type-badge">${natMap[t.nationality]||t.nationality||'—'}</span>
           </div>
         </div>
-        <div class="traveler-actions">
-          <button class="btn btn-ghost btn-sm" onclick="editTraveler(${i})">تعديل</button>
-          <button class="btn btn-ghost btn-sm" style="color:var(--error)" onclick="deleteTraveler('${t.id}',${i})">حذف</button>
+        <div class="traveler-card-body">
+          <div class="traveler-detail">
+            <span class="detail-icon">🪪</span>
+            <span>${docMap[t.document_type]||t.document_type||'—'}</span>
+            <span class="detail-val" dir="ltr">${t.document_number||'—'}</span>
+          </div>
+          <div class="traveler-detail">
+            <span class="detail-icon">${expIcon}</span>
+            <span>انتهاء الوثيقة:</span>
+            <span class="detail-val" style="color:${expColor}">${expLabel}</span>
+          </div>
+          ${t.date_of_birth ? `<div class="traveler-detail"><span class="detail-icon">🎂</span><span>تاريخ الميلاد:</span><span class="detail-val">${t.date_of_birth}</span></div>` : ''}
+          ${t.phone_number || t.phone ? `<div class="traveler-detail"><span class="detail-icon">📱</span><span class="detail-val" dir="ltr">${t.phone_number||t.phone}</span></div>` : ''}
         </div>
-      </div>`).join('');
+        <div class="traveler-card-footer">
+          <button class="btn btn-ghost btn-sm" onclick="editTraveler(${i})">✏️ تعديل</button>
+          <button class="btn btn-sm" style="color:#dc2626;background:#fee2e2;border:none" onclick="deleteTraveler('${t.id}',${i})">🗑 حذف</button>
+        </div>
+      </div>`;
+  }).join('')}</div>`;
+}
+
+/* ══════════════════════ Modal ══════════════════════ */
+function openModal(traveler = null) {
+  document.getElementById('modalTitle').textContent = traveler ? 'تعديل مسافر' : 'إضافة مسافر جديد';
+  const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+  set('travelerId', traveler?.id);
+  set('tTitle',      traveler?.title);
+  set('tFirst',      traveler?.first_name);
+  set('tMiddle',     traveler?.middle_name);
+  set('tLast',       traveler?.last_name);
+  set('tGender',     traveler?.gender);
+  set('tNationality',traveler?.nationality);
+  set('tDob',        traveler?.date_of_birth);
+  set('tEmail',      traveler?.email);
+  set('tDocType',    traveler?.document_type || 'passport');
+  set('tDocNum',     traveler?.document_number);
+  set('tDocIssue',   traveler?.document_issue);
+  set('tDocExp',     traveler?.document_expiry);
+  set('tDocCountry', traveler?.document_country);
+  // Phone
+  let ph = traveler?.phone_number || '';
+  if (!ph.startsWith('+') && traveler?.phone_country_code && traveler?.phone_number)
+    ph = (traveler.phone_country_code.trim() + traveler.phone_number.trim()).replace(/\s+/g,'');
+  if (!ph.startsWith('+') && (traveler?.phone||'').startsWith('+'))
+    ph = (traveler.phone||'').replace(/\s+/g,'');
+  set('tPhone', ph);
+  // Reset scanner
+  document.getElementById('scanResult').innerHTML = '';
+  document.getElementById('scanProgress').classList.remove('visible');
+  document.getElementById('travelerModal').classList.add('active');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('travelerModal').classList.remove('active');
+  document.body.style.overflow = '';
+  closeCamera();
+}
+
+function editTraveler(idx) { openModal(travelers[idx]); }
+
+/* ══════════════════════ Save / Delete ══════════════════════ */
+async function saveTraveler(e) {
+  e.preventDefault();
+  const id = document.getElementById('travelerId').value;
+  let rawPhone = document.getElementById('tPhone').value.trim().replace(/[\s\-()]/g,'');
+  if (rawPhone && !rawPhone.startsWith('+')) rawPhone = '+' + rawPhone;
+  const data = {
+    title:           document.getElementById('tTitle').value,
+    first_name:      document.getElementById('tFirst').value.trim(),
+    middle_name:     document.getElementById('tMiddle').value.trim(),
+    last_name:       document.getElementById('tLast').value.trim(),
+    gender:          document.getElementById('tGender').value,
+    nationality:     document.getElementById('tNationality').value,
+    date_of_birth:   document.getElementById('tDob').value,
+    email:           document.getElementById('tEmail').value.trim(),
+    phone_number:    rawPhone,
+    phone:           rawPhone,
+    document_type:   document.getElementById('tDocType').value,
+    document_number: document.getElementById('tDocNum').value.trim(),
+    issue_date:      document.getElementById('tDocIssue').value,
+    expiry_date:     document.getElementById('tDocExp').value,
+    document_issue:  document.getElementById('tDocIssue').value,
+    document_expiry: document.getElementById('tDocExp').value,
+    document_country:document.getElementById('tDocCountry').value.trim(),
+  };
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = '⏳ جاري الحفظ...';
+  try {
+    if (id) await Api.put('/api/travelers/' + id, data, true);
+    else     await Api.post('/api/travelers', data, true);
+    closeModal();
+    await loadTravelers();
+    showToast(id ? '✅ تم تحديث المسافر' : '✅ تم إضافة المسافر', 'success');
+  } catch(err) {
+    showToast(err.message || 'حدث خطأ', 'error');
+  } finally {
+    btn.disabled = false; btn.innerHTML = '💾 حفظ المسافر';
   }
+}
 
-  function openModal(traveler=null, idx=null) {
-    document.getElementById('modalTitle').textContent = traveler ? 'تعديل مسافر' : 'إضافة مسافر';
-    document.getElementById('travelerId').value = traveler?.id || '';
-    document.getElementById('tTitle').value = traveler?.title || '';
-    document.getElementById('tFirst').value = traveler?.first_name || '';
-    document.getElementById('tMiddle').value = traveler?.middle_name || '';
-    document.getElementById('tLast').value = traveler?.last_name || '';
-    document.getElementById('tGender').value = traveler?.gender || '';
-    document.getElementById('tNationality').value = traveler?.nationality || '';
-    document.getElementById('tDob').value = traveler?.date_of_birth || '';
-    document.getElementById('tEmail').value = traveler?.email || '';
-    // Phone: prefer stored E.164 in phone_number, fall back to combined from old split fields
-    let storedPhone = traveler?.phone_number || '';
-    if (!storedPhone.startsWith('+') && traveler?.phone_country_code && traveler?.phone_number) {
-      storedPhone = (traveler.phone_country_code.trim() + traveler.phone_number.trim()).replace(/\s+/g,'');
-    }
-    if (!storedPhone.startsWith('+') && (traveler?.phone||'').startsWith('+')) {
-      storedPhone = (traveler.phone||'').replace(/\s+/g,'');
-    }
-    document.getElementById('tPhone').value = storedPhone;
-    document.getElementById('tDocType').value = traveler?.document_type || 'passport';
-    document.getElementById('tDocNum').value = traveler?.document_number || '';
-    document.getElementById('tDocIssue').value = traveler?.document_issue || '';
-    document.getElementById('tDocExp').value = traveler?.document_expiry || '';
-    document.getElementById('tDocCountry').value = traveler?.document_country || '';
-    document.getElementById('travelerModal').classList.add('active');
+async function deleteTraveler(id, idx) {
+  if (!confirm('هل تريد حذف هذا المسافر؟')) return;
+  try {
+    await Api.delete('/api/travelers/' + id, true);
+    travelers.splice(idx, 1);
+    renderTravelers();
+    showToast('🗑 تم حذف المسافر', 'success');
+  } catch(err) {
+    showToast(err.message || 'فشل الحذف', 'error');
   }
+}
 
-  function closeModal() { document.getElementById('travelerModal').classList.remove('active'); }
+/* ══════════════════════ OCR / Passport Scanner ══════════════════════ */
 
-  function editTraveler(idx) { openModal(travelers[idx], idx); }
-
-  async function saveTraveler(e) {
-    e.preventDefault();
-    const id = document.getElementById('travelerId').value;
-    // Normalise phone to E.164 (strip spaces, ensure leading +)
-    let rawPhone = document.getElementById('tPhone').value.trim().replace(/[\s\-()]/g,'');
-    if (rawPhone && !rawPhone.startsWith('+')) rawPhone = '+' + rawPhone;
-    const data = {
-      title: document.getElementById('tTitle').value,
-      first_name: document.getElementById('tFirst').value.trim(),
-      middle_name: document.getElementById('tMiddle').value.trim(),
-      last_name: document.getElementById('tLast').value.trim(),
-      gender: document.getElementById('tGender').value,
-      nationality: document.getElementById('tNationality').value,
-      date_of_birth: document.getElementById('tDob').value,
-      email: document.getElementById('tEmail').value.trim(),
-      phone_number: rawPhone,
-      phone: rawPhone,
-      document_type: document.getElementById('tDocType').value,
-      document_number: document.getElementById('tDocNum').value.trim(),
-      issue_date: document.getElementById('tDocIssue').value,
-      expiry_date: document.getElementById('tDocExp').value,
-      document_issue: document.getElementById('tDocIssue').value,
-      document_expiry: document.getElementById('tDocExp').value,
-      document_country: document.getElementById('tDocCountry').value.trim(),
-    };
-    const btn = document.getElementById('saveBtn');
-    btn.disabled = true; btn.textContent = 'جاري الحفظ...';
-    try {
-      if (id) {
-        await Api.put('/api/travelers/' + id, data, true);
-      } else {
-        await Api.post('/api/travelers', data, true);
-      }
-      closeModal();
-      loadTravelers();
-      showToast(id ? 'تم تحديث المسافر' : 'تم إضافة المسافر', 'success');
-    } catch(err) {
-      showToast(err.message || 'حدث خطأ', 'error');
-    } finally {
-      btn.disabled = false; btn.textContent = 'حفظ المسافر';
-    }
-  }
-
-  async function deleteTraveler(id, idx) {
-    if (!confirm('هل تريد حذف هذا المسافر؟')) return;
-    try {
-      await Api.delete('/api/travelers/' + id, true);
-      travelers.splice(idx, 1);
-      renderTravelers();
-      showToast('تم حذف المسافر', 'success');
-    } catch(err) {
-      showToast(err.message || 'فشل الحذف', 'error');
-    }
-  }
-
-  function showToast(msg, type='info') {
-    const t = document.createElement('div');
-    t.className = 'toast toast-'+type;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(()=>t.remove(), 3500);
-  }
-
-  document.getElementById('travelerModal').addEventListener('click', e=>{
-    if(e.target===document.getElementById('travelerModal')) closeModal();
+function loadTesseract() {
+  return new Promise((resolve, reject) => {
+    if (window.Tesseract) { resolve(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('فشل تحميل مكتبة OCR'));
+    document.head.appendChild(s);
   });
+}
 
-  loadTravelers();
+async function scanImageData(imageData) {
+  const progress = document.getElementById('scanProgress');
+  const fill     = document.getElementById('scanFill');
+  const status   = document.getElementById('scanStatus');
+  const result   = document.getElementById('scanResult');
+
+  progress.classList.add('visible');
+  status.textContent = 'جاري تحميل محرك القراءة...';
+  fill.style.width = '10%';
+  result.innerHTML = '';
+
+  try {
+    await loadTesseract();
+    status.textContent = 'جاري المسح...';
+    fill.style.width = '30%';
+
+    const worker = await Tesseract.createWorker('eng', 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          fill.style.width = (30 + Math.round(m.progress * 60)) + '%';
+        }
+      }
+    });
+    // MRZ characters only: uppercase letters, digits, and <
+    await worker.setParameters({ tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789<' });
+    const { data: { text } } = await worker.recognize(imageData);
+    await worker.terminate();
+
+    fill.style.width = '100%';
+    status.textContent = 'اكتمل المسح';
+
+    const parsed = parseMRZ(text);
+    if (parsed) {
+      applyMRZToForm(parsed);
+      result.innerHTML = `<div class="scan-badge">✅ تم استخراج البيانات تلقائياً — راجع وتأكد من الدقة</div>`;
+    } else {
+      result.innerHTML = `<div class="scan-badge error">⚠️ لم يتم التعرف على MRZ — أدخل البيانات يدوياً أو أعد المسح بصورة أوضح</div>`;
+    }
+  } catch(err) {
+    fill.style.width = '0%';
+    progress.classList.remove('visible');
+    result.innerHTML = `<div class="scan-badge error">⚠️ ${err.message}</div>`;
+  }
+}
+
+function parseMRZ(text) {
+  // Clean: uppercase, keep A-Z 0-9 <
+  const lines = text.toUpperCase()
+    .replace(/[^A-Z0-9<\n]/g, '')
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length >= 30);
+
+  // Find two consecutive MRZ lines of ~44 chars (TD3 passport)
+  let line1 = null, line2 = null;
+  for (let i = 0; i < lines.length - 1; i++) {
+    if (lines[i].length >= 38 && lines[i+1].length >= 38) {
+      line1 = lines[i].padEnd(44, '<').substring(0, 44);
+      line2 = lines[i+1].padEnd(44, '<').substring(0, 44);
+      break;
+    }
+  }
+  // Fallback: single long lines
+  if (!line1) {
+    const candidates = lines.filter(l => l.length >= 38);
+    if (candidates.length >= 2) {
+      line1 = candidates[0].padEnd(44,'<').substring(0,44);
+      line2 = candidates[1].padEnd(44,'<').substring(0,44);
+    }
+  }
+  if (!line1 || !line2) return null;
+
+  try {
+    // Line 1: P<COUNTRYNAME<<GIVENNAMES<<<…
+    const docType   = line1[0]; // P for passport
+    const country   = line1.substring(2, 5).replace(/</g,'');
+    const nameField = line1.substring(5);
+    const nameParts = nameField.split('<<');
+    const surname   = (nameParts[0] || '').replace(/</g,' ').trim();
+    const givenRaw  = (nameParts[1] || '').replace(/</g,' ').trim();
+    const givenParts = givenRaw.split(' ').filter(Boolean);
+    const firstName = givenParts[0] || '';
+    const middleName = givenParts.slice(1).join(' ') || '';
+
+    // Line 2: docNum(9) + check + nationality(3) + DOB(6) + check + sex(1) + expiry(6) + check ...
+    const docNum    = line2.substring(0, 9).replace(/</g,'');
+    const nat       = line2.substring(10, 13).replace(/</g,'');
+    const dobRaw    = line2.substring(13, 19);
+    const sex       = line2[20];
+    const expiryRaw = line2.substring(21, 27);
+
+    const parseDate = (yymmdd, isBirth) => {
+      if (!yymmdd || yymmdd.includes('<')) return '';
+      const yy = parseInt(yymmdd.substring(0,2));
+      const mm = yymmdd.substring(2,4);
+      const dd = yymmdd.substring(4,6);
+      const now = new Date().getFullYear() % 100;
+      let year;
+      if (isBirth) {
+        // DOB: if yy > current year (mod 100) → 1900s else 2000s
+        year = yy > now ? 1900 + yy : 2000 + yy;
+      } else {
+        // Expiry: always future
+        year = yy < now ? 2100 + yy : 2000 + yy;
+      }
+      return `${year}-${mm}-${dd}`;
+    };
+
+    return {
+      docType, country, surname, firstName, middleName,
+      docNum,
+      nationality: nat,
+      dob:    parseDate(dobRaw, true),
+      expiry: parseDate(expiryRaw, false),
+      sex:    sex === 'M' ? 'male' : sex === 'F' ? 'female' : '',
+    };
+  } catch(e) { return null; }
+}
+
+function applyMRZToForm(mrz) {
+  const set = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
+  set('tFirst',   mrz.firstName);
+  set('tMiddle',  mrz.middleName);
+  set('tLast',    mrz.surname);
+  set('tDocNum',  mrz.docNum);
+  set('tDocExp',  mrz.expiry);
+  set('tDob',     mrz.dob);
+  if (mrz.sex) set('tGender', mrz.sex);
+  // Auto-select nationality by country code if possible
+  const natEl = document.getElementById('tNationality');
+  if (natEl && mrz.nationality) {
+    const opt = natEl.querySelector(`option[value="${mrz.nationality}"]`);
+    if (opt) natEl.value = mrz.nationality;
+  }
+  // Document country
+  set('tDocCountry', mrz.country);
+  // Auto-set title from gender
+  const titleEl = document.getElementById('tTitle');
+  if (titleEl && !titleEl.value) {
+    titleEl.value = mrz.sex === 'female' ? 'ms' : mrz.sex === 'male' ? 'mr' : '';
+  }
+}
+
+/* ── File Upload ── */
+function scanFile(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  const reader = new FileReader();
+  reader.onload = e => scanImageData(e.target.result);
+  reader.readAsDataURL(file);
+  input.value = ''; // reset so same file can be selected again
+}
+
+/* ── Camera ── */
+async function openCamera() {
+  const modal = document.getElementById('cameraModal');
+  const video = document.getElementById('camVideo');
+  modal.classList.add('active');
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    video.srcObject = cameraStream;
+  } catch(err) {
+    closeCamera();
+    showToast('تعذر الوصول إلى الكاميرا: ' + err.message, 'error');
+  }
+}
+
+function closeCamera() {
+  document.getElementById('cameraModal').classList.remove('active');
+  if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+}
+
+function captureCamera() {
+  const video  = document.getElementById('camVideo');
+  const canvas = document.getElementById('camCanvas');
+  canvas.width  = video.videoWidth  || 640;
+  canvas.height = video.videoHeight || 480;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+  closeCamera();
+  scanImageData(dataUrl);
+}
+
+/* ══════════════════════ Toast ══════════════════════ */
+function showToast(msg, type = 'info') {
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+/* ══════════════════════ Init ══════════════════════ */
+document.getElementById('travelerModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('travelerModal')) closeModal();
+});
+
+loadTravelers();
 </script>
 </body>
 </html>
