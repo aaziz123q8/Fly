@@ -599,27 +599,16 @@ function renderBooking(b) {
     document.getElementById('condSection').style.display = 'block';
     const condBox = (label, icon, cond) => {
       if (!cond) return '';
-      const allowed  = cond.allowed !== false;
-      const penalty  = (cond.penalty_amount && parseFloat(cond.penalty_amount) > 0)
-        ? `رسوم الناقل: ${cond.penalty_currency || ''} ${parseFloat(cond.penalty_amount).toFixed(2)}*` : '';
+      const allowed = cond.allowed !== false;
       return `<div class="cond-box ${allowed ? 'cond-allowed' : 'cond-forbidden'}">
         <div class="cond-icon">${icon}</div>
         <div class="cond-name">${label}</div>
-        <div style="font-size:.82rem;font-weight:700;color:${allowed ? '#15803d' : '#b91c1c'}">${allowed ? 'مسموح' : 'غير مسموح'}</div>
-        ${penalty ? `<div class="cond-penalty">${penalty}</div>` : ''}
+        <div style="font-size:.82rem;font-weight:700;color:${allowed ? '#15803d' : '#b91c1c'}">${allowed ? 'مسموح ✓' : 'غير مسموح ✗'}</div>
       </div>`;
     };
     document.getElementById('condGrid').innerHTML =
       condBox('استرداد قبل السفر', '💰', refCond) +
       condBox('تغيير قبل السفر', '✏️', chgCond);
-    // Show footnote if any penalty exists
-    const hasChgPenalty = chgCond && chgCond.penalty_amount && parseFloat(chgCond.penalty_amount) > 0;
-    if (hasChgPenalty) {
-      const note = document.createElement('p');
-      note.style.cssText = 'font-size:.74rem;color:#6b7280;margin:6px 4px 0;line-height:1.5';
-      note.textContent = '* رسوم الناقل هي الغرامة الأساسية المحددة من شركة الطيران. التكلفة الفعلية عند التغيير قد تكون أعلى وتشمل فارق سعر التذكرة الجديدة.';
-      document.getElementById('condSection').appendChild(note);
-    }
   }
 
   // ── Pricing summary (what was paid — never subtract refund here) ──
