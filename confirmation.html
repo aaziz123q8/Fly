@@ -647,13 +647,12 @@ function renderBooking(b) {
     } else {
       rRows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fee2e2">
         <span>مبلغ الاسترداد</span><strong style="color:#16a34a">${refAmt3.toFixed(2)} ${cur3}</strong></div>`;
-      if (b.cancellation_refund_to || b.refund_preference) {
-        const method = b.refund_preference === 'wallet' ? 'wallet' : (b.cancellation_refund_to || '');
+      if (b.refund_preference) {
+        const methodLabel = b.refund_preference === 'wallet' ? 'رصيد المحفظة' : 'البطاقة الأصلية';
         rRows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fee2e2">
-          <span>طريقة الاسترداد</span><span>${refToLabels[method] || method}</span></div>`;
+          <span>طريقة الاسترداد</span><span>${methodLabel}</span></div>`;
       }
-      const isWalletRefund = b.refund_preference === 'wallet' || b.cancellation_refund_to === 'balance' || b.cancellation_refund_to === 'wallet';
-      if (isWalletRefund)
+      if (b.refund_preference === 'wallet')
         rRows += `<div style="font-size:.78rem;color:#16a34a;margin-top:6px">✅ تم إضافة المبلغ لرصيد المحفظة فوراً.</div>`;
       else
         rRows += `<div style="font-size:.78rem;color:#888;margin-top:6px">⏱️ يستغرق الاسترداد من 5 إلى 10 أيام عمل حسب سياسة البنك.</div>`;

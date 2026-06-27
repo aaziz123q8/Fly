@@ -434,10 +434,11 @@ function render(b) {
       rRows = `<div style="color:#b91c1c;font-weight:700;padding:6px 0">⛔ هذه التذكرة غير قابلة للاسترداد وفق شروط الناقل الجوي.</div>`;
     } else {
       rRows += `<div class="refund-row"><span>مبلغ الاسترداد</span><strong style="color:#16a34a">${money(refundAmt, cur)}</strong></div>`;
-      if (b.cancellation_refund_to)
-        rRows += `<div class="refund-row"><span>طريقة الاسترداد</span><span>${refToLabels[b.cancellation_refund_to] || b.cancellation_refund_to}</span></div>`;
-      const isWalletRefund = b.refund_preference === 'wallet' || b.cancellation_refund_to === 'balance' || b.cancellation_refund_to === 'wallet';
-      if (isWalletRefund)
+      if (b.refund_preference) {
+        const methodLabel = b.refund_preference === 'wallet' ? 'رصيد المحفظة' : 'البطاقة الأصلية';
+        rRows += `<div class="refund-row"><span>طريقة الاسترداد</span><span>${methodLabel}</span></div>`;
+      }
+      if (b.refund_preference === 'wallet')
         rRows += `<div style="font-size:.75rem;color:#16a34a;margin-top:6px">✅ تم إضافة المبلغ لرصيد المحفظة فوراً.</div>`;
       else
         rRows += `<div style="font-size:.75rem;color:#888;margin-top:6px">⏱️ يستغرق الاسترداد من 5 إلى 10 أيام عمل حسب سياسة البنك.</div>`;
