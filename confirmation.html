@@ -168,6 +168,7 @@
     .bnav-icon { font-size:1.4rem; }
 
     /* ── Print / PDF styles ──────────────────────────────────────── */
+    .print-invoice-header { display:none; }
     @media print {
       * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
       body, html { margin:0; padding:0; background:#fff !important; }
@@ -177,13 +178,24 @@
       #ticketCard { box-shadow:none !important; border-radius:0 !important; border:1px solid #ddd; }
       .tk-header { background:linear-gradient(135deg,#0f2444,#1B4F8E) !important; -webkit-print-color-adjust:exact; }
       .badge-confirmed { background:#22c55e !important; }
+      .badge-cancelled { background:#ef4444 !important; }
       .tk-footer { background:#0f2444 !important; }
       .bag-item { background:#f0f5ff !important; }
       .cond-allowed { background:#f0fdf4 !important; }
       .cond-forbidden { background:#fff1f2 !important; }
       .tk-route { background:#fafbff !important; }
+      #refundSection { background:#fff8f8 !important; border:1px solid #fca5a5 !important; }
       a { text-decoration:none !important; }
-      @page { margin:10mm; size:A4; }
+      .print-invoice-header {
+        display:flex !important;
+        justify-content:space-between; align-items:center;
+        padding:12px 0 10px; border-bottom:2px solid #0f2444; margin-bottom:10px;
+        font-size:.8rem; color:#555;
+      }
+      .print-invoice-header .inv-logo { font-size:1.1rem; font-weight:900; color:#0f2444; }
+      .print-invoice-header .inv-logo span { color:#F5A623; }
+      .print-invoice-header .inv-meta { text-align:left; }
+      @page { margin:12mm; size:A4 portrait; }
     }
   </style>
 </head>
@@ -204,6 +216,16 @@
         <div id="heroIcon" class="success-icon">✅</div>
         <h1 id="heroTitle" style="color:#0f2444;font-size:1.7rem;margin:0 0 6px">تم الحجز بنجاح!</h1>
         <p id="heroSubtitle" style="color:#888;margin:0 0 20px">سيصلك تأكيد الحجز على بريدك الإلكتروني خلال دقائق</p>
+      </div>
+
+      <!-- Invoice header — print only -->
+      <div class="print-invoice-header">
+        <div class="inv-logo">✈️ <span>فلاي</span> مسار</div>
+        <div class="inv-meta">
+          <div id="invTitle" style="font-weight:700;color:#0f2444">فاتورة / تذكرة سفر</div>
+          <div id="invDate"></div>
+          <div style="color:#888">flymasar.com · +965 6500 2080</div>
+        </div>
       </div>
 
       <!-- ════ TICKET CARD ════ -->
@@ -278,6 +300,18 @@
         <div class="tk-section" id="condSection" style="display:none">
           <div class="tk-section-title">📋 شروط التذكرة</div>
           <div class="cond-grid" id="condGrid"></div>
+        </div>
+
+        <!-- Pricing summary -->
+        <div class="tk-section" id="pricingSection" style="display:none">
+          <div class="tk-section-title">💳 ملخص الدفع</div>
+          <div id="pricingRows" style="font-size:.88rem;color:#333;line-height:2"></div>
+        </div>
+
+        <!-- Cancellation / refund info -->
+        <div class="tk-section" id="refundSection" style="display:none;background:#fff8f8;border-radius:12px">
+          <div class="tk-section-title" style="color:#b91c1c">💸 معلومات الاسترداد</div>
+          <div id="refundRows" style="font-size:.88rem;color:#333;line-height:2"></div>
         </div>
 
         <!-- Travel instructions -->
@@ -413,6 +447,10 @@ function renderBooking(b) {
 
   // FM reference
   if (b.booking_reference) document.getElementById('refFm').textContent = b.booking_reference;
+
+  // Invoice print header
+  document.getElementById('invDate').textContent = 'تاريخ الإصدار: ' + new Date().toLocaleDateString('ar-KW', {day:'numeric',month:'long',year:'numeric'});
+  if (b.booking_reference) document.getElementById('invTitle').textContent = 'فاتورة رقم ' + b.booking_reference;
 
   // Status
   const st = b.status || 'confirmed';
@@ -570,6 +608,43 @@ function renderBooking(b) {
     document.getElementById('condGrid').innerHTML =
       condBox('استرداد قبل السفر', '💰', refCond) +
       condBox('تغيير قبل السفر', '✏️', chgCond);
+  }
+
+  // ── Pricing summary ─────────────────────────────────────────────
+  if (b.total_amount) {
+    document.getElementById('pricingSection').style.display = 'block';
+    const cur = b.currency || 'GBP';
+    const fmt = (v) => `${parseFloat(v).toFixed(2)} ${cur}`;
+    let rows = `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f0f0f0;padding:4px 0">
+      <span style="color:#555">إجمالي التذكرة</span>
+      <strong>${fmt(b.total_amount)}</strong></div>`;
+    if (b.change_fee_paid && parseFloat(b.change_fee_paid) > 0) {
+      rows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #f0f0f0">
+        <span style="color:#555">رسوم تغيير الرحلة</span>
+        <span style="color:#d97706">+ ${fmt(b.change_fee_paid)}</span></div>`;
+    }
+    rows += `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:1rem">
+      <span style="font-weight:700">الإجمالي المدفوع</span>
+      <strong style="color:#1B4F8E;font-size:1.05rem">${fmt(parseFloat(b.total_amount) + parseFloat(b.change_fee_paid || 0))}</strong></div>`;
+    document.getElementById('pricingRows').innerHTML = rows;
+  }
+
+  // ── Refund section (when cancelled) ─────────────────────────────
+  if (isCancelledStatus(b.status)) {
+    const refAmt = b.cancellation_refund_amount;
+    const refTo  = b.cancellation_refund_to;
+    const refToLabels = {balance:'رصيد المحفظة', original_payment:'البطاقة الأصلية', voucher:'قسيمة ائتمان', arc_bsp_cash:'كاش'};
+    if (refAmt || refTo) {
+      document.getElementById('refundSection').style.display = 'block';
+      const cur = b.currency || 'GBP';
+      let rRows = '';
+      if (refAmt) rRows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fee2e2">
+        <span>مبلغ الاسترداد</span><strong style="color:#16a34a">${parseFloat(refAmt).toFixed(2)} ${cur}</strong></div>`;
+      if (refTo) rRows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fee2e2">
+        <span>طريقة الاسترداد</span><span>${refToLabels[refTo] || refTo}</span></div>`;
+      rRows += `<div style="font-size:.78rem;color:#888;margin-top:6px">⏱️ يستغرق الاسترداد من 5 إلى 10 أيام عمل حسب سياسة البنك.</div>`;
+      document.getElementById('refundRows').innerHTML = rRows;
+    }
   }
 
   // Show sync button

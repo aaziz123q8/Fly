@@ -1792,10 +1792,23 @@ class FlightBookingService
             $newStatus = 'confirmed';
         }
 
+        // Live total from Duffel (updated after changes/refunds)
+        $liveTotalAmount   = $order['total_amount']   ?? null;
+        $liveTotalCurrency = $order['total_currency'] ?? null;
+
         // Base fields — always exist (migration 017).
-        $this->db->prepare(
-            'UPDATE flight_bookings SET status = :status, updated_at = NOW() WHERE id = :id'
-        )->execute([':status' => $newStatus, ':id' => $bookingId]);
+        $baseUpdate = 'UPDATE flight_bookings SET status = :status, updated_at = NOW()';
+        $baseParams = [':status' => $newStatus, ':id' => $bookingId];
+        if ($liveTotalAmount !== null) {
+            $baseUpdate .= ', total_amount = :total_amount';
+            $baseParams[':total_amount'] = $liveTotalAmount;
+        }
+        if ($liveTotalCurrency !== null) {
+            $baseUpdate .= ', currency = :currency';
+            $baseParams[':currency'] = strtoupper($liveTotalCurrency);
+        }
+        $baseUpdate .= ' WHERE id = :id';
+        $this->db->prepare($baseUpdate)->execute($baseParams);
 
         // Extended Duffel fields — migration 075. Wrapped in try/catch so sync
         // succeeds even if migration 075 has not been applied to the live database.
@@ -2251,7 +2264,25 @@ class FlightBookingService
         $confirmed = $this->duffel->confirmOrderChange($ocId, $payment);
         if (empty($confirmed['data'])) throw new RuntimeException('Change confirmation failed.', 502);
 
-        // Re-sync booking from Duffel to get updated status/segments
+        // Record change fee paid (accumulate if multiple changes)
+        if ($changeDiff > 0) {
+            try {
+                $this->db->prepare(
+                    'UPDATE flight_bookings
+                     SET change_fee_paid = COALESCE(change_fee_paid, 0) + :fee, status = :st
+                     WHERE id = :id'
+                )->execute([':fee' => $changeDiff, ':st' => 'changed', ':id' => $bookingId]);
+            } catch (\Throwable $e) {
+                // change_fee_paid column may not exist yet — non-fatal
+            }
+        } else {
+            try {
+                $this->db->prepare('UPDATE flight_bookings SET status = :st WHERE id = :id')
+                         ->execute([':st' => 'changed', ':id' => $bookingId]);
+            } catch (\Throwable $e) {}
+        }
+
+        // Re-sync booking from Duffel to get updated status/segments/total_amount
         $updated = $this->syncFromDuffel($bookingId, $userId);
 
         return [
