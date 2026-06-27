@@ -578,14 +578,16 @@ function buildServicesPayload() {
   const services = [];
   Object.entries(selectedBagSvcs).forEach(([id, {svc, qty}]) => {
     const maxQty = svc.maximum_quantity ?? 1;
-    services.push({ id, quantity: Math.min(qty, maxQty) });
+    const q = Math.min(qty, maxQty);
+    services.push({ id, quantity: q, total_amount: parseFloat(svc.total_amount || 0) });
   });
   Object.entries(selectedMealSvcs).forEach(([id, {svc, qty}]) => {
     const maxQty = svc.maximum_quantity ?? 1;
-    services.push({ id, quantity: Math.min(qty, maxQty) });
+    const q = Math.min(qty, maxQty);
+    services.push({ id, quantity: q, total_amount: parseFloat(svc.total_amount || 0) });
   });
   Object.values(selectedSeats).forEach(({svc}) => {
-    if (svc && svc.id) services.push({ id: svc.id, quantity: 1 });
+    if (svc && svc.id) services.push({ id: svc.id, quantity: 1, total_amount: parseFloat(svc.total_amount || 0) });
   });
   return services;
 }

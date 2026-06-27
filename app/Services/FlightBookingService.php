@@ -2737,7 +2737,7 @@ class FlightBookingService
     {
         if (empty($selectedServices)) return 0.0;
 
-        // Build a price map from the offer's available_services: id => total_amount
+        // Build a price map from the offer's available_services: id => total_amount (per unit)
         $priceMap = [];
         foreach (($offerData['available_services'] ?? []) as $svc) {
             $id = $svc['id'] ?? '';
@@ -2750,7 +2750,11 @@ class FlightBookingService
         foreach ($selectedServices as $s) {
             $id  = (string) ($s['id'] ?? '');
             $qty = max(1, (int) ($s['quantity'] ?? 1));
-            if (isset($priceMap[$id])) {
+
+            // Prefer total_amount stored directly in service data (sent from frontend)
+            if (isset($s['total_amount']) && (float) $s['total_amount'] > 0) {
+                $cost += (float) $s['total_amount'] * $qty;
+            } elseif (isset($priceMap[$id])) {
                 $cost += $priceMap[$id] * $qty;
             }
         }
