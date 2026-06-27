@@ -730,8 +730,10 @@
       ]);
       const d = res.data || res;
       modal.dataset.cancellationId = d.cancellation_id || '';
-      const refund   = d.refund_amount ? `${parseFloat(d.refund_amount).toFixed(2)} ${d.refund_currency || ''}` : 'غير متاح';
-      const hasRefund = d.refund_amount && parseFloat(d.refund_amount) > 0;
+      const refundAmt = parseFloat(d.refund_amount || 0);
+      const refund   = refundAmt > 0 ? `${refundAmt.toFixed(2)} ${d.refund_currency || ''}` : 'لا يوجد استرداد';
+      const hasRefund = refundAmt > 0;
+      const noRefundWarning = d.no_refund_warning || refundAmt === 0;
       const walletBal = walletRes.balance ? `${parseFloat(walletRes.balance).toFixed(2)} ${walletRes.currency||'GBP'}` : '0.00';
       const expiresAt = d.expires_at ? new Date(d.expires_at) : null;
       const expiryStr = expiresAt ? expiresAt.toLocaleString('ar-SA') : '—';
@@ -765,6 +767,12 @@
               <div style="font-size:.77rem;color:#888">فوري — رصيدك الحالي: <strong>${walletBal}</strong></div>
             </div>
           </label>
+        </div>` : ''}
+
+        ${noRefundWarning && !hasRefund ? `
+        <div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:8px;padding:12px 14px;font-size:.85rem;color:#b91c1c;margin-bottom:10px">
+          <strong>⛔ تذكرة غير قابلة للاسترداد</strong><br>
+          شروط هذه التذكرة لا تسمح باسترداد المبلغ عند الإلغاء. في حال المتابعة <strong>لن تحصل على أي استرداد</strong>.
         </div>` : ''}
 
         <div style="background:#fef3c7;border-radius:6px;padding:10px 14px;font-size:.83rem;color:#92400e">

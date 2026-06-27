@@ -1544,8 +1544,9 @@ class FlightBookingService
             throw new RuntimeException('Booking not found.', 404);
         }
 
-        if ($booking['status'] === 'cancelled') {
-            throw new RuntimeException('Booking is already cancelled.', 422);
+        // ── Guard 1: already cancelled ────────────────────────────
+        if (in_array($booking['status'], ['cancelled', 'cancellation_pending_refund', 'cancellation_pending_manual_refund'], true)) {
+            throw new RuntimeException('هذا الحجز ملغي بالفعل.', 422);
         }
 
         $providerOrderId = $booking['provider_order_id'] ?? '';
@@ -1553,14 +1554,42 @@ class FlightBookingService
             throw new RuntimeException('Cannot cancel: no provider order ID found.', 422);
         }
 
-        // Guard: verify 'cancel' is in available_actions (if populated from last sync).
-        $availableActions = $booking['available_actions'] ?? null;
-        if (is_array($availableActions) && !empty($availableActions)
-            && !in_array('cancel', $availableActions, true)) {
-            throw new RuntimeException('هذا الحجز لا يقبل الإلغاء وفق شروط الناقل.', 422);
+        // ── Guard 2: flight has already departed ──────────────────
+        $departureAt = $booking['departure_at'] ?? null;
+        if ($departureAt && new \DateTime($departureAt) < new \DateTime()) {
+            throw new RuntimeException(
+                'لا يمكن إلغاء هذا الحجز لأن موعد الرحلة قد مضى. يرجى التواصل معنا عبر واتساب للمساعدة.',
+                422
+            );
         }
 
-        // Inform frontend whether void (free-cancel) window is still open.
+        // ── Guard 3: available_actions check ─────────────────────
+        $availableActions = $booking['available_actions'] ?? null;
+        if (is_string($availableActions)) {
+            $availableActions = json_decode($availableActions, true) ?? [];
+        }
+        if (is_array($availableActions) && !empty($availableActions)
+            && !in_array('cancel', $availableActions, true)) {
+            throw new RuntimeException('هذا الحجز لا يقبل الإلغاء وفق شروط الناقل الجوي.', 422);
+        }
+
+        // ── Guard 4: rate-limit — only one pending cancellation per booking ──
+        if (!empty($booking['pending_cancellation_id']) && !empty($booking['cancellation_expires_at'])) {
+            if (new \DateTime($booking['cancellation_expires_at']) > new \DateTime()) {
+                // Return the existing pending cancellation rather than creating a new one
+                return [
+                    'cancellation_id'    => $booking['pending_cancellation_id'],
+                    'refund_amount'      => $booking['cancellation_refund_amount']   ?? '0.00',
+                    'refund_currency'    => $booking['cancellation_refund_currency']  ?? ($booking['currency'] ?? 'GBP'),
+                    'refund_to'          => $booking['cancellation_refund_to']        ?? 'original_payment_method',
+                    'expires_at'         => $booking['cancellation_expires_at'],
+                    'void_window_active' => false,
+                    'no_refund_warning'  => $this->isNoRefundTicket($booking),
+                ];
+            }
+        }
+
+        // Void window check
         $voidWindowActive = false;
         if (!empty($booking['void_window_ends_at'])) {
             $voidWindowActive = new \DateTime($booking['void_window_ends_at']) > new \DateTime();
@@ -1572,8 +1601,17 @@ class FlightBookingService
         $cancellationExpiresAt = !empty($cancellation['expires_at'])
             ? date('Y-m-d H:i:s', strtotime($cancellation['expires_at'])) : null;
 
-        // Store cancellation details for the confirmation step.
-        // refund_amount and refund_currency are critical for aligned Stripe partial refund.
+        // ── Guard 5: enforce Duffel refund_amount against ticket conditions ──
+        // If ticket says no refund, override Duffel's refund_amount to 0.
+        $refundAmount = $cancellation['refund_amount'] ?? '0.00';
+        if ($this->isNoRefundTicket($booking) && (float)$refundAmount > 0) {
+            error_log(sprintf(
+                '[REFUND_OVERRIDE] BookingID=%d ticket=no_refund duffel_refund=%s — overriding to 0',
+                $bookingId, $refundAmount
+            ));
+            $refundAmount = '0.00';
+        }
+
         $this->db->prepare(
             'UPDATE flight_bookings
              SET pending_cancellation_id      = :cid,
@@ -1587,19 +1625,33 @@ class FlightBookingService
             ':cid'            => $cancellation['id']             ?? '',
             ':exp_at'         => $cancellationExpiresAt,
             ':refund_to'      => $cancellation['refund_to']      ?? 'original_payment_method',
-            ':refund_amount'  => $cancellation['refund_amount']  ?? null,
+            ':refund_amount'  => $refundAmount,
             ':refund_currency'=> strtoupper($cancellation['refund_currency'] ?? ($booking['currency'] ?? 'GBP')),
             ':id'             => $bookingId,
         ]);
 
         return [
-            'cancellation_id'  => $cancellation['id']                  ?? null,
-            'refund_amount'    => $cancellation['refund_amount']        ?? '0.00',
-            'refund_currency'  => $cancellation['refund_currency']      ?? ($booking['currency'] ?? 'GBP'),
-            'refund_to'        => $cancellation['refund_to']            ?? 'original_payment_method',
-            'expires_at'       => $cancellation['expires_at']           ?? null,
+            'cancellation_id'   => $cancellation['id']    ?? null,
+            'refund_amount'     => $refundAmount,
+            'refund_currency'   => $cancellation['refund_currency'] ?? ($booking['currency'] ?? 'GBP'),
+            'refund_to'         => $cancellation['refund_to'] ?? 'original_payment_method',
+            'expires_at'        => $cancellation['expires_at'] ?? null,
             'void_window_active' => $voidWindowActive,
+            'no_refund_warning' => $this->isNoRefundTicket($booking),
         ];
+    }
+
+    // Returns true if the ticket conditions explicitly disallow refund.
+    private function isNoRefundTicket(array $booking): bool
+    {
+        $cond = $booking['refund_conditions'] ?? null;
+        if (is_string($cond)) {
+            $cond = json_decode($cond, true);
+        }
+        if (is_array($cond) && isset($cond['allowed'])) {
+            return $cond['allowed'] === false;
+        }
+        return false;
     }
 
     // =========================================================================
@@ -1613,15 +1665,35 @@ class FlightBookingService
             throw new RuntimeException('Booking not found.', 404);
         }
 
-        if ($booking['status'] === 'cancelled') {
-            throw new RuntimeException('Booking is already cancelled.', 422);
+        if (in_array($booking['status'], ['cancelled', 'cancellation_pending_refund', 'cancellation_pending_manual_refund'], true)) {
+            throw new RuntimeException('هذا الحجز ملغي بالفعل.', 422);
         }
 
-        // Guard: ensure the Duffel cancellation quote has not expired.
+        // Guard: flight already departed — absolute block
+        $departureAt = $booking['departure_at'] ?? null;
+        if ($departureAt && new \DateTime($departureAt) < new \DateTime()) {
+            throw new RuntimeException('لا يمكن إتمام الإلغاء: موعد الرحلة قد مضى.', 422);
+        }
+
+        // Guard: cancellation_id must match what we stored (prevents tampering)
+        if (!empty($booking['pending_cancellation_id'])
+            && $booking['pending_cancellation_id'] !== $cancellationId) {
+            throw new RuntimeException('معرّف الإلغاء غير صحيح.', 422);
+        }
+
+        // Guard: quote expiry
         if (!empty($booking['cancellation_expires_at'])) {
             if (new \DateTime($booking['cancellation_expires_at']) < new \DateTime()) {
                 throw new RuntimeException('انتهت صلاحية عرض الاسترداد. يرجى بدء طلب الإلغاء من جديد.', 410);
             }
+        }
+
+        // Guard: enforce no-refund policy — override stored amount to 0
+        if ($this->isNoRefundTicket($booking)) {
+            $this->db->prepare(
+                'UPDATE flight_bookings SET cancellation_refund_amount = 0 WHERE id = :id'
+            )->execute([':id' => $bookingId]);
+            $booking['cancellation_refund_amount'] = '0.00';
         }
 
         // Confirm with Duffel — this actually cancels the airline booking.
