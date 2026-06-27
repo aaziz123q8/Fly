@@ -294,6 +294,18 @@ class FlightController
         $user = AuthMiddleware::currentUser();
         if ($user === null) Response::unauthorized();
         $bookings = $this->bookingService->getUserBookings((int) $user['id']);
+
+        // Auto-sync each booking with Duffel (non-fatal if it fails)
+        $userId = (int) $user['id'];
+        $bookings = array_map(function (array $b) use ($userId): array {
+            if (empty($b['duffel_order_id'])) return $b;
+            try {
+                return $this->bookingService->syncFromDuffel((int) $b['id'], $userId);
+            } catch (\Throwable $e) {
+                return $b;
+            }
+        }, $bookings);
+
         Response::json(['bookings' => $bookings, 'count' => count($bookings)]);
     }
 
@@ -309,6 +321,16 @@ class FlightController
             : $this->bookingService->getBookingByReference((string) $idParam, (int) $user['id']);
 
         if ($booking === null) Response::notFound('Booking not found.');
+
+        // Auto-sync with Duffel to get latest status on every view
+        if (!empty($booking['duffel_order_id'])) {
+            try {
+                $booking = $this->bookingService->syncFromDuffel((int) $booking['id'], (int) $user['id']);
+            } catch (\Throwable $e) {
+                // Sync failure is non-fatal — return cached data
+            }
+        }
+
         Response::json(['booking' => $booking]);
     }
 
