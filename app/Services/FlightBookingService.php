@@ -1601,16 +1601,7 @@ class FlightBookingService
         $cancellationExpiresAt = !empty($cancellation['expires_at'])
             ? date('Y-m-d H:i:s', strtotime($cancellation['expires_at'])) : null;
 
-        // ── Guard 5: enforce Duffel refund_amount against ticket conditions ──
-        // If ticket says no refund, override Duffel's refund_amount to 0.
         $refundAmount = $cancellation['refund_amount'] ?? '0.00';
-        if ($this->isNoRefundTicket($booking) && (float)$refundAmount > 0) {
-            error_log(sprintf(
-                '[REFUND_OVERRIDE] BookingID=%d ticket=no_refund duffel_refund=%s — overriding to 0',
-                $bookingId, $refundAmount
-            ));
-            $refundAmount = '0.00';
-        }
 
         $this->db->prepare(
             'UPDATE flight_bookings
