@@ -647,6 +647,7 @@ let baseAmountGBP = parseFloat(params.get('base')     || '0') || round2(amountGB
 let taxAmountGBP  = parseFloat(params.get('tax')      || '0') || round2(amountGBP * 0.091);
 let discountGBP   = parseFloat(params.get('discount') || '0');
 let extraSvcGBP   = 0;
+let pricingFees   = []; // array of {name, type, amount} from server
 
 function round2(n) { return Math.round(n * 100) / 100; }
 
@@ -943,13 +944,27 @@ function renderPriceRows() {
 
   let html = `
     <div class="price-row">
-      <span class="price-row-lbl">✈️ سعر الرحلة الأساسي</span>
+      <span class="price-row-lbl">✈️ سعر التذكرة والضرائب</span>
       <span>${fmt(baseAmountGBP)}</span>
-    </div>
-    <div class="price-row">
-      <span class="price-row-lbl">🧾 الضرائب والرسوم</span>
+    </div>`;
+
+  // Show each fee (commission, service fee, etc.) by its name
+  if (pricingFees.length > 0) {
+    pricingFees.forEach(fee => {
+      const amt = parseFloat(fee.amount || 0);
+      if (amt > 0) {
+        html += `<div class="price-row">
+          <span class="price-row-lbl" style="color:#0369a1">💼 ${fee.name || 'رسوم الخدمة'}</span>
+          <span style="color:#0369a1">${fmt(amt)}</span>
+        </div>`;
+      }
+    });
+  } else if (taxAmountGBP > 0) {
+    html += `<div class="price-row">
+      <span class="price-row-lbl">🧾 رسوم الخدمة</span>
       <span>${fmt(taxAmountGBP)}</span>
     </div>`;
+  }
 
   if (extraSvcGBP > 0) {
     html += `<div class="price-row">
@@ -1016,9 +1031,11 @@ async function loadPriceRows() {
     if (base > 0) {
       baseAmountGBP = base;
       taxAmountGBP  = Math.max(0, round2(fees));
-      amountGBP     = total;
+      amountGBP     = round2(base + fees);
+      pricingFees   = pricing.fees || [];
     }
-    const cost = parseFloat(res.services_cost_gbp ?? 0);
+    // Services cost: prefer pricing_snapshot.services_cost, fallback to services_cost_gbp
+    const cost = parseFloat(pricing.services_cost ?? res.services_cost_gbp ?? 0);
     if (cost > 0) extraSvcGBP = cost;
     renderPriceRows();
     updateWalletUI();

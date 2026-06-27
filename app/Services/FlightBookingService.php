@@ -269,9 +269,8 @@ class FlightBookingService
             ? json_decode($session['services_data'], true)
             : ($session['services_data'] ?? []);
 
-        // Compute services cost = session total_amount minus base offer amount
-        $sessionTotal    = (float) ($session['total_amount'] ?? 0);
-        $servicesCostGBP = max(0.0, round($sessionTotal - $baseAmount, 2));
+        // Compute services cost from available_services prices in offer data
+        $servicesCostGBP = $this->computeServicesCost($offerData, $servicesData ?: []);
 
         return [
             'session'          => [
@@ -326,6 +325,24 @@ class FlightBookingService
 
         $totalAmount = (float) ($pricingSnapshot['total'] ?? 0);
         $currency    = strtolower($pricingSnapshot['currency'] ?? 'gbp');
+
+        // Add services cost (baggage / seat) to the total charged
+        $servicesData = is_string($session['services_data'] ?? null)
+            ? json_decode($session['services_data'], true)
+            : ($session['services_data'] ?? []);
+        if (!empty($servicesData)) {
+            $offerId   = $session['provider_offer_id'] ?? '';
+            $offerRow  = $this->fetchOffer($offerId);
+            if ($offerRow) {
+                $offerData    = json_decode($offerRow['offer_data'], true);
+                $servicesCost = $this->computeServicesCost($offerData, $servicesData);
+                if ($servicesCost > 0) {
+                    $totalAmount = round($totalAmount + $servicesCost, 2);
+                    $pricingSnapshot['services_cost'] = $servicesCost;
+                    $pricingSnapshot['total']         = $totalAmount;
+                }
+            }
+        }
 
         // Apply coupon if provided.
         $discountAmount = 0.0;
@@ -1487,6 +1504,24 @@ class FlightBookingService
 
         $totalAmount = (float) ($pricingSnapshot['total'] ?? 0);
         $currency    = strtoupper($pricingSnapshot['currency'] ?? 'GBP');
+
+        // Add services cost (baggage / seat)
+        $svData = is_string($session['services_data'] ?? null)
+            ? json_decode($session['services_data'], true)
+            : ($session['services_data'] ?? []);
+        if (!empty($svData)) {
+            $offId   = $session['provider_offer_id'] ?? '';
+            $offerR  = $this->fetchOffer($offId);
+            if ($offerR) {
+                $oData = json_decode($offerR['offer_data'], true);
+                $svCost = $this->computeServicesCost($oData, $svData);
+                if ($svCost > 0) {
+                    $totalAmount = round($totalAmount + $svCost, 2);
+                    $pricingSnapshot['services_cost'] = $svCost;
+                    $pricingSnapshot['total']         = $totalAmount;
+                }
+            }
+        }
 
         // Apply coupon if provided
         $discountAmount = 0.0;
@@ -2696,6 +2731,31 @@ class FlightBookingService
             'tax_amount'           => $priced['tax_amount']          ?? null,
             'payment_requirements' => $priced['payment_requirements'] ?? null,
         ];
+    }
+
+    private function computeServicesCost(array $offerData, array $selectedServices): float
+    {
+        if (empty($selectedServices)) return 0.0;
+
+        // Build a price map from the offer's available_services: id => total_amount
+        $priceMap = [];
+        foreach (($offerData['available_services'] ?? []) as $svc) {
+            $id = $svc['id'] ?? '';
+            if ($id !== '') {
+                $priceMap[$id] = (float) ($svc['total_amount'] ?? 0);
+            }
+        }
+
+        $cost = 0.0;
+        foreach ($selectedServices as $s) {
+            $id  = (string) ($s['id'] ?? '');
+            $qty = max(1, (int) ($s['quantity'] ?? 1));
+            if (isset($priceMap[$id])) {
+                $cost += $priceMap[$id] * $qty;
+            }
+        }
+
+        return round($cost, 2);
     }
 
     private function calculatePricing(float $baseAmount, string $currency): array
