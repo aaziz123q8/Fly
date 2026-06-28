@@ -148,7 +148,7 @@
     document.getElementById('tableWrapper').style.display = 'none';
     document.getElementById('emptyState').style.display = 'none';
     const params = new URLSearchParams({
-      page: currentPage, limit: 20,
+      page: currentPage, per_page: 20,
       search: document.getElementById('searchInput').value,
       type: document.getElementById('typeFilter').value,
       status: document.getElementById('statusFilter').value,

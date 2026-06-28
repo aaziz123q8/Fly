@@ -76,7 +76,7 @@ class AdminBookingsController
 
         $whereClause = implode(' AND ', $where);
 
-        $countStmt = $db->prepare("SELECT COUNT(*) FROM flight_bookings fb JOIN users u ON u.id = fb.user_id WHERE $whereClause");
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM flight_bookings fb LEFT JOIN users u ON u.id = fb.user_id WHERE $whereClause");
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 
@@ -96,7 +96,7 @@ class AdminBookingsController
                     u.id AS user_id, u.email AS user_email,
                     u.first_name, u.last_name
              FROM flight_bookings fb
-             JOIN users u ON u.id = fb.user_id
+             LEFT JOIN users u ON u.id = fb.user_id
              WHERE $whereClause
              ORDER BY fb.created_at DESC
              $limitClause"
@@ -124,7 +124,7 @@ class AdminBookingsController
 
         $whereClause = implode(' AND ', $where);
 
-        $countStmt = $db->prepare("SELECT COUNT(*) FROM hotel_bookings hb JOIN users u ON u.id = hb.user_id WHERE $whereClause");
+        $countStmt = $db->prepare("SELECT COUNT(*) FROM hotel_bookings hb LEFT JOIN users u ON u.id = hb.user_id WHERE $whereClause");
         $countStmt->execute($params);
         $total = (int) $countStmt->fetchColumn();
 
@@ -144,7 +144,7 @@ class AdminBookingsController
                     u.id AS user_id, u.email AS user_email,
                     u.first_name, u.last_name
              FROM hotel_bookings hb
-             JOIN users u ON u.id = hb.user_id
+             LEFT JOIN users u ON u.id = hb.user_id
              WHERE $whereClause
              ORDER BY hb.created_at DESC
              $limitClause"
@@ -168,7 +168,7 @@ class AdminBookingsController
             $stmt = $db->prepare(
                 'SELECT fb.*, u.email AS user_email, u.first_name, u.last_name
                  FROM flight_bookings fb
-                 JOIN users u ON u.id = fb.user_id
+                 LEFT JOIN users u ON u.id = fb.user_id
                  WHERE fb.id = ? LIMIT 1'
             );
             $stmt->execute([$id]);
@@ -220,7 +220,7 @@ class AdminBookingsController
             $stmt = $db->prepare(
                 'SELECT hb.*, u.email AS user_email, u.first_name, u.last_name
                  FROM hotel_bookings hb
-                 JOIN users u ON u.id = hb.user_id
+                 LEFT JOIN users u ON u.id = hb.user_id
                  WHERE hb.id = ? LIMIT 1'
             );
             $stmt->execute([$id]);
@@ -270,7 +270,7 @@ class AdminBookingsController
         // Try flight booking.
         $stmt = $db->prepare(
             'SELECT fb.*, "flight" AS booking_type, u.email AS user_email, u.first_name, u.last_name
-             FROM flight_bookings fb JOIN users u ON u.id = fb.user_id
+             FROM flight_bookings fb LEFT JOIN users u ON u.id = fb.user_id
              WHERE fb.id = ? LIMIT 1'
         );
         $stmt->execute([$id]);
@@ -281,7 +281,7 @@ class AdminBookingsController
             // Try hotel booking.
             $stmt = $db->prepare(
                 'SELECT hb.*, "hotel" AS booking_type, u.email AS user_email, u.first_name, u.last_name
-                 FROM hotel_bookings hb JOIN users u ON u.id = hb.user_id
+                 FROM hotel_bookings hb LEFT JOIN users u ON u.id = hb.user_id
                  WHERE hb.id = ? LIMIT 1'
             );
             $stmt->execute([$id]);
