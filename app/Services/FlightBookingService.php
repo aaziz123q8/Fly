@@ -1690,7 +1690,24 @@ class FlightBookingService
              WHERE booking_id = :id ORDER BY slice_index ASC, segment_order ASC'
         );
         $segStmt->execute([':id' => $bookingId]);
-        $booking['segments'] = $segStmt->fetchAll(PDO::FETCH_ASSOC);
+        $segs = $segStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // If no segment rows exist, synthesize one from the booking-level columns
+        if (empty($segs) && (!empty($booking['origin_airport']) || !empty($booking['departure_at']))) {
+            $segs = [[
+                'booking_id'          => $bookingId,
+                'slice_index'         => 0,
+                'segment_order'       => 1,
+                'origin_airport'      => $booking['origin_airport']      ?? '',
+                'destination_airport' => $booking['destination_airport'] ?? '',
+                'departure_at'        => $booking['departure_at']        ?? null,
+                'arrival_at'          => $booking['return_at']           ?? null,
+                'airline_code'        => '',
+                'flight_number'       => '',
+                'aircraft_type'       => null,
+            ]];
+        }
+        $booking['segments'] = $segs;
 
         // Passengers.
         $pStmt = $this->db->prepare(

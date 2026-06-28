@@ -486,33 +486,31 @@ function renderBooking(b) {
   const firstSeg = segs[0];
   const lastSeg  = segs[segs.length - 1];
 
-  if (b.origin_airport || firstSeg) {
-    const depAirport = (firstSeg ? firstSeg.origin_airport : null) || b.origin_airport || '';
-    const arrAirport = (lastSeg  ? lastSeg.destination_airport : null) || b.destination_airport || '';
-    const depAt = (firstSeg ? firstSeg.departure_at : null) || b.departure_at || '';
-    const arrAt = (lastSeg  ? lastSeg.arrival_at : null) || '';
-    const airlineCode = firstSeg ? (firstSeg.airline_code || '') : '';
+  // Always try to show route — fallback to flight_bookings columns if segments empty
+  const depAirport = (firstSeg ? firstSeg.origin_airport : null) || b.origin_airport || '';
+  const arrAirport = (lastSeg  ? lastSeg.destination_airport : null) || b.destination_airport || '';
+  const depAt = (firstSeg ? firstSeg.departure_at : null) || b.departure_at || '';
+  const arrAt = (lastSeg  ? lastSeg.arrival_at : null) || b.return_at || '';
+  const airlineCode = firstSeg ? (firstSeg.airline_code || '') : '';
 
-    if (depAirport || arrAirport) {
-      document.getElementById('routeRow').style.display = 'flex';
-      document.getElementById('depIata').textContent = depAirport;
-      document.getElementById('arrIata').textContent = arrAirport;
-      if (depAt) {
-        document.getElementById('depTime').textContent = fmtTime(depAt);
-        document.getElementById('depDate').textContent = fmtDate(depAt);
-      }
-      if (arrAt) {
-        document.getElementById('arrTime').textContent = fmtTime(arrAt);
-        document.getElementById('arrDate').textContent = fmtDate(arrAt);
-        if (depAt) document.getElementById('durationText').textContent = durationMins(depAt, arrAt);
-      }
-      // Airline logo
-      if (airlineCode) {
-        document.getElementById('airlineRow').innerHTML =
-          `<img src="${airlineLogoUrl(airlineCode)}" class="tk-airline-logo" alt="${airlineCode}"
-               onerror="this.style.display='none'">
-           <div class="tk-flight-num">${firstSeg?.flight_number || airlineCode}</div>`;
-      }
+  if (depAirport || arrAirport || depAt) {
+    document.getElementById('routeRow').style.display = 'flex';
+    document.getElementById('depIata').textContent = depAirport || '—';
+    document.getElementById('arrIata').textContent = arrAirport || '—';
+    if (depAt) {
+      document.getElementById('depTime').textContent = fmtTime(depAt);
+      document.getElementById('depDate').textContent = fmtDate(depAt);
+    }
+    if (arrAt) {
+      document.getElementById('arrTime').textContent = fmtTime(arrAt);
+      document.getElementById('arrDate').textContent = fmtDate(arrAt);
+      if (depAt) document.getElementById('durationText').textContent = durationMins(depAt, arrAt);
+    }
+    if (airlineCode) {
+      document.getElementById('airlineRow').innerHTML =
+        `<img src="${airlineLogoUrl(airlineCode)}" class="tk-airline-logo" alt="${airlineCode}"
+             onerror="this.style.display='none'">
+         <div class="tk-flight-num">${firstSeg?.flight_number || airlineCode}</div>`;
     }
   }
 
