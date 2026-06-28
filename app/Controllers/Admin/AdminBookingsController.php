@@ -22,6 +22,7 @@ class AdminBookingsController
         $perPage = min(100, max(1, (int) ($request->input('per_page', 20))));
         $offset  = ($page - 1) * $perPage;
         $type    = $request->input('type', 'all');
+        if ($type === '') $type = 'all';
         $status  = trim((string) ($request->input('status', '')));
         $search  = trim((string) ($request->input('search', '')));
 
