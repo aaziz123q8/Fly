@@ -1561,6 +1561,19 @@ tr:hover td { background: var(--bg); }
   font-weight: 700;
 }
 
+.modal-body {
+  padding: 4px 0 16px;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
 .modal-close {
   width: 32px;
   height: 32px;
@@ -2040,64 +2053,3 @@ tr:hover td { background: var(--bg); }
 .spinner-lg { width: 40px; height: 40px; border: 3px solid #e0e6ef; border-top-color: #1B4F8E; border-radius: 50%; animation: spin 0.8s linear infinite; }
 .text-muted { color: #999; }
 
-/* ===================== ADMIN LAYOUT ===================== */
-.admin-body { background: #f0f2f5; }
-.admin-layout { display: flex; min-height: 100vh; }
-.admin-sidebar { width: 260px; background: #1B4F8E; color: #fff; flex-shrink: 0; display: flex; flex-direction: column; }
-.sidebar-brand { padding: 1.5rem; font-size: 1.1rem; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.1); }
-.sidebar-nav { display: flex; flex-direction: column; padding: 1rem 0; flex: 1; }
-.sidebar-nav a { display: block; padding: 0.85rem 1.5rem; color: rgba(255,255,255,0.8); text-decoration: none; transition: all 0.2s; font-size: 0.95rem; }
-.sidebar-nav a:hover, .sidebar-nav a.active { background: rgba(255,255,255,0.15); color: #fff; }
-.sidebar-user { padding: 1rem 1.5rem; border-top: 1px solid rgba(255,255,255,0.1); font-size: 0.85rem; color: rgba(255,255,255,0.7); }
-.admin-main { flex: 1; overflow: auto; }
-.admin-topbar { background: #fff; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); flex-wrap: wrap; gap: 1rem; }
-.admin-topbar h1 { margin: 0; font-size: 1.4rem; color: #1A1A2E; }
-.topbar-actions { display: flex; gap: 0.75rem; align-items: center; }
-.admin-panel { background: #fff; border-radius: 12px; padding: 1.5rem; margin: 1.5rem; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
-.panel-title { font-size: 1.1rem; color: #1B4F8E; margin-bottom: 1.5rem; border-bottom: 2px solid #e0e6ef; padding-bottom: 0.75rem; }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; padding: 1.5rem; }
-.stat-card { background: #fff; border-radius: 12px; padding: 1.5rem; box-shadow: 0 2px 12px rgba(0,0,0,0.06); text-align: center; }
-.loading-card { display: flex; align-items: center; justify-content: center; min-height: 120px; }
-.stat-icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-.stat-value { font-size: 2rem; font-weight: 700; color: #1B4F8E; }
-.stat-label { color: #666; font-size: 0.9rem; margin-top: 0.25rem; }
-.admin-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 0 1.5rem 1.5rem; }
-.admin-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.admin-table th { background: #f5f7fa; padding: 0.75rem; text-align: right; font-weight: 600; color: #444; border-bottom: 2px solid #e0e6ef; }
-.admin-table td { padding: 0.75rem; border-bottom: 1px solid #f0f2f5; color: #333; }
-.admin-table tr:hover td { background: #f9fafc; }
-.pagination { display: flex; gap: 0.5rem; justify-content: center; margin-top: 1.5rem; flex-wrap: wrap; }
-.form-control-sm { padding: 0.4rem 0.75rem; font-size: 0.85rem; }
-.text-center { text-align: center; }
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-.modal-overlay.active { display: flex; }
-.modal { background: #fff; border-radius: 16px; padding: 2rem; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
-.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-.modal-header h2 { margin: 0; color: #1B4F8E; }
-.modal-header button { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #999; }
-.modal-actions { display: flex; gap: 1rem; justify-content: flex-end; margin-top: 1.5rem; }
-.admin-auth-page .auth-card { border-top: 4px solid #E8A020; }
-
-/* ===================== HOTELS GRID ===================== */
-.hotels-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 1.5rem; }
-.hotel-card { background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.08); transition: transform 0.2s; }
-.hotel-card:hover { transform: translateY(-4px); }
-.hotel-img-placeholder { height: 180px; background: linear-gradient(135deg, #1B4F8E, #2980b9); display: flex; align-items: center; justify-content: center; font-size: 4rem; }
-.hotel-info { padding: 1.25rem; }
-.hotel-info h3 { margin: 0 0 0.5rem; font-size: 1.05rem; color: #1A1A2E; }
-.hotel-stars { color: #E8A020; margin-bottom: 0.75rem; }
-.hotel-price { margin-bottom: 1rem; }
-.price-amount { font-size: 1.4rem; font-weight: 700; color: #1B4F8E; }
-.price-currency { font-size: 0.9rem; color: #666; }
-.price-per { font-size: 0.8rem; color: #999; }
-
-/* ===================== RESULTS ===================== */
-.results-section { padding: 2rem 0; }
-.results-header { margin-bottom: 1.5rem; }
-.results-header h2 { font-size: 1.4rem; color: #1A1A2E; }
-
-/* ===================== RESPONSIVE ADMIN (legacy classes only) ===================== */
-@media (max-width: 768px) {
-  .admin-grid-2 { grid-template-columns: 1fr; }
-  .admin-panel { margin: 0.75rem; }
-}
