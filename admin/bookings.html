@@ -387,7 +387,7 @@
       const eDocs = (b.documents || []).filter(d => d.document_type === 'electronic_ticket');
       if (eDocs.length) {
         html += `<div class="detail-section"><div class="detail-section-title">🎫 التذاكر الإلكترونية</div><div class="detail-section-body">
-          ${eDocs.map(d => `<div style="font-family:monospace;font-size:.9rem;background:#f0f5fb;border-radius:6px;padding:7px 12px;margin-bottom:4px">${d.unique_identifier}</div>`).join('')}
+          ${eDocs.map(d => `<div style="font-family:monospace;font-size:.9rem;background:#f0f5fb;border-radius:6px;padding:7px 12px;margin-bottom:4px">${d.unique_identifier || d.passenger_name || '—'}</div>`).join('')}
         </div></div>`;
       }
 
@@ -408,9 +408,9 @@
             const dep = seg.departure_at || seg.departing_at;
             const arr = seg.arrival_at || seg.arriving_at;
             const dur = seg.duration ? _formatDuration(seg.duration) : '';
-            const originIata = seg.origin_iata || (seg.origin && seg.origin.iata_code) || '';
-            const destIata = seg.destination_iata || (seg.destination && seg.destination.iata_code) || '';
-            const airlineCode = seg.airline_iata || (seg.marketing_carrier && seg.marketing_carrier.iata_code) || '';
+            const originIata = seg.origin_airport || seg.origin_iata || (seg.origin && seg.origin.iata_code) || '';
+            const destIata = seg.destination_airport || seg.destination_iata || (seg.destination && seg.destination.iata_code) || '';
+            const airlineCode = seg.airline_code || seg.airline_iata || (seg.marketing_carrier && seg.marketing_carrier.iata_code) || '';
             const flightNum = seg.flight_number || seg.marketing_carrier_flight_number || '';
             html += `<div class="segment-card">
               <div class="segment-route">
@@ -423,7 +423,7 @@
                 ${arr ? `<span>🛬 ${new Date(arr).toLocaleString('ar-SA')}</span>` : ''}
                 ${airlineCode ? `<span>✈️ ${airlineCode} ${flightNum}</span>` : ''}
                 ${dur ? `<span>⏱️ ${dur}</span>` : ''}
-                ${(seg.aircraft && seg.aircraft.name) ? `<span>🛩️ ${seg.aircraft.name}</span>` : ''}
+                ${seg.aircraft_type ? `<span>🛩️ ${seg.aircraft_type}</span>` : ''}
               </div>
             </div>`;
           });
@@ -597,9 +597,9 @@
       segments.forEach(seg => {
         const dep = seg.departure_at || seg.departing_at;
         const arr = seg.arrival_at || seg.arriving_at;
-        const originIata = seg.origin_iata || (seg.origin && seg.origin.iata_code) || '';
-        const destIata = seg.destination_iata || (seg.destination && seg.destination.iata_code) || '';
-        const airlineCode = seg.airline_iata || (seg.marketing_carrier && seg.marketing_carrier.iata_code) || '';
+        const originIata = seg.origin_airport || seg.origin_iata || (seg.origin && seg.origin.iata_code) || '';
+        const destIata = seg.destination_airport || seg.destination_iata || (seg.destination && seg.destination.iata_code) || '';
+        const airlineCode = seg.airline_code || seg.airline_iata || (seg.marketing_carrier && seg.marketing_carrier.iata_code) || '';
         const flightNum = seg.flight_number || seg.marketing_carrier_flight_number || '';
         r += `<div style="background:#eff6ff;border-radius:8px;padding:12px;margin-bottom:8px">
           <div style="font-size:1.1rem;font-weight:900">${originIata} ← ${destIata}</div>
