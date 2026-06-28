@@ -62,9 +62,12 @@
 
   // ── Build sidebar HTML ────────────────────────────────────────────────────
   var sidebarHTML = [
-    '<div class="sidebar-header">',
-    '  <div class="sidebar-brand">✈️ Fly<span>Masar</span></div>',
-    '  <div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-top:4px">لوحة التحكم</div>',
+    '<div class="sidebar-header" style="display:flex;align-items:center;justify-content:space-between">',
+    '  <div>',
+    '    <div class="sidebar-brand">✈️ Fly<span>Masar</span></div>',
+    '    <div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-top:4px">لوحة التحكم</div>',
+    '  </div>',
+    '  <button id="sidebarCloseBtn" onclick="toggleSidebar()" style="display:none;border:none;background:rgba(255,255,255,.15);color:white;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:1.1rem">✕</button>',
     '</div>',
     '<nav class="sidebar-nav">',
     buildNav(),
@@ -87,10 +90,49 @@
     if (el) {
       el.innerHTML = sidebarHTML;
     }
-    // Mobile sidebar toggle
+
+    // Create mobile overlay
+    var overlay = document.createElement('div');
+    overlay.className = 'sidebar-overlay';
+    overlay.id = 'sidebarOverlay';
+    overlay.onclick = function () { closeSidebar(); };
+    document.body.appendChild(overlay);
+
+    // Inject hamburger button into topbar if not already present
+    var topbar = document.querySelector('.admin-topbar');
+    if (topbar && !document.getElementById('sidebarToggleBtn')) {
+      var ham = document.createElement('button');
+      ham.id = 'sidebarToggleBtn';
+      ham.onclick = function () { window.toggleSidebar(); };
+      ham.setAttribute('style', 'border:none;background:none;cursor:pointer;font-size:1.3rem;color:var(--text-muted);padding:4px 8px;display:none');
+      ham.innerHTML = '☰';
+      topbar.insertBefore(ham, topbar.firstChild);
+    }
+
+    // Show/hide hamburger + close button based on screen size
+    function updateMobileBtns() {
+      var isMobile = window.innerWidth <= 768;
+      var ham2 = document.getElementById('sidebarToggleBtn');
+      var closeBtn = document.getElementById('sidebarCloseBtn');
+      if (ham2) ham2.style.display = isMobile ? 'inline-block' : 'none';
+      if (closeBtn) closeBtn.style.display = isMobile ? 'block' : 'none';
+    }
+    updateMobileBtns();
+    window.addEventListener('resize', updateMobileBtns);
+
+    function closeSidebar() {
+      var s = document.getElementById('adminSidebar');
+      var o = document.getElementById('sidebarOverlay');
+      if (s) s.classList.remove('open');
+      if (o) o.classList.remove('active');
+    }
+
     window.toggleSidebar = function () {
       var s = document.getElementById('adminSidebar');
-      if (s) s.classList.toggle('open');
+      var o = document.getElementById('sidebarOverlay');
+      if (!s) return;
+      var isOpen = s.classList.toggle('open');
+      if (o) o.classList.toggle('active', isOpen);
     };
   }
 

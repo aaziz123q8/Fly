@@ -1920,12 +1920,16 @@ tr:hover td { background: var(--bg); }
 
   .admin-layout { flex-direction: column; }
   .sidebar {
-    width: 100%;
+    width: 280px;
     position: fixed;
-    transform: translateX(100%);
+    transform: translateX(110%);
     height: 100vh;
+    z-index: 200;
+    box-shadow: -4px 0 24px rgba(0,0,0,0.3);
   }
   .sidebar.open { transform: translateX(0); }
+  .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199; }
+  .sidebar-overlay.active { display: block; }
   .admin-main { margin-right: 0; }
 
   .stats-grid { grid-template-columns: 1fr 1fr; }
@@ -2092,14 +2096,8 @@ tr:hover td { background: var(--bg); }
 .results-header { margin-bottom: 1.5rem; }
 .results-header h2 { font-size: 1.4rem; color: #1A1A2E; }
 
-/* ===================== RESPONSIVE ADMIN ===================== */
+/* ===================== RESPONSIVE ADMIN (legacy classes only) ===================== */
 @media (max-width: 768px) {
-  .admin-layout { flex-direction: column; }
-  .admin-sidebar { width: 100%; flex-direction: row; flex-wrap: wrap; }
-  .sidebar-nav { flex-direction: row; overflow-x: auto; padding: 0; }
-  .sidebar-nav a { white-space: nowrap; }
   .admin-grid-2 { grid-template-columns: 1fr; }
-  .form-row { grid-template-columns: 1fr; }
-  .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .admin-panel { margin: 0.75rem; }
 }
