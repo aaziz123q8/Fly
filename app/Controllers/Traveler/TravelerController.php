@@ -205,6 +205,20 @@ class TravelerController
             return;
         }
 
+        // Try hotel bookings
+        $stmt = $this->pdo->prepare(
+            'SELECT hb.*, \'hotel\' AS type FROM hotel_bookings hb
+             JOIN hotel_booking_guests hbg ON hbg.booking_id = hb.id
+             WHERE hb.booking_reference = :ref AND LOWER(hbg.last_name) = LOWER(:ln)
+             LIMIT 1'
+        );
+        $stmt->execute([':ref' => $ref, ':ln' => trim($lastName)]);
+        $hotelBooking = $stmt->fetch();
+        if ($hotelBooking) {
+            Response::json(['booking' => $hotelBooking]);
+            return;
+        }
+
         Response::json(['error' => 'not_found', 'message' => 'لم يتم العثور على حجز بهذه البيانات.'], 404);
     }
 

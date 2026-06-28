@@ -185,6 +185,7 @@
   <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
   <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
   <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
+  <a href="lookup.html" class="bnav-item"><span class="bnav-icon">🔍</span><span>استعلام</span></a>
   <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
 </nav>
 
@@ -192,7 +193,15 @@
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
 <script>
-  if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+  if (!Auth.isLoggedIn()) {
+    document.addEventListener('DOMContentLoaded', function() {
+      const notice = document.createElement('div');
+      notice.style.cssText = 'background:#fffbeb;border:2px solid #fde68a;border-radius:14px;padding:18px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px';
+      notice.innerHTML = '<span style="font-size:1.6rem">🔐</span><div><div style="font-weight:700;color:#92400e;margin-bottom:4px">لإتمام الحجز يرجى تسجيل الدخول أو إنشاء حساب</div><div style="font-size:.85rem;color:#78350f;margin-bottom:10px">يمكنك تصفح التفاصيل الآن والتسجيل عند الضغط على زر الحجز</div><div style="display:flex;gap:8px"><a href="login.html?redirect=' + encodeURIComponent(window.location.href) + '" class="btn btn-primary btn-sm">تسجيل الدخول</a><a href="register.html?redirect=' + encodeURIComponent(window.location.href) + '" class="btn btn-outline btn-sm">إنشاء حساب</a></div></div>';
+      const container = document.querySelector('.booking-page .container') || document.querySelector('.booking-grid');
+      if (container) container.parentElement ? container.parentElement.insertBefore(notice, container) : container.prepend(notice);
+    });
+  }
 
   if (typeof formatPrice === 'undefined') window.formatPrice = a => '£ ' + parseFloat(a||0).toFixed(2);
   if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
