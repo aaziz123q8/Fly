@@ -2259,7 +2259,8 @@ class FlightBookingService
         }
         $stmt = $this->db->prepare('SELECT * FROM flight_bookings WHERE id = :id LIMIT 1');
         $stmt->execute([':id' => $bookingId]);
-        return $stmt->fetch(\PDO::FETCH_ASSOC) ?: $booking;
+        $refreshed = $stmt->fetch(\PDO::FETCH_ASSOC) ?: $booking;
+        return $this->enrichBooking($refreshed);
     }
 
     /**
