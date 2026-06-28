@@ -436,6 +436,22 @@ function isCancelledStatus(s) {
 function renderBooking(b) {
   _booking = b;
 
+  // TEMP DEBUG — remove after fix confirmed
+  (function(){
+    var dbg = document.createElement('div');
+    dbg.id = 'debugBox';
+    dbg.style = 'background:#fff3cd;border:2px solid #f90;padding:10px;font-size:.7rem;direction:ltr;word-break:break-all;margin:8px 0;border-radius:8px';
+    dbg.innerHTML = '<b>DEBUG (temp):</b><br>'
+      + 'origin_airport: <b>' + (b.origin_airport||'EMPTY') + '</b><br>'
+      + 'destination_airport: <b>' + (b.destination_airport||'EMPTY') + '</b><br>'
+      + 'departure_at: <b>' + (b.departure_at||'NULL') + '</b><br>'
+      + 'segments.length: <b>' + (b.segments ? b.segments.length : 'NO SEGMENTS KEY') + '</b><br>'
+      + (b.segments && b.segments[0] ? 'seg[0].origin_airport: <b>' + (b.segments[0].origin_airport||'EMPTY') + '</b><br>'
+        + 'seg[0].departure_at: <b>' + (b.segments[0].departure_at||'NULL') + '</b>' : '');
+    var card = document.getElementById('ticketCard');
+    if (card) card.prepend(dbg);
+  })();
+
   // FM reference
   if (b.booking_reference) document.getElementById('refFm').textContent = b.booking_reference;
 
