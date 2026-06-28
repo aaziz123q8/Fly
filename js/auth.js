@@ -35,5 +35,24 @@ const Auth = {
     logout: () => {
         Auth.clear();
         window.location.href = 'index.html';
-    }
+    },
+    checkTokenExpiry: () => {
+        const token = Auth.getToken();
+        if (!token) return;
+        try {
+            // JWT tokens have 3 parts: header.payload.signature
+            const parts = token.split('.');
+            if (parts.length !== 3) return;
+            const payload = JSON.parse(atob(parts[1]));
+            if (payload.exp && Date.now() / 1000 > payload.exp) {
+                Auth.clear();
+                // Only redirect if on a protected page
+                const protectedPages = ['dashboard.html', 'travelers.html'];
+                const path = window.location.pathname;
+                if (protectedPages.some(p => path.endsWith(p))) {
+                    window.location.href = 'login.html?expired=1';
+                }
+            }
+        } catch(e) { /* non-JWT token, ignore */ }
+    },
 };

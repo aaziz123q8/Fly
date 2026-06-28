@@ -30,10 +30,6 @@
     .saved-travelers { margin-bottom:16px; }
     .saved-traveler-item { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:2px solid #e5e7eb; border-radius:12px; margin-bottom:8px; cursor:pointer; transition:all .2s; }
     .saved-traveler-item:hover, .saved-traveler-item.selected { border-color:var(--primary); background:#f0f5ff; }
-    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
-    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
-    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
-    .bnav-icon { font-size:1.4rem; }
 
     /* ── Offer Countdown Bar ─────────────────────────────────────────── */
     #offerCountdown {
@@ -176,13 +172,6 @@
   </div>
 </div>
 
-<nav class="bottom-nav">
-  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
-  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
-  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
-  <a href="lookup.html" class="bnav-item"><span class="bnav-icon">🔍</span><span>استعلام</span></a>
-  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
-</nav>
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
@@ -946,5 +935,6 @@
   loadFlightInfo();
   loadSavedTravelers();
 </script>
+<script src="js/bottom-nav.js"></script>
 </body>
 </html>

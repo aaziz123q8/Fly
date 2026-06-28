@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — الصفحة غير موجودة | فلاي مسار</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Tajawal', Arial, sans-serif;
+      background: linear-gradient(135deg, #0f2444 0%, #1B4F8E 50%, #0f2444 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      color: #fff;
+    }
+    .container {
+      text-align: center;
+      max-width: 560px;
+      width: 100%;
+    }
+    .brand {
+      font-size: 1.5rem;
+      font-weight: 800;
+      margin-bottom: 40px;
+      opacity: 0.9;
+    }
+    .brand span { color: #E8A020; }
+    .error-code {
+      font-size: clamp(6rem, 20vw, 10rem);
+      font-weight: 900;
+      line-height: 1;
+      color: transparent;
+      -webkit-text-stroke: 3px rgba(255,255,255,0.3);
+      position: relative;
+      margin-bottom: 8px;
+    }
+    .error-code::after {
+      content: '404';
+      position: absolute;
+      inset: 0;
+      color: #E8A020;
+      -webkit-text-stroke: 0;
+      opacity: 0.15;
+      transform: translate(4px, 4px);
+    }
+    .plane-icon {
+      font-size: 4rem;
+      display: block;
+      margin: 16px auto;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(-10deg); }
+      50% { transform: translateY(-16px) rotate(-10deg); }
+    }
+    .error-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 12px;
+      color: #fff;
+    }
+    .error-subtitle {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+    .actions {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+    .btn-primary {
+      background: #E8A020;
+      color: #0f2444;
+    }
+    .btn-outline {
+      background: rgba(255,255,255,0.12);
+      color: #fff;
+      border: 1.5px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(8px);
+    }
+    .divider {
+      width: 60px;
+      height: 3px;
+      background: #E8A020;
+      border-radius: 2px;
+      margin: 32px auto;
+      opacity: 0.5;
+    }
+    .footer-note {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.4);
+      margin-top: 48px;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="brand">✈️ فلاي <span>مسار</span></div>
+
+  <div class="error-code">404</div>
+  <span class="plane-icon">✈️</span>
+
+  <h1 class="error-title">عذراً، الصفحة غير موجودة</h1>
+  <p class="error-subtitle">
+    ربما تم نقل الصفحة أو حذفها، أو أن الرابط الذي أدخلته غير صحيح.<br>
+    لا تقلق — يمكنك العودة للرئيسية أو الاستعلام عن حجزك.
+  </p>
+
+  <div class="actions">
+    <a href="index.html" class="btn btn-primary">🏠 العودة للرئيسية</a>
+    <a href="lookup.html" class="btn btn-outline">🔍 استعلام عن حجز</a>
+  </div>
+
+  <div class="divider"></div>
+
+  <p class="footer-note">© ٢٠٢٦ فلاي مسار — flymasar.com</p>
+</div>
+<script src="js/bottom-nav.js"></script>
+</body>
+</html>

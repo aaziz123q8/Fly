@@ -33,10 +33,6 @@
     .legal-card h2:first-child { margin-top:0; }
     .legal-card p, .legal-card li { color:var(--text-muted); line-height:1.8; font-size:0.95rem; }
     .legal-card ul { padding-right:20px; }
-    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
-    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
-    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
-    .bnav-icon { font-size:1.4rem; }
   </style>
 </head>
 <body>
@@ -129,12 +125,6 @@
   </div>
 </footer>
 
-<nav class="bottom-nav">
-  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
-  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
-  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
-  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
-</nav>
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
@@ -166,5 +156,6 @@ function closeAppDrawer(){
 }
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAppDrawer();});
 </script>
+<script src="js/bottom-nav.js"></script>
 </body>
 </html>

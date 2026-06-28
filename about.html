@@ -37,11 +37,6 @@
     .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:24px; text-align:center; }
     .stat-num { font-size:2.5rem; font-weight:800; color:#E8A020; }
     .stat-label { font-size:0.9rem; opacity:0.8; margin-top:4px; }
-    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
-    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:70px; } }
-    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted); font-size:0.7rem; }
-    .bnav-item:hover { color:var(--primary); }
-    .bnav-icon { font-size:1.4rem; }
   </style>
 </head>
 <body>
@@ -133,13 +128,7 @@
   </div>
 </footer>
 
-<nav class="bottom-nav">
-  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
-  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
-  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
-  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
-</nav>
-
+<script src="js/bottom-nav.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>

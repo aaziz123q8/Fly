@@ -762,4 +762,50 @@ HTML;
 </html>
 HTML;
     }
+
+    // =========================================================================
+    // Welcome email for guests whose account was auto-created after payment
+    // =========================================================================
+
+    public function sendWelcomeGuestEmail(string $email, string $name, string $password, string $bookingRef): void
+    {
+        $loginUrl = $this->appUrl . '/login.html';
+        $subject  = 'مرحباً بك في فلاي مسار — تم إنشاء حسابك تلقائياً';
+        $body     = $this->buildWelcomeGuestHtml($name, $email, $password, $bookingRef, $loginUrl);
+        $this->sendHtmlMail($email, $subject, $body);
+    }
+
+    private function buildWelcomeGuestHtml(string $name, string $email, string $password, string $bookingRef, string $loginUrl): string
+    {
+        return <<<HTML
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head><meta charset="UTF-8"><title>مرحباً بك</title></head>
+<body style="font-family:Arial,sans-serif;background:#f5f7fa;padding:20px;direction:rtl">
+  <div style="max-width:600px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
+    <div style="background:linear-gradient(135deg,#0f2444,#1B4F8E);padding:32px;text-align:center">
+      <div style="font-size:2rem;color:#fff;font-weight:800">✈️ فلاي مسار</div>
+      <div style="color:rgba(255,255,255,.8);margin-top:8px">منصة السفر الأولى في المنطقة</div>
+    </div>
+    <div style="padding:32px">
+      <h2 style="color:#0f2444;margin:0 0 16px">مرحباً {$name}! 🎉</h2>
+      <p style="color:#374151;line-height:1.8">تم إنشاء حسابك في فلاي مسار تلقائياً بعد إتمام حجزك رقم <strong style="color:#1B4F8E">{$bookingRef}</strong>.</p>
+      <div style="background:#f0f5ff;border-radius:12px;padding:20px;margin:20px 0">
+        <div style="font-weight:700;color:#0f2444;margin-bottom:12px">بيانات الدخول:</div>
+        <div style="margin-bottom:8px">📧 <strong>البريد الإلكتروني:</strong> {$email}</div>
+        <div>🔑 <strong>كلمة المرور:</strong> <span style="font-family:monospace;background:#e5e7eb;padding:2px 8px;border-radius:6px">{$password}</span></div>
+      </div>
+      <p style="color:#6b7280;font-size:.9rem">يُنصح بتغيير كلمة المرور بعد تسجيل الدخول لأول مرة.</p>
+      <div style="text-align:center;margin-top:24px">
+        <a href="{$loginUrl}" style="display:inline-block;background:#1B4F8E;color:#fff;padding:14px 32px;border-radius:10px;font-weight:700;text-decoration:none;font-size:1rem">تسجيل الدخول الآن</a>
+      </div>
+    </div>
+    <div style="background:#0f2444;padding:16px;text-align:center;color:rgba(255,255,255,.6);font-size:.8rem">
+      © ٢٠٢٦ فلاي مسار — flymasar.com
+    </div>
+  </div>
+</body>
+</html>
+HTML;
+    }
 }

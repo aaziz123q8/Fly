@@ -230,21 +230,16 @@
   © ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.
 </footer>
 
-<nav style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e7eb;z-index:1000;padding:8px 0 env(safe-area-inset-bottom,8px);justify-content:space-around" id="bottomNav">
-  <a href="index.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 16px;text-decoration:none;color:#6b7280;font-size:0.7rem"><span style="font-size:1.4rem">🏠</span>الرئيسية</a>
-  <a href="index.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 16px;text-decoration:none;color:#6b7280;font-size:0.7rem"><span style="font-size:1.4rem">✈️</span>رحلات</a>
-  <a href="hotels.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 16px;text-decoration:none;color:#6b7280;font-size:0.7rem"><span style="font-size:1.4rem">🏨</span>فنادق</a>
-  <a href="dashboard.html" style="display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 16px;text-decoration:none;color:var(--primary);font-size:0.7rem;font-weight:600"><span style="font-size:1.4rem">👤</span>حسابي</a>
-</nav>
-<script>if(window.innerWidth<=768) document.getElementById('bottomNav').style.display='flex';</script>
 
 <div class="toast-container" id="toastContainer"></div>
 
+<script src="js/bottom-nav.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>
   // Require auth
   if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=dashboard.html';
+  Auth.checkTokenExpiry();
 
   const user = Auth.getUser();
   if (user) {

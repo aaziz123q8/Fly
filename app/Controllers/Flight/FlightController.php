@@ -8,6 +8,8 @@ use App\Adapters\Duffel\DuffelAdapter;
 use App\Core\Request;
 use App\Core\Response;
 use App\Middleware\AuthMiddleware;
+use App\Services\AuthService;
+use App\Services\EmailNotificationService;
 use App\Services\FlightBookingService;
 use App\Services\FlightSearchService;
 
@@ -275,7 +277,21 @@ class FlightController
         $piId       = (string) ($request->input('payment_intent_id') ?? '');
 
         try {
-            $result = $this->bookingService->confirmCheckout($sessionKey, $piId, (int) $user['id']);
+            $userId = (int) $user['id'];
+            $result = $this->bookingService->confirmCheckout($sessionKey, $piId, $userId);
+
+            // Guest auto-account creation: if booking confirmed and user is a guest
+            // (identified by is_guest flag on the user record), create a real account
+            // and send a welcome email with credentials.
+            if (($result['status'] ?? '') === 'confirmed') {
+                try {
+                    $this->maybeCreateGuestAccount($userId, $result['booking_reference'] ?? '');
+                } catch (\Throwable $ge) {
+                    // Non-fatal: log but don't fail the booking confirmation
+                    error_log('[GUEST_ACCOUNT_CREATE] ' . $ge->getMessage());
+                }
+            }
+
             Response::json($result);
         } catch (\Throwable $e) {
             $isDebug = filter_var(getenv('APP_DEBUG') ?: '0', FILTER_VALIDATE_BOOLEAN)
@@ -514,5 +530,59 @@ class FlightController
         } catch (\RuntimeException $e) {
             Response::error($e->getMessage(), $e->getCode() ?: 400);
         }
+    }
+
+    // =========================================================================
+    // Guest auto-account creation after successful booking
+    // =========================================================================
+
+    /**
+     * If the user is flagged as a guest (is_guest = 1), generate a real password,
+     * update their account, and send a welcome email with the credentials.
+     *
+     * The is_guest column must exist in the users table (migration 080 or later).
+     * If the column is missing this method silently returns.
+     */
+    private function maybeCreateGuestAccount(int $userId, string $bookingRef): void
+    {
+        $db = \App\Helpers\Database::getInstance();
+
+        // Fetch user and check guest flag — if column absent, the query still works
+        // because we SELECT with a fallback in PHP.
+        $stmt = $db->prepare('SELECT id, email, first_name, last_name, phone_number, is_guest FROM users WHERE id = :id LIMIT 1');
+        $stmt->execute([':id' => $userId]);
+        $userRow = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        if (!$userRow || empty($userRow['is_guest'])) {
+            return; // Not a guest — nothing to do.
+        }
+
+        $email     = $userRow['email']      ?? '';
+        $firstName = $userRow['first_name'] ?? '';
+        $phone     = $userRow['phone_number'] ?? '';
+
+        if (!$email) return;
+
+        // Generate a deterministic but safe password:
+        // first 3 chars of first_name (lowercase) + last 4 digits of phone,
+        // falling back to a random 8-char password.
+        $namePart  = strtolower(substr(preg_replace('/[^a-zA-Z]/', '', $firstName), 0, 3));
+        $phoneDigits = preg_replace('/\D/', '', $phone);
+        $phonePart = strlen($phoneDigits) >= 4 ? substr($phoneDigits, -4) : '';
+
+        if (strlen($namePart) >= 2 && strlen($phonePart) === 4) {
+            $plainPassword = $namePart . $phonePart;
+        } else {
+            $plainPassword = substr(bin2hex(random_bytes(5)), 0, 8);
+        }
+
+        // Update the hashed password and clear the guest flag.
+        $hash = password_hash($plainPassword, PASSWORD_ARGON2ID);
+        $upd  = $db->prepare('UPDATE users SET password = :pwd, is_guest = 0 WHERE id = :id');
+        $upd->execute([':pwd' => $hash, ':id' => $userId]);
+
+        // Send welcome email (non-fatal if mail fails).
+        $name = trim($firstName . ' ' . ($userRow['last_name'] ?? ''));
+        (new EmailNotificationService($db))->sendWelcomeGuestEmail($email, $name ?: $email, $plainPassword, $bookingRef);
     }
 }

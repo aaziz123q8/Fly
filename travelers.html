@@ -97,10 +97,6 @@
     @media(max-width:560px) { .form-row2 { grid-template-columns:1fr; } }
 
     /* ── Bottom Nav ── */
-    .bottom-nav { display:none; position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid #e5e7eb; z-index:1000; padding:8px 0 env(safe-area-inset-bottom,8px); justify-content:space-around; }
-    @media(max-width:768px) { .bottom-nav { display:flex; } body { padding-bottom:72px; } .stats-bar { grid-template-columns:repeat(3,1fr); } }
-    .bnav-item { display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 16px; text-decoration:none; color:var(--text-muted,#6b7280); font-size:0.7rem; }
-    .bnav-icon { font-size:1.4rem; }
 
     /* ── Scan Result Badge ── */
     .scan-badge { display:inline-flex; align-items:center; gap:6px; background:#dcfce7; color:#15803d; border-radius:20px; font-size:0.78rem; font-weight:600; padding:4px 12px; margin-top:10px; }
@@ -283,18 +279,12 @@
 </div>
 
 
-<!-- Bottom Nav -->
-<nav class="bottom-nav">
-  <a href="index.html" class="bnav-item"><span class="bnav-icon">🏠</span><span>الرئيسية</span></a>
-  <a href="index.html" class="bnav-item"><span class="bnav-icon">✈️</span><span>رحلات</span></a>
-  <a href="hotels.html" class="bnav-item"><span class="bnav-icon">🏨</span><span>فنادق</span></a>
-  <a href="dashboard.html" class="bnav-item"><span class="bnav-icon">👤</span><span>حسابي</span></a>
-</nav>
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script>
 if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=travelers.html';
+Auth.checkTokenExpiry();
 
 let travelers = [];
 
@@ -488,5 +478,6 @@ document.getElementById('travelerModal').addEventListener('click', e => {
 
 loadTravelers();
 </script>
+<script src="js/bottom-nav.js"></script>
 </body>
 </html>

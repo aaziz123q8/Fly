@@ -52,6 +52,16 @@
 <script>
   if (Auth.isLoggedIn()) window.location.href = 'dashboard.html';
 
+  // Show expired session message if redirected with ?expired=1
+  (function() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('expired') === '1') {
+      const el = document.getElementById('errorAlert');
+      el.textContent = '⚠️ انتهت صلاحية جلستك، يرجى تسجيل الدخول مجدداً';
+      el.style.display = 'flex';
+    }
+  })();
+
   function togglePwd() {
     const p = document.getElementById('password');
     const b = document.getElementById('eyeBtn');
