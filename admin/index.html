@@ -123,7 +123,7 @@
 
       const pendingJobs = s.pending_jobs || 0;
       const failedJobs = s.failed_jobs || 0;
-      const recentErrors = (s.recent_errors || []).length;
+      const recentErrors = typeof s.recent_errors === 'number' ? s.recent_errors : (Array.isArray(s.recent_errors) ? s.recent_errors.length : 0);
       let systemStatus = 'سليم', systemColor = '#16a34a', systemBg = 'rgba(34,197,94,.12)', systemIcon = '✅';
       if (failedJobs > 0 || recentErrors > 0) {
         systemStatus = 'تحقق'; systemColor = '#dc2626'; systemBg = 'rgba(220,38,38,.12)'; systemIcon = '⚠️';
@@ -150,7 +150,7 @@
             <span style="font-size:.88rem;color:var(--text-muted)">أخطاء حديثة</span>
             <strong style="color:${recentErrors>0?'#dc2626':'var(--text)'}">${recentErrors}</strong>
           </div>
-          ${(s.recent_errors||[]).slice(0,2).map(e=>`<div style="font-size:.75rem;background:#fff0f0;border-radius:6px;padding:6px 10px;color:#dc2626;margin-top:4px">${e.message||e}</div>`).join('')}
+          ${Array.isArray(s.recent_errors) ? s.recent_errors.slice(0,2).map(e=>`<div style="font-size:.75rem;background:#fff0f0;border-radius:6px;padding:6px 10px;color:#dc2626;margin-top:4px">${e.message||e}</div>`).join('') : ''}
         </div>`;
     } catch {
       ['statUsers','statBookings','statRevenue','statPending','statFlights','statHotels','statActiveUsers'].forEach(id => {
@@ -169,9 +169,9 @@
       el.innerHTML = `<table><thead><tr><th>المستخدم</th><th>النوع</th><th>الحالة</th><th>المبلغ</th></tr></thead><tbody>
         ${list.slice(0,5).map(b => `<tr>
           <td>${b.user_name || b.email || b.user_id || '—'}</td>
-          <td>${b.type === 'flight' ? '✈️' : '🏨'}</td>
+          <td>${(b.type || b.booking_type) === 'flight' ? '✈️' : '🏨'}</td>
           <td>${Admin.renderStatusBadge(b.status)}</td>
-          <td style="font-weight:700;color:var(--primary)">${b.total_price ? Number(b.total_price).toLocaleString('ar') : '—'}</td>
+          <td style="font-weight:700;color:var(--primary)">${(b.total_price || b.total_amount) ? Number(b.total_price || b.total_amount).toLocaleString('ar') : '—'}</td>
         </tr>`).join('')}
       </tbody></table>`;
     } catch {

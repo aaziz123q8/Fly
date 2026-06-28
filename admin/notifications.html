@@ -254,7 +254,7 @@
     btn.textContent = 'جاري الإرسال...';
 
     try {
-      await Api.post('/api/admin/notifications/send', { type, title, message, target }, true);
+      await Api.post('/api/admin/notifications/broadcast', { type, title, message, target }, true);
       showToast('تم إرسال الإشعار بنجاح', 'success');
       closeSendModal();
       loadNotifications();

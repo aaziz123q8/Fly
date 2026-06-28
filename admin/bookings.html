@@ -174,10 +174,10 @@
           <div style="font-weight:600;font-size:.88rem">${b.user_name || b.first_name || '—'} ${b.last_name || ''}</div>
           <div style="color:var(--text-muted);font-size:.78rem">${b.email || ''}</div>
         </td>
-        <td>${b.type === 'flight' ? '<span class="badge badge-info">✈️ رحلة</span>' : '<span class="badge badge-primary">🏨 فندق</span>'}</td>
+        <td>${(b.type || b.booking_type) === 'flight' ? '<span class="badge badge-info">✈️ رحلة</span>' : '<span class="badge badge-primary">🏨 فندق</span>'}</td>
         <td style="font-size:.85rem;color:var(--text-muted)">${b.from || b.city || ''} ${b.to ? '→ ' + b.to : ''}</td>
         <td style="font-size:.82rem;color:var(--text-muted)">${b.created_at ? new Date(b.created_at).toLocaleDateString('ar-SA') : '—'}</td>
-        <td style="font-weight:700;color:var(--primary)">${b.total_price ? Number(b.total_price).toLocaleString('ar') + ' ر.س' : '—'}</td>
+        <td style="font-weight:700;color:var(--primary)">${(b.total_price || b.total_amount) ? Number(b.total_price || b.total_amount).toLocaleString('ar') + ' £' : '—'}</td>
         <td>${Admin.renderStatusBadge(b.status)}</td>
         <td>
           <div class="table-actions">
@@ -311,9 +311,9 @@
       b.booking_reference || b.booking_ref || ('#' + (b.id||'')),
       (b.user_name || b.first_name || '') + ' ' + (b.last_name || ''),
       b.email || '',
-      b.type === 'flight' ? 'رحلة' : 'فندق',
+      (b.type || b.booking_type) === 'flight' ? 'رحلة' : 'فندق',
       b.created_at ? new Date(b.created_at).toLocaleDateString('ar-SA') : '',
-      b.total_price || '',
+      b.total_price || b.total_amount || '',
       b.status || '',
     ]);
     const csv = [headers, ...rows].map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');

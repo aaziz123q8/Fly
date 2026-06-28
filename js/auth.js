@@ -26,15 +26,27 @@ const Auth = {
     },
     requireAdmin: () => {
         const user = Auth.getUser();
-        if (!Auth.isLoggedIn() || !user || user.role !== 'admin') {
+        if (!Auth.isLoggedIn() || !user || (user.role !== 'admin' && user.role !== 'super_admin')) {
             window.location.href = 'admin/login.html';
             return false;
         }
         return true;
     },
     logout: () => {
+        const token = Auth.getToken();
+        const user = Auth.getUser();
+        const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
         Auth.clear();
-        window.location.href = 'index.html';
+        if (isAdmin && token) {
+            // Fire-and-forget backend logout for admin sessions
+            fetch('/api/admin/auth/logout', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            }).catch(() => {});
+            window.location.href = '/admin/login.html';
+        } else {
+            window.location.href = 'index.html';
+        }
     },
     checkTokenExpiry: () => {
         const token = Auth.getToken();

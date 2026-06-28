@@ -14,16 +14,16 @@ const Admin = {
     },
 
     async getStats() {
-        return await Api.get('/api/admin/stats', true);
+        return await Api.get('/api/admin/dashboard', true);
     },
 
     // Travelers
     async getTravelers(page = 1, search = '') {
-        return await Api.get(`/api/admin/users?page=${page}&limit=${Admin.pageSize}&search=${encodeURIComponent(search)}`, true);
+        return await Api.get(`/api/admin/travelers?page=${page}&limit=${Admin.pageSize}&search=${encodeURIComponent(search)}`, true);
     },
 
-    async updateTravelerStatus(userId, status) {
-        return await Api.patch(`/api/admin/users/${userId}/status`, { status }, true);
+    async updateTravelerStatus(userId, isActive) {
+        return await Api.put(`/api/admin/travelers/${userId}`, { is_active: isActive }, true);
     },
 
     async deleteTraveler(userId) {

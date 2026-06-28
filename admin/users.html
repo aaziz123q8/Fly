@@ -253,7 +253,7 @@ function saveUser() {
 function toggleStatus(id, newStatus) {
   var msg = newStatus === 1 ? 'هل تريد تفعيل هذا المستخدم؟' : 'هل تريد تعطيل هذا المستخدم؟';
   if (!confirm(msg)) return;
-  Api.patch('/api/admin/users/' + id + '/status', { is_active: newStatus }, true).then(function() {
+  Api.put('/api/admin/users/' + id, { is_active: newStatus }, true).then(function() {
     showToast(newStatus === 1 ? 'تم تفعيل المستخدم' : 'تم تعطيل المستخدم', 'success');
     loadUsers();
   }).catch(function(e) {
