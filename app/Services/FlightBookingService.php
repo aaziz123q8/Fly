@@ -1599,14 +1599,15 @@ class FlightBookingService
             'SELECT fb.*,
                     JSON_ARRAYAGG(
                         JSON_OBJECT(
-                            "slice_index",   fbs.slice_index,
-                            "segment_index", fbs.segment_order,
-                            "origin",        fbs.origin_airport,
-                            "destination",   fbs.destination_airport,
-                            "departing_at",  fbs.departure_at,
-                            "arriving_at",   fbs.arrival_at,
-                            "carrier",       fbs.airline_code,
-                            "flight_number", fbs.flight_number
+                            "slice_index",        fbs.slice_index,
+                            "segment_order",      fbs.segment_order,
+                            "origin_airport",     fbs.origin_airport,
+                            "destination_airport",fbs.destination_airport,
+                            "departure_at",       fbs.departure_at,
+                            "arrival_at",         fbs.arrival_at,
+                            "airline_code",       fbs.airline_code,
+                            "flight_number",      fbs.flight_number,
+                            "aircraft_type",      fbs.aircraft_type
                         )
                     ) AS segments
              FROM flight_bookings fb
@@ -1619,7 +1620,9 @@ class FlightBookingService
         $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         return array_map(function (array $row): array {
-            $row['segments'] = json_decode($row['segments'] ?? 'null', true) ?? [];
+            $segs = json_decode($row['segments'] ?? 'null', true) ?? [];
+            // Filter out null entries (LEFT JOIN with no segments produces [null])
+            $row['segments'] = array_values(array_filter($segs, fn($s) => $s !== null && isset($s['origin_airport'])));
             return $row;
         }, $rows);
     }

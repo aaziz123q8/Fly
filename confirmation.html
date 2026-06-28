@@ -473,7 +473,16 @@ function renderBooking(b) {
   }
 
   // ── Route (use first segment if available) ──────────────────
-  const segs = b.segments || [];
+  // Normalize segments to consistent field names (handles both API list and detail formats)
+  const segs = (b.segments || []).filter(Boolean).map(s => ({
+    origin_airport:      s.origin_airport || s.origin || '',
+    destination_airport: s.destination_airport || s.destination || '',
+    departure_at:        s.departure_at || s.departing_at || '',
+    arrival_at:          s.arrival_at || s.arriving_at || '',
+    airline_code:        s.airline_code || s.carrier || '',
+    flight_number:       s.flight_number || '',
+    aircraft_type:       s.aircraft_type || '',
+  }));
   const firstSeg = segs[0];
   const lastSeg  = segs[segs.length - 1];
 
