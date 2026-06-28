@@ -107,7 +107,9 @@ async function doLookup(e) {
     const bid = b.id ? '&bid=' + b.id : '';
     const ln  = '&last_name=' + encodeURIComponent(lastName);
     const invoiceUrl  = 'invoice.html?ref=' + ref + bid + ln;
-    const ticketUrl   = isFlight ? ('confirmation.html?ref=' + ref + bid + ln) : null;
+    const ticketUrl   = isFlight
+      ? ('confirmation.html?ref=' + ref + bid + ln)
+      : ('hotel-confirmation.html?ref=' + ref + ln);
     document.getElementById('lookupResult').innerHTML = `
       <div class="result-card">
         <div style="text-align:center;margin-bottom:20px">
@@ -121,7 +123,7 @@ async function doLookup(e) {
         <div class="result-row"><span class="result-label">نوع الحجز</span><span class="result-value">${isFlight ? '✈️ رحلة' : '🏨 فندق'}</span></div>
         <div class="print-actions">
           <a href="${invoiceUrl}" class="btn btn-primary" target="_blank">🧾 طباعة الفاتورة</a>
-          ${ticketUrl ? `<a href="${ticketUrl}" class="btn btn-outline" target="_blank">🎫 طباعة التذكرة</a>` : ''}
+          ${ticketUrl ? `<a href="${ticketUrl}" class="btn btn-outline" target="_blank">${isFlight ? '🎫 طباعة التذكرة' : '🏨 تفاصيل الفندق'}</a>` : ''}
         </div>
       </div>`;
   } catch(err) {

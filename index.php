@@ -36,7 +36,7 @@ set_exception_handler(function (Throwable $e): void {
         'error'   => 'server_error',
         'message' => $isDebug
             ? sprintf('[%s] %s in %s:%d', get_class($e), $e->getMessage(), $e->getFile(), $e->getLine())
-            : 'An internal server error occurred.',
+            : 'حدث خطأ داخلي في الخادم. يرجى المحاولة مجدداً.',
         'debug'   => $isDebug ? substr($e->getTraceAsString(), 0, 2000) : null,
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit(1);
@@ -416,7 +416,13 @@ $router->group('api/bookings', function (Router $r): void {
         (new HotelController())->listBookings($req);
     }, [AuthMiddleware::handle()]);
     $r->get('/:id', function (Request $req): void {
-        (new FlightController())->getBooking($req);
+        $id = $req->param('id') ?? '';
+        // Route to hotel controller for HM references, flight controller otherwise
+        if (str_starts_with(strtoupper($id), 'HM')) {
+            (new HotelController())->getBooking($req);
+        } else {
+            (new FlightController())->getBooking($req);
+        }
     }, [AuthMiddleware::handle()]);
 });
 

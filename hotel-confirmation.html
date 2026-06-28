@@ -97,7 +97,7 @@
   async function loadBooking() {
     if (!ref || !Auth.isLoggedIn()) return;
     try {
-      const res = await Api.get('/api/bookings/' + ref, true);
+      const res = await Api.get('/api/hotels/bookings/' + encodeURIComponent(ref), true);
       const b = res.booking || res;
       if (b.hotel_name && !hotel) {
         document.getElementById('rowHotel').style.display = 'flex';

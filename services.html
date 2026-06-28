@@ -176,7 +176,7 @@
 <script src="js/auth.js?v=2026062101"></script>
 <script src="js/currency.js?v=2026062101"></script>
 <script>
-if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
+if (!Auth.isLoggedIn() && !new URLSearchParams(window.location.search).get('session')) window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href);
 
 const urlP       = new URLSearchParams(window.location.search);
 const sessionKey = urlP.get('session') || '';
