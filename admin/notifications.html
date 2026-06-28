@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>الإشعارات — لوحة الإدارة</title>
+  <link rel="stylesheet" href="../css/app.css">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="adminSidebar"></aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>🔔 إدارة الإشعارات</h1>
+      <button class="btn btn-primary btn-sm" onclick="openSendModal()">📤 إرسال إشعار جماعي</button>
+    </div>
+
+    <div class="admin-content">
+      <!-- Filters -->
+      <div class="card" style="margin-bottom:20px;padding:0">
+        <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:200px">
+            <label class="form-label" style="font-size:.78rem">البحث</label>
+            <input type="search" class="form-control" id="searchInput" placeholder="البحث في الرسائل أو المستلمين..." oninput="debouncedSearch()">
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">النوع</label>
+            <select class="form-control" id="typeFilter" onchange="loadNotifications()" style="min-width:130px">
+              <option value="">الكل</option>
+              <option value="email">📧 بريد إلكتروني</option>
+              <option value="push">📱 إشعار فوري</option>
+              <option value="sms">💬 رسالة نصية</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" style="font-size:.78rem">الحالة</label>
+            <select class="form-control" id="statusFilter" onchange="loadNotifications()" style="min-width:120px">
+              <option value="">الكل</option>
+              <option value="sent">مُرسل</option>
+              <option value="pending">معلق</option>
+              <option value="failed">فاشل</option>
+            </select>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">مسح</button>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div id="tableLoading" class="loading-state" style="padding:48px">
+          <div class="spinner"></div><p>جاري تحميل الإشعارات...</p>
+        </div>
+
+        <div id="tableWrapper" style="display:none;overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>المستلم</th>
+                <th>النوع</th>
+                <th>العنوان</th>
+                <th>الرسالة</th>
+                <th>تاريخ الإرسال</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="notificationsTable"></tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="empty-state" style="display:none">
+          <div class="empty-icon">🔔</div>
+          <h3>لا توجد إشعارات</h3>
+          <p>لم يتم العثور على إشعارات</p>
+        </div>
+
+        <div id="paginationContainer"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Send Notification Modal -->
+<div id="sendModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeSendModal()">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>📤 إرسال إشعار جماعي</h3>
+      <button class="modal-close" onclick="closeSendModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">نوع الإشعار</label>
+        <select class="form-control" id="sendType">
+          <option value="email">📧 بريد إلكتروني</option>
+          <option value="push">📱 إشعار فوري (Push)</option>
+          <option value="sms">💬 رسالة نصية (SMS)</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الجمهور المستهدف</label>
+        <select class="form-control" id="sendTarget">
+          <option value="all">🌐 جميع المستخدمين</option>
+          <option value="flight_bookers">✈️ مستخدمو حجز الرحلات</option>
+          <option value="hotel_bookers">🏨 مستخدمو حجز الفنادق</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">العنوان</label>
+        <input type="text" class="form-control" id="sendTitle" placeholder="عنوان الإشعار...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">نص الرسالة</label>
+        <textarea class="form-control" id="sendMessage" rows="4" placeholder="اكتب نص الإشعار هنا..."></textarea>
+      </div>
+
+      <div style="background:var(--bg);border-radius:8px;padding:12px;margin-top:4px">
+        <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:8px">معاينة الإشعار</div>
+        <div style="font-weight:600;font-size:.9rem" id="previewTitle">—</div>
+        <div style="font-size:.85rem;color:var(--text-muted);margin-top:4px" id="previewMessage">—</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeSendModal()">إلغاء</button>
+      <button class="btn btn-primary" id="sendBtn" onclick="sendNotification()">📤 إرسال الإشعار</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/admin.js"></script>
+<script src="../js/admin-sidebar.js"></script>
+<script>
+  let currentPage = 1, searchTimer;
+
+  function debouncedSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function() { currentPage = 1; loadNotifications(); }, 400);
+  }
+
+  function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('typeFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    currentPage = 1;
+    loadNotifications();
+  }
+
+  const TYPE_MAP = {
+    email: ['📧 بريد', 'info'],
+    push:  ['📱 فوري', 'primary'],
+    sms:   ['💬 نصي', 'warning'],
+  };
+
+  const STATUS_MAP = {
+    sent:    ['مُرسل', 'success'],
+    pending: ['معلق', 'warning'],
+    failed:  ['فاشل', 'danger'],
+    read:    ['مقروء', 'info'],
+  };
+
+  async function loadNotifications() {
+    document.getElementById('tableLoading').style.display = 'block';
+    document.getElementById('tableWrapper').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+
+    const params = new URLSearchParams({
+      page: currentPage, limit: 20,
+      search: document.getElementById('searchInput').value,
+      type: document.getElementById('typeFilter').value,
+      status: document.getElementById('statusFilter').value,
+    });
+
+    try {
+      const res = await Api.get(`/api/admin/notifications?${params}`, true);
+      const list = res.data || res.notifications || (Array.isArray(res) ? res : []);
+      const total = res.total || res.meta?.total || list.length;
+
+      document.getElementById('tableLoading').style.display = 'none';
+      if (!list.length) { document.getElementById('emptyState').style.display = 'block'; return; }
+      document.getElementById('tableWrapper').style.display = 'block';
+
+      document.getElementById('notificationsTable').innerHTML = list.map(n => {
+        const [typeLabel, typeClass] = TYPE_MAP[n.type] || [n.type, 'info'];
+        const [statusLabel, statusClass] = STATUS_MAP[n.status] || [n.status || '—', 'info'];
+        const sentAt = n.sent_at || n.created_at;
+        return `<tr>
+          <td>
+            <div style="font-weight:600;font-size:.88rem">${n.recipient_name || n.user_name || 'جماعي'}</div>
+            <div style="color:var(--text-muted);font-size:.78rem;direction:ltr;text-align:right">${n.recipient_email || n.email || ''}</div>
+          </td>
+          <td><span class="badge badge-${typeClass}">${typeLabel}</span></td>
+          <td style="font-weight:600;font-size:.88rem">${n.title || '—'}</td>
+          <td style="max-width:240px;font-size:.85rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${n.message || n.body || '—'}</td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${sentAt ? new Date(sentAt).toLocaleString('ar-SA') : '—'}</td>
+          <td><span class="badge badge-${statusClass}">${statusLabel}</span></td>
+        </tr>`;
+      }).join('');
+
+      // Pagination
+      const pages = Math.ceil(total / 20);
+      const pc = document.getElementById('paginationContainer');
+      if (pages > 1) {
+        let html = '<div class="pagination">';
+        if (currentPage > 1) html += `<button class="btn btn-ghost btn-sm" onclick="goPage(${currentPage-1})">السابق</button>`;
+        for (let i = Math.max(1,currentPage-2); i <= Math.min(pages,currentPage+2); i++)
+          html += `<button class="btn btn-sm ${i===currentPage?'btn-primary':'btn-ghost'}" onclick="goPage(${i})">${i}</button>`;
+        if (currentPage < pages) html += `<button class="btn btn-ghost btn-sm" onclick="goPage(${currentPage+1})">التالي</button>`;
+        html += '</div>';
+        pc.innerHTML = html;
+      } else pc.innerHTML = '';
+    } catch (err) {
+      document.getElementById('tableLoading').style.display = 'none';
+      document.getElementById('emptyState').style.display = 'block';
+      showToast('تعذر تحميل الإشعارات', 'error');
+    }
+  }
+
+  function goPage(p) { currentPage = p; loadNotifications(); }
+
+  // Send modal
+  function openSendModal() {
+    document.getElementById('sendTitle').value = '';
+    document.getElementById('sendMessage').value = '';
+    document.getElementById('previewTitle').textContent = '—';
+    document.getElementById('previewMessage').textContent = '—';
+    document.getElementById('sendModal').style.display = 'flex';
+  }
+
+  function closeSendModal() { document.getElementById('sendModal').style.display = 'none'; }
+
+  // Live preview
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('sendTitle').addEventListener('input', function() {
+      document.getElementById('previewTitle').textContent = this.value || '—';
+    });
+    document.getElementById('sendMessage').addEventListener('input', function() {
+      document.getElementById('previewMessage').textContent = this.value || '—';
+    });
+  });
+
+  async function sendNotification() {
+    const title   = document.getElementById('sendTitle').value.trim();
+    const message = document.getElementById('sendMessage').value.trim();
+    const type    = document.getElementById('sendType').value;
+    const target  = document.getElementById('sendTarget').value;
+
+    if (!title)   { showToast('يرجى إدخال عنوان الإشعار', 'warning'); return; }
+    if (!message) { showToast('يرجى إدخال نص الرسالة', 'warning'); return; }
+
+    const btn = document.getElementById('sendBtn');
+    btn.disabled = true;
+    btn.textContent = 'جاري الإرسال...';
+
+    try {
+      await Api.post('/api/admin/notifications/send', { type, title, message, target }, true);
+      showToast('تم إرسال الإشعار بنجاح', 'success');
+      closeSendModal();
+      loadNotifications();
+    } catch (err) {
+      showToast(err.message || 'فشل إرسال الإشعار', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '📤 إرسال الإشعار';
+    }
+  }
+
+  loadNotifications();
+</script>
+</body>
+</html>

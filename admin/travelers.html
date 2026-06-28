@@ -8,30 +8,7 @@
 </head>
 <body>
 <div class="admin-layout">
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="sidebar-brand">✈️ Fly<span>Masar</span></div>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="sidebar-section-title">الرئيسية</div>
-      <a href="index.html"><span class="nav-icon">📊</span> لوحة التحكم</a>
-      <div class="sidebar-section-title">الإدارة</div>
-      <a href="users.html"><span class="nav-icon">👤</span> المستخدمون</a>
-      <a href="travelers.html" class="active"><span class="nav-icon">👥</span> المسافرون</a>
-      <a href="bookings.html"><span class="nav-icon">📋</span> الحجوزات</a>
-      <a href="payments.html"><span class="nav-icon">💳</span> المدفوعات</a>
-      <a href="support.html"><span class="nav-icon">🎧</span> الدعم</a>
-      <a href="coupons.html"><span class="nav-icon">🎟️</span> القسائم</a>
-      <a href="commissions.html"><span class="nav-icon">💰</span> العمولات</a>
-      <a href="currencies.html"><span class="nav-icon">💱</span> العملات</a>
-      <a href="api-settings.html"><span class="nav-icon">⚙️</span> إعدادات API</a>
-      <a href="cms.html"><span class="nav-icon">📝</span> إدارة المحتوى</a>
-      <a href="../index.html"><span class="nav-icon">🌐</span> الموقع الرئيسي</a>
-    </nav>
-    <div class="sidebar-footer">
-      <button onclick="Auth.logout()" class="btn btn-ghost btn-sm btn-block" style="border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)">🚪 تسجيل الخروج</button>
-    </div>
-  </aside>
+    <aside class="sidebar" id="adminSidebar"></aside>
 
   <main class="admin-main">
     <div class="admin-topbar">
@@ -108,6 +85,7 @@
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
 <script src="../js/admin.js"></script>
+<script src="../js/admin-sidebar.js"></script>
 <script>
   const user = Auth.getUser();
   if (!Auth.isLoggedIn() || !user || (user.role !== 'admin' && user.role !== 'super_admin')) {

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>التحليلات والتقارير — لوحة الإدارة</title>
+  <link rel="stylesheet" href="../css/app.css">
+  <style>
+    .chart-container { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
+    .chart-title { font-size: .9rem; font-weight: 700; color: var(--text); margin-bottom: 16px; }
+    .chart-svg { width: 100%; overflow: visible; }
+    .period-btn { padding: 6px 16px; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: .84rem; font-family: inherit; color: var(--text); transition: all .15s; }
+    .period-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; }
+    .kpi-card { background: #fff; border-radius: 12px; border: 1px solid var(--border); padding: 20px; }
+    .kpi-value { font-size: 1.6rem; font-weight: 800; color: var(--primary); margin-bottom: 4px; }
+    .kpi-label { font-size: .82rem; color: var(--text-muted); }
+    .kpi-change { font-size: .78rem; margin-top: 6px; }
+    .kpi-change.up { color: #16a34a; }
+    .kpi-change.down { color: #dc2626; }
+  </style>
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="adminSidebar"></aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>📈 التحليلات والتقارير</h1>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span style="font-size:.82rem;color:var(--text-muted)">الفترة:</span>
+        <button class="period-btn" data-period="7d" onclick="setPeriod('7d')">7 أيام</button>
+        <button class="period-btn active" data-period="30d" onclick="setPeriod('30d')">30 يوم</button>
+        <button class="period-btn" data-period="90d" onclick="setPeriod('90d')">90 يوم</button>
+        <button class="period-btn" data-period="1y" onclick="setPeriod('1y')">سنة</button>
+      </div>
+    </div>
+
+    <div class="admin-content">
+      <!-- KPI Cards -->
+      <div class="kpi-grid" id="kpiCards">
+        <div class="kpi-card"><div class="kpi-value" id="kpiSearches">—</div><div class="kpi-label">إجمالي البحث</div></div>
+        <div class="kpi-card"><div class="kpi-value" id="kpiConversion">—</div><div class="kpi-label">معدل التحويل</div></div>
+        <div class="kpi-card"><div class="kpi-value" id="kpiAvgValue">—</div><div class="kpi-label">متوسط قيمة الحجز</div></div>
+        <div class="kpi-card"><div class="kpi-value" id="kpiTopRoute">—</div><div class="kpi-label">الوجهة الأكثر طلباً</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+        <!-- Revenue Bar Chart -->
+        <div class="chart-container">
+          <div class="chart-title">💰 الإيرادات اليومية</div>
+          <div id="revenueChartWrap">
+            <div class="loading-state" style="padding:32px"><div class="spinner"></div></div>
+          </div>
+        </div>
+
+        <!-- Bookings Line Chart -->
+        <div class="chart-container">
+          <div class="chart-title">📋 الحجوزات اليومية</div>
+          <div id="bookingsChartWrap">
+            <div class="loading-state" style="padding:32px"><div class="spinner"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Destinations Table -->
+      <div class="table-card">
+        <div class="card-header">
+          <span>🌍 أبرز الوجهات</span>
+        </div>
+        <div id="destinationsTable">
+          <div class="loading-state" style="padding:32px"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/admin.js"></script>
+<script src="../js/admin-sidebar.js"></script>
+<script>
+  let currentPeriod = '30d';
+
+  function setPeriod(p) {
+    currentPeriod = p;
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.toggle('active', b.dataset.period === p));
+    loadAnalytics();
+  }
+
+  // ── SVG Bar Chart ──────────────────────────────────────────────────────────
+  function renderBarChart(container, data, labelKey, valueKey, color) {
+    if (!data || !data.length) {
+      container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:32px 0">لا توجد بيانات</p>';
+      return;
+    }
+    const W = 400, H = 180, PAD = { top: 10, right: 10, bottom: 40, left: 50 };
+    const innerW = W - PAD.left - PAD.right;
+    const innerH = H - PAD.top - PAD.bottom;
+    const values = data.map(d => Number(d[valueKey]) || 0);
+    const maxV = Math.max(...values) || 1;
+    const barW = innerW / data.length * 0.7;
+    const gap  = innerW / data.length;
+
+    // Y-axis ticks
+    const ticks = 4;
+    let yLines = '', yLabels = '';
+    for (let i = 0; i <= ticks; i++) {
+      const y = PAD.top + innerH - (i / ticks) * innerH;
+      const val = Math.round((i / ticks) * maxV);
+      yLines += `<line x1="${PAD.left}" y1="${y}" x2="${PAD.left + innerW}" y2="${y}" stroke="#eee" stroke-width="1"/>`;
+      yLabels += `<text x="${PAD.left - 6}" y="${y + 4}" text-anchor="end" font-size="9" fill="#999">${val.toLocaleString('ar')}</text>`;
+    }
+
+    // Bars + X labels
+    let bars = '', xLabels = '';
+    data.forEach((d, i) => {
+      const x = PAD.left + i * gap + (gap - barW) / 2;
+      const barH = (values[i] / maxV) * innerH;
+      const y = PAD.top + innerH - barH;
+      bars += `<rect x="${x}" y="${y}" width="${barW}" height="${barH}" fill="${color}" rx="3" opacity=".85">
+        <title>${d[labelKey]}: ${values[i].toLocaleString('ar')}</title>
+      </rect>`;
+      // Show every Nth label to avoid clutter
+      const step = Math.ceil(data.length / 8);
+      if (i % step === 0) {
+        const label = String(d[labelKey] || '').slice(5); // remove year (YYYY-)
+        xLabels += `<text x="${x + barW/2}" y="${PAD.top + innerH + 16}" text-anchor="middle" font-size="8" fill="#999">${label}</text>`;
+      }
+    });
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" class="chart-svg">
+        ${yLines}${yLabels}${bars}${xLabels}
+      </svg>`;
+  }
+
+  // ── SVG Line Chart ────────────────────────────────────────────────────────
+  function renderLineChart(container, data, labelKey, valueKey, color) {
+    if (!data || !data.length) {
+      container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:32px 0">لا توجد بيانات</p>';
+      return;
+    }
+    const W = 400, H = 180, PAD = { top: 10, right: 10, bottom: 40, left: 50 };
+    const innerW = W - PAD.left - PAD.right;
+    const innerH = H - PAD.top - PAD.bottom;
+    const values = data.map(d => Number(d[valueKey]) || 0);
+    const maxV = Math.max(...values) || 1;
+
+    const ticks = 4;
+    let yLines = '', yLabels = '';
+    for (let i = 0; i <= ticks; i++) {
+      const y = PAD.top + innerH - (i / ticks) * innerH;
+      const val = Math.round((i / ticks) * maxV);
+      yLines += `<line x1="${PAD.left}" y1="${y}" x2="${PAD.left + innerW}" y2="${y}" stroke="#eee" stroke-width="1"/>`;
+      yLabels += `<text x="${PAD.left - 6}" y="${y + 4}" text-anchor="end" font-size="9" fill="#999">${val}</text>`;
+    }
+
+    const points = data.map((d, i) => {
+      const x = PAD.left + (i / Math.max(data.length - 1, 1)) * innerW;
+      const y = PAD.top + innerH - (values[i] / maxV) * innerH;
+      return `${x},${y}`;
+    }).join(' ');
+
+    let xLabels = '';
+    const step = Math.ceil(data.length / 8);
+    data.forEach((d, i) => {
+      if (i % step === 0) {
+        const x = PAD.left + (i / Math.max(data.length - 1, 1)) * innerW;
+        const label = String(d[labelKey] || '').slice(5);
+        xLabels += `<text x="${x}" y="${PAD.top + innerH + 16}" text-anchor="middle" font-size="8" fill="#999">${label}</text>`;
+      }
+    });
+
+    // Filled area
+    const firstX = PAD.left, lastX = PAD.left + innerW;
+    const baseY = PAD.top + innerH;
+    const areaPoints = `${firstX},${baseY} ${points} ${lastX},${baseY}`;
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${W} ${H}" class="chart-svg">
+        ${yLines}${yLabels}
+        <polygon points="${areaPoints}" fill="${color}" opacity=".1"/>
+        <polyline points="${points}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+        ${xLabels}
+      </svg>`;
+  }
+
+  // ── Load Analytics ─────────────────────────────────────────────────────────
+  async function loadAnalytics() {
+    // Reset
+    ['revenueChartWrap','bookingsChartWrap','destinationsTable'].forEach(id => {
+      document.getElementById(id).innerHTML = '<div class="loading-state" style="padding:32px"><div class="spinner"></div></div>';
+    });
+    ['kpiSearches','kpiConversion','kpiAvgValue','kpiTopRoute'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+
+    try {
+      const res = await Api.get(`/api/admin/analytics/overview?period=${currentPeriod}`, true);
+      const d = res.data || res;
+
+      // KPI Cards
+      const searches = d.searches || {};
+      const totalSearches = (searches.flight_searches || 0) + (searches.hotel_searches || 0);
+      document.getElementById('kpiSearches').textContent = totalSearches.toLocaleString('ar');
+
+      const bookings = (d.bookings_by_day || []).reduce((s, b) => s + (Number(b.count) || 0), 0);
+      const convRate = totalSearches > 0 ? ((bookings / totalSearches) * 100).toFixed(1) : '0';
+      document.getElementById('kpiConversion').textContent = convRate + '%';
+
+      const totalRev = (d.revenue_by_day || []).reduce((s, r) => s + (Number(r.amount) || 0), 0);
+      const avgVal = bookings > 0 ? Math.round(totalRev / bookings) : 0;
+      document.getElementById('kpiAvgValue').textContent = avgVal.toLocaleString('ar') + ' £';
+
+      const topDest = (d.top_destinations || [])[0];
+      document.getElementById('kpiTopRoute').textContent = topDest ? (topDest.destination || topDest.city || '—') : '—';
+
+      // Charts
+      renderBarChart(document.getElementById('revenueChartWrap'), d.revenue_by_day || [], 'date', 'amount', '#1B4F8E');
+      renderLineChart(document.getElementById('bookingsChartWrap'), d.bookings_by_day || [], 'date', 'count', '#10b981');
+
+      // Top Destinations Table
+      const dests = d.top_destinations || [];
+      if (!dests.length) {
+        document.getElementById('destinationsTable').innerHTML = '<div class="empty-state" style="padding:32px"><p>لا توجد بيانات</p></div>';
+      } else {
+        document.getElementById('destinationsTable').innerHTML = `
+          <table>
+            <thead><tr><th>#</th><th>الوجهة</th><th>عدد الحجوزات</th><th>الإيرادات</th><th>الحصة</th></tr></thead>
+            <tbody>
+              ${dests.map((dest, i) => {
+                const pct = dests[0].bookings_count > 0 ? Math.round((dest.bookings_count / dests[0].bookings_count) * 100) : 0;
+                return `<tr>
+                  <td style="color:var(--text-muted)">${i + 1}</td>
+                  <td><strong>${dest.destination || dest.city || '—'}</strong></td>
+                  <td>${(dest.bookings_count || 0).toLocaleString('ar')}</td>
+                  <td style="color:var(--primary);font-weight:600">${dest.revenue ? Number(dest.revenue).toLocaleString('ar') + ' £' : '—'}</td>
+                  <td style="min-width:120px">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div style="flex:1;background:var(--bg);border-radius:100px;height:6px">
+                        <div style="background:var(--primary);height:100%;border-radius:100px;width:${pct}%"></div>
+                      </div>
+                      <span style="font-size:.78rem;color:var(--text-muted)">${pct}%</span>
+                    </div>
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>`;
+      }
+    } catch (err) {
+      ['revenueChartWrap','bookingsChartWrap','destinationsTable'].forEach(id => {
+        document.getElementById(id).innerHTML = '<div class="alert alert-error" style="margin:16px">تعذر تحميل بيانات التحليلات</div>';
+      });
+      showToast('تعذر تحميل بيانات التحليلات', 'error');
+    }
+  }
+
+  loadAnalytics();
+</script>
+</body>
+</html>

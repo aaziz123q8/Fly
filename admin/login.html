@@ -5,40 +5,111 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة الإدارة — تسجيل الدخول</title>
   <link rel="stylesheet" href="../css/app.css">
+  <style>
+    .admin-login-bg {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #0d2d5e 0%, #1B4F8E 60%, #0d2d5e 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .admin-login-card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 24px 80px rgba(0,0,0,.25);
+      width: 100%;
+      max-width: 420px;
+      overflow: hidden;
+    }
+    .admin-login-header {
+      background: linear-gradient(135deg, #0d2d5e, #1B4F8E);
+      padding: 32px 32px 28px;
+      text-align: center;
+    }
+    .admin-login-logo {
+      font-size: 2.8rem;
+      margin-bottom: 8px;
+    }
+    .admin-login-brand {
+      color: white;
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .admin-login-brand span { color: #60a5fa; }
+    .admin-login-sub {
+      color: rgba(255,255,255,.55);
+      font-size: .82rem;
+      margin-top: 4px;
+    }
+    .admin-login-body {
+      padding: 32px;
+    }
+    .admin-login-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .admin-login-desc {
+      font-size: .84rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+    .admin-login-footer {
+      padding: 16px 32px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+  </style>
 </head>
-<body style="background:linear-gradient(135deg,#0d2d5e,#1B4F8E)">
-<div class="auth-page">
-  <div class="auth-card">
-    <div class="auth-logo">
-      <div style="font-size:2.5rem">⚙️</div>
-      <div class="brand-name" style="margin-top:4px">لوحة الإدارة</div>
-      <div style="color:var(--text-muted);font-size:.82rem;margin-top:4px">FlyMasar Admin Panel</div>
+<body>
+<div class="admin-login-bg">
+  <div class="admin-login-card">
+    <div class="admin-login-header">
+      <div class="admin-login-logo">⚙️</div>
+      <div class="admin-login-brand">Fly<span>Masar</span></div>
+      <div class="admin-login-sub">Admin Panel — لوحة الإدارة</div>
     </div>
-    <h1 class="auth-title">دخول المشرف</h1>
-    <p class="auth-subtitle">هذه الصفحة مخصصة لمشرفي النظام فقط</p>
-    <div id="errorAlert" class="alert alert-error" style="display:none"></div>
-    <form id="adminLoginForm" onsubmit="adminLogin(event)">
-      <div class="form-group">
-        <label class="form-label">البريد الإلكتروني</label>
-        <input type="email" class="form-control" id="email" placeholder="admin@flymasar.com" required autocomplete="email">
-      </div>
-      <div class="form-group">
-        <label class="form-label">كلمة المرور</label>
-        <div style="position:relative">
-          <input type="password" class="form-control" id="password" placeholder="كلمة مرور المشرف" required>
-          <button type="button" onclick="togglePwd()" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text-muted)" id="eyeBtn">👁</button>
+
+    <div class="admin-login-body">
+      <div class="admin-login-title">دخول المشرف</div>
+      <div class="admin-login-desc">هذه الصفحة مخصصة لمشرفي النظام فقط</div>
+
+      <div id="errorAlert" class="alert alert-error" style="display:none;margin-bottom:16px"></div>
+
+      <form id="adminLoginForm" onsubmit="adminLogin(event)">
+        <div class="form-group">
+          <label class="form-label">البريد الإلكتروني</label>
+          <input type="email" class="form-control" id="email" placeholder="admin@flymasar.com" required autocomplete="email">
         </div>
+        <div class="form-group">
+          <label class="form-label">كلمة المرور</label>
+          <div style="position:relative">
+            <input type="password" class="form-control" id="password" placeholder="••••••••" required autocomplete="current-password">
+            <button type="button" onclick="togglePwd()" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:1rem" id="eyeBtn">👁</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg btn-block" id="loginBtn" style="margin-top:8px">
+          <span id="loginBtnTxt">دخول إلى لوحة التحكم</span>
+          <div class="spinner spinner-sm" id="loginSpinner" style="display:none;border-top-color:white"></div>
+        </button>
+      </form>
+
+      <div id="lastLoginInfo" style="display:none;margin-top:16px;padding:10px 14px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+        <div style="font-size:.75rem;color:var(--text-muted)">آخر تسجيل دخول من</div>
+        <div style="font-size:.85rem;color:var(--text);font-family:monospace" id="lastLoginIP">—</div>
       </div>
-      <button type="submit" class="btn btn-primary btn-lg btn-block" id="loginBtn">
-        <span id="loginBtnTxt">دخول</span>
-        <div class="spinner spinner-sm" id="loginSpinner" style="display:none;border-top-color:white"></div>
-      </button>
-    </form>
-    <div style="text-align:center;margin-top:20px">
-      <a href="../index.html" style="color:var(--text-muted);font-size:.85rem">← العودة للموقع</a>
+    </div>
+
+    <div class="admin-login-footer">
+      <a href="../index.html" style="color:var(--text-muted);font-size:.84rem;text-decoration:none">← العودة إلى الموقع الرئيسي</a>
     </div>
   </div>
 </div>
+
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
 <script>
@@ -48,6 +119,13 @@
     window.location.href = 'index.html';
   }
 
+  // Show last login IP if stored
+  const lastIP = localStorage.getItem('admin_last_login_ip');
+  if (lastIP) {
+    document.getElementById('lastLoginInfo').style.display = 'block';
+    document.getElementById('lastLoginIP').textContent = lastIP;
+  }
+
   function togglePwd() {
     const p = document.getElementById('password');
     const b = document.getElementById('eyeBtn');
@@ -55,28 +133,52 @@
     b.textContent = p.type === 'text' ? '🙈' : '👁';
   }
 
+  const ERROR_MESSAGES = {
+    'invalid_credentials': 'البريد الإلكتروني أو كلمة المرور غير صحيحة',
+    'account_disabled': 'تم تعطيل هذا الحساب. يرجى التواصل مع المسؤول',
+    'not_admin': 'ليس لديك صلاحيات الدخول إلى لوحة الإدارة',
+    'too_many_attempts': 'عدد كبير من محاولات الدخول. يرجى الانتظار قبل المحاولة مجدداً',
+  };
+
+  function getArabicError(ex) {
+    if (!ex) return 'حدث خطأ غير متوقع. يرجى المحاولة مجدداً';
+    const code = ex.code || ex.error_code || '';
+    if (ERROR_MESSAGES[code]) return ERROR_MESSAGES[code];
+    const msg = ex.message || '';
+    if (msg.includes('credentials') || msg.includes('password') || msg.includes('invalid')) return ERROR_MESSAGES['invalid_credentials'];
+    if (msg.includes('disabled') || msg.includes('inactive')) return ERROR_MESSAGES['account_disabled'];
+    if (msg.includes('admin') || msg.includes('permission')) return ERROR_MESSAGES['not_admin'];
+    if (msg.includes('many') || msg.includes('rate')) return ERROR_MESSAGES['too_many_attempts'];
+    return msg || 'تعذر الاتصال بالخادم. يرجى المحاولة مجدداً';
+  }
+
   async function adminLogin(e) {
     e.preventDefault();
     const btn = document.getElementById('loginBtn');
     const txt = document.getElementById('loginBtnTxt');
-    const sp = document.getElementById('loginSpinner');
+    const sp  = document.getElementById('loginSpinner');
     const err = document.getElementById('errorAlert');
     btn.disabled = true; txt.style.display = 'none'; sp.style.display = 'inline-block';
     err.style.display = 'none';
     try {
       const res = await Api.post('/api/admin/auth/login', {
-        email: document.getElementById('email').value.trim(),
+        email:    document.getElementById('email').value.trim(),
         password: document.getElementById('password').value,
       });
       const token = res.session_token || res.token || res.access_token;
       const u = res.user || res.admin || res;
-      if (!token) throw { message: 'لم يُستلم رمز الجلسة' };
-      if (u.role !== 'admin' && u.role !== 'super_admin') throw { message: 'ليس لديك صلاحيات الدخول لهذه اللوحة' };
+      if (!token) throw { message: 'لم يُستلم رمز الجلسة من الخادم' };
+      if (u.role !== 'admin' && u.role !== 'super_admin') throw { code: 'not_admin' };
       Auth.setSession(token, u);
+      // Store last login IP if returned
+      if (res.ip || u.last_login_ip) {
+        localStorage.setItem('admin_last_login_ip', res.ip || u.last_login_ip);
+      }
       window.location.href = 'index.html';
     } catch (ex) {
-      err.textContent = '⚠️ ' + (ex.message || 'بيانات دخول غير صحيحة');
+      err.innerHTML = '⚠️ ' + getArabicError(ex);
       err.style.display = 'flex';
+      document.getElementById('password').value = '';
     } finally {
       btn.disabled = false; txt.style.display = 'inline'; sp.style.display = 'none';
     }
