@@ -467,15 +467,18 @@ async function load() {
   try {
     let res;
     if (Auth.isLoggedIn()) {
-      // Try flight booking first; if it fails (hotel ref), try hotel booking
-      const isHotel = ref.startsWith('HM') || bid.startsWith('HM');
-      if (isHotel) {
+      const user = Auth.getUser();
+      const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
+      const isHotel = (ref && ref.startsWith('HM')) || (bid && bid.startsWith('HM'));
+      if (isAdmin && ref) {
+        // Admin can access any booking via admin API
+        res = await Api.get('/api/admin/bookings/' + encodeURIComponent(ref), true);
+      } else if (isHotel) {
         res = await Api.get('/api/hotels/bookings/' + encodeURIComponent(key), true);
       } else {
         try {
           res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
         } catch(flightErr) {
-          // fallback: try hotel
           res = await Api.get('/api/hotels/bookings/' + encodeURIComponent(key), true);
         }
       }
