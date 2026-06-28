@@ -294,6 +294,51 @@ class AdminBookingsController
             Response::notFound('Booking not found.');
         }
 
+        if ($type === 'flight') {
+            // Decode JSON columns.
+            foreach (['available_actions', 'refund_conditions', 'change_conditions', 'booking_references'] as $col) {
+                if (!empty($booking[$col]) && is_string($booking[$col])) {
+                    $booking[$col] = json_decode($booking[$col], true);
+                }
+            }
+            // Passengers.
+            $stmt = $db->prepare('SELECT * FROM flight_booking_passengers WHERE booking_id = ? ORDER BY id');
+            $stmt->execute([$id]);
+            $booking['passengers'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            // Segments.
+            $stmt = $db->prepare('SELECT * FROM flight_booking_segments WHERE booking_id = ? ORDER BY slice_index, segment_order');
+            $stmt->execute([$id]);
+            $booking['segments'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            // Documents.
+            try {
+                $stmt = $db->prepare('SELECT * FROM flight_booking_documents WHERE booking_id = ? ORDER BY id');
+                $stmt->execute([$id]);
+                $docs = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                foreach ($docs as &$doc) {
+                    if (!empty($doc['passenger_ids']) && is_string($doc['passenger_ids'])) {
+                        $doc['passenger_ids'] = json_decode($doc['passenger_ids'], true);
+                    }
+                }
+                $booking['documents'] = $docs;
+            } catch (\Throwable) {
+                $booking['documents'] = [];
+            }
+        } else {
+            // Hotel rooms.
+            $stmt = $db->prepare('SELECT * FROM hotel_booking_rooms WHERE booking_id = ?');
+            $stmt->execute([$id]);
+            $booking['rooms'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+            // Hotel guests.
+            $stmt = $db->prepare('SELECT * FROM hotel_booking_guests WHERE booking_id = ?');
+            $stmt->execute([$id]);
+            $booking['guests'] = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        }
+
+        // Payment.
+        $stmt = $db->prepare('SELECT * FROM payments WHERE booking_type = ? AND booking_id = ? ORDER BY created_at DESC LIMIT 1');
+        $stmt->execute([$type, $id]);
+        $booking['payment'] = $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
+
         Response::json(['booking' => $booking, 'type' => $type]);
     }
 

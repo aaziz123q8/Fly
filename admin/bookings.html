@@ -374,7 +374,8 @@
 
       // PNR box
       if (!isHotel && b.duffel_booking_reference) {
-        const extraRefs = (b.booking_references || []).filter(r => r.value && r.value !== b.duffel_booking_reference);
+        const _bref = typeof b.booking_references === 'string' ? JSON.parse(b.booking_references || '[]') : (b.booking_references || []);
+        const extraRefs = _bref.filter(r => r.value && r.value !== b.duffel_booking_reference);
         html += `<div class="pnr-box">
           <div class="pnr-label">رقم حجز الناقل (PNR)</div>
           <div class="pnr-value">${b.duffel_booking_reference}</div>
