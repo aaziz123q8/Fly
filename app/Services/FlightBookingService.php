@@ -1657,6 +1657,19 @@ class FlightBookingService
         return $this->enrichBooking($booking);
     }
 
+    public function getBookingByReferenceAdmin(string $bookingRef): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT * FROM flight_bookings WHERE booking_reference = :ref LIMIT 1'
+        );
+        $stmt->execute([':ref' => $bookingRef]);
+        $booking = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$booking) {
+            return null;
+        }
+        return $this->enrichBooking($booking);
+    }
+
     public function getBookingByReferenceGuest(string $bookingRef, string $lastName): ?array
     {
         $stmt = $this->db->prepare(

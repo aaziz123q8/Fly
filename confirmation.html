@@ -687,7 +687,13 @@ async function loadBooking() {
   if (key) {
     try {
       let res;
-      if (Auth.isLoggedIn()) {
+      const user = Auth.getUser();
+      const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
+      if (isAdmin && ref) {
+        // Admin: use admin API which has no user_id restriction
+        res = await Api.get('/api/admin/bookings/' + encodeURIComponent(ref), true);
+        if (res && res.booking) res = res;
+      } else if (Auth.isLoggedIn()) {
         res = await Api.get('/api/flights/bookings/' + encodeURIComponent(key), true);
       } else if (ref && guestLN) {
         res = await Api.get('/api/bookings/guest-invoice?ref=' + encodeURIComponent(ref) + '&last_name=' + encodeURIComponent(guestLN));

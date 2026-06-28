@@ -265,28 +265,43 @@ class AdminBookingsController
 
     public function showById(Request $request): void
     {
-        $id = (int) $request->param('id');
-        $db = Database::getInstance();
+        $param = $request->param('id');
+        $db    = Database::getInstance();
+
+        // Support both numeric ID and booking reference (FM.../HM...)
+        $isRef = !is_numeric($param);
 
         // Try flight booking.
-        $stmt = $db->prepare(
-            'SELECT fb.*, "flight" AS booking_type, u.email AS user_email, u.first_name, u.last_name
-             FROM flight_bookings fb LEFT JOIN users u ON u.id = fb.user_id
-             WHERE fb.id = ? LIMIT 1'
-        );
-        $stmt->execute([$id]);
+        if ($isRef) {
+            $sql  = 'SELECT fb.*, "flight" AS booking_type, u.email AS user_email, u.first_name, u.last_name
+                     FROM flight_bookings fb LEFT JOIN users u ON u.id = fb.user_id
+                     WHERE fb.booking_reference = ? LIMIT 1';
+        } else {
+            $sql  = 'SELECT fb.*, "flight" AS booking_type, u.email AS user_email, u.first_name, u.last_name
+                     FROM flight_bookings fb LEFT JOIN users u ON u.id = fb.user_id
+                     WHERE fb.id = ? LIMIT 1';
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute([$param]);
         $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+        $id   = $booking ? (int) $booking['id'] : (int) $param;
         $type = 'flight';
 
         if (!$booking) {
             // Try hotel booking.
-            $stmt = $db->prepare(
-                'SELECT hb.*, "hotel" AS booking_type, u.email AS user_email, u.first_name, u.last_name
-                 FROM hotel_bookings hb LEFT JOIN users u ON u.id = hb.user_id
-                 WHERE hb.id = ? LIMIT 1'
-            );
-            $stmt->execute([$id]);
+            if ($isRef) {
+                $sql = 'SELECT hb.*, "hotel" AS booking_type, u.email AS user_email, u.first_name, u.last_name
+                        FROM hotel_bookings hb LEFT JOIN users u ON u.id = hb.user_id
+                        WHERE hb.booking_reference = ? LIMIT 1';
+            } else {
+                $sql = 'SELECT hb.*, "hotel" AS booking_type, u.email AS user_email, u.first_name, u.last_name
+                        FROM hotel_bookings hb LEFT JOIN users u ON u.id = hb.user_id
+                        WHERE hb.id = ? LIMIT 1';
+            }
+            $stmt = $db->prepare($sql);
+            $stmt->execute([$param]);
             $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
+            $id   = $booking ? (int) $booking['id'] : $id;
             $type = 'hotel';
         }
 

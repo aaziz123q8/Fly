@@ -354,17 +354,25 @@ class FlightController
         $user    = AuthMiddleware::currentUser();
         if ($user === null) Response::unauthorized();
 
-        // Support both numeric booking ID (e.g. 42) and FM reference (e.g. FM00000001)
-        $booking = is_numeric($idParam)
-            ? $this->bookingService->getBookingById((int) $idParam, (int) $user['id'])
-            : $this->bookingService->getBookingByReference((string) $idParam, (int) $user['id']);
+        $isAdmin = in_array($user['role'] ?? '', ['admin', 'super_admin'], true);
+
+        // Support both numeric booking ID and FM/HM reference
+        if ($isAdmin && !is_numeric($idParam)) {
+            // Admins can view any booking by reference without user_id restriction
+            $booking = $this->bookingService->getBookingByReferenceAdmin((string) $idParam);
+        } elseif (is_numeric($idParam)) {
+            $booking = $this->bookingService->getBookingById((int) $idParam, (int) $user['id']);
+        } else {
+            $booking = $this->bookingService->getBookingByReference((string) $idParam, (int) $user['id']);
+        }
 
         if ($booking === null) Response::notFound('Booking not found.');
 
         // Auto-sync with Duffel to get latest status on every view
         if (!empty($booking['provider_order_id'])) {
             try {
-                $booking = $this->bookingService->syncFromDuffel((int) $booking['id'], (int) $user['id']);
+                $synced  = $this->bookingService->syncFromDuffelByBookingId((int) $booking['id']);
+                $booking = $synced;
             } catch (\Throwable $e) {
                 // Sync failure is non-fatal — return cached data
             }
