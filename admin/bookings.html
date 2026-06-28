@@ -5,6 +5,104 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>الحجوزات — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
+  <style>
+    /* ===== Print Styles ===== */
+    @media print {
+      .admin-layout > aside,
+      .admin-topbar,
+      .admin-content > .card,
+      #paginationContainer,
+      .toast-container { display: none !important; }
+      .modal-overlay { position: static !important; background: none !important; }
+      .modal { box-shadow: none !important; max-height: none !important; overflow: visible !important; }
+      .modal-close, .print-actions, .modal-footer-actions, #statusModal { display: none !important; }
+      .admin-content, .admin-main, body, html { overflow: visible !important; }
+    }
+
+    /* ===== Details Modal Layout ===== */
+    .booking-modal-body { padding: 20px; max-height: 72vh; overflow-y: auto; }
+    .detail-section {
+      border: 1px solid var(--border, #e5e7eb);
+      border-radius: 10px;
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    .detail-section-title {
+      background: var(--bg, #f8f9fa);
+      padding: 10px 16px;
+      font-size: .8rem;
+      font-weight: 700;
+      color: var(--primary, #2563eb);
+      letter-spacing: .3px;
+      border-bottom: 1px solid var(--border, #e5e7eb);
+    }
+    .detail-section-body { padding: 14px 16px; }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 12px;
+    }
+    .detail-item label {
+      display: block;
+      font-size: .72rem;
+      color: var(--text-muted, #6b7280);
+      margin-bottom: 3px;
+    }
+    .detail-item span { font-size: .9rem; font-weight: 600; }
+    .passenger-table { width: 100%; border-collapse: collapse; }
+    .passenger-table th, .passenger-table td {
+      padding: 8px 12px;
+      font-size: .82rem;
+      border-bottom: 1px solid var(--border, #e5e7eb);
+      text-align: right;
+    }
+    .passenger-table th { font-weight: 700; color: var(--text-muted, #6b7280); background: var(--bg, #f8f9fa); }
+    .modal-footer-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border, #e5e7eb);
+      background: var(--bg, #f8f9fa);
+      border-radius: 0 0 12px 12px;
+    }
+    .modal-footer-actions .btn { flex: 1; min-width: 110px; font-size: .8rem; }
+    .booking-ref-badge {
+      font-family: monospace;
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--primary, #2563eb);
+      letter-spacing: 1px;
+    }
+    .segment-card {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+    }
+    .segment-route {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .segment-route .iata { font-size: 1.4rem; font-weight: 900; color: var(--primary, #2563eb); }
+    .segment-route .arrow { color: #9ca3af; font-size: 1.1rem; }
+    .segment-meta { font-size: .78rem; color: var(--text-muted, #6b7280); display: flex; gap: 14px; flex-wrap: wrap; }
+    .pnr-box { background: #fff8e1; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; }
+    .pnr-box .pnr-label { font-size: .72rem; color: #92400e; margin-bottom: 2px; }
+    .pnr-box .pnr-value { font-family: monospace; font-size: 1.2rem; font-weight: 700; color: #78350f; letter-spacing: 2px; }
+
+    /* Print receipt: visible only when printing */
+    .print-receipt { display: none; }
+    @media print {
+      .print-receipt { display: block !important; font-family: Arial, sans-serif; direction: rtl; padding: 20px; }
+      .booking-modal-body, .modal-footer-actions, .modal-header { display: none !important; }
+      .modal { padding: 0 !important; }
+    }
+  </style>
 </head>
 <body>
 <div class="admin-layout">
@@ -95,36 +193,54 @@
   </main>
 </div>
 
-<!-- Booking Details Modal -->
+<!-- ===== Booking Details Modal ===== -->
 <div class="modal-overlay" id="bookingModal">
-  <div class="modal">
+  <div class="modal" style="max-width:720px">
     <div class="modal-header">
       <h2 class="modal-title">📋 تفاصيل الحجز</h2>
-      <button class="modal-close" onclick="document.getElementById('bookingModal').classList.remove('active')">✕</button>
+      <button class="modal-close" onclick="closeBookingModal()">✕</button>
     </div>
-    <div id="bookingModalContent"></div>
+    <!-- Screen content -->
+    <div class="booking-modal-body" id="bookingModalContent"></div>
+    <!-- Print-only receipt area -->
+    <div class="print-receipt" id="printReceiptArea"></div>
+    <!-- Action footer (hidden until loaded) -->
+    <div class="modal-footer-actions print-actions" id="bookingModalFooter" style="display:none">
+      <button class="btn btn-primary btn-sm" onclick="printTicket()">🖨️ طباعة التذكرة</button>
+      <button class="btn btn-secondary btn-sm" onclick="printInvoice()">🧾 طباعة الفاتورة</button>
+      <button class="btn btn-ghost btn-sm" onclick="printFromHere()">🖨️ طباعة من هنا</button>
+      <button class="btn btn-warning btn-sm" onclick="openStatusFromDetails()">✏️ تغيير الحالة</button>
+      <button class="btn btn-danger btn-sm" onclick="closeBookingModal()">❌ إغلاق</button>
+    </div>
   </div>
 </div>
 
-<!-- Update Status Modal -->
+<!-- ===== Update Status Modal ===== -->
 <div class="modal-overlay" id="statusModal">
   <div class="modal" style="max-width:380px">
     <div class="modal-header">
-      <h2 class="modal-title">تحديث حالة الحجز</h2>
+      <h2 class="modal-title">✏️ تحديث حالة الحجز</h2>
       <button class="modal-close" onclick="document.getElementById('statusModal').classList.remove('active')">✕</button>
     </div>
-    <div style="padding:8px 0">
+    <div style="padding:20px">
       <input type="hidden" id="updateBookingId">
-      <div class="form-group">
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label">رقم الحجز</label>
+        <div id="statusModalRef" style="font-family:monospace;font-weight:700;color:var(--primary);font-size:1rem;min-height:1.2em"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:20px">
         <label class="form-label">الحالة الجديدة</label>
         <select class="form-control" id="newStatus">
-          <option value="pending">معلق</option>
-          <option value="confirmed">مؤكد</option>
-          <option value="completed">مكتمل</option>
-          <option value="cancelled">ملغي</option>
+          <option value="pending">⏳ معلق</option>
+          <option value="confirmed">✅ مؤكد</option>
+          <option value="completed">🏁 مكتمل</option>
+          <option value="cancelled">❌ ملغي</option>
         </select>
       </div>
-      <button class="btn btn-primary btn-block" onclick="confirmStatusUpdate()">حفظ</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-primary" style="flex:1" onclick="confirmStatusUpdate()">💾 حفظ</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('statusModal').classList.remove('active')">إلغاء</button>
+      </div>
     </div>
   </div>
 </div>
@@ -136,8 +252,11 @@
 <script src="../js/admin-sidebar.js"></script>
 <script>
   let currentPage = 1, searchTimer;
+  let _currentBooking = null;
+  let _lastBookingsList = [];
 
   function debouncedSearch() { clearTimeout(searchTimer); searchTimer = setTimeout(() => { currentPage=1; loadBookings(); }, 400); }
+
   function clearFilters() {
     ['searchInput','typeFilter','statusFilter','fromDate','toDate'].forEach(id => document.getElementById(id).value = '');
     loadBookings();
@@ -163,29 +282,36 @@
       if (!list.length) { document.getElementById('emptyState').style.display = 'block'; return; }
       document.getElementById('tableWrapper').style.display = 'block';
       _lastBookingsList = list;
-      // Revenue summary
-      const totalRev = list.reduce((s,b) => s + (parseFloat(b.total_price)||0), 0);
+      const totalRev = list.reduce((s,b) => s + (parseFloat(b.total_price)||parseFloat(b.total_amount)||0), 0);
       const revEl = document.getElementById('revenueSummary');
       if (revEl) { revEl.style.display = 'block'; revEl.textContent = 'إجمالي الإيرادات المعروضة: ' + totalRev.toLocaleString('ar') + ' £'; }
-      document.getElementById('bookingsTable').innerHTML = list.map(b => `
-      <tr>
-        <td><span style="font-family:monospace;font-size:.82rem;color:var(--primary)">${b.booking_reference || b.booking_ref || ('#' + (b.id || '—'))}</span></td>
-        <td>
-          <div style="font-weight:600;font-size:.88rem">${b.user_name || b.first_name || '—'} ${b.last_name || ''}</div>
-          <div style="color:var(--text-muted);font-size:.78rem">${b.email || ''}</div>
-        </td>
-        <td>${(b.type || b.booking_type) === 'flight' ? '<span class="badge badge-info">✈️ رحلة</span>' : '<span class="badge badge-primary">🏨 فندق</span>'}</td>
-        <td style="font-size:.85rem;color:var(--text-muted)">${b.from || b.city || ''} ${b.to ? '→ ' + b.to : ''}</td>
-        <td style="font-size:.82rem;color:var(--text-muted)">${b.created_at ? new Date(b.created_at).toLocaleDateString('ar-SA') : '—'}</td>
-        <td style="font-weight:700;color:var(--primary)">${(b.total_price || b.total_amount) ? Number(b.total_price || b.total_amount).toLocaleString('ar') + ' £' : '—'}</td>
-        <td>${Admin.renderStatusBadge(b.status)}</td>
-        <td>
-          <div class="table-actions">
-            <button class="btn btn-ghost btn-sm" onclick="viewBooking('${b.id}')">عرض</button>
-            <button class="btn btn-secondary btn-sm" onclick="openStatusModal('${b.id}','${b.status}')">تحديث</button>
-          </div>
-        </td>
-      </tr>`).join('');
+      document.getElementById('bookingsTable').innerHTML = list.map(b => {
+        const bType = b.type || b.booking_type;
+        const bRef = b.booking_reference || b.booking_ref || ('#' + (b.id || '—'));
+        return `
+        <tr>
+          <td><span style="font-family:monospace;font-size:.82rem;color:var(--primary)">${bRef}</span></td>
+          <td>
+            <div style="font-weight:600;font-size:.88rem">${b.user_name || b.first_name || '—'} ${b.last_name || ''}</div>
+            <div style="color:var(--text-muted);font-size:.78rem">${b.email || b.user_email || ''}</div>
+          </td>
+          <td>${bType === 'flight' ? '<span class="badge badge-info">✈️ رحلة</span>' : '<span class="badge badge-primary">🏨 فندق</span>'}</td>
+          <td style="font-size:.85rem;color:var(--text-muted)">
+            ${b.from || b.origin_airport || b.city || ''}
+            ${(b.to || b.destination_airport) ? '→ ' + (b.to || b.destination_airport) : ''}
+          </td>
+          <td style="font-size:.82rem;color:var(--text-muted)">${b.created_at ? new Date(b.created_at).toLocaleDateString('ar-SA') : '—'}</td>
+          <td style="font-weight:700;color:var(--primary)">${(b.total_price || b.total_amount) ? Number(b.total_price || b.total_amount).toLocaleString('ar') + ' £' : '—'}</td>
+          <td>${Admin.renderStatusBadge(b.status)}</td>
+          <td>
+            <div class="table-actions" style="gap:4px;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" title="عرض التفاصيل الكاملة" onclick="viewBooking('${b.id}')">👁 تفاصيل</button>
+              <button class="btn btn-secondary btn-sm" title="تغيير حالة الحجز" onclick="openStatusModal('${b.id}','${b.status}','${bRef}')">✏️ الحالة</button>
+              <button class="btn btn-ghost btn-sm" title="طباعة التذكرة" onclick="quickPrint('${b.id}','${bRef}','${bType}')">🖨️ تذكرة/فاتورة</button>
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
       // Pagination
       const pages = Math.ceil(total / 20);
       const pc = document.getElementById('paginationContainer');
@@ -208,78 +334,360 @@
 
   function goPage(p) { currentPage = p; loadBookings(); }
 
+  function closeBookingModal() {
+    document.getElementById('bookingModal').classList.remove('active');
+    _currentBooking = null;
+  }
+
+  // Quick print from table row (opens confirmation page)
+  function quickPrint(id, bRef, bType) {
+    const isHotel = bType === 'hotel';
+    const url = isHotel
+      ? `../hotel-confirmation.html?ref=${bRef}`
+      : `../confirmation.html?ref=${bRef}&bid=${id}`;
+    window.open(url, '_blank');
+  }
+
+  // ===== Full Booking Details Modal =====
   async function viewBooking(id) {
+    _currentBooking = null;
     const el = document.getElementById('bookingModalContent');
-    el.innerHTML = '<div class="loading-state" style="padding:32px"><div class="spinner"></div></div>';
+    const footer = document.getElementById('bookingModalFooter');
+    footer.style.display = 'none';
+    el.innerHTML = '<div class="loading-state" style="padding:40px"><div class="spinner"></div><p>جاري تحميل التفاصيل...</p></div>';
     document.getElementById('bookingModal').classList.add('active');
     try {
       const res = await Api.get(`/api/admin/bookings/${id}`, true);
       const b = res.data || res.booking || res;
+      _currentBooking = b;
+      const isHotel = (b.booking_type || b.type) === 'hotel';
+      const bRef = b.booking_reference || b.booking_ref || ('#' + b.id);
 
-      // Airline PNR(s)
-      const pnrMain = b.duffel_booking_reference || '';
-      const refs = Array.isArray(b.booking_references) ? b.booking_references : [];
-      const extraRefs = refs.filter(r => r.value && r.value !== pnrMain);
-      const pnrHtml = pnrMain
-        ? `<div style="background:#fff8e1;border-radius:8px;padding:10px 14px;margin-bottom:12px">
-             <div style="font-size:.72rem;color:#92400e;margin-bottom:2px">رقم حجز الناقل (PNR)</div>
-             <div style="font-family:monospace;font-size:1.1rem;font-weight:700;color:#78350f;letter-spacing:2px">${pnrMain}</div>
-             ${extraRefs.map(r=>`<div style="font-size:.78rem;color:#92400e;margin-top:4px">${r.airline_iata_code||''} • ${r.value}</div>`).join('')}
-           </div>` : '';
+      let html = '';
 
-      // Documents (electronic tickets)
-      const eDocs = (b.documents||[]).filter(d=>d.document_type==='electronic_ticket');
-      const docsHtml = eDocs.length
-        ? `<div style="margin-bottom:12px">
-             <div style="font-size:.75rem;font-weight:700;color:var(--primary);margin-bottom:6px">🎫 التذاكر الإلكترونية</div>
-             ${eDocs.map(d=>`<div style="font-family:monospace;font-size:.88rem;background:#f0f5fb;border-radius:6px;padding:6px 10px;margin-bottom:4px">${d.unique_identifier}</div>`).join('')}
-           </div>` : '';
+      // Header
+      html += `<div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="booking-ref-badge">${bRef}</div>
+        <div>${Admin.renderStatusBadge(b.status)}</div>
+        <div>${isHotel ? '<span class="badge badge-primary">🏨 فندق</span>' : '<span class="badge badge-info">✈️ رحلة</span>'}</div>
+      </div>`;
+
+      // PNR box
+      if (!isHotel && b.duffel_booking_reference) {
+        const extraRefs = (b.booking_references || []).filter(r => r.value && r.value !== b.duffel_booking_reference);
+        html += `<div class="pnr-box">
+          <div class="pnr-label">رقم حجز الناقل (PNR)</div>
+          <div class="pnr-value">${b.duffel_booking_reference}</div>
+          ${extraRefs.map(r => `<div style="font-size:.78rem;color:#92400e;margin-top:4px">${r.airline_iata_code || ''} • ${r.value}</div>`).join('')}
+        </div>`;
+      }
+
+      // Electronic tickets
+      const eDocs = (b.documents || []).filter(d => d.document_type === 'electronic_ticket');
+      if (eDocs.length) {
+        html += `<div class="detail-section"><div class="detail-section-title">🎫 التذاكر الإلكترونية</div><div class="detail-section-body">
+          ${eDocs.map(d => `<div style="font-family:monospace;font-size:.9rem;background:#f0f5fb;border-radius:6px;padding:7px 12px;margin-bottom:4px">${d.unique_identifier}</div>`).join('')}
+        </div></div>`;
+      }
 
       // Passenger ticket numbers
-      const pasWithTickets = (b.passengers||[]).filter(p=>p.ticket_number);
-      const paxTicketHtml = pasWithTickets.length && !eDocs.length
-        ? `<div style="margin-bottom:12px">
-             <div style="font-size:.75rem;font-weight:700;color:var(--primary);margin-bottom:6px">🎟️ أرقام التذاكر</div>
-             ${pasWithTickets.map(p=>`<div style="font-size:.85rem;margin-bottom:4px"><span style="color:var(--text-muted)">${p.first_name} ${p.last_name}:</span> <span style="font-family:monospace;font-weight:600">${p.ticket_number}</span></div>`).join('')}
-           </div>` : '';
+      const pasWithTickets = (b.passengers || []).filter(p => p.ticket_number);
+      if (pasWithTickets.length && !eDocs.length) {
+        html += `<div class="detail-section"><div class="detail-section-title">🎟️ أرقام التذاكر</div><div class="detail-section-body">
+          ${pasWithTickets.map(p => `<div style="margin-bottom:4px;font-size:.85rem"><span style="color:var(--text-muted)">${p.first_name} ${p.last_name}:</span> <span style="font-family:monospace;font-weight:700">${p.ticket_number}</span></div>`).join('')}
+        </div></div>`;
+      }
 
-      el.innerHTML = `
-        ${pnrHtml}
-        ${docsHtml}
-        ${paxTicketHtml}
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">رقم حجز فلاي مسار</div><div style="font-weight:700;color:var(--primary);font-family:monospace">${b.booking_reference||b.booking_ref||('#'+(b.id||'—'))}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الحالة</div>${Admin.renderStatusBadge(b.status)}</div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">المسافر</div><div style="font-weight:600">${b.first_name||''} ${b.last_name||''}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">البريد</div><div>${b.user_email||b.email||'—'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">النوع</div><div>${b.booking_type==='flight'?'✈️ رحلة':'🏨 فندق'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">المبلغ</div><div style="font-weight:700;font-size:1.1rem;color:var(--primary)">${b.total_amount?Number(b.total_amount).toLocaleString('ar')+' '+b.currency:'—'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">تاريخ الحجز</div><div>${b.created_at?new Date(b.created_at).toLocaleDateString('ar-SA'):'—'}</div></div>
-          ${b.provider_order_id?`<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">Duffel Order ID</div><div style="font-family:monospace;font-size:.8rem">${b.provider_order_id}</div></div>`:''}
-          ${b.coupon_code?`<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">كود الخصم</div><div style="font-weight:600;color:var(--success)">${b.coupon_code}</div></div>`:''}
-        </div>
-        ${(b.pending_cancellation_id||b.cancelled_at||b.cancellation_confirmed_at) ? `
-        <div style="margin-top:18px;border-top:1px solid #eee;padding-top:14px">
-          <div style="font-size:.75rem;font-weight:700;color:#dc2626;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">🚫 تفاصيل الإلغاء</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            ${b.pending_cancellation_id?`<div style="grid-column:1/-1"><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">Duffel Cancellation ID</div><div style="font-family:monospace;font-size:.82rem">${b.pending_cancellation_id}</div></div>`:''}
-            ${b.cancellation_refund_amount?`<div><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">مبلغ الاسترداد</div><div style="font-weight:700;color:var(--success)">${Number(b.cancellation_refund_amount).toLocaleString('ar')} ${b.cancellation_refund_currency||''}</div></div>`:''}
-            ${b.cancellation_refund_to?`<div><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">طريقة الاسترداد</div><div>${b.cancellation_refund_to}</div></div>`:''}
-            ${b.cancellation_expires_at?`<div><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">انتهاء صلاحية العرض</div><div>${new Date(b.cancellation_expires_at).toLocaleString('ar-SA')}</div></div>`:''}
-            ${b.cancelled_at?`<div><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">تاريخ الإلغاء</div><div>${new Date(b.cancelled_at).toLocaleString('ar-SA')}</div></div>`:''}
-            ${b.cancellation_confirmed_at?`<div><div style="font-size:.72rem;color:var(--text-muted);margin-bottom:2px">تأكيد الإلغاء (Duffel)</div><div>${new Date(b.cancellation_confirmed_at).toLocaleString('ar-SA')}</div></div>`:''}
+      // Flight segments or Hotel info
+      if (!isHotel) {
+        const segments = b.segments || (b.slices || []).flatMap(s => s.segments || []);
+        if (segments.length) {
+          html += `<div class="detail-section"><div class="detail-section-title">✈️ معلومات الرحلة</div><div class="detail-section-body">`;
+          segments.forEach(seg => {
+            const dep = seg.departure_at || seg.departing_at;
+            const arr = seg.arrival_at || seg.arriving_at;
+            const dur = seg.duration ? _formatDuration(seg.duration) : '';
+            const originIata = seg.origin_iata || (seg.origin && seg.origin.iata_code) || '';
+            const destIata = seg.destination_iata || (seg.destination && seg.destination.iata_code) || '';
+            const airlineCode = seg.airline_iata || (seg.marketing_carrier && seg.marketing_carrier.iata_code) || '';
+            const flightNum = seg.flight_number || seg.marketing_carrier_flight_number || '';
+            html += `<div class="segment-card">
+              <div class="segment-route">
+                <span class="iata">${originIata}</span>
+                <span class="arrow">←</span>
+                <span class="iata">${destIata}</span>
+              </div>
+              <div class="segment-meta">
+                ${dep ? `<span>🛫 ${new Date(dep).toLocaleString('ar-SA')}</span>` : ''}
+                ${arr ? `<span>🛬 ${new Date(arr).toLocaleString('ar-SA')}</span>` : ''}
+                ${airlineCode ? `<span>✈️ ${airlineCode} ${flightNum}</span>` : ''}
+                ${dur ? `<span>⏱️ ${dur}</span>` : ''}
+                ${(seg.aircraft && seg.aircraft.name) ? `<span>🛩️ ${seg.aircraft.name}</span>` : ''}
+              </div>
+            </div>`;
+          });
+          html += `</div></div>`;
+        } else if (b.origin_airport || b.destination_airport) {
+          html += `<div class="detail-section"><div class="detail-section-title">✈️ معلومات الرحلة</div><div class="detail-section-body">
+            <div class="detail-grid">
+              ${b.origin_airport ? `<div class="detail-item"><label>المطار الأصل</label><span>${b.origin_airport}</span></div>` : ''}
+              ${b.destination_airport ? `<div class="detail-item"><label>المطار الوجهة</label><span>${b.destination_airport}</span></div>` : ''}
+              ${b.departure_at ? `<div class="detail-item"><label>تاريخ المغادرة</label><span>${new Date(b.departure_at).toLocaleString('ar-SA')}</span></div>` : ''}
+            </div>
+          </div></div>`;
+        }
+      } else {
+        // Hotel
+        const nights = (b.check_in_date && b.check_out_date)
+          ? Math.round((new Date(b.check_out_date) - new Date(b.check_in_date)) / 86400000) : null;
+        html += `<div class="detail-section"><div class="detail-section-title">🏨 معلومات الفندق</div><div class="detail-section-body">
+          <div class="detail-grid">
+            ${b.hotel_name ? `<div class="detail-item" style="grid-column:1/-1"><label>اسم الفندق</label><span style="font-size:1rem">${b.hotel_name}</span></div>` : ''}
+            ${b.check_in_date ? `<div class="detail-item"><label>تاريخ الوصول</label><span>${new Date(b.check_in_date).toLocaleDateString('ar-SA')}</span></div>` : ''}
+            ${b.check_out_date ? `<div class="detail-item"><label>تاريخ المغادرة</label><span>${new Date(b.check_out_date).toLocaleDateString('ar-SA')}</span></div>` : ''}
+            ${nights !== null ? `<div class="detail-item"><label>عدد الليالي</label><span>${nights} ليلة</span></div>` : ''}
+            ${b.hotel_city ? `<div class="detail-item"><label>المدينة</label><span>${b.hotel_city}</span></div>` : ''}
+            ${b.hotel_country ? `<div class="detail-item"><label>الدولة</label><span>${b.hotel_country}</span></div>` : ''}
           </div>
-        </div>` : ''}
-        `;
-    } catch {
-      el.innerHTML = '<div class="alert alert-error">تعذر تحميل تفاصيل الحجز</div>';
+        </div></div>`;
+        // Rooms
+        const rooms = b.rooms || [];
+        if (rooms.length) {
+          html += `<div class="detail-section"><div class="detail-section-title">🛏️ الغرف</div><div class="detail-section-body">
+            <table class="passenger-table">
+              <thead><tr><th>نوع الغرفة</th><th>السعر</th><th>الضيوف</th></tr></thead>
+              <tbody>
+                ${rooms.map(r => `<tr>
+                  <td>${r.room_type || r.name || '—'}</td>
+                  <td>${r.price ? Number(r.price).toLocaleString('ar') + ' ' + (b.currency || '') : '—'}</td>
+                  <td>${(r.guests || []).map(g => `${g.first_name || ''} ${g.last_name || ''}`).join(', ') || '—'}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div></div>`;
+        }
+      }
+
+      // Passengers
+      const passengers = b.passengers || [];
+      if (passengers.length) {
+        const hasGender = passengers[0].gender !== undefined;
+        html += `<div class="detail-section"><div class="detail-section-title">👥 المسافرون</div><div class="detail-section-body">
+          <table class="passenger-table">
+            <thead><tr><th>الاسم</th><th>النوع</th><th>رقم الجواز</th><th>الجنسية</th>${hasGender ? '<th>الجنس</th>' : ''}</tr></thead>
+            <tbody>
+              ${passengers.map(p => {
+                const idDoc = p.identity_document || {};
+                return `<tr>
+                  <td style="font-weight:600">${p.first_name || ''} ${p.last_name || ''}</td>
+                  <td>${_passengerTypeLabel(p.type || p.passenger_type)}</td>
+                  <td style="font-family:monospace">${p.passport_number || idDoc.number || '—'}</td>
+                  <td>${p.nationality || idDoc.issuing_country_code || '—'}</td>
+                  ${hasGender ? `<td>${(p.gender === 'm' || p.gender === 'male') ? 'ذكر' : 'أنثى'}</td>` : ''}
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div></div>`;
+      }
+
+      // Hotel guests (if no passengers)
+      const hotelGuests = isHotel ? (b.guests || []) : [];
+      if (hotelGuests.length && !passengers.length) {
+        html += `<div class="detail-section"><div class="detail-section-title">🧑‍🤝‍🧑 الضيوف</div><div class="detail-section-body">
+          <table class="passenger-table">
+            <thead><tr><th>الاسم</th><th>النوع</th></tr></thead>
+            <tbody>
+              ${hotelGuests.map(g => `<tr>
+                <td style="font-weight:600">${g.first_name || ''} ${g.last_name || ''}</td>
+                <td>${_passengerTypeLabel(g.type)}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div></div>`;
+      }
+
+      // Booking & user info
+      html += `<div class="detail-section"><div class="detail-section-title">📞 بيانات المسافر (الحجز)</div><div class="detail-section-body">
+        <div class="detail-grid">
+          <div class="detail-item"><label>البريد الإلكتروني</label><span style="font-size:.85rem">${b.user_email || b.email || '—'}</span></div>
+          ${(b.phone || b.user_phone) ? `<div class="detail-item"><label>الهاتف</label><span>${b.phone || b.user_phone}</span></div>` : ''}
+          <div class="detail-item"><label>الاسم</label><span>${b.first_name || ''} ${b.last_name || ''}</span></div>
+          <div class="detail-item"><label>تاريخ الحجز</label><span>${b.created_at ? new Date(b.created_at).toLocaleDateString('ar-SA') : '—'}</span></div>
+          ${b.coupon_code ? `<div class="detail-item"><label>كود الخصم</label><span style="color:var(--success)">${b.coupon_code}</span></div>` : ''}
+          ${b.provider_order_id ? `<div class="detail-item" style="grid-column:1/-1"><label>Duffel Order ID</label><span style="font-family:monospace;font-size:.78rem">${b.provider_order_id}</span></div>` : ''}
+        </div>
+      </div></div>`;
+
+      // Payment details
+      const pay = b.payment || {};
+      const payAmount = pay.amount || b.total_amount;
+      const payCurrency = pay.currency || b.currency;
+      const payStatus = pay.status || b.payment_status;
+      html += `<div class="detail-section"><div class="detail-section-title">💳 تفاصيل الدفع</div><div class="detail-section-body">
+        <div class="detail-grid">
+          <div class="detail-item"><label>المبلغ المدفوع</label><span style="font-size:1.1rem;color:var(--primary)">${payAmount ? Number(payAmount).toLocaleString('ar') + ' ' + (payCurrency || '') : '—'}</span></div>
+          ${payStatus ? `<div class="detail-item"><label>حالة الدفع</label><span class="badge ${payStatus === 'succeeded' ? 'badge-success' : payStatus === 'pending' ? 'badge-warning' : 'badge-danger'}">${payStatus}</span></div>` : ''}
+          ${(pay.stripe_payment_intent_id || b.stripe_payment_intent_id) ? `<div class="detail-item" style="grid-column:1/-1"><label>Stripe Payment Intent</label><span style="font-family:monospace;font-size:.78rem">${pay.stripe_payment_intent_id || b.stripe_payment_intent_id}</span></div>` : ''}
+        </div>
+      </div></div>`;
+
+      // Cancellation info
+      if (b.pending_cancellation_id || b.cancelled_at || b.cancellation_confirmed_at) {
+        html += `<div class="detail-section" style="border-color:#fca5a5">
+          <div class="detail-section-title" style="color:#dc2626;background:#fef2f2;border-color:#fca5a5">🚫 تفاصيل الإلغاء</div>
+          <div class="detail-section-body"><div class="detail-grid">
+            ${b.pending_cancellation_id ? `<div class="detail-item" style="grid-column:1/-1"><label>Duffel Cancellation ID</label><span style="font-family:monospace;font-size:.82rem">${b.pending_cancellation_id}</span></div>` : ''}
+            ${b.cancellation_refund_amount ? `<div class="detail-item"><label>مبلغ الاسترداد</label><span style="color:var(--success)">${Number(b.cancellation_refund_amount).toLocaleString('ar')} ${b.cancellation_refund_currency || ''}</span></div>` : ''}
+            ${b.cancellation_refund_to ? `<div class="detail-item"><label>طريقة الاسترداد</label><span>${b.cancellation_refund_to}</span></div>` : ''}
+            ${b.cancellation_expires_at ? `<div class="detail-item"><label>انتهاء صلاحية العرض</label><span>${new Date(b.cancellation_expires_at).toLocaleString('ar-SA')}</span></div>` : ''}
+            ${b.cancelled_at ? `<div class="detail-item"><label>تاريخ الإلغاء</label><span>${new Date(b.cancelled_at).toLocaleString('ar-SA')}</span></div>` : ''}
+            ${b.cancellation_confirmed_at ? `<div class="detail-item"><label>تأكيد الإلغاء (Duffel)</label><span>${new Date(b.cancellation_confirmed_at).toLocaleString('ar-SA')}</span></div>` : ''}
+          </div></div>
+        </div>`;
+      }
+
+      el.innerHTML = html;
+      _buildPrintReceipt(b);
+      footer.style.display = 'flex';
+    } catch (err) {
+      el.innerHTML = `<div class="alert alert-error" style="margin:20px">⚠️ تعذر تحميل تفاصيل الحجز: ${err.message || ''}</div>`;
     }
   }
 
-  function openStatusModal(id, currentStatus) {
+  function _formatDuration(minutes) {
+    if (!minutes) return '';
+    return `${Math.floor(minutes / 60)}س ${minutes % 60}د`;
+  }
+
+  function _passengerTypeLabel(type) {
+    const map = { adult: 'بالغ', child: 'طفل', infant: 'رضيع', infant_without_seat: 'رضيع (بدون مقعد)' };
+    return map[type] || type || '—';
+  }
+
+  function _statusLabel(status) {
+    const map = { pending: 'معلق', confirmed: 'مؤكد', completed: 'مكتمل', cancelled: 'ملغي' };
+    return map[status] || status || '—';
+  }
+
+  // Build the print-only receipt
+  function _buildPrintReceipt(b) {
+    const bRef = b.booking_reference || b.booking_ref || ('#' + b.id);
+    const isHotel = (b.booking_type || b.type) === 'hotel';
+    const segments = b.segments || (b.slices || []).flatMap(s => s.segments || []);
+    const passengers = b.passengers || b.guests || [];
+
+    let r = `<div style="max-width:700px;margin:0 auto">
+      <div style="text-align:center;border-bottom:2px solid #1d4ed8;padding-bottom:16px;margin-bottom:20px">
+        <div style="font-size:1.5rem;font-weight:900;color:#1d4ed8">FlyMasar — فلاي مسار</div>
+        <div style="font-size:.85rem;color:#6b7280;margin-top:4px">نظام إدارة الحجوزات</div>
+      </div>
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+        <div><div style="font-size:.72rem;color:#6b7280">رقم الحجز</div><div style="font-family:monospace;font-size:1.3rem;font-weight:800;color:#1d4ed8">${bRef}</div></div>
+        <div><div style="font-size:.72rem;color:#6b7280">الحالة</div><div style="font-weight:700">${_statusLabel(b.status)}</div></div>
+        <div><div style="font-size:.72rem;color:#6b7280">النوع</div><div style="font-weight:600">${isHotel ? '🏨 فندق' : '✈️ رحلة'}</div></div>
+        <div><div style="font-size:.72rem;color:#6b7280">المبلغ المدفوع</div><div style="font-weight:700;color:#1d4ed8;font-size:1.1rem">${b.total_amount ? Number(b.total_amount).toLocaleString('ar') + ' ' + (b.currency || '') : '—'}</div></div>
+        <div><div style="font-size:.72rem;color:#6b7280">الاسم</div><div style="font-weight:600">${b.first_name || ''} ${b.last_name || ''}</div></div>
+        <div><div style="font-size:.72rem;color:#6b7280">البريد</div><div style="font-size:.85rem">${b.user_email || b.email || '—'}</div></div>
+      </div>`;
+
+    if (!isHotel && segments.length) {
+      r += `<div style="margin-bottom:16px"><div style="font-weight:700;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:10px">✈️ تفاصيل الرحلة</div>`;
+      segments.forEach(seg => {
+        const dep = seg.departure_at || seg.departing_at;
+        const arr = seg.arrival_at || seg.arriving_at;
+        const originIata = seg.origin_iata || (seg.origin && seg.origin.iata_code) || '';
+        const destIata = seg.destination_iata || (seg.destination && seg.destination.iata_code) || '';
+        const airlineCode = seg.airline_iata || (seg.marketing_carrier && seg.marketing_carrier.iata_code) || '';
+        const flightNum = seg.flight_number || seg.marketing_carrier_flight_number || '';
+        r += `<div style="background:#eff6ff;border-radius:8px;padding:12px;margin-bottom:8px">
+          <div style="font-size:1.1rem;font-weight:900">${originIata} ← ${destIata}</div>
+          <div style="font-size:.82rem;color:#4b5563;margin-top:4px">
+            ${dep ? `المغادرة: ${new Date(dep).toLocaleString('ar-SA')}` : ''}
+            ${arr ? ` | الوصول: ${new Date(arr).toLocaleString('ar-SA')}` : ''}
+            ${airlineCode ? ` | ${airlineCode} ${flightNum}` : ''}
+          </div>
+        </div>`;
+      });
+      r += `</div>`;
+    } else if (isHotel) {
+      const nights = (b.check_in_date && b.check_out_date)
+        ? Math.round((new Date(b.check_out_date) - new Date(b.check_in_date)) / 86400000) : null;
+      r += `<div style="margin-bottom:16px"><div style="font-weight:700;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:10px">🏨 تفاصيل الفندق</div>
+        <div style="background:#f0fdf4;border-radius:8px;padding:12px">
+          ${b.hotel_name ? `<div style="font-weight:700;font-size:1rem">${b.hotel_name}</div>` : ''}
+          <div style="font-size:.82rem;color:#4b5563;margin-top:4px">
+            ${b.check_in_date ? `الوصول: ${new Date(b.check_in_date).toLocaleDateString('ar-SA')}` : ''}
+            ${b.check_out_date ? ` | المغادرة: ${new Date(b.check_out_date).toLocaleDateString('ar-SA')}` : ''}
+            ${nights !== null ? ` | ${nights} ليلة` : ''}
+          </div>
+        </div>
+      </div>`;
+    }
+
+    if (passengers.length) {
+      r += `<div style="margin-bottom:16px"><div style="font-weight:700;border-bottom:1px solid #e5e7eb;padding-bottom:6px;margin-bottom:10px">👥 المسافرون / الضيوف</div>
+        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+          <thead><tr style="background:#f3f4f6">
+            <th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb">الاسم</th>
+            <th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb">النوع</th>
+            <th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb">رقم الجواز</th>
+            <th style="padding:8px;text-align:right;border-bottom:1px solid #e5e7eb">الجنسية</th>
+          </tr></thead>
+          <tbody>
+            ${passengers.map(p => {
+              const idDoc = p.identity_document || {};
+              return `<tr>
+                <td style="padding:8px;font-weight:600;border-bottom:1px solid #f3f4f6">${p.first_name || ''} ${p.last_name || ''}</td>
+                <td style="padding:8px;border-bottom:1px solid #f3f4f6">${_passengerTypeLabel(p.type || p.passenger_type)}</td>
+                <td style="padding:8px;font-family:monospace;border-bottom:1px solid #f3f4f6">${p.passport_number || idDoc.number || '—'}</td>
+                <td style="padding:8px;border-bottom:1px solid #f3f4f6">${p.nationality || idDoc.issuing_country_code || '—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+    }
+
+    r += `<div style="margin-top:24px;border-top:2px solid #e5e7eb;padding-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+        <div style="font-size:.75rem;color:#9ca3af">طُبع من لوحة الإدارة - FlyMasar | ${new Date().toLocaleString('ar-SA')}</div>
+        <div style="font-weight:700;color:#1d4ed8">${b.total_amount ? 'المبلغ: ' + Number(b.total_amount).toLocaleString('ar') + ' ' + (b.currency || '') : ''}</div>
+      </div>
+    </div>`;
+
+    document.getElementById('printReceiptArea').innerHTML = r;
+  }
+
+  // ===== Print Actions =====
+  function printTicket() {
+    if (!_currentBooking) return;
+    const b = _currentBooking;
+    const bRef = b.booking_reference || b.booking_ref || b.id;
+    const isHotel = (b.booking_type || b.type) === 'hotel';
+    window.open(isHotel ? `../hotel-confirmation.html?ref=${bRef}` : `../confirmation.html?ref=${bRef}&bid=${b.id}`, '_blank');
+  }
+
+  function printInvoice() {
+    if (!_currentBooking) return;
+    const b = _currentBooking;
+    const bRef = b.booking_reference || b.booking_ref || b.id;
+    window.open(`../invoice.html?ref=${bRef}&bid=${b.id}`, '_blank');
+  }
+
+  function printFromHere() { window.print(); }
+
+  // ===== Status Modal =====
+  function openStatusModal(id, currentStatus, bRef) {
     document.getElementById('updateBookingId').value = id;
-    document.getElementById('newStatus').value = currentStatus;
+    document.getElementById('newStatus').value = currentStatus || 'pending';
+    document.getElementById('statusModalRef').textContent = bRef || '';
     document.getElementById('statusModal').classList.add('active');
+  }
+
+  function openStatusFromDetails() {
+    if (!_currentBooking) return;
+    const b = _currentBooking;
+    openStatusModal(b.id, b.status, b.booking_reference || b.booking_ref || ('#' + b.id));
   }
 
   async function confirmStatusUpdate() {
@@ -287,8 +695,12 @@
     const status = document.getElementById('newStatus').value;
     try {
       await Api.patch(`/api/admin/bookings/${id}/status`, { status }, true);
-      showToast('تم تحديث حالة الحجز', 'success');
+      showToast('✅ تم تحديث حالة الحجز بنجاح', 'success');
       document.getElementById('statusModal').classList.remove('active');
+      // Refresh details modal if viewing this booking
+      if (_currentBooking && String(_currentBooking.id) === String(id)) {
+        viewBooking(id);
+      }
       loadBookings();
     } catch (err) { showToast(err.message || 'فشل التحديث', 'error'); }
   }
@@ -301,23 +713,20 @@
     setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
   }
 
-  // Store last loaded list for CSV export
-  let _lastBookingsList = [];
-
   function exportCSV() {
     if (!_lastBookingsList.length) { showToast('لا توجد بيانات للتصدير', 'warning'); return; }
     const headers = ['رقم الحجز','المسافر','البريد','النوع','التاريخ','المبلغ','الحالة'];
     const rows = _lastBookingsList.map(b => [
       b.booking_reference || b.booking_ref || ('#' + (b.id||'')),
       (b.user_name || b.first_name || '') + ' ' + (b.last_name || ''),
-      b.email || '',
+      b.email || b.user_email || '',
       (b.type || b.booking_type) === 'flight' ? 'رحلة' : 'فندق',
       b.created_at ? new Date(b.created_at).toLocaleDateString('ar-SA') : '',
       b.total_price || b.total_amount || '',
       b.status || '',
     ]);
     const csv = [headers, ...rows].map(r => r.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = 'bookings-' + new Date().toISOString().slice(0,10) + '.csv';
     a.click();
