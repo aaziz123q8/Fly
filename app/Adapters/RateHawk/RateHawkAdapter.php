@@ -18,6 +18,9 @@ class RateHawkAdapter
 
     public function __construct(array $config = [])
     {
+        if (empty($config)) {
+            $config = \App\Helpers\ConfigLoader::load('apis')['ratehawk'] ?? [];
+        }
         $this->keyId   = $config['key_id']   ?? (getenv('RATEHAWK_KEY_ID')  ?: '');
         $this->apiKey  = $config['api_key']  ?? (getenv('RATEHAWK_API_KEY') ?: '');
         $this->baseUrl = $config['base_url'] ?? (getenv('RATEHAWK_BASE_URL') ?: 'https://api.worldota.net/api/b2b/v3');

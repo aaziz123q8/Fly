@@ -42,11 +42,16 @@ set_exception_handler(function (Throwable $e): void {
     exit(1);
 });
 
-// Load environment variables from .env if phpdotenv is available
-// and no env vars are set yet (Hostinger hPanel env vars take precedence).
-if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
-    $dotenv = \Dotenv\Dotenv::createImmutable(BASE_PATH);
-    $dotenv->safeLoad();
+// Load environment variables from .env. The whole app reads configuration via
+// getenv(), so we MUST use createUnsafeImmutable() — it registers the putenv
+// adapter so .env values become visible to getenv(). createImmutable() only
+// populates $_ENV/$_SERVER, which is why a .env file appeared to "not work".
+//
+// Look one level ABOVE the web root first (outside the deploy target, so the
+// .env survives every deploy), then the web root itself. Immutable = real
+// hPanel env vars, if any, still take precedence over the file.
+if (class_exists(\Dotenv\Dotenv::class)) {
+    \Dotenv\Dotenv::createUnsafeImmutable([dirname(BASE_PATH), BASE_PATH])->safeLoad();
 }
 
 use App\Controllers\Admin\AdminAnalyticsController;
@@ -459,9 +464,8 @@ $router->get('api/flights/:id', function (Request $req): void {
 
 $router->get('api/config/payment-mode', function (Request $req): void {
     $isTest = false;
-    $cfgFile = BASE_PATH . '/config/apis.php';
-    if (file_exists($cfgFile)) {
-        $cfg    = require $cfgFile;
+    $cfg    = \App\Helpers\ConfigLoader::load('apis');
+    if ($cfg) {
         $apiKey = $cfg['duffel']['api_key'] ?? '';
         $isTest = str_starts_with($apiKey, 'duffel_test_');
     }
@@ -476,10 +480,9 @@ $router->get('api/config/payment-mode', function (Request $req): void {
 // ---------------------------------------------------------------------------
 
 $router->get('api/config/stripe-key', function (Request $req): void {
-    $cfgFile = BASE_PATH . '/config/apis.php';
+    $cfg = \App\Helpers\ConfigLoader::load('apis');
     $key = '';
-    if (file_exists($cfgFile)) {
-        $cfg = require $cfgFile;
+    if ($cfg) {
         $key = $cfg['stripe']['publishable_key'] ?? $cfg['stripe']['public_key'] ?? '';
     }
     if (!$key) $key = getenv('STRIPE_PUBLISHABLE_KEY') ?: '';
