@@ -60,7 +60,10 @@ class WebhookController
             $this->respond(400, ['error' => 'invalid_signature']);
         }
 
-        $lockName   = 'stripe_webhook_' . $eventId;
+        // Lock on the affected resource (the PaymentIntent), not the event id, so
+        // that two *different* events touching the same payment serialize.
+        $resourceId = $payload['data']['object']['id'] ?? $eventId;
+        $lockName   = 'stripe_pi_' . $resourceId;
         $lockAcquired = $this->acquireLock($lockName, 5);
 
         if (!$lockAcquired) {
@@ -72,7 +75,9 @@ class WebhookController
             $this->updateWebhookLog('stripe', $eventId, true, $result);
             $this->respond(200, ['status' => 'ok', 'result' => $result]);
         } catch (\Throwable $e) {
-            $this->updateWebhookLog('stripe', $eventId, true, 'error: ' . $e->getMessage());
+            // Mark unprocessed (processed = false) so the failure is visible to
+            // ops monitoring instead of being recorded as a success.
+            $this->updateWebhookLog('stripe', $eventId, false, 'error: ' . $e->getMessage());
             $this->respond(500, ['error' => 'processing_error']);
         } finally {
             $this->releaseLock($lockName);
@@ -103,7 +108,10 @@ class WebhookController
             $this->respond(400, ['error' => 'invalid_signature']);
         }
 
-        $lockName    = 'duffel_webhook_' . $eventId;
+        // Lock on the affected order, not the event id, so different events for
+        // the same order (created / payment_status_updated / cancelled) serialize.
+        $resourceId  = $payload['data']['order_id'] ?? $payload['data']['id'] ?? $eventId;
+        $lockName    = 'duffel_order_' . $resourceId;
         $lockAcquired = $this->acquireLock($lockName, 5);
 
         if (!$lockAcquired) {
@@ -115,7 +123,8 @@ class WebhookController
             $this->updateWebhookLog('duffel', $eventId, true, $result);
             $this->respond(200, ['status' => 'ok', 'result' => $result]);
         } catch (\Throwable $e) {
-            $this->updateWebhookLog('duffel', $eventId, true, 'error: ' . $e->getMessage());
+            // Mark unprocessed (processed = false) so the failure is visible to ops.
+            $this->updateWebhookLog('duffel', $eventId, false, 'error: ' . $e->getMessage());
             $this->respond(500, ['error' => 'processing_error']);
         } finally {
             $this->releaseLock($lockName);
@@ -196,7 +205,13 @@ class WebhookController
                 return 'flight_booking_completed';
             }
         } catch (\Throwable $e) {
-            // Log and return error detail so webhook_logs captures it
+            // The frontend confirmCheckout is the primary completion path, so a
+            // failure here is not necessarily a lost booking — but it must be
+            // visible to ops. Log loudly and return the detail for webhook_logs.
+            error_log(sprintf(
+                '[WEBHOOK_BOOKING_COMPLETION_FAILED] intent=%s type=%s | %s',
+                $intentId, $bookingType, $e->getMessage()
+            ));
             return 'booking_completion_error: ' . $e->getMessage();
         }
 
@@ -686,8 +701,12 @@ class WebhookController
     }
 
     /**
-     * Duffel uses HMAC-SHA256 with the raw body.
-     * @see https://duffel.com/docs/guides/webhooks
+     * Duffel signs webhooks with a Stripe-style timestamped scheme:
+     * header `X-Duffel-Signature: t=<timestamp>,v1=<hmac>` where the HMAC-SHA256
+     * is computed over `"<timestamp>.<raw_body>"`. A bare `sha256=<digest>` over
+     * the body (the previous implementation) never matches, so every live
+     * webhook was rejected.
+     * @see https://duffel.com/docs/guides/receiving-webhooks
      */
     private function validateDuffelSignature(string $payload, string $signature, string $secret): bool
     {
@@ -695,8 +714,30 @@ class WebhookController
             return false;
         }
 
-        $expected = 'sha256=' . hash_hmac('sha256', $payload, $secret);
-        return SecurityHelper::safeCompare($expected, $signature);
+        $parts     = [];
+        $tolerance = 300; // 5 minutes
+
+        foreach (explode(',', $signature) as $part) {
+            [$k, $v] = array_pad(explode('=', $part, 2), 2, '');
+            $parts[$k] = $v;
+        }
+
+        $timestamp = (int) ($parts['t'] ?? 0);
+        $v1        = $parts['v1'] ?? '';
+
+        // If no timestamped parts were present, fall back to the legacy bare
+        // `sha256=` digest so older/test deliveries still validate.
+        if ($timestamp === 0 && $v1 === '') {
+            $legacy = 'sha256=' . hash_hmac('sha256', $payload, $secret);
+            return SecurityHelper::safeCompare($legacy, $signature);
+        }
+
+        if (abs(time() - $timestamp) > $tolerance) {
+            return false;
+        }
+
+        $expected = hash_hmac('sha256', $timestamp . '.' . $payload, $secret);
+        return SecurityHelper::safeCompare($expected, $v1);
     }
 
     // =========================================================================

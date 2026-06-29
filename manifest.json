@@ -24,17 +24,17 @@
   "shortcuts": [
     {
       "name": "Search Flights",
-      "url": "/flights/search",
+      "url": "/flights.html",
       "description": "Search for flights"
     },
     {
       "name": "Search Hotels",
-      "url": "/hotels/search",
+      "url": "/hotels.html",
       "description": "Search for hotels"
     },
     {
       "name": "My Bookings",
-      "url": "/bookings",
+      "url": "/dashboard.html",
       "description": "View my bookings"
     }
   ]

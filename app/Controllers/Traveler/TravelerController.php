@@ -34,11 +34,56 @@ class TravelerController
         Response::json(['success' => true, 'data' => $travelers]);
     }
 
+    /**
+     * Validate + normalise traveler input against the NOT NULL / enum columns.
+     * Returns an error message (Arabic) or null when the payload is valid.
+     * Normalises gender and document_type in place.
+     */
+    private function validateTraveler(array &$b): ?string
+    {
+        $required = [
+            'first_name'    => 'الاسم الأول',
+            'last_name'     => 'اسم العائلة',
+            'gender'        => 'الجنس',
+            'nationality'   => 'الجنسية',
+            'date_of_birth' => 'تاريخ الميلاد',
+        ];
+        foreach ($required as $field => $label) {
+            if (empty($b[$field])) {
+                return "الحقل المطلوب مفقود: {$label}";
+            }
+        }
+
+        // expiry_date is NOT NULL in the schema (accept document_expiry alias).
+        if (empty($b['expiry_date']) && empty($b['document_expiry'])) {
+            return 'تاريخ انتهاء الوثيقة مطلوب';
+        }
+
+        $gender = strtolower((string) $b['gender']);
+        if (!in_array($gender, ['male', 'female'], true)) {
+            return 'قيمة الجنس غير صالحة';
+        }
+        $b['gender'] = $gender;
+
+        $docType = strtolower((string) ($b['document_type'] ?? 'passport'));
+        if (!in_array($docType, ['passport', 'civil_id', 'national_id'], true)) {
+            $docType = 'passport';
+        }
+        $b['document_type'] = $docType;
+
+        return null;
+    }
+
     public function store(Request $request): void
     {
         $userId = $this->userId();
         $b = $request->json();
         if (!is_array($b)) $b = [];
+
+        if ($err = $this->validateTraveler($b)) {
+            Response::error($err, 422);
+            return;
+        }
 
         $stmt = $this->pdo->prepare('
             INSERT INTO travelers (user_id, title, first_name, middle_name, last_name, gender, nationality,
@@ -86,6 +131,11 @@ class TravelerController
         $id = (int) $request->param('id');
         $b = $request->json();
         if (!is_array($b)) $b = [];
+
+        if ($err = $this->validateTraveler($b)) {
+            Response::error($err, 422);
+            return;
+        }
 
         $docIssue  = $b['issue_date'] ?? $b['document_issue'] ?? null;
         $docExpiry = $b['expiry_date'] ?? $b['document_expiry'] ?? null;

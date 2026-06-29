@@ -383,16 +383,32 @@ class FlightBookingService
         // Amount in pence (minor units).
         $amountInPence = (int) round($stripeAmount * 100);
 
-        $idempotencyKey = bin2hex(random_bytes(32));
+        // C-01 hardening: reuse the idempotency key already minted for this
+        // session when the charge amount/currency is unchanged, so a retry or
+        // double-submit returns the SAME Stripe PaymentIntent instead of
+        // creating a second one. A genuine re-price (different amount) mints a
+        // fresh key. The key is persisted on booking_sessions.idempotency_key.
+        $idemTag   = $amountInPence . ':' . strtolower((string) $currency);
+        $storedKey = (string) ($session['idempotency_key'] ?? '');
+        $storedTag = (string) ($pricingSnapshot['idem_tag'] ?? '');
+        $idempotencyKey = ($storedKey !== '' && $storedTag !== '' && hash_equals($storedTag, $idemTag))
+            ? $storedKey
+            : bin2hex(random_bytes(32));
+        $pricingSnapshot['idem_tag'] = $idemTag;
 
-        // Insert payment record (placeholder booking_id = 0).
+        // Upsert payment record (placeholder booking_id = 0). Keyed on the unique
+        // idempotency_key so reusing the key updates the existing row rather than
+        // violating the uq_idempotency constraint.
         $payStmt = $this->db->prepare(
             'INSERT INTO payments
                (booking_type, booking_id, user_id, payment_method,
                 idempotency_key, amount, currency, status)
              VALUES
                (:booking_type, 0, :user_id, :method,
-                :idem_key, :amount, :currency, :status)'
+                :idem_key, :amount, :currency, :status)
+             ON DUPLICATE KEY UPDATE
+                amount = VALUES(amount), currency = VALUES(currency),
+                payment_method = VALUES(payment_method)'
         );
         $payStmt->execute([
             ':booking_type' => 'flight',
@@ -403,7 +419,6 @@ class FlightBookingService
             ':currency'     => strtoupper($currency),
             ':status'       => 'pending',
         ]);
-        $paymentId = (int) $this->db->lastInsertId();
 
         // Create Stripe PaymentIntent.
         $stripeResult = $this->stripe->createPaymentIntent(
@@ -419,10 +434,11 @@ class FlightBookingService
 
         $paymentIntentId = $stripeResult['payment_intent_id'];
 
-        // Update payment row with Stripe PI id.
+        // Update payment row with Stripe PI id (keyed on idempotency_key so it
+        // works for both the insert and the reuse/upsert path above).
         $this->db->prepare(
-            'UPDATE payments SET stripe_payment_intent_id = :pi WHERE id = :id'
-        )->execute([':pi' => $paymentIntentId, ':id' => $paymentId]);
+            'UPDATE payments SET stripe_payment_intent_id = :pi WHERE idempotency_key = :k'
+        )->execute([':pi' => $paymentIntentId, ':k' => $idempotencyKey]);
 
         // Update session.
         $this->sessionService->update($sessionKey, [
@@ -795,6 +811,15 @@ class FlightBookingService
 
         $offerId = $session['provider_offer_id'];
         $userId  = (int) $session['user_id'];
+
+        // Idempotency guard: if this session already produced a booking — e.g.
+        // the Stripe webhook (onStripePaymentSucceeded) and the frontend
+        // confirmCheckout race, or the webhook is retried — return the existing
+        // booking instead of creating a second Duffel order / booking row.
+        if (($session['current_step'] ?? '') === 'complete') {
+            $this->step('IDEMPOTENT_RETURN', 'SUCCESS', ['session_id' => $session['id'] ?? '?']);
+            return $this->fetchCompletedBookingResult($userId, $paymentIntentId);
+        }
 
         $this->step('OFFER_LOAD', 'START', ['offer_id' => $offerId]);
         $offer = $this->fetchOffer($offerId);
@@ -1936,7 +1961,7 @@ class FlightBookingService
 
         // Load original payment record
         $payStmt = $this->db->prepare(
-            'SELECT id, stripe_payment_intent_id, amount, currency FROM payments
+            'SELECT id, stripe_payment_intent_id, amount, currency, payment_method FROM payments
              WHERE booking_type = :bt AND booking_id = :bid AND status = :status
              LIMIT 1'
         );
@@ -1975,8 +2000,23 @@ class FlightBookingService
         elseif ($payment && !empty($payment['stripe_payment_intent_id'])) {
             $stripeChargeCurrency = strtoupper($payment['currency'] ?? 'GBP');
 
+            // Mixed (wallet + card) payments: the payment row only holds the card
+            // portion, so auto-refunding the full Duffel amount to the card would
+            // over-refund the card and never return the wallet portion. Route to
+            // manual refund so ops returns each portion to its source correctly.
+            if (($payment['payment_method'] ?? '') === 'mixed') {
+                error_log(sprintf(
+                    '[MANUAL_REFUND_REQUIRED|MIXED] BookingID=%d cardPortion=%s %s duffelRefund=%s %s',
+                    $bookingId, $payment['amount'], $stripeChargeCurrency,
+                    (string) $duffelRefundAmount, $duffelRefundCurrency
+                ));
+                $this->db->prepare(
+                    'UPDATE payments SET status = :s, updated_at = NOW() WHERE id = :id'
+                )->execute([':s' => 'refund_pending_manual', ':id' => $payment['id']]);
+                $finalStatus = 'cancellation_pending_manual_refund';
+            }
             // Currency mismatch: cannot safely convert — flag for manual processing.
-            if ($duffelRefundAmount !== null && $duffelRefundCurrency !== $stripeChargeCurrency) {
+            elseif ($duffelRefundAmount !== null && $duffelRefundCurrency !== $stripeChargeCurrency) {
                 error_log(sprintf(
                     '[MANUAL_REFUND_REQUIRED] BookingID=%d DuffelRefund=%s %s StripeCharge=%s %s',
                     $bookingId, $duffelRefundAmount, $duffelRefundCurrency,

@@ -277,7 +277,7 @@
     try {
       const res = await Api.get(`/api/admin/bookings?${params}`, true);
       const list = res.data || res.bookings || (Array.isArray(res) ? res : []);
-      const total = res.total || list.length;
+      const total = (res.meta && res.meta.total) || res.total || list.length;
       document.getElementById('totalCount').textContent = `${total} حجز`;
       if (!list.length) { document.getElementById('emptyState').style.display = 'block'; return; }
       document.getElementById('tableWrapper').style.display = 'block';

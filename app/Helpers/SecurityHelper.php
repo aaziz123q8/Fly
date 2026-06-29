@@ -42,13 +42,19 @@ class SecurityHelper
             throw new \RuntimeException('Invalid base64 payload.');
         }
 
-        $separatorPos = strpos($data, ':');
-        if ($separatorPos === false) {
+        // The IV is a fixed-length raw block ( openssl_cipher_iv_length() = 16
+        // bytes for AES-256-CBC ) followed by a ':' separator, then the
+        // ciphertext. We MUST split on the fixed IV length rather than the first
+        // ':' byte — a random IV byte can itself be 0x3A (':'), which made the
+        // old strpos()-based split fail for ~6% of records. This split is
+        // backward-compatible with everything encrypt() has ever produced.
+        $ivLength = openssl_cipher_iv_length(self::$cipher);
+        if (strlen($data) <= $ivLength || $data[$ivLength] !== ':') {
             throw new \RuntimeException('Malformed encrypted payload.');
         }
 
-        $iv         = substr($data, 0, $separatorPos);
-        $ciphertext = substr($data, $separatorPos + 1);
+        $iv         = substr($data, 0, $ivLength);
+        $ciphertext = substr($data, $ivLength + 1);
 
         $plaintext = openssl_decrypt($ciphertext, self::$cipher, $key, OPENSSL_RAW_DATA, $iv);
 

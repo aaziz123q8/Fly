@@ -201,9 +201,9 @@
   async function loadBookingStats() {
     const el = document.getElementById('bookingStats');
     try {
-      const res = await Api.get('/api/admin/bookings?limit=100', true);
+      const res = await Api.get('/api/admin/bookings?per_page=100', true);
       const list = res.data || res.bookings || [];
-      const flights = list.filter(b => b.type === 'flight').length;
+      const flights = list.filter(b => (b.booking_type || b.type) === 'flight').length;
       const hotels = list.length - flights;
       const confirmed = list.filter(b => b.status === 'confirmed').length;
       const pending = list.filter(b => b.status === 'pending').length;
