@@ -701,8 +701,12 @@ class WebhookController
     }
 
     /**
-     * Duffel uses HMAC-SHA256 with the raw body.
-     * @see https://duffel.com/docs/guides/webhooks
+     * Duffel signs webhooks with a Stripe-style timestamped scheme:
+     * header `X-Duffel-Signature: t=<timestamp>,v1=<hmac>` where the HMAC-SHA256
+     * is computed over `"<timestamp>.<raw_body>"`. A bare `sha256=<digest>` over
+     * the body (the previous implementation) never matches, so every live
+     * webhook was rejected.
+     * @see https://duffel.com/docs/guides/receiving-webhooks
      */
     private function validateDuffelSignature(string $payload, string $signature, string $secret): bool
     {
@@ -710,8 +714,30 @@ class WebhookController
             return false;
         }
 
-        $expected = 'sha256=' . hash_hmac('sha256', $payload, $secret);
-        return SecurityHelper::safeCompare($expected, $signature);
+        $parts     = [];
+        $tolerance = 300; // 5 minutes
+
+        foreach (explode(',', $signature) as $part) {
+            [$k, $v] = array_pad(explode('=', $part, 2), 2, '');
+            $parts[$k] = $v;
+        }
+
+        $timestamp = (int) ($parts['t'] ?? 0);
+        $v1        = $parts['v1'] ?? '';
+
+        // If no timestamped parts were present, fall back to the legacy bare
+        // `sha256=` digest so older/test deliveries still validate.
+        if ($timestamp === 0 && $v1 === '') {
+            $legacy = 'sha256=' . hash_hmac('sha256', $payload, $secret);
+            return SecurityHelper::safeCompare($legacy, $signature);
+        }
+
+        if (abs(time() - $timestamp) > $tolerance) {
+            return false;
+        }
+
+        $expected = hash_hmac('sha256', $timestamp . '.' . $payload, $secret);
+        return SecurityHelper::safeCompare($expected, $v1);
     }
 
     // =========================================================================

@@ -222,16 +222,30 @@ class HotelBookingService
         }
 
         $amountInPence  = (int) round($totalAmount * 100);
-        $idempotencyKey = bin2hex(random_bytes(32));
 
-        // ── Insert payment record ────────────────────────────────────────────
+        // C-01 hardening: reuse the idempotency key already minted for this
+        // session when the charge amount/currency is unchanged, so a retry or
+        // double-submit returns the SAME Stripe PaymentIntent instead of
+        // creating a second one. A genuine re-price mints a fresh key.
+        $idemTag   = $amountInPence . ':' . strtolower((string) $currency);
+        $storedKey = (string) ($session['idempotency_key'] ?? '');
+        $storedTag = (string) ($pricingSnapshot['idem_tag'] ?? '');
+        $idempotencyKey = ($storedKey !== '' && $storedTag !== '' && hash_equals($storedTag, $idemTag))
+            ? $storedKey
+            : bin2hex(random_bytes(32));
+        $pricingSnapshot['idem_tag'] = $idemTag;
+
+        // ── Upsert payment record (keyed on the unique idempotency_key) ──────
         $payStmt = $this->db->prepare(
             'INSERT INTO payments
                (booking_type, booking_id, user_id, payment_method,
                 idempotency_key, amount, currency, status)
              VALUES
                (:booking_type, 0, :user_id, :method,
-                :idem_key, :amount, :currency, :status)'
+                :idem_key, :amount, :currency, :status)
+             ON DUPLICATE KEY UPDATE
+                amount = VALUES(amount), currency = VALUES(currency),
+                payment_method = VALUES(payment_method)'
         );
         $payStmt->execute([
             ':booking_type' => 'hotel',
@@ -242,7 +256,6 @@ class HotelBookingService
             ':currency'     => strtoupper($currency),
             ':status'       => 'pending',
         ]);
-        $paymentId = (int) $this->db->lastInsertId();
 
         // ── Create Stripe PaymentIntent ──────────────────────────────────────
         $stripeResult = $this->stripe->createPaymentIntent(
@@ -258,10 +271,10 @@ class HotelBookingService
 
         $paymentIntentId = $stripeResult['payment_intent_id'];
 
-        // ── Update payment row with Stripe PI id ─────────────────────────────
+        // ── Update payment row with Stripe PI id (keyed on idempotency_key) ──
         $this->db->prepare(
-            'UPDATE payments SET stripe_payment_intent_id = :pi WHERE id = :id'
-        )->execute([':pi' => $paymentIntentId, ':id' => $paymentId]);
+            'UPDATE payments SET stripe_payment_intent_id = :pi WHERE idempotency_key = :k'
+        )->execute([':pi' => $paymentIntentId, ':k' => $idempotencyKey]);
 
         // ── Update session ───────────────────────────────────────────────────
         $this->sessionService->update($sessionKey, [
