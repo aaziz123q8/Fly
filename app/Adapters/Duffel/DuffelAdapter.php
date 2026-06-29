@@ -21,7 +21,14 @@ class DuffelAdapter
         }
         $this->apiKey  = $config['api_key']  ?? (getenv('DUFFEL_API_KEY')  ?: '');
         $this->baseUrl = $config['base_url'] ?? (getenv('DUFFEL_BASE_URL') ?: 'https://api.duffel.com');
-        $this->version = $config['version']  ?? 'v2';
+        // Duffel's current stable API version is v2 and this adapter targets v2
+        // endpoints/payloads. Ignore a stale 'v1' carried over from old config
+        // templates: drive the version from DUFFEL_VERSION (default 'v2'), and
+        // only honour a config-file value when it explicitly opts into v2+.
+        $configured = (string) ($config['version'] ?? '');
+        $this->version = ($configured !== '' && $configured !== 'v1')
+            ? $configured
+            : (getenv('DUFFEL_VERSION') ?: 'v2');
     }
 
     // =========================================================================

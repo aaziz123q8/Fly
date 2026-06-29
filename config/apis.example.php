@@ -7,7 +7,7 @@ return [
     'duffel' => [
         'api_key'    => 'YOUR_DUFFEL_API_KEY',
         'base_url'   => 'https://api.duffel.com',
-        'version'    => 'v1',
+        'version'    => 'v2',
         'webhook_secret' => 'YOUR_DUFFEL_WEBHOOK_SECRET',
     ],
 
