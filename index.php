@@ -42,11 +42,16 @@ set_exception_handler(function (Throwable $e): void {
     exit(1);
 });
 
-// Load environment variables from .env if phpdotenv is available
-// and no env vars are set yet (Hostinger hPanel env vars take precedence).
-if (class_exists(\Dotenv\Dotenv::class) && file_exists(BASE_PATH . '/.env')) {
-    $dotenv = \Dotenv\Dotenv::createImmutable(BASE_PATH);
-    $dotenv->safeLoad();
+// Load environment variables from .env. The whole app reads configuration via
+// getenv(), so we MUST use createUnsafeImmutable() — it registers the putenv
+// adapter so .env values become visible to getenv(). createImmutable() only
+// populates $_ENV/$_SERVER, which is why a .env file appeared to "not work".
+//
+// Look one level ABOVE the web root first (outside the deploy target, so the
+// .env survives every deploy), then the web root itself. Immutable = real
+// hPanel env vars, if any, still take precedence over the file.
+if (class_exists(\Dotenv\Dotenv::class)) {
+    \Dotenv\Dotenv::createUnsafeImmutable([dirname(BASE_PATH), BASE_PATH])->safeLoad();
 }
 
 use App\Controllers\Admin\AdminAnalyticsController;
