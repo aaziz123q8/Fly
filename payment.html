@@ -297,45 +297,31 @@
     #stripe-element.StripeElement--focus  { border-color: var(--pay-accent); }
     #stripe-element.StripeElement--invalid { border-color: var(--pay-red); }
 
-    /* ── Enhanced card fields (split Stripe Elements) ────── */
-    .card-fields-wrap {
-      background: linear-gradient(135deg, #f8fbff, #eef5fc);
-      border: 1px solid #e2ecf6; border-radius: 16px;
-      padding: 16px; margin-top: 4px;
-    }
-    .card-fields-head {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 14px;
-    }
-    .cfh-title {
-      font-weight: 800; color: var(--pay-primary); font-size: 0.92rem;
-      display: flex; align-items: center; gap: 7px;
-    }
-    .card-brands { display: flex; gap: 8px; align-items: center; }
-    .pay-field { margin-bottom: 13px; }
-    .pay-field:last-child { margin-bottom: 0; }
+    /* ── Card fields (split Stripe Elements, native look) ── */
+    .pay-field { margin-bottom: 14px; }
     .pay-field-label {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 0.78rem; font-weight: 700; color: #374151; margin-bottom: 7px;
+      display: block; font-size: 0.8rem; font-weight: 600;
+      color: #374151; margin-bottom: 6px;
     }
+    /* The Stripe field is styled to look identical to a native site input. */
     .stripe-field {
-      padding: 13px 14px;
+      width: 100%; padding: 12px 14px;
       border: 1.5px solid var(--pay-border);
-      border-radius: 12px; background: #fff;
+      border-radius: 10px; background: #fff;
       transition: border-color .2s, box-shadow .2s;
       direction: ltr;
     }
     .stripe-field.StripeElement--focus {
       border-color: var(--pay-accent);
-      box-shadow: 0 0 0 4px rgba(14,165,233,.12);
+      box-shadow: 0 0 0 3px rgba(14,165,233,.1);
     }
     .stripe-field.StripeElement--invalid { border-color: var(--pay-red); }
     .stripe-field.StripeElement--complete { border-color: var(--pay-green); }
     .card-row { display: flex; gap: 12px; }
     .card-row .pay-field { flex: 1; margin-bottom: 0; }
     .stripe-err {
-      color: var(--pay-red); font-size: 0.8rem; margin-top: 9px;
-      min-height: 1em; display: flex; align-items: center; gap: 5px;
+      color: var(--pay-red); font-size: 0.8rem; margin-top: 8px;
+      min-height: 1em;
     }
     .stripe-unavailable {
       padding: 16px; border-radius: 12px;
@@ -584,47 +570,36 @@
 
         <!-- Cardholder name -->
         <div class="pay-field">
-          <label class="pay-field-label" for="cardName">👤 اسم حامل البطاقة</label>
+          <label class="pay-field-label" for="cardName">اسم حامل البطاقة</label>
           <input type="text" class="form-inp" id="cardName"
             placeholder="الاسم كما هو مكتوب على البطاقة"
             autocomplete="cc-name" dir="ltr">
         </div>
 
-        <!-- Card details (Stripe Elements, split fields) -->
-        <div class="card-fields-wrap">
-          <div class="card-fields-head">
-            <span class="cfh-title">💳 بيانات البطاقة</span>
-            <span class="card-brands">
-              <span class="card-logo-text card-logo-visa">VISA</span>
-              <span class="card-logo-text card-logo-mc">MC</span>
-              <span class="card-logo-text card-logo-amex">AMEX</span>
-            </span>
+        <div id="stripeFields">
+          <!-- Card number (brand icon appears inside the field as you type) -->
+          <div class="pay-field">
+            <label class="pay-field-label">رقم البطاقة</label>
+            <div class="stripe-field" id="cardNumber-el"></div>
           </div>
-
-          <div id="stripeFields">
+          <!-- Expiry (month/year) + CVC -->
+          <div class="card-row">
             <div class="pay-field">
-              <label class="pay-field-label">رقم البطاقة</label>
-              <div class="stripe-field" id="cardNumber-el"></div>
+              <label class="pay-field-label">تاريخ الانتهاء (شهر/سنة)</label>
+              <div class="stripe-field" id="cardExpiry-el"></div>
             </div>
-            <div class="card-row">
-              <div class="pay-field">
-                <label class="pay-field-label">تاريخ الانتهاء</label>
-                <div class="stripe-field" id="cardExpiry-el"></div>
-              </div>
-              <div class="pay-field">
-                <label class="pay-field-label">CVC / CVV</label>
-                <div class="stripe-field" id="cardCvc-el"></div>
-              </div>
+            <div class="pay-field">
+              <label class="pay-field-label">CVC</label>
+              <div class="stripe-field" id="cardCvc-el"></div>
             </div>
-            <div id="stripeCardError" class="stripe-err"></div>
           </div>
+          <div id="stripeCardError" class="stripe-err"></div>
+        </div>
 
-          <!-- Shown only when Stripe can't load (e.g. publishable key not configured) -->
-          <div id="stripeUnavailable" class="stripe-unavailable" style="display:none">
-            ⚠️ تعذّر تحميل نظام الدفع الآمن.
-            <br>يرجى تحديث الصفحة والمحاولة مرة أخرى.
-            <button type="button" class="stripe-retry-btn" onclick="location.reload()">🔄 إعادة المحاولة</button>
-          </div>
+        <!-- Shown only when Stripe can't load (e.g. publishable key not configured) -->
+        <div id="stripeUnavailable" class="stripe-unavailable" style="display:none">
+          ⚠️ نظام الدفع غير مُفعّل بعد (مفتاح Stripe غير مُهيّأ على الخادم).
+          <button type="button" class="stripe-retry-btn" onclick="location.reload()">🔄 إعادة المحاولة</button>
         </div>
       </div>
 
