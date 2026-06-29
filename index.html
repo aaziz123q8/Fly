@@ -858,8 +858,9 @@ document.addEventListener('DOMContentLoaded', () => {
   dpHotel = new DatePicker(document.getElementById('hIn'), {
     mode:'range', minDate:today,
     onSelect(s, e, dp) {
-      if (s) { document.getElementById('hIn').value = dp._fmt(s); document.getElementById('hIn').classList.add('ok'); }
-      if (e) { document.getElementById('hOut').value = dp._fmt(e); document.getElementById('hOut').classList.add('ok'); }
+      const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      if (s) { const el=document.getElementById('hIn');  el.value = dp._fmt(s); el.classList.add('ok'); el.dataset.iso = iso(s); }
+      if (e) { const el=document.getElementById('hOut'); el.value = dp._fmt(e); el.classList.add('ok'); el.dataset.iso = iso(e); }
     }
   });
   document.getElementById('hOut').addEventListener('click', (e) => { e.stopPropagation(); dpHotel.show(); });
@@ -913,8 +914,11 @@ function flightCard(fl) {
 
 function searchHotels() {
   const dest = document.getElementById('hDest').value.trim();
+  const ci = document.getElementById('hIn').dataset.iso  || '';
+  const co = document.getElementById('hOut').dataset.iso || '';
   if (!dest) { toast(t('fill_dest'), 'err'); return; }
-  window.location.href = `hotels.html?dest=${encodeURIComponent(dest)}&rooms=${rm.rooms}&guests=${rm.guests}`;
+  if (!ci || !co) { toast(t('fill_fields'), 'err'); return; }
+  window.location.href = `hotels.html?dest=${encodeURIComponent(dest)}&checkin=${ci}&checkout=${co}&rooms=${rm.rooms}&guests=${rm.guests}`;
 }
 
 /* ── TOAST ── */

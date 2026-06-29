@@ -114,22 +114,36 @@
     try {
       const phone_country_code = document.getElementById('countryCode').value;
       const phone_number = document.getElementById('phone').value.replace(/\s/g,'');
+      const email = document.getElementById('email').value.trim();
       const res = await Api.post('/api/auth/register', {
         first_name: document.getElementById('firstName').value.trim(),
         last_name: document.getElementById('lastName').value.trim(),
-        email: document.getElementById('email').value.trim(),
+        email,
         password: pass,
         password_confirmation: pass,
         phone_country_code,
         phone_number,
       });
-      const token = res.session_token || res.token || res.access_token;
-      const user = res.user || res;
-      if (token) Auth.setSession(token, user);
+      let token = res.session_token || res.token || res.access_token;
+      let user = res.user || res;
+      // The register endpoint returns the user but no session token, so log the
+      // new user in with the same credentials before sending them to the dashboard.
+      if (!token) {
+        try {
+          const lr = await Api.post('/api/auth/login', { email, password: pass });
+          token = lr.session_token || lr.token || lr.access_token;
+          user  = lr.user || user;
+        } catch (_) { /* fall back to login page below */ }
+      }
       const el = document.getElementById('successAlert');
       el.textContent = '🎉 تم إنشاء الحساب بنجاح! جاري التحويل...';
       el.style.display = 'flex';
-      setTimeout(() => window.location.href = 'dashboard.html', 1200);
+      if (token) {
+        Auth.setSession(token, user);
+        setTimeout(() => window.location.href = 'dashboard.html', 1200);
+      } else {
+        setTimeout(() => window.location.href = 'login.html', 1200);
+      }
     } catch (err) {
       showError(err.message || 'حدث خطأ أثناء إنشاء الحساب، يرجى المحاولة مجدداً');
     } finally {

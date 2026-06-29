@@ -185,6 +185,25 @@ class JobWorker
                 (new EmailNotificationService($this->db))->sendAwaitingPaymentEmail($payload);
                 break;
 
+            // Queued by WebhookController::queueNotificationJob — payload only
+            // carries { booking_id, user_id } and is always a flight booking.
+            case 'flight_booking_confirmed':
+            case 'flight_payment_confirmed':
+                (new EmailNotificationService($this->db))
+                    ->sendBookingConfirmation($payload + ['booking_type' => 'flight']);
+                break;
+
+            case 'flight_cancellation_confirmed':
+                (new EmailNotificationService($this->db))->sendCancellationEmail($payload);
+                break;
+
+            // Ops alerts — no customer email; record so the job is not retried
+            // forever and ops can monitor via the error log / job history.
+            case 'order_creation_failed_alert':
+            case 'payment_failed_alert':
+                error_log('[OPS_ALERT|' . $job['job_type'] . '] ' . json_encode($payload));
+                break;
+
             default:
                 throw new \RuntimeException("Unknown job type: {$job['job_type']}");
         }

@@ -7,6 +7,7 @@ namespace App\Controllers\Admin;
 use App\Core\Request;
 use App\Core\Response;
 use App\Helpers\Database;
+use App\Middleware\AdminMiddleware;
 
 class AdminUsersController
 {
@@ -98,7 +99,22 @@ class AdminUsersController
     public function destroy(Request $request): void
     {
         $id   = (int) $request->param('id');
+
+        // Prevent an admin from deactivating their own account (lock-out).
+        $admin = AdminMiddleware::currentAdmin();
+        if ($id === (int) ($admin['user_id'] ?? 0)) {
+            Response::error('لا يمكنك تعطيل حسابك الخاص.', 422);
+            return;
+        }
+
         $db   = Database::getInstance();
+        $stmt = $db->prepare('SELECT id FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        if (!$stmt->fetch()) {
+            Response::error('المستخدم غير موجود.', 404);
+            return;
+        }
+
         $db->prepare('UPDATE users SET is_active = 0 WHERE id = ?')->execute([$id]);
         Response::noContent();
     }

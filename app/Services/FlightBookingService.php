@@ -796,6 +796,15 @@ class FlightBookingService
         $offerId = $session['provider_offer_id'];
         $userId  = (int) $session['user_id'];
 
+        // Idempotency guard: if this session already produced a booking — e.g.
+        // the Stripe webhook (onStripePaymentSucceeded) and the frontend
+        // confirmCheckout race, or the webhook is retried — return the existing
+        // booking instead of creating a second Duffel order / booking row.
+        if (($session['current_step'] ?? '') === 'complete') {
+            $this->step('IDEMPOTENT_RETURN', 'SUCCESS', ['session_id' => $session['id'] ?? '?']);
+            return $this->fetchCompletedBookingResult($userId, $paymentIntentId);
+        }
+
         $this->step('OFFER_LOAD', 'START', ['offer_id' => $offerId]);
         $offer = $this->fetchOffer($offerId);
         if ($offer === null) {

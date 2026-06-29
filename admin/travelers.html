@@ -111,7 +111,7 @@
       const params = new URLSearchParams({ page: currentPage, limit: 20, search, status });
       const res = await Api.get(`/api/admin/travelers?${params}`, true);
       const list = res.data || res.users || (Array.isArray(res) ? res : []);
-      const total = res.total || res.count || list.length;
+      const total = (res.meta && res.meta.total) || res.total || res.count || list.length;
 
       document.getElementById('totalCount').textContent = `${total} مسافر`;
 

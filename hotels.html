@@ -245,6 +245,13 @@
     if(p.get('dest')) document.getElementById('hDest').value = p.get('dest');
     if(p.get('rooms')) { guestState.rooms=parseInt(p.get('rooms')); updateGuestsLabel(); }
     if(p.get('guests')) { guestState.adults=parseInt(p.get('guests')); updateGuestsLabel(); }
+    // Pre-fill dates passed from the homepage so the auto-search has valid dates.
+    if(p.get('checkin') && p.get('checkout')) {
+      checkinDate  = new Date(p.get('checkin')  + 'T00:00:00');
+      checkoutDate = new Date(p.get('checkout') + 'T00:00:00');
+      ci.value = dp._fmt(checkinDate);  ci.classList.add('filled');
+      co.value = dp._fmt(checkoutDate); co.classList.add('filled');
+    }
     if(p.get('dest')) doSearch();
 
     document.addEventListener('click', e=>{
@@ -378,7 +385,17 @@
 
   function bookHotel(id) {
     if(!Auth.isLoggedIn()) { showToast('يرجى تسجيل الدخول أولاً','warning'); setTimeout(()=>window.location.href='login.html',1500); return; }
-    window.location.href = 'booking.html?hotel='+id;
+    // Route into the hotel flow (hotel-detail → hotel-booking), carrying the
+    // search dates/occupancy so the detail page can prebook the right rate.
+    const qs = new URLSearchParams({
+      id,
+      check_in:  checkinDate  ? checkinDate.toISOString().split('T')[0]  : '',
+      check_out: checkoutDate ? checkoutDate.toISOString().split('T')[0] : '',
+      adults:   guestState.adults,
+      children: guestState.children,
+      rooms:    guestState.rooms
+    });
+    window.location.href = 'hotel-detail.html?' + qs.toString();
   }
 
   // formatPrice is provided by currency.js (loaded above)

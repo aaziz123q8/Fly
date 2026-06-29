@@ -127,8 +127,8 @@ class AdminSupportController
     {
         $id     = (int) $request->param('id');
         $status = (string) $request->input('status', '');
-        $allowed = ['open', 'in_progress', 'closed'];
-        if (!in_array($status, $allowed, true)) { Response::error('Invalid status.', 422); }
+        $allowed = ['open', 'pending', 'in_progress', 'resolved', 'closed'];
+        if (!in_array($status, $allowed, true)) { Response::error('Invalid status.', 422); return; }
 
         $db = Database::getInstance();
         $db->prepare('UPDATE support_tickets SET status = ?, updated_at = NOW() WHERE id = ?')->execute([$status, $id]);

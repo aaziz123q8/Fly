@@ -175,7 +175,7 @@
     try {
       const res = await Api.get(`/api/admin/notifications?${params}`, true);
       const list = res.data || res.notifications || (Array.isArray(res) ? res : []);
-      const total = res.total || res.meta?.total || list.length;
+      const total = (res.pagination && res.pagination.total) || res.meta?.total || res.total || list.length;
 
       document.getElementById('tableLoading').style.display = 'none';
       if (!list.length) { document.getElementById('emptyState').style.display = 'block'; return; }

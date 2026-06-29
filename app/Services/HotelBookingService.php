@@ -307,6 +307,13 @@ class HotelBookingService
 
         $userId = (int) $session['user_id'];
 
+        // Idempotency guard: if this session already produced a booking (webhook
+        // and frontend confirmCheckout race, or webhook retry), return the
+        // existing booking rather than creating a duplicate RateHawk booking.
+        if (($session['current_step'] ?? '') === 'complete') {
+            return $this->fetchCompletedBookingResult($userId);
+        }
+
         $guestsData = is_string($session['guests_data'])
             ? json_decode($session['guests_data'], true)
             : ($session['guests_data'] ?? []);
@@ -543,7 +550,7 @@ class HotelBookingService
                 if ($couponRow) {
                     $this->db->prepare(
                         'INSERT INTO coupon_usages
-                           (coupon_id, user_id, booking_type, booking_id, discount_amount, used_at)
+                           (coupon_id, user_id, booking_type, booking_id, discount_applied, used_at)
                          VALUES (?, ?, ?, ?, ?, NOW())'
                     )->execute([
                         $couponRow['id'],
