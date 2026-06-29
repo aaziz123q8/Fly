@@ -29,9 +29,7 @@ class WebhookController
     public function __construct(?PDO $db = null)
     {
         $this->db     = $db ?? Database::getInstance();
-        $this->config = file_exists(dirname(__DIR__, 3) . '/config/apis.php')
-            ? require dirname(__DIR__, 3) . '/config/apis.php'
-            : [];
+        $this->config = \App\Helpers\ConfigLoader::load('apis');
     }
 
     // =========================================================================

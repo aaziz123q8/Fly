@@ -16,12 +16,8 @@ class DuffelAdapter
 
     public function __construct(array $config = [])
     {
-        if (empty($config) && defined('BASE_PATH')) {
-            $cfgFile = BASE_PATH . '/config/apis.php';
-            if (file_exists($cfgFile)) {
-                $loaded = require $cfgFile;
-                $config = $loaded['duffel'] ?? [];
-            }
+        if (empty($config)) {
+            $config = \App\Helpers\ConfigLoader::load('apis')['duffel'] ?? [];
         }
         $this->apiKey  = $config['api_key']  ?? (getenv('DUFFEL_API_KEY')  ?: '');
         $this->baseUrl = $config['base_url'] ?? (getenv('DUFFEL_BASE_URL') ?: 'https://api.duffel.com');

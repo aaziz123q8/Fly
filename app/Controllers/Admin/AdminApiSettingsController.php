@@ -77,7 +77,7 @@ class AdminApiSettingsController
 
     public function testDuffel(Request $request): void
     {
-        $apisConfig = file_exists(BASE_PATH . '/config/apis.php') ? require BASE_PATH . '/config/apis.php' : [];
+        $apisConfig = \App\Helpers\ConfigLoader::load('apis');
         $key = $apisConfig['duffel']['api_key'] ?? getenv('DUFFEL_API_KEY') ?? '';
 
         if (!$key) {
@@ -104,7 +104,7 @@ class AdminApiSettingsController
 
     public function testRatehawk(Request $request): void
     {
-        $apisConfig = file_exists(BASE_PATH . '/config/apis.php') ? require BASE_PATH . '/config/apis.php' : [];
+        $apisConfig = \App\Helpers\ConfigLoader::load('apis');
         $apiKey    = $apisConfig['ratehawk']['api_key'] ?? getenv('RATEHAWK_API_KEY') ?? '';
         $apiSecret = $apisConfig['ratehawk']['api_secret'] ?? getenv('RATEHAWK_API_SECRET') ?? '';
 
@@ -132,7 +132,7 @@ class AdminApiSettingsController
 
     public function testStripe(Request $request): void
     {
-        $apisConfig = file_exists(BASE_PATH . '/config/apis.php') ? require BASE_PATH . '/config/apis.php' : [];
+        $apisConfig = \App\Helpers\ConfigLoader::load('apis');
         $key = $apisConfig['stripe']['secret_key'] ?? getenv('STRIPE_SECRET_KEY') ?? '';
 
         if (!$key) {

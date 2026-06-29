@@ -459,9 +459,8 @@ $router->get('api/flights/:id', function (Request $req): void {
 
 $router->get('api/config/payment-mode', function (Request $req): void {
     $isTest = false;
-    $cfgFile = BASE_PATH . '/config/apis.php';
-    if (file_exists($cfgFile)) {
-        $cfg    = require $cfgFile;
+    $cfg    = \App\Helpers\ConfigLoader::load('apis');
+    if ($cfg) {
         $apiKey = $cfg['duffel']['api_key'] ?? '';
         $isTest = str_starts_with($apiKey, 'duffel_test_');
     }
@@ -476,10 +475,9 @@ $router->get('api/config/payment-mode', function (Request $req): void {
 // ---------------------------------------------------------------------------
 
 $router->get('api/config/stripe-key', function (Request $req): void {
-    $cfgFile = BASE_PATH . '/config/apis.php';
+    $cfg = \App\Helpers\ConfigLoader::load('apis');
     $key = '';
-    if (file_exists($cfgFile)) {
-        $cfg = require $cfgFile;
+    if ($cfg) {
         $key = $cfg['stripe']['publishable_key'] ?? $cfg['stripe']['public_key'] ?? '';
     }
     if (!$key) $key = getenv('STRIPE_PUBLISHABLE_KEY') ?: '';

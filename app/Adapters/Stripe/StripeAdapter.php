@@ -21,12 +21,8 @@ class StripeAdapter
     public function __construct(array $config = [])
     {
         // Auto-load from config/apis.php if no config passed
-        if (empty($config) && defined('BASE_PATH')) {
-            $cfgFile = BASE_PATH . '/config/apis.php';
-            if (file_exists($cfgFile)) {
-                $loaded = require $cfgFile;
-                $config = $loaded['stripe'] ?? [];
-            }
+        if (empty($config)) {
+            $config = \App\Helpers\ConfigLoader::load('apis')['stripe'] ?? [];
         }
 
         $secretKey = $config['secret_key'] ?? (getenv('STRIPE_SECRET_KEY') ?: '');

@@ -26,9 +26,11 @@ class Database
             return self::$instance;
         }
 
-        $configFile = dirname(__DIR__, 2) . '/config/database.php';
+        // Look for config/database.php in the web root first, then one level
+        // above it (outside the deploy target, so deploys never wipe it).
+        $configFile = ConfigLoader::path('database');
 
-        if (file_exists($configFile)) {
+        if ($configFile !== null) {
             $config = require $configFile;
         } else {
             $config = [
