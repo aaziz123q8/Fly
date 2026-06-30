@@ -64,8 +64,8 @@ class User
     public function create(array $data): int
     {
         $stmt = $this->pdo->prepare(
-            'INSERT INTO users (email, password, first_name, last_name, phone_country_code, phone_number)
-                  VALUES (:email, :password, :first_name, :last_name, :phone_country_code, :phone_number)'
+            'INSERT INTO users (email, password, first_name, last_name, phone_country_code, phone_number, is_guest)
+                  VALUES (:email, :password, :first_name, :last_name, :phone_country_code, :phone_number, :is_guest)'
         );
 
         $stmt->execute([
@@ -75,6 +75,7 @@ class User
             ':last_name'          => $data['last_name'],
             ':phone_country_code' => $data['phone_country_code'],
             ':phone_number'       => $data['phone_number'],
+            ':is_guest'           => (int) ($data['is_guest'] ?? 0),
         ]);
 
         return (int) $this->pdo->lastInsertId();

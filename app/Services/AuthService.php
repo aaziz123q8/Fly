@@ -125,6 +125,85 @@ class AuthService
     }
 
     // -------------------------------------------------------------------------
+    // Guest checkout
+    // -------------------------------------------------------------------------
+
+    /**
+     * Create (or reuse) a guest account from the lead contact details and issue
+     * a session token, so the guest can complete the authenticated checkout flow.
+     * On their first confirmed booking the account is upgraded to a real one.
+     *
+     * @throws RuntimeException('email_has_account', 409) if a real (non-guest)
+     *         account already uses this email — the owner must log in instead
+     *         (prevents silent account takeover).
+     * @return array{user: array, session_token: string, expires_at: string}
+     */
+    public function createGuestSession(
+        string $email,
+        string $firstName,
+        string $lastName,
+        string $phoneCountryCode,
+        string $phoneNumber,
+        string $ip,
+        string $userAgent
+    ): array {
+        $email    = strtolower(trim($email));
+        $existing = $this->userModel->findByEmail($email);
+
+        if ($existing !== null) {
+            if (empty($existing['is_guest'])) {
+                throw new RuntimeException('email_has_account', 409);
+            }
+            $userId = (int) $existing['id'];
+            $this->userModel->update($userId, [
+                'first_name'         => $firstName,
+                'last_name'          => $lastName,
+                'phone_country_code' => $phoneCountryCode !== '' ? $phoneCountryCode : '+',
+                'phone_number'       => $phoneNumber,
+            ]);
+            $user = $this->userModel->findById($userId);
+        } else {
+            $randomHash = password_hash(bin2hex(random_bytes(16)), PASSWORD_ARGON2ID);
+            $userId = $this->userModel->create([
+                'email'              => $email,
+                'password'           => $randomHash,
+                'first_name'         => $firstName,
+                'last_name'          => $lastName,
+                'phone_country_code' => $phoneCountryCode !== '' ? $phoneCountryCode : '+',
+                'phone_number'       => $phoneNumber,
+                'is_guest'           => 1,
+            ]);
+            $user = $this->userModel->findById($userId);
+        }
+
+        if ($user === null) {
+            throw new RuntimeException('guest_create_failed', 500);
+        }
+
+        $token     = bin2hex(random_bytes(32));
+        $tokenHash = hash('sha256', $token);
+        $expiresAt = date('Y-m-d H:i:s', time() + self::SESSION_TTL);
+
+        $stmt = $this->pdo->prepare(
+            'INSERT INTO user_sessions (user_id, session_token, ip_address, user_agent, expires_at)
+                  VALUES (:user_id, :token, :ip, :ua, :expires_at)'
+        );
+        $stmt->execute([
+            ':user_id'    => $userId,
+            ':token'      => $tokenHash,
+            ':ip'         => $ip,
+            ':ua'         => $userAgent,
+            ':expires_at' => $expiresAt,
+        ]);
+
+        return [
+            'user'          => User::withoutPassword($user),
+            'session_token' => $token,
+            'expires_at'    => $expiresAt,
+        ];
+    }
+
+    // -------------------------------------------------------------------------
     // Logout
     // -------------------------------------------------------------------------
 

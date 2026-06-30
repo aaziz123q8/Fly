@@ -77,6 +77,22 @@ class FlightController
         try {
             $duffel = new DuffelAdapter();
             $data   = $duffel->getOffer($offerId, true);
+
+            // Apply the platform commission to the headline price so a guest (who
+            // sees this public offer before a checkout session exists) is shown
+            // the same price that will be charged at payment.
+            $commission = new \App\Services\CommissionService();
+            foreach (['total_amount'] as $k) {
+                if (isset($data[$k])) {
+                    $data['net_amount'] = $data[$k];
+                    $data[$k] = number_format($commission->markup((float) $data[$k], 'flight'), 2, '.', '');
+                }
+                if (isset($data['offer'][$k])) {
+                    $data['offer']['net_amount'] = $data['offer'][$k];
+                    $data['offer'][$k] = number_format($commission->markup((float) $data['offer'][$k], 'flight'), 2, '.', '');
+                }
+            }
+
             Response::json($data);
         } catch (\RuntimeException $e) {
             Response::error($e->getMessage(), $e->getCode() ?: 502);
@@ -147,6 +163,59 @@ class FlightController
             Response::json($result);
         } catch (\RuntimeException $e) {
             Response::error($e->getMessage(), $e->getCode() ?: 400);
+        }
+    }
+
+    /**
+     * Guest checkout entry point (no auth). Creates/reuses a guest account from
+     * the lead contact details, issues a session token, and starts checkout —
+     * so the rest of the (auth-required) flow works unchanged. On the first
+     * confirmed booking the guest is upgraded to a real account (see
+     * maybeCreateGuestAccount).
+     */
+    public function guestStart(Request $request): void
+    {
+        $errors = $request->validate([
+            'offer_id'     => 'required',
+            'email'        => 'required',
+            'first_name'   => 'required',
+            'phone_number' => 'required',
+        ]);
+        if (!empty($errors)) Response::validationError($errors);
+
+        $email = strtolower(trim((string) $request->input('email')));
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            Response::error('بريد إلكتروني غير صالح.', 422);
+            return;
+        }
+
+        try {
+            $session = (new AuthService())->createGuestSession(
+                $email,
+                (string) $request->input('first_name'),
+                (string) ($request->input('last_name') ?? ''),
+                (string) ($request->input('phone_country_code') ?? ''),
+                (string) $request->input('phone_number'),
+                $request->ip(),
+                $request->userAgent()
+            );
+
+            $start = $this->bookingService->startCheckout(
+                (string) $request->input('offer_id'),
+                (int) $session['user']['id']
+            );
+
+            Response::json(array_merge($start, [
+                'session_token' => $session['session_token'],
+                'expires_at'    => $session['expires_at'],
+                'user'          => $session['user'],
+                'guest'         => true,
+            ]));
+        } catch (\RuntimeException $e) {
+            $msg = $e->getMessage() === 'email_has_account'
+                ? 'هذا البريد لديه حساب بالفعل. يرجى تسجيل الدخول للمتابعة.'
+                : $e->getMessage();
+            Response::error($msg, $e->getCode() ?: 400);
         }
     }
 

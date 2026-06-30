@@ -177,16 +177,39 @@
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
 <script>
-  // Guest notice: show page normally; auth is enforced when the book button is clicked
+  // Guest checkout: the customer can either log in (saved travelers appear) or
+  // continue without an account (saved travelers hidden; an account is created
+  // automatically at payment and the password is emailed to them).
+  let guestMode = false;
   if (!Auth.isLoggedIn()) {
-    // Insert a notice banner after the script block loads
     document.addEventListener('DOMContentLoaded', function() {
       const notice = document.createElement('div');
-      notice.style.cssText = 'background:#fffbeb;border:2px solid #fde68a;border-radius:14px;padding:18px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px';
-      notice.innerHTML = '<span style="font-size:1.6rem">🔐</span><div><div style="font-weight:700;color:#92400e;margin-bottom:4px">لإتمام الحجز يرجى تسجيل الدخول أو إنشاء حساب</div><div style="font-size:.85rem;color:#78350f;margin-bottom:10px">يمكنك تصفح التفاصيل الآن والتسجيل عند الضغط على زر الحجز</div><div style="display:flex;gap:8px"><a href="login.html?redirect=booking.html' + encodeURIComponent(window.location.search) + '" class="btn btn-primary btn-sm">تسجيل الدخول</a><a href="register.html?redirect=booking.html' + encodeURIComponent(window.location.search) + '" class="btn btn-outline btn-sm">إنشاء حساب</a></div></div>';
+      notice.id = 'authChoiceNotice';
+      notice.style.cssText = 'background:#f0f7ff;border:2px solid #bfdbfe;border-radius:14px;padding:18px 20px;margin-bottom:20px';
+      notice.innerHTML = '<div style="font-weight:700;color:#1e40af;margin-bottom:4px">كيف تريد إتمام الحجز؟</div>'
+        + '<div style="font-size:.85rem;color:#475569;margin-bottom:12px">سجّل الدخول لاستخدام مسافريك المحفوظين، أو تابع كضيف وسننشئ لك حساباً تلقائياً ونرسل كلمة المرور إلى بريدك عند الدفع.</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+        + '<a href="login.html?redirect=booking.html' + encodeURIComponent(window.location.search) + '" class="btn btn-primary btn-sm">🔐 تسجيل الدخول</a>'
+        + '<button type="button" id="guestModeBtn" class="btn btn-outline btn-sm">👤 المتابعة بدون حساب</button>'
+        + '</div>';
       const container = document.querySelector('.booking-page .container') || document.querySelector('.container');
       if (container) container.prepend(notice);
+      document.getElementById('guestModeBtn')?.addEventListener('click', enableGuestMode);
     });
+  }
+
+  function enableGuestMode() {
+    guestMode = true;
+    const st = document.getElementById('savedTravelersSection');
+    if (st) st.style.display = 'none';
+    const n = document.getElementById('authChoiceNotice');
+    if (n) {
+      n.style.background = '#f0fdf4';
+      n.style.borderColor = '#bbf7d0';
+      n.innerHTML = '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:1.4rem">👤</span>'
+        + '<div style="font-size:.88rem;color:#166534"><b>أنت تتابع كضيف.</b> سيُنشأ حسابك تلقائياً وتُرسل كلمة المرور إلى بريدك بعد الدفع. '
+        + '<a href="login.html?redirect=booking.html' + encodeURIComponent(window.location.search) + '" style="color:#1e40af;font-weight:700">لديك حساب؟ سجّل الدخول</a></div></div>';
+    }
   }
 
   const params = new URLSearchParams(window.location.search);
@@ -272,7 +295,7 @@
       <div class="pax-form ${i===0?'active':''}" id="paxForm${i}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <div style="font-size:0.85rem;color:var(--text-muted);font-weight:600">${p.label} — ${p.type==='adult'?'بالغ (١٢+ سنة)':p.type==='child'?'طفل (٢–١١ سنة)':'رضيع (أقل من سنتين)'}</div>
-          <button type="button" class="btn btn-ghost btn-sm" onclick="loadSavedTraveler(${i})" style="font-size:0.8rem">📋 اختر من المحفوظين</button>
+          ${Auth.isLoggedIn() ? `<button type="button" class="btn btn-ghost btn-sm" onclick="loadSavedTraveler(${i})" style="font-size:0.8rem">📋 اختر من المحفوظين</button>` : ''}
         </div>
 
         <!-- Row 1: Title + Gender + Nationality -->
@@ -559,9 +582,16 @@
     const el = document.getElementById('flightInfoContent');
     if (!flightId) { el.innerHTML = '<p style="color:var(--error)">لم يتم تحديد رحلة</p>'; return; }
     try {
-      // Start checkout session — this prices the offer and returns a session key
-      const res = await Api.post('/api/flights/checkout/start', { offer_id: flightId }, true);
-      sessionKey = res.session_key;
+      // Logged-in users start the checkout session now (prices the offer + returns
+      // a session key). Guests load the offer for display only — their session is
+      // created at submit time via /checkout/guest-start.
+      let res;
+      if (Auth.isLoggedIn()) {
+        res = await Api.post('/api/flights/checkout/start', { offer_id: flightId }, true);
+        sessionKey = res.session_key;
+      } else {
+        res = await Api.get('/api/flights/offers/' + encodeURIComponent(flightId), false);
+      }
       flightData = res.offer || res;
 
       // ── payment_requirements ────────────────────────────────────────────
@@ -829,11 +859,14 @@
     if (!document.getElementById('agreeTerms').checked) {
       alert('يرجى الموافقة على الشروط والأحكام'); return;
     }
-    if (!sessionKey) {
+    // Logged-in users already have a session from page load; guests get theirs
+    // created below (guest-start) after passenger validation.
+    if (!sessionKey && Auth.isLoggedIn()) {
       alert('جاري تحميل تفاصيل الرحلة، يرجى الانتظار'); return;
     }
-    // If offer expired, try to refresh before blocking
-    if (window._offerExpired) {
+    // If offer expired, try to refresh before blocking (logged-in only; for
+    // guests the guest-start call re-prices the offer server-side).
+    if (window._offerExpired && Auth.isLoggedIn()) {
       const refreshed = await tryRefreshOffer();
       if (!refreshed) {
         alert('انتهت صلاحية هذا العرض. سيتم إعادة توجيهك للبحث عن رحلات جديدة.');
@@ -894,6 +927,34 @@
     const tx  = document.getElementById('bookBtnTxt');
     btn.disabled=true; sp.classList.remove('hidden'); tx.classList.add('hidden');
     try {
+      // Guest checkout: create the account + checkout session now that we have
+      // the lead passenger's name/phone, then continue the normal flow.
+      if (!Auth.isLoggedIn()) {
+        const lead = passengers[0] || {};
+        try {
+          const gs = await Api.post('/api/flights/checkout/guest-start', {
+            offer_id:           flightId,
+            email:              _cemail,
+            first_name:         lead.first_name || '',
+            last_name:          lead.last_name  || '',
+            phone_country_code: '',
+            phone_number:       lead.phone_number || ''
+          }, false);
+          Auth.setSession(gs.session_token, gs.user);
+          sessionKey = gs.session_key;
+        } catch(gerr) {
+          btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+          const m = gerr.message || '';
+          if ((gerr.status === 409) || m.indexOf('حساب') !== -1) {
+            alert('⚠️ ' + (m || 'هذا البريد لديه حساب بالفعل. يرجى تسجيل الدخول.'));
+            window.location.href = 'login.html?redirect=booking.html' + encodeURIComponent(window.location.search);
+          } else {
+            alert('⚠️ ' + (m || 'تعذّر بدء الحجز كضيف، يرجى المحاولة مجدداً.'));
+          }
+          return;
+        }
+      }
+
       // Step 1: save passengers
       await Api.post('/api/flights/checkout/passengers', {
         session_key: sessionKey,
@@ -933,7 +994,7 @@
     if (_p0phone && !_p0phone.value) _p0phone.value = user.phone;
   }
   loadFlightInfo();
-  loadSavedTravelers();
+  if (Auth.isLoggedIn()) loadSavedTravelers();
 </script>
 <script src="js/bottom-nav.js"></script>
 </body>

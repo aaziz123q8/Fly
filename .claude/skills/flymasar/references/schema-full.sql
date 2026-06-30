@@ -1063,6 +1063,7 @@ CREATE TABLE `users` (
   `phone_number` varchar(20) NOT NULL,
   `is_verified` tinyint(1) NOT NULL DEFAULT 0,
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `is_guest` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'Account created via guest checkout, not yet upgraded',
   `email_verified_at` timestamp NULL DEFAULT NULL,
   `last_login_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
