@@ -205,6 +205,17 @@ class HotelController
 
         try {
             $result = $this->bookingService->confirmCheckout($sessionKey, $piId, (int) $user['id']);
+
+            // Guest auto-account creation on a confirmed hotel booking.
+            if (($result['status'] ?? '') === 'confirmed') {
+                try {
+                    (new \App\Services\GuestAccountService())
+                        ->upgrade((int) $user['id'], $result['booking_reference'] ?? '');
+                } catch (\Throwable $ge) {
+                    error_log('[GUEST_ACCOUNT_CREATE|hotel] ' . $ge->getMessage());
+                }
+            }
+
             Response::json($result);
         } catch (\RuntimeException $e) {
             Response::error($e->getMessage(), $e->getCode() ?: 400);

@@ -93,6 +93,42 @@ class AuthController
     }
 
     // -------------------------------------------------------------------------
+    // POST /api/auth/guest-session   (no auth) — create/reuse a guest account
+    // and issue a token so the customer can complete checkout without signing up.
+    // -------------------------------------------------------------------------
+
+    public function guestSession(Request $request): void
+    {
+        $errors = $request->validate([
+            'email'        => 'required|email',
+            'first_name'   => 'required',
+            'phone_number' => 'required',
+        ]);
+        if (!empty($errors)) {
+            Response::validationError($errors);
+        }
+
+        try {
+            $result = $this->authService->createGuestSession(
+                (string) $request->input('email'),
+                (string) $request->input('first_name'),
+                (string) ($request->input('last_name') ?? ''),
+                (string) ($request->input('phone_country_code') ?? ''),
+                (string) $request->input('phone_number'),
+                $request->ip(),
+                $request->userAgent()
+            );
+        } catch (RuntimeException $e) {
+            if ($e->getMessage() === 'email_has_account') {
+                Response::error('هذا البريد لديه حساب بالفعل. يرجى تسجيل الدخول للمتابعة.', 409, 'email_has_account');
+            }
+            Response::error('تعذّر بدء الجلسة كضيف.', $e->getCode() ?: 400);
+        }
+
+        Response::json($result);
+    }
+
+    // -------------------------------------------------------------------------
     // POST /api/auth/logout   (requires auth middleware)
     // -------------------------------------------------------------------------
 

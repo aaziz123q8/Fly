@@ -384,7 +384,8 @@
   }
 
   function bookHotel(id) {
-    if(!Auth.isLoggedIn()) { showToast('يرجى تسجيل الدخول أولاً','warning'); setTimeout(()=>window.location.href='login.html',1500); return; }
+    // No forced login — guests choose to log in or continue without an account
+    // on the booking page.
     // Route into the hotel flow (hotel-detail → hotel-booking), carrying the
     // search dates/occupancy so the detail page can prebook the right rate.
     const qs = new URLSearchParams({
