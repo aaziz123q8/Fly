@@ -187,24 +187,29 @@
             });
             expr.on('loaderror', function () { hideWallets(root); });
 
-            expr.on('confirm', function (event) {
-              Promise.resolve(cfg.express.getClientSecret())
-                .then(function (res) {
-                  var cs = res && (res.clientSecret || res.client_secret);
-                  if (!cs) throw new Error('تعذّر إنشاء طلب الدفع.');
-                  return stripe.confirmPayment({
-                    elements: exElements,
-                    clientSecret: cs,
-                    confirmParams: { return_url: cfg.express.returnUrl || window.location.href },
-                    redirect: 'if_required'
-                  }).then(function (out) {
-                    if (out.error) throw new Error(out.error.message || 'فشل الدفع عبر المحفظة.');
-                    return cfg.express.onSuccess ? cfg.express.onSuccess(out.paymentIntent) : null;
-                  });
-                })
-                .catch(function (err) {
-                  setErr(err && err.message ? err.message : 'فشل الدفع عبر المحفظة.');
+            expr.on('confirm', async function (event) {
+              try {
+                // Deferred mode REQUIRES elements.submit() before confirmPayment;
+                // skipping it is what made Apple/Google Pay throw "an error
+                // occurred while processing your request".
+                var sub = await exElements.submit();
+                if (sub && sub.error) { setErr(sub.error.message || 'تعذّر إتمام الدفع.'); return; }
+
+                var res = await cfg.express.getClientSecret();
+                var cs  = res && (res.clientSecret || res.client_secret);
+                if (!cs) throw new Error('تعذّر إنشاء طلب الدفع.');
+
+                var out = await stripe.confirmPayment({
+                  elements: exElements,
+                  clientSecret: cs,
+                  confirmParams: { return_url: cfg.express.returnUrl || window.location.href },
+                  redirect: 'if_required'
                 });
+                if (out.error) throw new Error(out.error.message || 'فشل الدفع عبر المحفظة.');
+                if (cfg.express.onSuccess) await cfg.express.onSuccess(out.paymentIntent);
+              } catch (err) {
+                setErr(err && err.message ? err.message : 'فشل الدفع عبر المحفظة.');
+              }
             });
 
             expr.mount(root.querySelector('[data-fmco="wallets"]'));
