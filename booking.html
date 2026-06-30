@@ -87,7 +87,7 @@
 
 <!-- Offer expiry countdown (shown after offer loaded) -->
 <div id="offerCountdown">
-  <span class="cd-icon">⏱</span>
+  <span class="cd-icon"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></span>
   <span>سعر العرض محجوز لمدة:</span>
   <span class="cd-timer" id="cdTimer">--:--</span>
   <span id="payReqBadge"></span>
@@ -159,7 +159,7 @@
 
         <div class="booking-card" style="background:#f0f5ff;border:2px solid #c5d5e8">
           <div style="display:flex;gap:12px;align-items:flex-start">
-            <span style="font-size:1.5rem">🔒</span>
+            <span style="font-size:1.5rem"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
             <div>
               <div style="font-weight:700;color:var(--primary);margin-bottom:4px">حجز آمن ومضمون</div>
               <div style="font-size:0.82rem;color:var(--text-muted)">بياناتك محمية بتشفير SSL. لا نخزن بيانات بطاقتك.</div>
@@ -189,8 +189,8 @@
       notice.innerHTML = '<div style="font-weight:700;color:#1e40af;margin-bottom:4px">كيف تريد إتمام الحجز؟</div>'
         + '<div style="font-size:.85rem;color:#475569;margin-bottom:12px">سجّل الدخول لاستخدام مسافريك المحفوظين، أو تابع كضيف وسننشئ لك حساباً تلقائياً ونرسل كلمة المرور إلى بريدك عند الدفع.</div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-        + '<a href="login.html?redirect=booking.html' + encodeURIComponent(window.location.search) + '" class="btn btn-primary btn-sm">🔐 تسجيل الدخول</a>'
-        + '<button type="button" id="guestModeBtn" class="btn btn-outline btn-sm">👤 المتابعة بدون حساب</button>'
+        + '<a href="login.html?redirect=booking.html' + encodeURIComponent(window.location.search) + '" class="btn btn-primary btn-sm"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> تسجيل الدخول</a>'
+        + '<button type="button" id="guestModeBtn" class="btn btn-outline btn-sm"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> المتابعة بدون حساب</button>'
         + '</div>';
       const container = document.querySelector('.booking-page .container') || document.querySelector('.container');
       if (container) container.prepend(notice);
@@ -206,7 +206,7 @@
     if (n) {
       n.style.background = '#f0fdf4';
       n.style.borderColor = '#bbf7d0';
-      n.innerHTML = '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:1.4rem">👤</span>'
+      n.innerHTML = '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:1.4rem"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>'
         + '<div style="font-size:.88rem;color:#166534"><b>أنت تتابع كضيف.</b> سيُنشأ حسابك تلقائياً وتُرسل كلمة المرور إلى بريدك بعد الدفع. '
         + '<a href="login.html?redirect=booking.html' + encodeURIComponent(window.location.search) + '" style="color:#1e40af;font-weight:700">لديك حساب؟ سجّل الدخول</a></div></div>';
     }
@@ -295,7 +295,7 @@
       <div class="pax-form ${i===0?'active':''}" id="paxForm${i}">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <div style="font-size:0.85rem;color:var(--text-muted);font-weight:600">${p.label} — ${p.type==='adult'?'بالغ (١٢+ سنة)':p.type==='child'?'طفل (٢–١١ سنة)':'رضيع (أقل من سنتين)'}</div>
-          ${Auth.isLoggedIn() ? `<button type="button" class="btn btn-ghost btn-sm" onclick="loadSavedTraveler(${i})" style="font-size:0.8rem">📋 اختر من المحفوظين</button>` : ''}
+          ${Auth.isLoggedIn() ? `<button type="button" class="btn btn-ghost btn-sm" onclick="loadSavedTraveler(${i})" style="font-size:0.8rem"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg> اختر من المحفوظين</button>` : ''}
         </div>
 
         <!-- Row 1: Title + Gender + Nationality -->
