@@ -124,11 +124,15 @@ class DatePicker {
         } else {
           if (!this.selecting || (this.startDate && d < this.startDate)) {
             this.startDate = d; this.endDate = null; this.selecting = true;
+            this._render();
           } else {
             this.endDate = d; this.selecting = false;
             this.onSelect(this.startDate, this.endDate, this);
+            this._render();
+            // Auto-close once BOTH dates are chosen (brief delay lets the user
+            // see the selected range highlight before it closes).
+            setTimeout(() => this.hide(), 280);
           }
-          this._render();
         }
       });
     });
