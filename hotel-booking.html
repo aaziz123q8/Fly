@@ -485,21 +485,18 @@
         special_requests: document.getElementById('specialRequests').value.trim() || null,
       }, true);
 
-      // Step 3: Create payment intent
-      const piRes = await Api.post('/api/hotels/checkout/payment-intent', {
-        session_key: sessionKey,
-        coupon_code: document.getElementById('couponInput').value.trim() || null,
-      }, true);
-
+      // Step 3: go to payment. The PaymentIntent is now created ON the payment
+      // page (after the customer picks card / wallet / mixed) so the wallet split
+      // can change the charged amount — same model as flights.
+      const totalDue = (netPriceGBP || totalAmount) + (commissionGBP || 0);
       window.location.href = 'hotel-payment.html'
         + '?session='  + encodeURIComponent(sessionKey)
-        + '&pi='       + encodeURIComponent(piRes.payment_intent_id || '')
-        + '&secret='   + encodeURIComponent(piRes.client_secret     || '')
-        + '&amount='   + encodeURIComponent(piRes.amount            || totalAmount)
-        + '&net='      + encodeURIComponent(netPriceGBP   || '')
-        + '&commission=' + encodeURIComponent(commissionGBP || '')
+        + '&amount='   + encodeURIComponent(totalDue)
+        + '&net='      + encodeURIComponent(netPriceGBP   || totalAmount)
+        + '&commission=' + encodeURIComponent(commissionGBP || 0)
         + '&hotel='    + encodeURIComponent(hotelName)
-        + '&nights='   + encodeURIComponent(calcNights());
+        + '&nights='   + encodeURIComponent(calcNights())
+        + '&coupon='   + encodeURIComponent(document.getElementById('couponInput').value.trim() || '');
 
     } catch(err) {
       btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');

@@ -361,6 +361,11 @@ $router->group('api/hotels', function (Router $r): void {
         (new HotelController())->confirmCheckout($req);
     }, [AuthMiddleware::handle()]);
 
+    // Checkout: full wallet payment — no Stripe (auth required).
+    $r->post('/checkout/wallet-confirm', function (Request $req): void {
+        (new HotelController())->walletConfirm($req);
+    }, [AuthMiddleware::handle()]);
+
     // User bookings list (auth required) — must come before /:provider_hotel_id
     $r->get('/bookings', function (Request $req): void {
         (new HotelController())->listBookings($req);
