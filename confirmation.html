@@ -367,6 +367,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/currency.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 const urlP       = new URLSearchParams(window.location.search);
@@ -614,8 +615,7 @@ function renderBooking(b) {
   // ── Pricing summary (what was paid — never subtract refund here) ──
   if (b.total_amount) {
     document.getElementById('pricingSection').style.display = 'block';
-    const cur2 = b.currency || 'GBP';
-    const fmt2 = (v) => `${parseFloat(v).toFixed(2)} ${cur2}`;
+    const fmt2 = (v) => formatPrice(parseFloat(v || 0));
     const changeFee2 = parseFloat(b.change_fee_paid || 0);
     const baseFare2  = parseFloat(b.total_amount) - changeFee2;
     let rows = `<div style="display:flex;justify-content:space-between;border-bottom:1px solid #f0f0f0;padding:4px 0">
@@ -629,13 +629,15 @@ function renderBooking(b) {
     rows += `<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:1rem">
       <span style="font-weight:700">الإجمالي المدفوع</span>
       <strong style="color:#1B4F8E;font-size:1.05rem">${fmt2(b.total_amount)}</strong></div>`;
+    if (typeof gbpChargeNote === 'function' && gbpChargeNote()) {
+      rows += `<div style="font-size:.72rem;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:6px 10px;margin-top:8px;text-align:center">${gbpChargeNote()}</div>`;
+    }
     document.getElementById('pricingRows').innerHTML = rows;
   }
 
   // ── Refund section (when cancelled) ──────────────────────────────
   if (isCancelledStatus(b.status)) {
     document.getElementById('refundSection').style.display = 'block';
-    const cur3 = b.currency || 'GBP';
     const refToLabels = {balance:'رصيد المحفظة', original_payment:'البطاقة الأصلية', voucher:'قسيمة ائتمان', arc_bsp_cash:'كاش', wallet:'رصيد المحفظة'};
     const refAmt3 = parseFloat(b.cancellation_refund_amount || 0);
     const noRefund = refCond && refCond.allowed === false;
@@ -644,7 +646,7 @@ function renderBooking(b) {
       rRows = `<div style="color:#b91c1c;font-weight:700;font-size:.88rem">⛔ هذه التذكرة غير قابلة للاسترداد وفق شروط الناقل الجوي.</div>`;
     } else {
       rRows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fee2e2">
-        <span>مبلغ الاسترداد</span><strong style="color:#16a34a">${refAmt3.toFixed(2)} ${cur3}</strong></div>`;
+        <span>مبلغ الاسترداد</span><strong style="color:#16a34a">${formatPrice(refAmt3)}</strong></div>`;
       if (b.refund_preference) {
         const methodLabel = b.refund_preference === 'wallet' ? 'رصيد المحفظة' : 'البطاقة الأصلية';
         rRows += `<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #fee2e2">

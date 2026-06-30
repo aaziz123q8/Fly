@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>الخدمات الإضافية — فلاي مسار</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✈️</text></svg>">
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'Tajawal',Arial,sans-serif;background:#F5F7FA;color:#1A1A2E;direction:rtl;min-height:100vh}
@@ -331,7 +331,7 @@ function renderBaggage(services, passengers) {
       const maxLengthCm= meta.maximum_length_cm || '';
       const bagType    = svc.metadata?.type === 'carry_on' ? 'مقصورة' : 'مسجلة';
       const icon       = svc.metadata?.type === 'carry_on' ? '🎒' : '🧳';
-      const priceStr   = parseFloat(svc.total_amount || 0).toFixed(2) + ' ' + (svc.total_currency || 'GBP');
+      const priceStr   = fmt(parseFloat(svc.total_amount || 0));
       const desc       = [maxKg ? 'حتى ' + maxKg + 'كغ' : '', maxLengthCm ? maxLengthCm + 'سم' : ''].filter(Boolean).join(' — ');
       html += `
         <div class="service-card" id="svc_${svc.id}" onclick="toggleBag('${svc.id}')">
@@ -411,7 +411,7 @@ function renderMeals(services, passengers) {
       const name     = meta.name || svc.name || 'وجبة';
       const desc     = meta.description || meta.meal_type || '';
       const price    = parseFloat(svc.total_amount || 0);
-      const priceStr = price > 0 ? price.toFixed(2) + ' ' + (svc.total_currency || 'GBP') : 'مجاني';
+      const priceStr = price > 0 ? fmt(price) : 'مجاني';
       html += `
         <div class="service-card" id="meal_${svc.id}" onclick="toggleMeal('${svc.id}')">
           <div class="svc-check">✓</div>

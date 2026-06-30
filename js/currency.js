@@ -38,3 +38,11 @@ function formatPrice(amountGBP, currencyCode) {
 function initCurrency() {
   setCurrency(currentCurrency);
 }
+
+// Single source of truth for the "charged in GBP, displayed cosmetically" note,
+// so flights and hotels show the EXACT same disclaimer wording everywhere.
+function gbpChargeNote() {
+  return (currentCurrency && currentCurrency !== 'GBP')
+    ? 'يُحصَّل المبلغ بالجنيه الإسترليني (GBP) · المبالغ بعملتك للعرض فقط'
+    : '';
+}

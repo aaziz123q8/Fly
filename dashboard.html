@@ -236,6 +236,7 @@
 <script src="js/bottom-nav.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/currency.js"></script>
 <script>
   // Require auth
   if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=dashboard.html';
@@ -360,7 +361,7 @@
         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
           <div style="display:flex;align-items:center;gap:8px">
             ${badgeHtml(status)}
-            <div style="font-weight:800;color:#1B4F8E;font-size:.95rem">${amount ? parseFloat(amount).toFixed(2)+' '+currency : '—'}</div>
+            <div style="font-weight:800;color:#1B4F8E;font-size:.95rem">${amount ? formatPrice(parseFloat(amount)) : '—'}</div>
           </div>
         </div>
       </div>
@@ -408,7 +409,7 @@
         </div>
         <div style="display:flex;align-items:center;gap:10px">
           ${badgeHtml(b.status || 'pending')}
-          <div style="font-weight:800;color:#E8A020;font-size:.95rem">${amount ? parseFloat(amount).toFixed(2) + ' ' + currency : '—'}</div>
+          <div style="font-weight:800;color:#E8A020;font-size:.95rem">${amount ? formatPrice(parseFloat(amount)) : '—'}</div>
         </div>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9">
@@ -799,7 +800,7 @@
       const hasDeduction = actualDeduction > 0.009;
       const hasRefund  = netRefund > 0;
       const noRefundWarning = d.no_refund_warning || netRefund === 0;
-      const walletBal  = walletRes.balance ? `${parseFloat(walletRes.balance).toFixed(2)} ${walletRes.currency||'GBP'}` : '0.00';
+      const walletBal  = formatPrice(parseFloat(walletRes.balance||0));
       const expiresAt  = d.expires_at ? new Date(d.expires_at) : null;
       const expiryStr  = expiresAt ? expiresAt.toLocaleString('ar-SA') : '—';
 
@@ -925,9 +926,7 @@
   async function loadWalletBalance() {
     try {
       const res = await Api.get('/api/wallet/balance', true);
-      const bal = parseFloat(res.balance||0).toFixed(2);
-      const cur = res.currency || 'GBP';
-      document.getElementById('walletBalanceDisplay').textContent = `${bal} ${cur}`;
+      document.getElementById('walletBalanceDisplay').textContent = formatPrice(parseFloat(res.balance||0));
       document.getElementById('walletCard').style.display = 'block';
     } catch(e) { /* not critical */ }
   }
@@ -942,13 +941,11 @@
         Api.get('/api/wallet/balance', true),
         Api.get('/api/wallet/transactions', true),
       ]);
-      const bal = parseFloat(balRes.balance||0).toFixed(2);
-      const cur = balRes.currency || 'GBP';
       const txs = txRes.transactions || [];
       body.innerHTML = `
         <div style="text-align:center;background:linear-gradient(135deg,#0f2444,#1B4F8E);color:#fff;border-radius:12px;padding:20px;margin-bottom:20px">
           <div style="font-size:.8rem;opacity:.8;margin-bottom:4px">الرصيد المتاح</div>
-          <div style="font-size:2rem;font-weight:900">${bal} ${cur}</div>
+          <div style="font-size:2rem;font-weight:900">${formatPrice(parseFloat(balRes.balance||0))}</div>
         </div>
         <div style="font-size:.85rem;font-weight:700;color:#555;margin-bottom:10px">آخر المعاملات</div>
         ${txs.length === 0 ? '<div style="color:#aaa;text-align:center;padding:16px">لا توجد معاملات حتى الآن</div>' : ''}
@@ -961,7 +958,7 @@
               <div style="font-size:.85rem;font-weight:600">${t.description||'معاملة'}</div>
               <div style="font-size:.72rem;color:#aaa">${date}</div>
             </div>
-            <div style="font-weight:700;color:${isCredit?'#16a34a':'#dc2626'}">${isCredit?'+':'−'}${parseFloat(t.amount).toFixed(2)} ${t.currency||cur}</div>
+            <div style="font-weight:700;color:${isCredit?'#16a34a':'#dc2626'}">${isCredit?'+':'−'}${formatPrice(parseFloat(t.amount))}</div>
           </div>`;
         }).join('')}`;
     } catch(e) {
