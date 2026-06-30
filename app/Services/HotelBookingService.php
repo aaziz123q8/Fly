@@ -152,6 +152,7 @@ class HotelBookingService
             'currency'            => $currency,
             'cancellation_policy' => $cancellationPolicy,
             'offer_expires_at'    => $offerExpiresAt,
+            'expires_in'          => 900, // seconds — frontend countdown (timezone-proof)
             'price_changed'       => $priceChanged,
         ];
     }

@@ -503,6 +503,18 @@ $router->get('api/config/stripe-key', function (Request $req): void {
 });
 
 // ---------------------------------------------------------------------------
+// Routes — Public Commission Quote (so the booking summary shows the SAME
+// platform commission the backend applies at prebook — no fake estimate).
+// ---------------------------------------------------------------------------
+
+$router->get('api/commissions/quote', function (Request $req): void {
+    $type   = (string) ($req->query('type') ?? 'hotel');
+    $type   = in_array($type, ['flight', 'hotel'], true) ? $type : 'hotel';
+    $amount = (float) ($req->query('amount') ?? 0);
+    Response::json((new \App\Services\CommissionService())->apply($amount, $type));
+});
+
+// ---------------------------------------------------------------------------
 // Routes — Public Coupon Validation (traveler auth)
 // ---------------------------------------------------------------------------
 
