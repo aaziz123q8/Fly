@@ -1179,10 +1179,8 @@ function renderResults() {
 
 // ─── Navigation ──────────────────────────────────────────────────
 function selectFlight(offerId) {
-  if (!Auth.isLoggedIn()) {
-    window.location.href = 'login.html?redirect='+encodeURIComponent('booking.html?offer_id='+offerId+'&'+new URLSearchParams(searchParams).toString());
-    return;
-  }
+  // No forced login — the booking page lets the customer log in or continue as
+  // a guest. Go straight to booking.
   // Store search context for booking page
   localStorage.setItem('bk_adults',   searchParams.passengers||1);
   localStorage.setItem('bk_children', searchParams.children||0);
