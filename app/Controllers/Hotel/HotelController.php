@@ -240,13 +240,18 @@ class HotelController
 
     public function getBooking(Request $request): void
     {
-        $id   = (int) $request->param('id');
+        $raw  = (string) $request->param('id');
         $user = AuthMiddleware::currentUser();
         if ($user === null) { Response::unauthorized(); return; }
-        $booking = $this->bookingService->getBookingById($id, (int) $user['id']);
+
+        // Accept either the numeric id or the HM booking reference.
+        $booking = (stripos($raw, 'HM') === 0)
+            ? $this->bookingService->getBookingByReference($raw, (int) $user['id'])
+            : $this->bookingService->getBookingById((int) $raw, (int) $user['id']);
 
         if ($booking === null) {
             Response::notFound('Booking not found.');
+            return;
         }
 
         Response::json(['booking' => $booking]);

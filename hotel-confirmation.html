@@ -3,25 +3,46 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تم الحجز — فلاي مسار</title>
+  <title>تأكيد حجز الفندق — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
+  <script src="js/dark-mode.js"></script>
   <style>
-    .confirm-page { background:var(--bg); min-height:100vh; padding:60px 0 80px; }
-    .confirm-card { background:#fff; border-radius:20px; box-shadow:var(--shadow); padding:48px 40px; max-width:600px; margin:0 auto; text-align:center; }
-    @media(max-width:600px) { .confirm-card { padding:32px 20px; } }
-    .success-icon { width:90px; height:90px; background:linear-gradient(135deg,#16a34a,#22c55e); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2.5rem; margin:0 auto 24px; box-shadow:0 8px 24px rgba(22,163,74,0.3); }
-    .booking-ref { background:#f0f5ff; border:2px solid #c5d5e8; border-radius:12px; padding:20px; margin:24px 0; }
-    .ref-num { font-size:2rem; font-weight:800; color:var(--primary); letter-spacing:2px; }
-    .info-row { display:flex; justify-content:space-between; padding:10px 0; border-bottom:1px solid #f0f2f5; font-size:0.92rem; text-align:right; }
-    .info-row:last-child { border-bottom:none; }
-    .info-label { color:var(--text-muted); }
-    .actions { display:flex; gap:12px; margin-top:28px; flex-wrap:wrap; }
-    .actions .btn { flex:1; min-width:140px; }
+    .confirm-page { background:var(--bg); min-height:100vh; padding:32px 0 80px; }
+    .voucher { background:#fff; border-radius:18px; box-shadow:var(--shadow); max-width:720px; margin:0 auto; overflow:hidden; }
+    .voucher-head { background:linear-gradient(135deg,#16a34a,#22c55e); color:#fff; padding:28px 32px; text-align:center; }
+    .voucher-head.cancelled { background:linear-gradient(135deg,#b91c1c,#ef4444); }
+    .voucher-head .icon { font-size:2.6rem; }
+    .voucher-body { padding:28px 32px; }
+    .ref-grid { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
+    .ref-box { flex:1; min-width:160px; background:#f0f5ff; border:1.5px solid #c5d5e8; border-radius:12px; padding:14px 16px; text-align:center; }
+    .ref-box .lbl { font-size:0.72rem; color:var(--text-muted); margin-bottom:4px; }
+    .ref-box .val { font-size:1.15rem; font-weight:800; color:var(--primary); letter-spacing:1px; word-break:break-all; }
+    .sec { margin-top:22px; }
+    .sec-title { font-size:0.92rem; font-weight:800; color:var(--primary); margin-bottom:10px; display:flex; align-items:center; gap:7px; border-bottom:2px solid #eef2f7; padding-bottom:8px; }
+    .row { display:flex; justify-content:space-between; gap:12px; padding:8px 0; font-size:0.9rem; border-bottom:1px solid #f4f6f9; }
+    .row:last-child { border-bottom:none; }
+    .row .k { color:var(--text-muted); }
+    .row .v { font-weight:600; text-align:left; }
+    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
+    .chip { background:#f0f5ff; color:var(--primary); border-radius:20px; padding:4px 12px; font-size:0.8rem; font-weight:600; }
+    .price-total { display:flex; justify-content:space-between; padding:14px 0 0; font-size:1.2rem; font-weight:800; color:var(--primary); border-top:2px solid var(--primary); margin-top:6px; }
+    .note { border-radius:12px; padding:14px 16px; margin-top:16px; font-size:0.85rem; }
+    .note.amber { background:#fef3c7; color:#92400e; }
+    .note.green { background:#f0fdf4; color:#166534; }
+    .actions { display:flex; gap:10px; margin-top:24px; flex-wrap:wrap; }
+    .actions .btn { flex:1; min-width:130px; }
+    @media print {
+      body * { visibility:hidden; }
+      .voucher, .voucher * { visibility:visible; }
+      .voucher { position:absolute; left:0; top:0; width:100%; box-shadow:none; }
+      .no-print { display:none !important; }
+      .navbar, .actions { display:none !important; }
+    }
   </style>
 </head>
 <body>
 
-<nav class="navbar">
+<nav class="navbar no-print">
   <div class="container" style="display:flex;align-items:center;justify-content:space-between">
     <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
     <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
@@ -30,37 +51,88 @@
 
 <div class="confirm-page">
   <div class="container">
-    <div class="confirm-card">
-      <div class="success-icon">✅</div>
-      <h1 style="color:var(--primary);font-size:1.8rem;margin:0 0 8px">تم حجز الفندق بنجاح!</h1>
-      <p style="color:var(--text-muted);margin:0 0 24px">سيصلك تأكيد الحجز على بريدك الإلكتروني خلال دقائق</p>
-
-      <div class="booking-ref">
-        <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">رقم الحجز</div>
-        <div class="ref-num" id="confirmRef">—</div>
+    <div class="voucher" id="voucher">
+      <div class="voucher-head" id="voucherHead">
+        <div class="icon">✅</div>
+        <h1 style="font-size:1.5rem;margin:8px 0 4px">تم تأكيد حجز الفندق</h1>
+        <p style="margin:0;opacity:.9;font-size:0.9rem" id="headSub">قسيمة الحجز — احتفظ بها وأبرزها عند تسجيل الوصول</p>
       </div>
+      <div class="voucher-body">
 
-      <div style="background:#f8fafc;border-radius:12px;padding:16px;text-align:right">
-        <div class="info-row"><span class="info-label">الحالة</span><span style="color:#16a34a;font-weight:600">مؤكد ✅</span></div>
-        <div class="info-row" id="rowHotel" style="display:none"><span class="info-label">الفندق</span><span id="valHotel">—</span></div>
-        <div class="info-row" id="rowNights" style="display:none"><span class="info-label">مدة الإقامة</span><span id="valNights">—</span></div>
-        <div class="info-row" id="rowAmount" style="display:none"><span class="info-label">المبلغ المدفوع</span><span id="valAmount">—</span></div>
-      </div>
+        <div class="ref-grid">
+          <div class="ref-box">
+            <div class="lbl">رقم الحجز</div>
+            <div class="val" id="bRef">—</div>
+          </div>
+          <div class="ref-box" id="providerBox" style="display:none">
+            <div class="lbl">رقم حجز المزوّد (الفندق)</div>
+            <div class="val" id="bProvider">—</div>
+          </div>
+        </div>
 
-      <div style="background:#fef3c7;border-radius:12px;padding:16px;margin-top:20px;text-align:right">
-        <div style="font-weight:700;color:#92400e;margin-bottom:4px">📧 تحقق من بريدك الإلكتروني</div>
-        <div style="font-size:0.85rem;color:#92400e">أُرسل إليك تأكيد حجز الفندق مع كافة التفاصيل. إذا لم تجده تحقق من مجلد البريد غير المرغوب فيه.</div>
-      </div>
+        <!-- Hotel -->
+        <div class="sec">
+          <div class="sec-title">🏨 الفندق</div>
+          <div id="hotelHeader" style="font-size:1.05rem;font-weight:800;color:var(--primary)">—</div>
+          <div id="hotelStars" style="color:#f59e0b;margin:2px 0"></div>
+          <div id="hotelAddr" style="font-size:0.85rem;color:var(--text-muted)"></div>
+        </div>
 
-      <div style="background:#f0fdf4;border-radius:12px;padding:16px;margin-top:12px;text-align:right">
-        <div style="font-weight:700;color:#15803d;margin-bottom:4px">🏨 معلومات الوصول</div>
-        <div style="font-size:0.85rem;color:#166534">تذكر إحضار رقم الحجز وبطاقة هوية سارية عند تسجيل الوصول في الفندق.</div>
-      </div>
+        <!-- Stay -->
+        <div class="sec">
+          <div class="sec-title">📅 تفاصيل الإقامة</div>
+          <div class="row"><span class="k">تسجيل الوصول</span><span class="v" id="vCheckin">—</span></div>
+          <div class="row"><span class="k">تسجيل المغادرة</span><span class="v" id="vCheckout">—</span></div>
+          <div class="row"><span class="k">عدد الليالي</span><span class="v" id="vNights">—</span></div>
+          <div class="row"><span class="k">عدد الضيوف</span><span class="v" id="vGuests">—</span></div>
+          <div class="row"><span class="k">عدد الغرف</span><span class="v" id="vRooms">—</span></div>
+        </div>
 
-      <div class="actions">
-        <a href="dashboard.html" class="btn btn-primary">📋 حجوزاتي</a>
-        <button class="btn btn-outline" onclick="shareWhatsApp()">💬 مشاركة واتساب</button>
-        <a href="hotels.html" class="btn btn-ghost">🏨 المزيد من الفنادق</a>
+        <!-- Room -->
+        <div class="sec" id="roomSec" style="display:none">
+          <div class="sec-title">🛏️ الغرفة</div>
+          <div class="row"><span class="k">نوع الغرفة</span><span class="v" id="vRoomType">—</span></div>
+          <div class="row" id="rowBoard" style="display:none"><span class="k">يشمل</span><span class="v" id="vBoard">—</span></div>
+        </div>
+
+        <!-- Amenities -->
+        <div class="sec" id="amenitiesSec" style="display:none">
+          <div class="sec-title">✨ المرافق</div>
+          <div class="chips" id="amenitiesChips"></div>
+        </div>
+
+        <!-- Guest -->
+        <div class="sec" id="guestSec" style="display:none">
+          <div class="sec-title">👤 الضيف الرئيسي</div>
+          <div class="row"><span class="k">الاسم</span><span class="v" id="vLeadGuest">—</span></div>
+        </div>
+
+        <!-- Price -->
+        <div class="sec">
+          <div class="sec-title">💳 الدفع</div>
+          <div class="row"><span class="k">الحالة</span><span class="v" id="vStatus" style="color:#16a34a">مؤكد ✅</span></div>
+          <div class="price-total"><span>الإجمالي المدفوع</span><span id="vTotal">—</span></div>
+          <div id="gbpNote" style="font-size:0.75rem;color:var(--text-muted);text-align:center;margin-top:6px"></div>
+        </div>
+
+        <!-- Cancellation -->
+        <div class="sec" id="cancelSec" style="display:none">
+          <div class="sec-title">↩️ سياسة الإلغاء</div>
+          <div id="vCancel" style="font-size:0.85rem;color:var(--text-muted)"></div>
+        </div>
+
+        <div class="note amber no-print">📧 أُرسل تأكيد الحجز إلى بريدك. تحقق من مجلد البريد غير المرغوب فيه إن لم تجده.</div>
+        <div class="note green no-print">🏨 أبرز رقم الحجز وبطاقة هوية سارية عند تسجيل الوصول.</div>
+
+        <div class="actions no-print">
+          <button class="btn btn-primary" onclick="window.print()">🧾 تحميل القسيمة (PDF)</button>
+          <a class="btn btn-outline" id="invoiceBtn" href="#">📄 الفاتورة</a>
+          <button class="btn btn-ghost" onclick="shareWhatsApp()">💬 واتساب</button>
+        </div>
+        <div class="actions no-print">
+          <a href="dashboard.html" class="btn btn-ghost">📋 حجوزاتي</a>
+          <a href="hotels.html" class="btn btn-ghost">🏨 المزيد من الفنادق</a>
+        </div>
       </div>
     </div>
   </div>
@@ -69,45 +141,121 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/currency.js"></script>
 <script>
+  if (typeof formatPrice === 'undefined') window.formatPrice = a => '£ ' + parseFloat(a||0).toFixed(2);
+  if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
+  initCurrency();
+
   const p      = new URLSearchParams(window.location.search);
-  const ref    = p.get('ref')    || '';
-  const hotel  = p.get('hotel')  || '';
-  const nights = p.get('nights') || '';
-  const amount = parseFloat(p.get('amount') || '0');
+  let   ref    = p.get('ref')    || '';
+  const hotelQ = p.get('hotel')  || '';
+  const nightsQ= p.get('nights') || '';
+  const amountQ= parseFloat(p.get('amount') || '0');
+  let   leadName = '';
 
-  if (ref) document.getElementById('confirmRef').textContent = ref;
+  function fmtDate(d) {
+    if (!d) return '';
+    try { return new Date(d).toLocaleDateString('ar-KW', {year:'numeric',month:'long',day:'numeric'}); }
+    catch { return d; }
+  }
+  function setText(id, v) { const e = document.getElementById(id); if (e) e.textContent = v; }
 
-  if (hotel)  { document.getElementById('rowHotel').style.display  = 'flex'; document.getElementById('valHotel').textContent  = hotel; }
-  if (nights) { document.getElementById('rowNights').style.display = 'flex'; document.getElementById('valNights').textContent = nights + ' ليلة'; }
-  if (amount) { document.getElementById('rowAmount').style.display = 'flex'; document.getElementById('valAmount').textContent = '£ ' + amount.toFixed(2); }
+  // Pre-fill from URL so something shows immediately
+  if (ref)     setText('bRef', ref);
+  if (hotelQ)  setText('hotelHeader', hotelQ);
+  if (nightsQ) setText('vNights', nightsQ + ' ليلة');
+  if (amountQ) setText('vTotal', formatPrice(amountQ));
 
-  // Try to load full booking details if logged in
+  function render(b) {
+    ref = b.booking_reference || ref;
+    setText('bRef', ref);
+    if (b.provider_booking_id) {
+      document.getElementById('providerBox').style.display = 'block';
+      setText('bProvider', b.provider_booking_id);
+    }
+    const name = b.hotel_name_ar || b.hotel_name || b.hotel_name_en || hotelQ || 'فندق';
+    setText('hotelHeader', name);
+    const stars = parseInt(b.star_rating || 0);
+    if (stars > 0) setText('hotelStars', '★'.repeat(Math.min(stars,5)));
+    const addrParts = [b.address_ar || b.address_en, b.city_name_ar || b.city_name_en, b.country_name_ar || b.country_name_en].filter(Boolean);
+    if (addrParts.length) setText('hotelAddr', '📍 ' + addrParts.join('، '));
+
+    setText('vCheckin',  fmtDate(b.check_in_date || b.check_in));
+    setText('vCheckout', fmtDate(b.check_out_date || b.check_out));
+    const nights = b.nights_count || nightsQ;
+    if (nights) setText('vNights', nights + ' ليلة');
+    const adults = parseInt(b.adults_count||0), children = parseInt(b.children_count||0);
+    setText('vGuests', (adults? adults+' بالغ' : '') + (children? ' + '+children+' طفل' : '') || '—');
+    setText('vRooms', (b.rooms_count || 1) + ' غرفة');
+
+    const room = (b.rooms && b.rooms[0]) || null;
+    if (room && (room.room_type || room.meal_plan)) {
+      document.getElementById('roomSec').style.display = 'block';
+      setText('vRoomType', room.room_type || '—');
+      if (room.meal_plan) { document.getElementById('rowBoard').style.display='flex'; setText('vBoard', room.meal_plan); }
+    }
+
+    if (Array.isArray(b.amenities) && b.amenities.length) {
+      document.getElementById('amenitiesSec').style.display = 'block';
+      document.getElementById('amenitiesChips').innerHTML = b.amenities.slice(0,10).map(a => '<span class="chip">'+a+'</span>').join('');
+    }
+
+    const lead = (b.guests || []).find(g => g.is_lead) || (b.guests||[])[0];
+    if (lead) {
+      document.getElementById('guestSec').style.display = 'block';
+      leadName = ((lead.first_name||'') + ' ' + (lead.last_name||'')).trim();
+      setText('vLeadGuest', leadName);
+    }
+
+    if (b.total_amount) setText('vTotal', formatPrice(parseFloat(b.total_amount)));
+    const cur = (typeof currentCurrency !== 'undefined') ? currentCurrency : 'GBP';
+    setText('gbpNote', cur !== 'GBP' ? 'حُصّل المبلغ بالجنيه الإسترليني (GBP) · العرض بعملتك للتوضيح' : '');
+
+    const st = (b.status || 'confirmed');
+    if (st === 'cancelled') {
+      document.getElementById('voucherHead').classList.add('cancelled');
+      setText('vStatus', 'ملغي'); document.getElementById('vStatus').style.color = '#dc2626';
+      document.querySelector('.voucher-head .icon').textContent = '✕';
+      document.querySelector('.voucher-head h1').textContent = 'تم إلغاء الحجز';
+    }
+
+    // Cancellation policy
+    const cp = b.cancellation_policy;
+    if (cp && (typeof cp === 'string' ? cp : (Array.isArray(cp) ? cp.length : Object.keys(cp).length))) {
+      document.getElementById('cancelSec').style.display = 'block';
+      let html = '';
+      if (typeof cp === 'string') html = cp;
+      else if (Array.isArray(cp)) html = cp.map(r => '<div>من '+(r.start_at? fmtDate(r.start_at):'')+': '+(r.amount? formatPrice(parseFloat(r.amount)) : 'مجاني')+'</div>').join('');
+      else if (cp.free_cancellation_before) html = 'إلغاء مجاني حتى ' + fmtDate(cp.free_cancellation_before);
+      document.getElementById('vCancel').innerHTML = html;
+    }
+
+    if (ref) document.getElementById('invoiceBtn').href = 'invoice.html?ref=' + encodeURIComponent(ref);
+  }
+
   async function loadBooking() {
-    if (!ref || !Auth.isLoggedIn()) return;
+    if (!Auth.isLoggedIn()) return;
+    // If we don't have a ref yet, try to confirm the latest session.
     try {
-      const res = await Api.get('/api/hotels/bookings/' + encodeURIComponent(ref), true);
-      const b = res.booking || res;
-      if (b.hotel_name && !hotel) {
-        document.getElementById('rowHotel').style.display = 'flex';
-        document.getElementById('valHotel').textContent   = b.hotel_name;
+      if (ref) {
+        const res = await Api.get('/api/hotels/bookings/' + encodeURIComponent(ref), true);
+        render(res.booking || res);
       }
-      if (b.check_in && b.check_out) {
-        const inDate  = new Date(b.check_in).toLocaleDateString('ar-KW', {year:'numeric',month:'long',day:'numeric'});
-        const outDate = new Date(b.check_out).toLocaleDateString('ar-KW', {year:'numeric',month:'long',day:'numeric'});
-        if (!nights) {
-          document.getElementById('rowNights').style.display = 'flex';
-          document.getElementById('valNights').textContent   = inDate + ' — ' + outDate;
-        }
-      }
-    } catch {}
+    } catch(e) {
+      // keep URL-based fallback values
+    }
   }
 
   function shareWhatsApp() {
-    const msg = `🏨 تم حجز فندقي عبر فلاي مسار!\nالفندق: ${hotel}\nرقم الحجز: ${ref}\nاحجز فندقك الآن: https://flymasar.com`;
+    const msg = '🏨 تم تأكيد حجز فندقي عبر فلاي مسار!\nالفندق: ' + (document.getElementById('hotelHeader').textContent) +
+                '\nرقم الحجز: ' + ref +
+                '\nالوصول: ' + document.getElementById('vCheckin').textContent +
+                ' — المغادرة: ' + document.getElementById('vCheckout').textContent;
     window.open('https://wa.me/?text=' + encodeURIComponent(msg));
   }
 
+  if (ref) document.getElementById('invoiceBtn').href = 'invoice.html?ref=' + encodeURIComponent(ref);
   loadBooking();
 </script>
 <script src="js/bottom-nav.js"></script>

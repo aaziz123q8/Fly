@@ -461,6 +461,72 @@ function render(b) {
 }
 
 // Load booking
+function renderHotel(b) {
+  const cur   = b.currency || 'GBP';
+  const ref   = b.booking_reference || '';
+  const money = a => (a || a === 0) ? parseFloat(a).toFixed(2) + ' ' + cur : '—';
+  const dt    = d => { try { return new Date(d).toLocaleDateString('ar-KW',{day:'numeric',month:'long',year:'numeric'}); } catch { return d||'—'; } };
+  const st    = b.status || 'confirmed';
+  const stTxt = st === 'cancelled' ? 'ملغي' : (st === 'confirmed' ? 'مؤكد' : st);
+  const lead  = (b.guests||[]).find(g=>g.is_lead) || (b.guests||[])[0];
+  const leadName = lead ? ((lead.first_name||'')+' '+(lead.last_name||'')).trim() : (b.user_email||'');
+  const addr  = [b.address_ar||b.address_en, b.city_name_ar||b.city_name_en, b.country_name_ar||b.country_name_en].filter(Boolean).join('، ');
+  const rooms = (b.rooms||[]);
+  const roomsHtml = rooms.length ? rooms.map(r =>
+      `<tr><td style="padding:8px;border-bottom:1px solid #eef2f7">${r.room_type||'غرفة'}${r.meal_plan?` — ${r.meal_plan}`:''}</td>
+           <td style="padding:8px;border-bottom:1px solid #eef2f7;text-align:left">${money(r.amount)}</td></tr>`).join('')
+    : `<tr><td style="padding:8px">${b.rooms_count||1} غرفة</td><td style="padding:8px;text-align:left">${money(b.total_amount)}</td></tr>`;
+
+  document.getElementById('invoiceCard').innerHTML = `
+    <div style="padding:28px 30px">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;border-bottom:2px solid #1B4F8E;padding-bottom:16px;margin-bottom:18px">
+        <div>
+          <div style="font-size:1.4rem;font-weight:800;color:#1B4F8E">✈️ فلاي مسار</div>
+          <div style="font-size:.8rem;color:#6b7280">فاتورة حجز فندق</div>
+        </div>
+        <div style="text-align:left">
+          <div style="font-weight:800">فاتورة رقم ${ref}</div>
+          <div style="font-size:.8rem;color:#6b7280">تاريخ الإصدار: ${dt(new Date())}</div>
+          <div style="font-size:.85rem;margin-top:4px;color:${st==='cancelled'?'#dc2626':'#16a34a'};font-weight:700">${stTxt}</div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:18px">
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:.78rem;color:#6b7280;margin-bottom:4px">العميل</div>
+          <div style="font-weight:700">${leadName||'—'}</div>
+          ${b.user_email?`<div style="font-size:.82rem;color:#6b7280">${b.user_email}</div>`:''}
+        </div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:.78rem;color:#6b7280;margin-bottom:4px">رقم حجز المزوّد</div>
+          <div style="font-weight:700">${b.provider_booking_id||'—'}</div>
+        </div>
+      </div>
+
+      <div style="background:#f8fafc;border-radius:12px;padding:16px;margin-bottom:18px">
+        <div style="font-weight:800;color:#1B4F8E;font-size:1.05rem">${b.hotel_name_ar||b.hotel_name||b.hotel_name_en||'فندق'}</div>
+        ${b.star_rating?`<div style="color:#f59e0b">${'★'.repeat(Math.min(parseInt(b.star_rating)||0,5))}</div>`:''}
+        ${addr?`<div style="font-size:.82rem;color:#6b7280;margin-top:2px">📍 ${addr}</div>`:''}
+        <div style="display:flex;gap:20px;flex-wrap:wrap;margin-top:12px;font-size:.86rem">
+          <div><span style="color:#6b7280">الوصول:</span> <strong>${dt(b.check_in_date)}</strong></div>
+          <div><span style="color:#6b7280">المغادرة:</span> <strong>${dt(b.check_out_date)}</strong></div>
+          <div><span style="color:#6b7280">الليالي:</span> <strong>${b.nights_count||'—'}</strong></div>
+          <div><span style="color:#6b7280">الضيوف:</span> <strong>${(b.adults_count||0)} بالغ${b.children_count?` + ${b.children_count} طفل`:''}</strong></div>
+        </div>
+      </div>
+
+      <table style="width:100%;border-collapse:collapse;font-size:.9rem;margin-bottom:16px">
+        <thead><tr style="background:#f0f5ff"><th style="padding:10px;text-align:right">الوصف</th><th style="padding:10px;text-align:left">المبلغ</th></tr></thead>
+        <tbody>${roomsHtml}</tbody>
+      </table>
+
+      <div style="display:flex;justify-content:space-between;border-top:2px solid #1B4F8E;padding-top:14px;font-size:1.15rem;font-weight:800;color:#1B4F8E">
+        <span>الإجمالي المدفوع</span><span>${money(b.total_amount)}</span>
+      </div>
+      <div style="font-size:.75rem;color:#9ca3af;text-align:center;margin-top:18px">شكراً لاختيارك فلاي مسار · هذه فاتورة إلكترونية معتمدة</div>
+    </div>`;
+}
+
 async function load() {
   const key = bid || ref;
   if (!key) { document.body.innerHTML='<div style="text-align:center;padding:60px;color:#888">لم يتم تحديد رقم الحجز.</div>'; return; }
@@ -488,7 +554,9 @@ async function load() {
       window.location.href = 'login.html'; return;
     }
     const b = res.booking || res;
-    render(b);
+    const isHotelBooking = (b.booking_reference && String(b.booking_reference).startsWith('HM'))
+                         || b.check_in_date || (b.hotel_name && !b.origin_airport);
+    if (isHotelBooking) renderHotel(b); else render(b);
   } catch(e) {
     console.error(e);
     document.getElementById('invoiceCard').innerHTML = '<div style="padding:40px;text-align:center;color:#888">تعذّر تحميل الفاتورة.</div>';
