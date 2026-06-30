@@ -60,10 +60,18 @@ class HotelBookingService
     ): array {
         // ── Resolve the net price + prebook session ──────────────────────────
         if (DemoHotelData::isEnabled()) {
-            // Demo: the book_hash encodes the price (DEMO|<price>|<name>); no call.
-            $parts             = explode('|', $bookHash);
-            $netPrice          = (isset($parts[1]) && is_numeric($parts[1]))
-                                    ? (float) $parts[1]
+            // Demo: the book_hash encodes the PER-NIGHT price (DEMO|<price>|<name>).
+            // The net stay price is per-night × number of nights.
+            $parts    = explode('|', $bookHash);
+            $perNight = (isset($parts[1]) && is_numeric($parts[1])) ? (float) $parts[1] : 0.0;
+            $nights   = 1;
+            if ($checkIn !== '' && $checkOut !== '') {
+                try {
+                    $nights = max(1, (int) (new \DateTimeImmutable($checkIn))->diff(new \DateTimeImmutable($checkOut))->days);
+                } catch (\Throwable) {}
+            }
+            $netPrice          = $perNight > 0
+                                    ? round($perNight * $nights, 2)
                                     : ($displayedPrice > 0.0 ? $displayedPrice : 50.0);
             $prebookSessionId  = 'demo-prebook-' . substr(md5($bookHash . microtime(true)), 0, 12);
             $currency          = 'GBP';
@@ -528,7 +536,10 @@ class HotelBookingService
             ':provider_id'          => self::PROVIDER_ID,
             ':ref'                  => $bookingReference,
             ':provider_booking_id'  => $providerBookingId,
-            ':hotel_id'             => $hotelId,
+            // hotel_id is an INT column; demo/provider ids are strings (e.g.
+            // "demo-hotel-dxb-1") — store 0 there and keep the string in
+            // provider_hotel_id, otherwise the INSERT fails under strict SQL mode.
+            ':hotel_id'             => is_numeric($hotelId) ? (int) $hotelId : 0,
             ':hotel_name'           => $hotelName !== '' ? $hotelName : null,
             ':provider_hotel_id'    => $providerHotelId,
             ':check_in'             => $checkIn,
