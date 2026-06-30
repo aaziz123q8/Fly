@@ -429,21 +429,13 @@ class HotelBookingService
         $roomData  = $pricingSnapshot['room_data'] ?? [];
         $rooms     = is_array($roomData) && !empty($roomData) ? $roomData : [[]];
 
-        // ── Generate booking reference in HM00000001 format — atomic via table lock ──
-        $this->db->exec("LOCK TABLES hotel_bookings WRITE");
-        try {
-            $lastRef = $this->db->query(
-                "SELECT booking_reference FROM hotel_bookings ORDER BY id DESC LIMIT 1"
-            )->fetchColumn();
-            if ($lastRef && preg_match('/^HM(\d+)$/', $lastRef, $m)) {
-                $nextNum = (int)$m[1] + 1;
-            } else {
-                $nextNum = (int)$this->db->query("SELECT COUNT(*) FROM hotel_bookings")->fetchColumn() + 1;
-            }
-            $bookingReference = 'HM' . str_pad((string)$nextNum, 8, '0', STR_PAD_LEFT);
-        } finally {
-            $this->db->exec("UNLOCK TABLES");
-        }
+        // ── Booking reference ─────────────────────────────────────────────────
+        // Insert with a unique temporary placeholder, then derive the final
+        // HM-reference from the row's auto-increment id right after INSERT. This
+        // is race-free and needs NO `LOCK TABLES` privilege — Hostinger shared
+        // MySQL frequently denies LOCK TABLES, which would otherwise throw here
+        // and roll the whole booking back (no booking created, empty confirmation).
+        $bookingReference = 'HMTMP' . bin2hex(random_bytes(6));
 
         // ── Call RateHawk createBooking (or fake it in demo mode) ────────────
         if (DemoHotelData::isEnabled()) {
@@ -573,6 +565,11 @@ class HotelBookingService
             ':special_requests'     => $specialReqs,
         ]);
         $hotelBookingId = (int) $this->db->lastInsertId();
+
+        // Derive the final HM reference from the id and persist it (no LOCK TABLES).
+        $bookingReference = 'HM' . str_pad((string) $hotelBookingId, 8, '0', STR_PAD_LEFT);
+        $this->db->prepare('UPDATE hotel_bookings SET booking_reference = :r WHERE id = :id')
+            ->execute([':r' => $bookingReference, ':id' => $hotelBookingId]);
 
         // ── INSERT hotel_booking_guests ───────────────────────────────────────
         $gStmt = $this->db->prepare(
@@ -850,7 +847,23 @@ class HotelBookingService
                     $walletService->credit($userId, $walletPortion, $wCurrency, 'استرداد دفع مختلط فاشل', $sessionKey);
                 } catch (\Throwable) {}
             }
-            error_log('[HOTEL_CONFIRM_CHECKOUT_FAIL] sk=' . $sessionKey . ' pi=' . $paymentIntentId . ' err=' . $e->getMessage());
+            // Persist the full failure context so it can be inspected in
+            // phpMyAdmin (error_logs) when a payment succeeds but the booking
+            // doesn't materialise.
+            $ctx = [
+                'session_key' => $sessionKey,
+                'pi'          => $paymentIntentId,
+                'error'       => $e->getMessage(),
+                'code'        => $e->getCode(),
+                'file'        => $e->getFile() . ':' . $e->getLine(),
+                'trace'       => substr($e->getTraceAsString(), 0, 1500),
+            ];
+            try {
+                $this->db->prepare(
+                    'INSERT INTO error_logs (level, message, context, created_at) VALUES (?,?,?,NOW())'
+                )->execute(['error', 'hotel confirmCheckout: completeBooking failed', json_encode($ctx, JSON_UNESCAPED_UNICODE)]);
+            } catch (\Throwable) {}
+            error_log('[HOTEL_CONFIRM_CHECKOUT_FAIL] ' . json_encode($ctx, JSON_UNESCAPED_UNICODE));
             throw new \RuntimeException($e->getMessage(), (int)$e->getCode() ?: 500);
         }
     }

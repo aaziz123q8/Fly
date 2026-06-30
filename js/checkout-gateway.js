@@ -90,6 +90,12 @@
     if (w) w.style.display = 'none';
     if (d) { d.style.display = 'none'; }
   }
+  function showWallets(root) {
+    var w = root.querySelector('[data-fmco="wallets"]');
+    var d = root.querySelector('[data-fmco="divider"]');
+    if (w) w.style.display = '';
+    if (d) d.style.display = '';
+  }
 
   var FMCheckout = {
     mount: function (cfg) {
@@ -117,10 +123,15 @@
         },
         setError: setErr,
         confirmCard: function () { return Promise.reject(new Error('not-ready')); },
-        // Keep the Apple/Google Pay sheet amount in sync (e.g. after a coupon).
+        // Keep the Apple/Google Pay sheet amount in sync (e.g. after a coupon),
+        // and lazily create the wallet element the first time a positive amount
+        // is known (the flight page loads its price after mount).
         updateAmount: function (minor) {
-          if (controller.expressElements && minor > 0) {
+          if (!(minor > 0)) return;
+          if (controller.expressElements) {
             try { controller.expressElements.update({ amount: Math.round(minor) }); } catch (e) {}
+          } else if (controller._mountExpress) {
+            controller._mountExpress(minor);
           }
         }
       };
@@ -170,47 +181,64 @@
           });
         };
 
-        // ── Express Checkout Element (Apple Pay / Google Pay) — optional. ────
-        if (cfg.express && cfg.amountMinor > 0 && cfg.currency) {
+        // ── Express Checkout Element (Apple Pay / Google Pay) ───────────────
+        // Created LAZILY: when the page mounts the gateway before it knows the
+        // amount (e.g. the flight page loads the price asynchronously), the
+        // wallet element is created the first time updateAmount() supplies a
+        // positive amount. Otherwise it is created immediately.
+        var expressMounted = false;
+        controller._mountExpress = function (minorAmount) {
+          if (expressMounted || !cfg.express || !cfg.currency || !(minorAmount > 0)) return;
           try {
             var exElements = stripe.elements({
               mode: 'payment',
-              amount: Math.round(cfg.amountMinor),
+              amount: Math.round(minorAmount),
               currency: String(cfg.currency).toLowerCase(),
               locale: 'ar'
             });
             controller.expressElements = exElements;
             var expr = exElements.create('expressCheckout', { buttonHeight: 48 });
+            expressMounted = true;
 
             expr.on('ready', function (e) {
               if (!e || !e.availablePaymentMethods) hideWallets(root);
             });
             expr.on('loaderror', function () { hideWallets(root); });
 
-            expr.on('confirm', function (event) {
-              Promise.resolve(cfg.express.getClientSecret())
-                .then(function (res) {
-                  var cs = res && (res.clientSecret || res.client_secret);
-                  if (!cs) throw new Error('تعذّر إنشاء طلب الدفع.');
-                  return stripe.confirmPayment({
-                    elements: exElements,
-                    clientSecret: cs,
-                    confirmParams: { return_url: cfg.express.returnUrl || window.location.href },
-                    redirect: 'if_required'
-                  }).then(function (out) {
-                    if (out.error) throw new Error(out.error.message || 'فشل الدفع عبر المحفظة.');
-                    return cfg.express.onSuccess ? cfg.express.onSuccess(out.paymentIntent) : null;
-                  });
-                })
-                .catch(function (err) {
-                  setErr(err && err.message ? err.message : 'فشل الدفع عبر المحفظة.');
+            expr.on('confirm', async function (event) {
+              try {
+                // Deferred mode REQUIRES elements.submit() before confirmPayment;
+                // skipping it is what made Apple/Google Pay throw "an error
+                // occurred while processing your request".
+                var sub = await exElements.submit();
+                if (sub && sub.error) { setErr(sub.error.message || 'تعذّر إتمام الدفع.'); return; }
+
+                var res = await cfg.express.getClientSecret();
+                var cs  = res && (res.clientSecret || res.client_secret);
+                if (!cs) throw new Error('تعذّر إنشاء طلب الدفع.');
+
+                var out = await stripe.confirmPayment({
+                  elements: exElements,
+                  clientSecret: cs,
+                  confirmParams: { return_url: cfg.express.returnUrl || window.location.href },
+                  redirect: 'if_required'
                 });
+                if (out.error) throw new Error(out.error.message || 'فشل الدفع عبر المحفظة.');
+                if (cfg.express.onSuccess) await cfg.express.onSuccess(out.paymentIntent);
+              } catch (err) {
+                setErr(err && err.message ? err.message : 'فشل الدفع عبر المحفظة.');
+              }
             });
 
+            showWallets(root);
             expr.mount(root.querySelector('[data-fmco="wallets"]'));
           } catch (e) {
             hideWallets(root);
           }
+        };
+
+        if (cfg.express && cfg.amountMinor > 0 && cfg.currency) {
+          controller._mountExpress(cfg.amountMinor);
         } else {
           hideWallets(root);
         }

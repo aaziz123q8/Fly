@@ -440,6 +440,7 @@
       document.getElementById('statHotels').textContent = list.length;
       renderHotelBookings(list);
     } catch (err) {
+      document.getElementById('statHotels').textContent = '0';
       renderHotelBookings([]);
     } finally {
       document.getElementById('hotelsLoading').style.display = 'none';
