@@ -209,8 +209,7 @@
     }
 
     if (b.total_amount) setText('vTotal', formatPrice(parseFloat(b.total_amount)));
-    const cur = (typeof currentCurrency !== 'undefined') ? currentCurrency : 'GBP';
-    setText('gbpNote', cur !== 'GBP' ? 'حُصّل المبلغ بالجنيه الإسترليني (GBP) · العرض بعملتك للتوضيح' : '');
+    setText('gbpNote', (typeof gbpChargeNote === 'function') ? gbpChargeNote() : '');
 
     const st = (b.status || 'confirmed');
     if (st === 'cancelled') {

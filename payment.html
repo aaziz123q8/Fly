@@ -1046,7 +1046,7 @@ function renderPriceRows() {
     sub.style.display = 'block';
 
     const note = document.getElementById('priceNote');
-    note.textContent  = '💳 سيتم تحصيل £' + net.toFixed(2) + ' (GBP) من بطاقتك. المبالغ بـ ' + cur + ' للعرض فقط.';
+    note.textContent  = (typeof gbpChargeNote === 'function') ? gbpChargeNote() : 'يُحصَّل المبلغ بالجنيه الإسترليني (GBP) · المبالغ بعملتك للعرض فقط';
     note.style.display = 'block';
   }
   updateWalletUI();

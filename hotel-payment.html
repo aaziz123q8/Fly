@@ -229,10 +229,7 @@
     document.getElementById('sumTotal').textContent = formatPrice(amountGBP);
     const hpFooter = document.getElementById('hpFooterAmount');
     if (hpFooter) hpFooter.textContent = formatPrice(amountGBP);
-    const cur = (typeof currentCurrency !== 'undefined') ? currentCurrency : 'GBP';
-    document.getElementById('gbpNote').textContent = (cur !== 'GBP')
-      ? 'يُحصَّل المبلغ بالجنيه الإسترليني (GBP) · العرض بعملتك للتوضيح فقط'
-      : '';
+    document.getElementById('gbpNote').textContent = (typeof gbpChargeNote === 'function') ? gbpChargeNote() : '';
   }
 
   function showStripeUnavailable() {
