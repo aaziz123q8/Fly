@@ -181,6 +181,11 @@ $router->group('api/auth', function (Router $r): void {
         (new AuthController())->login($req);
     });
 
+    // Guest session for guest checkout (no auth).
+    $r->post('/guest-session', function (Request $req): void {
+        (new AuthController())->guestSession($req);
+    });
+
     $r->post('/logout', function (Request $req): void {
         (new AuthController())->logout($req);
     }, [AuthMiddleware::handle()]);

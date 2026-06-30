@@ -185,8 +185,13 @@
   if (!Auth.isLoggedIn()) {
     document.addEventListener('DOMContentLoaded', function() {
       const notice = document.createElement('div');
-      notice.style.cssText = 'background:#fffbeb;border:2px solid #fde68a;border-radius:14px;padding:18px 20px;margin-bottom:20px;display:flex;align-items:center;gap:14px';
-      notice.innerHTML = '<span style="font-size:1.6rem">🔐</span><div><div style="font-weight:700;color:#92400e;margin-bottom:4px">لإتمام الحجز يرجى تسجيل الدخول أو إنشاء حساب</div><div style="font-size:.85rem;color:#78350f;margin-bottom:10px">يمكنك تصفح التفاصيل الآن والتسجيل عند الضغط على زر الحجز</div><div style="display:flex;gap:8px"><a href="login.html?redirect=' + encodeURIComponent(window.location.href) + '" class="btn btn-primary btn-sm">تسجيل الدخول</a><a href="register.html?redirect=' + encodeURIComponent(window.location.href) + '" class="btn btn-outline btn-sm">إنشاء حساب</a></div></div>';
+      notice.style.cssText = 'background:#f0f7ff;border:2px solid #bfdbfe;border-radius:14px;padding:18px 20px;margin-bottom:20px';
+      notice.innerHTML = '<div style="font-weight:700;color:#1e40af;margin-bottom:4px">كيف تريد إتمام الحجز؟</div>'
+        + '<div style="font-size:.85rem;color:#475569;margin-bottom:12px">سجّل الدخول، أو تابع كضيف وسننشئ لك حساباً تلقائياً ونرسل كلمة المرور إلى بريدك عند الدفع.</div>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+        + '<a href="login.html?redirect=' + encodeURIComponent(window.location.href) + '" class="btn btn-primary btn-sm">🔐 تسجيل الدخول</a>'
+        + '<span class="btn btn-outline btn-sm" style="cursor:default">👤 أو أكمل البيانات بالأسفل كضيف</span>'
+        + '</div>';
       const container = document.querySelector('.booking-page .container') || document.querySelector('.booking-grid');
       if (container) container.parentElement ? container.parentElement.insertBefore(notice, container) : container.prepend(notice);
     });
@@ -352,6 +357,28 @@
     document.getElementById('bookingError').style.display = 'none';
 
     try {
+      // Guest checkout: create/issue a guest session before the (auth-required)
+      // prebook, so the rest of the flow runs authenticated.
+      if (!Auth.isLoggedIn()) {
+        try {
+          const gs = await Api.post('/api/auth/guest-session', {
+            email, first_name: firstName, last_name: lastName,
+            phone_country_code: '', phone_number: phone
+          }, false);
+          Auth.setSession(gs.session_token, gs.user);
+        } catch(gerr) {
+          btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+          const m = gerr.message || '';
+          if (gerr.status === 409 || m.indexOf('حساب') !== -1) {
+            showError(m || 'هذا البريد لديه حساب بالفعل. يرجى تسجيل الدخول.');
+            setTimeout(()=>window.location.href='login.html?redirect='+encodeURIComponent(window.location.href), 1500);
+          } else {
+            showError(m || 'تعذّر بدء الحجز كضيف، يرجى المحاولة مجدداً.');
+          }
+          return;
+        }
+      }
+
       // Step 1: Prebook (validates price & locks rate)
       // hotel_id sent as string — backend must NOT cast to int (RateHawk IDs are strings)
       const prebookRes = await Api.post('/api/hotels/checkout/prebook', {

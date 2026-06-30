@@ -68,6 +68,16 @@ class HotelSearchService
 
         $nights = (int) $inDate->diff($outDate)->days;
 
+        // ── Demo mode (no RateHawk credentials) ──────────────────────────────
+        if (DemoHotelData::isEnabled()) {
+            $hotels = DemoHotelData::hotels();
+            $this->logSearch(
+                userId: $userId, cityId: $cityId, checkIn: $checkIn, checkOut: $checkOut,
+                adults: $adults, childrenCount: count($children), resultsCount: count($hotels)
+            );
+            return $hotels;
+        }
+
         // ── Resolve region ID from city if needed ────────────────────────────
         if ($regionId === null && $cityId !== null) {
             $regionId = $this->resolveRegionId($cityId);
@@ -141,6 +151,10 @@ class HotelSearchService
      */
     public function getHotelDetail(string $providerHotelId): ?array
     {
+        if (DemoHotelData::isEnabled()) {
+            return DemoHotelData::hotel($providerHotelId);
+        }
+
         $stmt = $this->db->prepare(
             'SELECT hc.*
              FROM hotels_content hc

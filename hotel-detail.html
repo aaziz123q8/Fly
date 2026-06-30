@@ -323,7 +323,7 @@ function updatePriceSummary() {
 }
 
 function bookRoom() {
-  if (!Auth.isLoggedIn()) { window.location.href = 'login.html?redirect=' + encodeURIComponent(window.location.href); return; }
+  // No forced login — the booking page offers log-in or guest checkout.
   if (selectedRoom === null) { alert('الرجاء اختيار غرفة'); return; }
   var room    = window._rooms[selectedRoom];
   var inVal   = document.getElementById('checkIn').value;
