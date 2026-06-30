@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>التأكيد والدفع — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/checkout-gateway.css">
   <script src="js/dark-mode.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
@@ -568,33 +569,8 @@
       <!-- Card section (shown for card + mixed) -->
       <div id="cardSection">
 
-        <!-- Cardholder name -->
-        <div class="pay-field">
-          <label class="pay-field-label" for="cardName">اسم حامل البطاقة</label>
-          <input type="text" class="form-inp" id="cardName"
-            placeholder="الاسم كما هو مكتوب على البطاقة"
-            autocomplete="cc-name" dir="ltr">
-        </div>
-
-        <div id="stripeFields">
-          <!-- Card number (brand icon appears inside the field as you type) -->
-          <div class="pay-field">
-            <label class="pay-field-label">رقم البطاقة</label>
-            <div class="stripe-field" id="cardNumber-el"></div>
-          </div>
-          <!-- Expiry (month/year) + CVC -->
-          <div class="card-row">
-            <div class="pay-field">
-              <label class="pay-field-label">تاريخ الانتهاء (شهر/سنة)</label>
-              <div class="stripe-field" id="cardExpiry-el"></div>
-            </div>
-            <div class="pay-field">
-              <label class="pay-field-label">CVC</label>
-              <div class="stripe-field" id="cardCvc-el"></div>
-            </div>
-          </div>
-          <div id="stripeCardError" class="stripe-err"></div>
-        </div>
+        <!-- Unified checkout gateway (Apple/Google Pay + card fields) -->
+        <div id="fmGateway"></div>
 
         <!-- Shown only when Stripe can't load (e.g. publishable key not configured) -->
         <div id="stripeUnavailable" class="stripe-unavailable" style="display:none">
@@ -635,7 +611,7 @@
 
     <!-- Desktop pay button -->
     <div class="desktop-pay-section">
-      <button class="desktop-pay-btn" id="desktopPayBtn" onclick="submitPayment()">
+      <button class="desktop-pay-btn fmco-paybtn" id="desktopPayBtn" onclick="submitPayment()">
         <span id="desktopPayTxt">🔒 ادفع الآن</span>
         <div class="spin hidden" id="desktopPaySpin"></div>
       </button>
@@ -671,7 +647,7 @@
       <div class="pay-footer-amt" id="footerAmount">—</div>
       <div class="pay-footer-sub" id="footerSub" style="display:none"></div>
     </div>
-    <button class="pay-btn" id="payBtn" onclick="submitPayment()">
+    <button class="pay-btn fmco-paybtn" id="payBtn" onclick="submitPayment()">
       <span id="payBtnTxt">🔒 ادفع الآن</span>
       <div class="spin hidden" id="paySpinner"></div>
     </button>
@@ -682,6 +658,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
+<script src="js/checkout-gateway.js"></script>
 <script>
 // ── Auth guard ─────────────────────────────────────────────
 if (!Auth.isLoggedIn()) {
@@ -799,60 +776,51 @@ function updatePayBtn() {
   if (dTxt)   dTxt.textContent   = lbl;
 }
 
-// ── Stripe setup ────────────────────────────────────────────
-let stripe      = null;
-let stripeCard  = null;
+// ── Unified checkout gateway ────────────────────────────────
+let gw = null;  // FMCheckout controller (Stripe Elements + Apple/Google Pay)
 
 function showStripeUnavailable() {
-  const fields  = document.getElementById('stripeFields');
   const unavail = document.getElementById('stripeUnavailable');
-  if (fields)  fields.style.display  = 'none';
   if (unavail) unavail.style.display = 'block';
 }
 
-async function initStripe() {
-  // Guard against double-mount (Stripe throws if an element is mounted twice).
-  if (stripeCard) return;
-  try {
-    const cfg = await fetch('/api/config/stripe-key').then(r => r.json());
-    const pk  = (cfg && cfg.publishable_key) || '';
-    if (!pk) { console.error('[Stripe] No publishable key configured'); showStripeUnavailable(); return; }
-
-    stripe = Stripe(pk);
-    const elements = stripe.elements({ locale: 'ar' });
-    const style = {
-      base: {
-        fontSize: '16px',
-        fontFamily: 'inherit',
-        color: '#111827',
-        fontSmoothing: 'antialiased',
-        '::placeholder': { color: '#9ca3af' },
-      },
-      invalid: { color: '#dc2626' },
-    };
-
-    // Split fields give a cleaner, branded layout than the single combined element.
-    stripeCard       = elements.create('cardNumber', { style, showIcon: true, placeholder: '1234 1234 1234 1234' });
-    const cardExpiry = elements.create('cardExpiry', { style });
-    const cardCvc    = elements.create('cardCvc',    { style });
-
-    stripeCard.mount('#cardNumber-el');
-    cardExpiry.mount('#cardExpiry-el');
-    cardCvc.mount('#cardCvc-el');
-
-    const errEl = document.getElementById('stripeCardError');
-    const onChange = (e) => {
-      errEl.textContent = (e && e.error) ? ('⚠️ ' + e.error.message) : '';
-    };
-    stripeCard.on('change', onChange);
-    cardExpiry.on('change', onChange);
-    cardCvc.on('change', onChange);
-  } catch(e) {
-    console.error('[Stripe init]', e);
-    showStripeUnavailable();
-  }
+// Create a Stripe PaymentIntent for the full card amount (coupon applied, no wallet).
+async function createFlightPaymentIntent() {
+  const couponCode = document.getElementById('couponInput')?.value.trim() || '';
+  const piRes = await Api.post('/api/flights/checkout/payment-intent', {
+    session_key: sessionKey,
+    coupon_code: couponCode || null,
+  }, true);
+  return { clientSecret: piRes.client_secret || '', paymentIntentId: piRes.payment_intent_id || '' };
 }
-initStripe();
+
+// Confirm the Duffel booking on the server then go to the confirmation page.
+async function confirmFlightBooking(paymentIntentId) {
+  const cr = await Api.post('/api/flights/checkout/confirm', {
+    session_key:       sessionKey,
+    payment_intent_id: paymentIntentId,
+  }, true);
+  const bookingRef = cr.duffel_booking_reference || cr.booking_reference || '';
+  window.location.href = 'confirmation.html'
+    + '?session='    + encodeURIComponent(sessionKey)
+    + '&confirmed=1'
+    + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '');
+}
+
+async function initGateway() {
+  if (!sessionKey) return;
+  gw = await FMCheckout.mount({
+    fieldsEl:      document.getElementById('fmGateway'),
+    currency:      'GBP',                          // Stripe charges in GBP
+    amountMinor:   Math.round(getNetTotal() * 100),// Apple/Google Pay sheet amount
+    onUnavailable: showStripeUnavailable,
+    express: {
+      getClientSecret: createFlightPaymentIntent,
+      onSuccess: async (pi) => { await confirmFlightBooking(pi && pi.id); },
+    },
+  });
+}
+initGateway();
 
 // ── Format price ───────────────────────────────────────────
 function fmt(gbp) {
@@ -1070,6 +1038,7 @@ function renderPriceRows() {
 
   document.getElementById('priceRows').innerHTML = html;
   document.getElementById('footerAmount').textContent = fmt(net);
+  if (gw && typeof gw.updateAmount === 'function') gw.updateAmount(net * 100);
 
   const sub = document.getElementById('footerSub');
   if (cur !== 'GBP') {
@@ -1190,13 +1159,13 @@ async function submitPayment() {
   }
 
   // ── Card or Mixed payment — needs Stripe ───────────────
-  if (!stripe || !stripeCard) {
+  if (!gw || gw.unavailable || !gw.stripe) {
     showError('⚠️ لم يتم تحميل نظام الدفع. يرجى إعادة تحميل الصفحة.');
     setPayLoading(false);
     return;
   }
 
-  const cardName = document.getElementById('cardName').value.trim();
+  const cardName = gw.cardName;
   if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة.'); setPayLoading(false); return; }
 
   try {
@@ -1235,12 +1204,7 @@ async function submitPayment() {
     document.getElementById('payBtnTxt').textContent = cardMsg;
     if (dt) dt.textContent = cardMsg;
 
-    const { paymentIntent, error: stripeError } = await stripe.confirmCardPayment(clientSecret, {
-      payment_method: {
-        card: stripeCard,
-        billing_details: { name: cardName },
-      },
-    });
+    const { paymentIntent, error: stripeError } = await gw.confirmCard(clientSecret, { name: cardName });
 
     if (stripeError) {
       showError('⚠️ ' + (stripeError.message || 'فشل الدفع. يرجى المحاولة مجدداً.'));

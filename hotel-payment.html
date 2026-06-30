@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>الدفع — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/checkout-gateway.css">
   <script src="js/dark-mode.js"></script>
   <script src="https://js.stripe.com/v3/"></script>
   <style>
@@ -82,31 +83,8 @@
         <div class="pay-card">
           <h2>🔒 الدفع الآمن</h2>
 
-          <!-- Cardholder name -->
-          <div class="pay-field">
-            <label class="pay-field-label" for="cardName">اسم حامل البطاقة</label>
-            <input type="text" class="form-inp" id="cardName" placeholder="الاسم كما هو مكتوب على البطاقة" autocomplete="cc-name" dir="ltr">
-          </div>
-
-          <div id="stripeFields">
-            <!-- Card number (brand icon appears inside as you type) -->
-            <div class="pay-field">
-              <label class="pay-field-label">رقم البطاقة</label>
-              <div class="stripe-field" id="cardNumber-el"></div>
-            </div>
-            <!-- Expiry (month/year) + CVC -->
-            <div class="card-row">
-              <div class="pay-field">
-                <label class="pay-field-label">تاريخ الانتهاء (شهر/سنة)</label>
-                <div class="stripe-field" id="cardExpiry-el"></div>
-              </div>
-              <div class="pay-field">
-                <label class="pay-field-label">CVC</label>
-                <div class="stripe-field" id="cardCvc-el"></div>
-              </div>
-            </div>
-            <div id="stripeCardError" class="stripe-err"></div>
-          </div>
+          <!-- Unified checkout gateway (Apple/Google Pay + card fields) -->
+          <div id="fmGateway"></div>
 
           <div id="stripeUnavailable" class="stripe-unavailable" style="display:none">
             ⚠️ نظام الدفع غير مُفعّل بعد (مفتاح Stripe غير مُهيّأ على الخادم).
@@ -122,7 +100,7 @@
             <div class="secure-badge">🔐 3D Secure</div>
           </div>
 
-          <button class="btn btn-primary btn-lg btn-block" onclick="submitPayment()" id="payBtn" style="margin-top:20px">
+          <button class="btn btn-primary btn-lg btn-block fmco-paybtn" onclick="submitPayment()" id="payBtn" style="margin-top:20px">
             <span id="payBtnTxt">ادفع الآن 🔒</span>
             <div class="spinner spinner-sm hidden" id="paySpinner" style="border-top-color:white"></div>
           </button>
@@ -163,6 +141,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
+<script src="js/checkout-gateway.js"></script>
 <script>
   if (typeof formatPrice === 'undefined') window.formatPrice = a => '£ ' + parseFloat(a||0).toFixed(2);
   if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
@@ -177,8 +156,7 @@
   const hotelLabel   = p.get('hotel')   || 'فندق';
   const nights       = parseInt(p.get('nights') || '1');
 
-  let stripe = null;
-  let stripeCard = null;
+  let gw = null;  // unified checkout gateway controller
 
   function showError(msg) {
     const el = document.getElementById('payError');
@@ -202,42 +180,56 @@
   }
 
   function showStripeUnavailable() {
-    const f = document.getElementById('stripeFields'), u = document.getElementById('stripeUnavailable');
-    if (f) f.style.display = 'none';
+    const u = document.getElementById('stripeUnavailable');
     if (u) u.style.display = 'block';
+    const btn = document.getElementById('payBtn');
+    if (btn) btn.disabled = true;
   }
 
-  async function initStripe() {
-    if (stripeCard) return;
-    try {
-      const cfg = await Api.get('/api/config/stripe-key');
-      const key = (cfg && (cfg.publishable_key || cfg.key)) || '';
-      if (!key) { showStripeUnavailable(); return; }
-      stripe = Stripe(key);
-      const elements = stripe.elements({ locale: 'ar' });
-      const style = { base: { fontSize:'16px', fontFamily:'inherit', color:'#111827', '::placeholder':{ color:'#9ca3af' } }, invalid: { color:'#dc2626' } };
-      stripeCard       = elements.create('cardNumber', { style, showIcon:true, placeholder:'1234 1234 1234 1234' });
-      const cardExpiry = elements.create('cardExpiry', { style });
-      const cardCvc    = elements.create('cardCvc', { style });
-      stripeCard.mount('#cardNumber-el');
-      cardExpiry.mount('#cardExpiry-el');
-      cardCvc.mount('#cardCvc-el');
-      const errEl = document.getElementById('stripeCardError');
-      const onChange = (e) => { errEl.textContent = (e && e.error) ? ('⚠️ ' + e.error.message) : ''; };
-      stripeCard.on('change', onChange);
-      cardExpiry.on('change', onChange);
-      cardCvc.on('change', onChange);
-    } catch(e) {
-      console.error('[Stripe init]', e);
-      showStripeUnavailable();
+  // ── Finalize: poll the server until the hotel booking is confirmed. ────────
+  async function finalizeBooking() {
+    let bookingRef = '';
+    const delays = [2000, 4000, 8000, 16000, 16000, 16000];
+    for (let attempt = 0; attempt < delays.length; attempt++) {
+      await new Promise(r => setTimeout(r, delays[attempt]));
+      try {
+        const confirmRes = await Api.post('/api/hotels/checkout/confirm', {
+          session_key: sessionKey,
+          payment_intent_id: piId,
+        }, true);
+        if (confirmRes.status === 'confirmed' || confirmRes.booking_reference) {
+          bookingRef = confirmRes.booking_reference || confirmRes.booking_number || '';
+          break;
+        }
+      } catch(e) { break; }
     }
+    window.location.href = 'hotel-confirmation.html'
+      + '?ref='     + encodeURIComponent(bookingRef)
+      + '&hotel='   + encodeURIComponent(hotelLabel)
+      + '&nights='  + encodeURIComponent(nights)
+      + '&amount='  + encodeURIComponent(amountGBP);
+  }
+
+  async function initGateway() {
+    // The hotel PaymentIntent is created during prebook; its clientSecret comes
+    // in via the URL, so the wallet flow just reuses that same secret.
+    gw = await FMCheckout.mount({
+      fieldsEl:    document.getElementById('fmGateway'),
+      currency:    'GBP',                          // Stripe charges in GBP
+      amountMinor: Math.round(amountGBP * 100),    // for the Apple/Google Pay sheet
+      onUnavailable: showStripeUnavailable,
+      express: (clientSecret ? {
+        getClientSecret: async () => ({ clientSecret }),
+        onSuccess: async () => { await finalizeBooking(); },
+      } : null),
+    });
   }
 
   async function submitPayment() {
-    if (!stripe || !stripeCard) { showError('⚠️ لم يتم تحميل نظام الدفع. يرجى تحديث الصفحة.'); return; }
+    if (!gw || gw.unavailable || !gw.stripe) { showError('⚠️ لم يتم تحميل نظام الدفع. يرجى تحديث الصفحة.'); return; }
     if (!clientSecret) { showError('بيانات الدفع غير متوفرة. يرجى العودة وإعادة المحاولة.'); return; }
 
-    const cardName = document.getElementById('cardName').value.trim();
+    const cardName = gw.cardName;
     if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة'); return; }
 
     const btn = document.getElementById('payBtn');
@@ -247,9 +239,7 @@
     document.getElementById('payError').style.display = 'none';
 
     try {
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: { card: stripeCard, billing_details: { name: cardName } },
-      });
+      const result = await gw.confirmCard(clientSecret, { name: cardName });
 
       if (result.error) {
         showError(result.error.message || 'فشل الدفع. يرجى التحقق من بيانات البطاقة.');
@@ -258,27 +248,7 @@
       }
 
       if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-        // Poll for booking confirmation with exponential backoff
-        let bookingRef = '';
-        const delays = [2000, 4000, 8000, 16000, 16000, 16000];
-        for (let attempt = 0; attempt < delays.length; attempt++) {
-          await new Promise(r => setTimeout(r, delays[attempt]));
-          try {
-            const confirmRes = await Api.post('/api/hotels/checkout/confirm', {
-              session_key: sessionKey,
-              payment_intent_id: piId,
-            }, true);
-            if (confirmRes.status === 'confirmed' || confirmRes.booking_reference) {
-              bookingRef = confirmRes.booking_reference || confirmRes.booking_number || '';
-              break;
-            }
-          } catch(e) { break; }
-        }
-        window.location.href = 'hotel-confirmation.html'
-          + '?ref='     + encodeURIComponent(bookingRef)
-          + '&hotel='   + encodeURIComponent(hotelLabel)
-          + '&nights='  + encodeURIComponent(nights)
-          + '&amount='  + encodeURIComponent(amountGBP);
+        await finalizeBooking();
       } else {
         showError('حالة الدفع غير معروفة. يرجى التواصل مع الدعم.');
         btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
@@ -304,7 +274,7 @@
 
   initCurrency();
   loadSummary();
-  initStripe();
+  initGateway();
 </script>
 <script src="js/bottom-nav.js"></script>
 </body>
