@@ -46,7 +46,8 @@ class HotelController
         $cityId  = $body['city_id']            ?? null;
         $regionId = $body['ratehawk_region_id'] ?? null;
 
-        if (empty($cityId) && empty($regionId)) {
+        // In demo mode the destination name is enough (no RateHawk region lookup).
+        if (!\App\Services\DemoHotelData::isEnabled() && empty($cityId) && empty($regionId)) {
             $errors['city_id'] = 'Either city_id or ratehawk_region_id is required.';
         }
 
@@ -84,7 +85,7 @@ class HotelController
                 Response::notFound('Hotel not found.');
             }
 
-            Response::json(['hotel' => $hotel]);
+            Response::json(['hotel' => $hotel, 'rooms' => $hotel['rooms'] ?? []]);
         } catch (\RuntimeException $e) {
             Response::error($e->getMessage(), $e->getCode() >= 400 ? $e->getCode() : 500);
         }

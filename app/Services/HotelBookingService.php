@@ -56,15 +56,30 @@ class HotelBookingService
         float   $displayedPrice = 0.0,
         ?string $hotelName = null
     ): array {
-        // ── Call RateHawk prebook ────────────────────────────────────────────
-        $prebookResponse = $this->rateHawk->prebook($bookHash);
-
-        // Handle both response shapes: data.session_id or session_id
-        $prebookData       = $prebookResponse['data'] ?? $prebookResponse;
-        $prebookSessionId  = $prebookData['session_id'] ?? $prebookData['prebook_id'] ?? '';
-        $priceData         = $prebookData['price_data'] ?? $prebookData['init_price_info'] ?? [];
-        $netPrice          = (float) ($priceData['price'] ?? $priceData['amount'] ?? $priceData['total'] ?? 0.0);
-        $currency          = strtoupper($priceData['currency'] ?? 'GBP');
+        // ── Resolve the net price + prebook session ──────────────────────────
+        if (DemoHotelData::isEnabled()) {
+            // Demo: the book_hash encodes the price (DEMO|<price>|<name>); no call.
+            $parts             = explode('|', $bookHash);
+            $netPrice          = (isset($parts[1]) && is_numeric($parts[1]))
+                                    ? (float) $parts[1]
+                                    : ($displayedPrice > 0.0 ? $displayedPrice : 50.0);
+            $prebookSessionId  = 'demo-prebook-' . substr(md5($bookHash . microtime(true)), 0, 12);
+            $currency          = 'GBP';
+            $cancellationPolicyRaw = [];
+            $roomData          = [];
+        } else {
+            $prebookResponse   = $this->rateHawk->prebook($bookHash);
+            // Handle both response shapes: data.session_id or session_id
+            $prebookData       = $prebookResponse['data'] ?? $prebookResponse;
+            $prebookSessionId  = $prebookData['session_id'] ?? $prebookData['prebook_id'] ?? '';
+            $priceData         = $prebookData['price_data'] ?? $prebookData['init_price_info'] ?? [];
+            $netPrice          = (float) ($priceData['price'] ?? $priceData['amount'] ?? $priceData['total'] ?? 0.0);
+            $currency          = strtoupper($priceData['currency'] ?? 'GBP');
+            $cancellationPolicyRaw = $prebookData['cancellation_policy']
+                                  ?? $prebookData['cancellation_penalties']
+                                  ?? [];
+            $roomData          = $prebookData['room_data'] ?? $prebookData['rooms'] ?? [];
+        }
 
         // Apply the platform commission (admin "Commissions" page) on top of the
         // RateHawk net price. The customer is charged this commission-inclusive
@@ -72,10 +87,7 @@ class HotelBookingService
         // net price the customer saw, so a real RateHawk price change is caught.
         $commission        = (new CommissionService($this->db))->apply($netPrice, 'hotel');
         $confirmedPrice    = $commission['total'];
-        $cancellationPolicy = $prebookData['cancellation_policy']
-                              ?? $prebookData['cancellation_penalties']
-                              ?? [];
-        $roomData          = $prebookData['room_data'] ?? $prebookData['rooms'] ?? [];
+        $cancellationPolicy = $cancellationPolicyRaw;
 
         // ── Create booking session ───────────────────────────────────────────
         $sessionKey = $this->sessionService->create($userId, 'hotel');
@@ -393,7 +405,10 @@ class HotelBookingService
             $this->db->exec("UNLOCK TABLES");
         }
 
-        // ── Call RateHawk createBooking ───────────────────────────────────────
+        // ── Call RateHawk createBooking (or fake it in demo mode) ────────────
+        if (DemoHotelData::isEnabled()) {
+            $bookingResponse = ['data' => ['order_id' => 'DEMO-' . $bookingReference]];
+        } else {
         try {
             $bookingResponse = $this->rateHawk->createBooking(
                 $prebookSessionId,
@@ -446,6 +461,7 @@ class HotelBookingService
             }
 
             throw new RuntimeException('Hotel booking failed: ' . $rateHawkEx->getMessage(), 502, $rateHawkEx);
+        }
         }
 
         $bookingResponseData = $bookingResponse['data'] ?? $bookingResponse;
