@@ -590,7 +590,10 @@
         res = await Api.post('/api/flights/checkout/start', { offer_id: flightId }, true);
         sessionKey = res.session_key;
       } else {
-        res = await Api.get('/api/flights/offers/' + encodeURIComponent(flightId), false);
+        // Duffel wraps the offer in { data: {...} } — unwrap so the price/details
+        // read the same way as the logged-in checkout/start response.
+        const raw = await Api.get('/api/flights/offers/' + encodeURIComponent(flightId), false);
+        res = raw.data || raw;
       }
       flightData = res.offer || res;
 

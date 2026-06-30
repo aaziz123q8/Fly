@@ -80,17 +80,15 @@ class FlightController
 
             // Apply the platform commission to the headline price so a guest (who
             // sees this public offer before a checkout session exists) is shown
-            // the same price that will be charged at payment.
+            // the same price that will be charged at payment. Duffel wraps the
+            // offer in { data: {...} }; fall back to a flat shape just in case.
             $commission = new \App\Services\CommissionService();
-            foreach (['total_amount'] as $k) {
-                if (isset($data[$k])) {
-                    $data['net_amount'] = $data[$k];
-                    $data[$k] = number_format($commission->markup((float) $data[$k], 'flight'), 2, '.', '');
-                }
-                if (isset($data['offer'][$k])) {
-                    $data['offer']['net_amount'] = $data['offer'][$k];
-                    $data['offer'][$k] = number_format($commission->markup((float) $data['offer'][$k], 'flight'), 2, '.', '');
-                }
+            if (isset($data['data']['total_amount'])) {
+                $data['data']['net_amount']   = $data['data']['total_amount'];
+                $data['data']['total_amount'] = number_format($commission->markup((float) $data['data']['total_amount'], 'flight'), 2, '.', '');
+            } elseif (isset($data['total_amount'])) {
+                $data['net_amount']   = $data['total_amount'];
+                $data['total_amount'] = number_format($commission->markup((float) $data['total_amount'], 'flight'), 2, '.', '');
             }
 
             Response::json($data);
