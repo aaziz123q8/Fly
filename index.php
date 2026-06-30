@@ -229,6 +229,11 @@ $router->group('api/flights', function (Router $r): void {
         (new FlightController())->startCheckout($req);
     }, [AuthMiddleware::handle()]);
 
+    // Checkout: guest start (NO auth) — creates a guest account + session.
+    $r->post('/checkout/guest-start', function (Request $req): void {
+        (new FlightController())->guestStart($req);
+    });
+
     // Checkout: passengers (auth required).
     $r->post('/checkout/passengers', function (Request $req): void {
         (new FlightController())->savePassengers($req);
