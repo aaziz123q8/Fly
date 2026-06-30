@@ -336,6 +336,12 @@ function bookRoom() {
   var outVal  = document.getElementById('checkOut').value;
   if (!inVal || !outVal) { alert('الرجاء تحديد تواريخ الإقامة'); return; }
 
+  // Pass the TOTAL stay price (per-night × nights); the booking page treats the
+  // "price" param as the total.
+  var nights   = Math.max(1, Math.round((new Date(outVal) - new Date(inVal)) / 86400000));
+  var perNight = parseFloat(room.price || room.rate || room.total_price || 0);
+  var stayTotal = perNight * nights;
+
   var params = new URLSearchParams({
     hotel_id:   hotelData.id || hotelData.provider_hotel_id || '',
     hotel_name: hotelData.name || 'فندق',
@@ -348,7 +354,7 @@ function bookRoom() {
     adults:     document.getElementById('adults').value,
     children:   document.getElementById('children').value,
     rooms:      document.getElementById('roomCount').value,
-    price:      room.price || room.rate || room.total_price || 0,
+    price:      stayTotal,
     currency:   room.currency || 'GBP',
     img:        (hotelData.images && hotelData.images[0]) ? (hotelData.images[0].url || hotelData.images[0]) : '',
   });

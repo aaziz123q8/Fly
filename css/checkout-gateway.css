@@ -1,0 +1,111 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   FlyMasar — Unified Checkout Gateway component styles.
+   Scoped under .fmco-card so it never affects the rest of the site.
+   Design reference: docs/payment-ui-reference (Apple/Google Pay → divider →
+   card fields → total → pay). Colors: brand #1E3A63 / #2E4B7D, gold #C19A4F.
+   ────────────────────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap');
+
+.fmco-card{
+  --fmco-brand:#1E3A63; --fmco-brand-2:#2E4B7D; --fmco-gold:#C19A4F;
+  --fmco-ink:#1A2A44; --fmco-muted:#6B7A90; --fmco-card:#FFFFFF;
+  --fmco-line:#E4E9F1; --fmco-field:#F7F9FC; --fmco-danger:#E2574C;
+  --fmco-radius:18px; --fmco-radius-sm:12px;
+  width:100%; background:var(--fmco-card); border-radius:var(--fmco-radius);
+  box-shadow:0 1px 2px rgba(26,42,68,.05), 0 26px 52px -26px rgba(26,42,68,.30);
+  overflow:hidden; border:1px solid rgba(26,42,68,.06);
+  font-family:'Tajawal',system-ui,sans-serif; color:var(--fmco-ink); direction:rtl; text-align:right;
+}
+.fmco-top{
+  position:relative; color:#fff; padding:18px 20px 20px;
+  background:linear-gradient(135deg,var(--fmco-brand) 0%,var(--fmco-brand-2) 100%); overflow:hidden;
+}
+.fmco-top::before{
+  content:""; position:absolute; inset:0; opacity:.18;
+  background-image:radial-gradient(circle, rgba(255,255,255,.6) 1px, transparent 1.4px);
+  background-size:22px 22px;
+}
+.fmco-top > *{ position:relative; }
+.fmco-brand{ display:flex; align-items:center; gap:9px; }
+.fmco-brand-mark{ width:31px; height:31px; border-radius:9px; display:grid; place-items:center;
+  background:rgba(255,255,255,.14); border:1px solid rgba(255,255,255,.2); font-size:15px; }
+.fmco-brand-name{ font-weight:800; font-size:18px; }
+.fmco-brand-name .fly{ color:var(--fmco-gold); }
+.fmco-brand-name small{ font-weight:600; opacity:.7; font-size:11.5px; display:block; margin-top:-3px; }
+.fmco-secure{ display:inline-flex; align-items:center; gap:6px; margin-top:14px; font-size:12.5px; font-weight:500;
+  color:rgba(255,255,255,.92); background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.18);
+  padding:5px 10px; border-radius:999px; }
+.fmco-secure svg{ width:13px; height:13px; }
+.fmco-body{ padding:20px; }
+
+/* Embedded mode: drop the outer card chrome so the component sits cleanly
+   inside an existing page card without changing the page layout. The colour
+   variables stay (they live on .fmco-card) so fields keep the unified look. */
+.fmco-card.fmco-embed{ box-shadow:none; border:0; border-radius:0; background:transparent; overflow:visible; }
+.fmco-card.fmco-embed .fmco-body{ padding:0; }
+
+.fmco-wallets{ margin-bottom:2px; }
+/* Express Checkout Element host — Apple Pay / Google Pay buttons render here. */
+.fmco-wallets > div{ width:100%; }
+.fmco-wallets:empty{ display:none; }
+
+.fmco-divider{ display:flex; align-items:center; gap:12px; margin:18px 0 16px; color:var(--fmco-muted); font-size:12.5px; font-weight:500; }
+.fmco-divider::before, .fmco-divider::after{ content:""; flex:1; height:1px; background:var(--fmco-line); }
+.fmco-divider.fmco-no-wallets{ margin-top:0; }
+
+.fmco-field{ margin-bottom:13px; }
+.fmco-label{ display:block; font-size:13px; font-weight:500; color:var(--fmco-muted); margin-bottom:7px; }
+.fmco-box{
+  display:flex; align-items:center; gap:10px; background:var(--fmco-field);
+  border:1.5px solid var(--fmco-line); border-radius:var(--fmco-radius-sm); padding:0 12px; min-height:50px;
+  transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.fmco-box.fmco-focus, .fmco-box:focus-within{ border-color:var(--fmco-brand); background:#fff; box-shadow:0 0 0 4px rgba(30,58,99,.16); }
+.fmco-box.fmco-invalid{ border-color:var(--fmco-danger); }
+.fmco-box input{ border:0; outline:0; background:transparent; width:100%; height:50px;
+  font-family:inherit; font-size:15.5px; font-weight:500; color:var(--fmco-ink); }
+.fmco-box input::placeholder{ color:#A8B3C1; font-weight:400; }
+/* Stripe Element fills the box */
+.fmco-box .fmco-el{ flex:1; }
+.fmco-card-glyph{ flex:0 0 auto; color:#9AA7B6; display:flex; }
+.fmco-card-glyph svg{ width:24px; height:24px; }
+.fmco-row-2{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+.fmco-err{ color:var(--fmco-danger); font-size:12.5px; margin:2px 2px 0; min-height:1em; }
+
+.fmco-total{ display:flex; align-items:baseline; justify-content:space-between; margin:18px 2px 14px; }
+.fmco-total-label{ font-size:13.5px; color:var(--fmco-muted); font-weight:500; }
+.fmco-total-val{ font-size:18px; font-weight:800; direction:ltr; color:var(--fmco-brand); }
+
+.fmco-pay{
+  width:100%; height:52px; border:0; cursor:pointer; border-radius:var(--fmco-radius-sm);
+  background:linear-gradient(135deg,var(--fmco-brand) 0%,var(--fmco-brand-2) 100%);
+  color:#fff; font-family:inherit; font-size:16px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; gap:8px;
+  transition:transform .12s ease, filter .2s ease, box-shadow .2s ease;
+  box-shadow:0 12px 24px -12px rgba(30,58,99,.55);
+}
+.fmco-pay:hover{ filter:brightness(1.06); }
+.fmco-pay:active{ transform:translateY(1px); }
+.fmco-pay:disabled{ opacity:.6; cursor:not-allowed; }
+.fmco-pay svg{ width:16px; height:16px; }
+.fmco-spin{ width:18px; height:18px; border:2px solid rgba(255,255,255,.45); border-top-color:#fff; border-radius:50%; animation:fmco-spin .7s linear infinite; }
+@keyframes fmco-spin{ to{ transform:rotate(360deg); } }
+
+/* Standalone recolor utility — apply to an existing page pay button to match
+   the unified design *in place* (we recolor it, we never move it). Uses literal
+   colours so it works outside the .fmco-card variable scope. */
+.fmco-paybtn{
+  background:linear-gradient(135deg,#1E3A63 0%,#2E4B7D 100%)!important;
+  color:#fff!important; border:0!important;
+  box-shadow:0 12px 24px -12px rgba(30,58,99,.55)!important;
+}
+.fmco-paybtn:hover:not(:disabled){ filter:brightness(1.08); }
+
+.fmco-trust{ margin-top:14px; text-align:center; font-size:12px; color:var(--fmco-muted); display:flex; align-items:center; justify-content:center; gap:6px; }
+.fmco-trust svg{ width:13px; height:13px; opacity:.7; }
+
+.fmco-unavailable{ padding:16px; border-radius:12px; background:#fef9c3; border:1px solid #fde68a; color:#92400e; font-size:13px; line-height:1.7; text-align:center; }
+.fmco-retry{ margin-top:10px; padding:8px 18px; border:0; cursor:pointer; background:var(--fmco-brand); color:#fff; border-radius:8px; font-family:inherit; font-weight:700; font-size:13px; }
+
+@media (prefers-reduced-motion:reduce){ .fmco-card *{ transition:none!important; } }
