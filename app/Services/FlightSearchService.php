@@ -12,11 +12,13 @@ class FlightSearchService
 {
     private PDO $db;
     private DuffelAdapter $duffel;
+    private CommissionService $commission;
 
     public function __construct(?PDO $db = null, ?DuffelAdapter $duffel = null)
     {
-        $this->db     = $db     ?? Database::getInstance();
-        $this->duffel = $duffel ?? new DuffelAdapter();
+        $this->db         = $db     ?? Database::getInstance();
+        $this->duffel     = $duffel ?? new DuffelAdapter();
+        $this->commission = new CommissionService($this->db);
     }
 
     /**
@@ -176,9 +178,15 @@ class FlightSearchService
         $firstSeg     = $firstSlice['segments'][0]        ?? [];
         $marketingCarrier = $firstSeg['marketing_carrier'] ?? $firstSeg['operating_carrier'] ?? [];
 
+        // Show the customer-facing price (net supplier price + platform
+        // commission) so search results match what is charged at checkout.
+        $netAmount      = (float) ($offer['total_amount'] ?? 0);
+        $customerAmount = $this->commission->markup($netAmount, 'flight');
+
         return [
             'offer_id'                          => $offer['id']                                     ?? '',
-            'total_amount'                      => $offer['total_amount']                            ?? '0.00',
+            'total_amount'                      => number_format($customerAmount, 2, '.', ''),
+            'net_amount'                        => $offer['total_amount']                            ?? '0.00',
             'currency'                          => strtoupper($offer['total_currency']              ?? 'GBP'),
             'expires_at'                        => $offer['expires_at']                              ?? null,
             'slices'                            => $offer['slices']                                  ?? [],

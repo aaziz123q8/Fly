@@ -63,8 +63,15 @@ class HotelBookingService
         $prebookData       = $prebookResponse['data'] ?? $prebookResponse;
         $prebookSessionId  = $prebookData['session_id'] ?? $prebookData['prebook_id'] ?? '';
         $priceData         = $prebookData['price_data'] ?? $prebookData['init_price_info'] ?? [];
-        $confirmedPrice    = (float) ($priceData['price'] ?? $priceData['amount'] ?? $priceData['total'] ?? 0.0);
+        $netPrice          = (float) ($priceData['price'] ?? $priceData['amount'] ?? $priceData['total'] ?? 0.0);
         $currency          = strtoupper($priceData['currency'] ?? 'GBP');
+
+        // Apply the platform commission (admin "Commissions" page) on top of the
+        // RateHawk net price. The customer is charged this commission-inclusive
+        // amount; the drift guard below still compares the NET price against the
+        // net price the customer saw, so a real RateHawk price change is caught.
+        $commission        = (new CommissionService($this->db))->apply($netPrice, 'hotel');
+        $confirmedPrice    = $commission['total'];
         $cancellationPolicy = $prebookData['cancellation_policy']
                               ?? $prebookData['cancellation_penalties']
                               ?? [];
@@ -77,6 +84,8 @@ class HotelBookingService
 
         $pricingSnapshot = [
             'confirmed_price'     => $confirmedPrice,
+            'net_price'           => $netPrice,
+            'commission'          => $commission['commission'],
             'currency'            => $currency,
             'cancellation_policy' => $cancellationPolicy,
             'check_in'            => $checkIn,
@@ -95,10 +104,10 @@ class HotelBookingService
             'current_step'       => 'guests',
         ]);
 
-        // ── Price-change detection ───────────────────────────────────────────
+        // ── Price-change detection (compare NET vs the net price shown) ──────
         $priceChanged = false;
         if ($displayedPrice > 0.0) {
-            $diff = abs($confirmedPrice - $displayedPrice) / max(1.0, $displayedPrice);
+            $diff = abs($netPrice - $displayedPrice) / max(1.0, $displayedPrice);
             $priceChanged = $diff > self::PRICE_CHANGE_THRESHOLD;
         }
 

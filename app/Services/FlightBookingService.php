@@ -2854,50 +2854,24 @@ class FlightBookingService
 
     private function calculatePricing(float $baseAmount, string $currency): array
     {
+        // The platform commission (admin "Commissions" page) is the single
+        // markup source. Each matching rule becomes a fee line on top of the
+        // net supplier price.
+        $result = (new CommissionService($this->db))->apply($baseAmount, 'flight');
+
         $fees = [];
-
-        try {
-            $stmt = $this->db->prepare(
-                "SELECT * FROM pricing_rules
-                 WHERE is_active = 1
-                   AND (applies_to = 'flight' OR applies_to = 'both')
-                 ORDER BY priority DESC"
-            );
-            $stmt->execute();
-            $rules = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-            $runningTotal = $baseAmount;
-
-            foreach ($rules as $rule) {
-                $feeAmount = 0.0;
-
-                if ($rule['value_type'] === 'percentage') {
-                    $feeAmount = round($runningTotal * ((float) $rule['value'] / 100), 2);
-                } elseif ($rule['value_type'] === 'fixed') {
-                    $feeAmount = (float) $rule['value'];
-                }
-
-                $fees[] = [
-                    'name'   => $rule['name']  ?? $rule['rule_type'],
-                    'type'   => $rule['rule_type'],
-                    'amount' => $feeAmount,
-                ];
-
-                $runningTotal = round($runningTotal + $feeAmount, 2);
-            }
-        } catch (\Throwable) {
-            // If pricing_rules table does not exist yet, use base amount.
-        }
-
-        $total = $baseAmount;
-        foreach ($fees as $fee) {
-            $total = round($total + $fee['amount'], 2);
+        foreach ($result['rules'] as $rule) {
+            $fees[] = [
+                'name'   => $rule['name'],
+                'type'   => 'commission',
+                'amount' => $rule['amount'],
+            ];
         }
 
         return [
             'base_amount' => $baseAmount,
             'fees'        => $fees,
-            'total'       => $total,
+            'total'       => $result['total'],
             'currency'    => $currency,
         ];
     }
