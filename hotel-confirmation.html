@@ -248,11 +248,23 @@
   }
 
   function shareWhatsApp() {
-    const msg = '🏨 تم تأكيد حجز فندقي عبر فلاي مسار!\nالفندق: ' + (document.getElementById('hotelHeader').textContent) +
-                '\nرقم الحجز: ' + ref +
-                '\nالوصول: ' + document.getElementById('vCheckin').textContent +
-                ' — المغادرة: ' + document.getElementById('vCheckout').textContent;
-    window.open('https://wa.me/?text=' + encodeURIComponent(msg));
+    const g = id => (document.getElementById(id)?.textContent || '').trim();
+    const lines = [
+      '🏨 *تأكيد حجز فندق — فلاي مسار*',
+      '━━━━━━━━━━━━━━',
+      '🏨 الفندق: ' + g('hotelHeader'),
+      g('hotelAddr') ? g('hotelAddr') : '',
+      '🔖 رقم الحجز: ' + ref,
+      g('bProvider') && document.getElementById('providerBox').style.display!=='none' ? '🧾 رقم حجز الفندق: ' + g('bProvider') : '',
+      '📅 الوصول: ' + g('vCheckin'),
+      '📅 المغادرة: ' + g('vCheckout') + '  (' + g('vNights') + ')',
+      g('vRoomType') && document.getElementById('roomSec').style.display!=='none' ? '🛏️ الغرفة: ' + g('vRoomType') : '',
+      g('vLeadGuest') ? '👤 الضيف: ' + g('vLeadGuest') : '',
+      '💳 الإجمالي: ' + g('vTotal'),
+      '━━━━━━━━━━━━━━',
+      '✈️ احجز رحلتك وفندقك على فلاي مسار'
+    ].filter(Boolean);
+    window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')));
   }
 
   if (ref) document.getElementById('invoiceBtn').href = 'invoice.html?ref=' + encodeURIComponent(ref);

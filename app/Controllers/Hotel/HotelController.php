@@ -117,7 +117,9 @@ class HotelController
                 checkOut:       (string) $request->input('check_out'),
                 hotelId:        (string) $request->input('hotel_id'),
                 displayedPrice: (float)  $request->input('displayed_price'),
-                hotelName:      $request->input('hotel_name') !== null ? (string) $request->input('hotel_name') : null
+                hotelName:      $request->input('hotel_name') !== null ? (string) $request->input('hotel_name') : null,
+                roomName:       $request->input('room_name')  !== null ? (string) $request->input('room_name')  : null,
+                board:          $request->input('board')      !== null ? (string) $request->input('board')      : null
             );
             Response::json($result);
         } catch (\RuntimeException $e) {

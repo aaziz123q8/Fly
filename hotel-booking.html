@@ -204,6 +204,8 @@
   const hotelId    = p.get('hotel_id')   || '';
   const hotelName  = p.get('hotel_name') || 'فندق';
   const roomId     = p.get('room_id')    || '';
+  const roomName   = p.get('room_name')  || '';
+  const board      = p.get('board')      || '';
   const bookHash   = p.get('book_hash')  || '';
   const checkIn    = p.get('check_in')   || '';
   const checkOut   = p.get('check_out')  || '';
@@ -245,6 +247,7 @@
         </div>
         <div style="flex:1">
           <div style="font-size:1.05rem;font-weight:700;margin-bottom:6px">${hotelName}</div>
+          ${roomName ? `<div style="font-size:0.9rem;font-weight:600;color:var(--primary);margin-bottom:6px">🛏️ ${roomName}${board ? ` · ${board}` : ''}</div>` : ''}
           <div style="display:flex;flex-wrap:wrap;gap:4px">
             <span class="info-chip">📅 ${fmtDate(checkIn)}</span>
             <span class="info-chip">📅 ${fmtDate(checkOut)}</span>
@@ -386,6 +389,9 @@
         check_in:        checkIn,
         check_out:       checkOut,
         hotel_id:        String(hotelId),
+        hotel_name:      hotelName,
+        room_name:       roomName,
+        board:           board,
         displayed_price: totalAmount,
       }, true);
       sessionKey = prebookRes.session_key || prebookRes.booking_session_key || prebookRes.id || '';

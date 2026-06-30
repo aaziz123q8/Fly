@@ -54,7 +54,9 @@ class HotelBookingService
         string  $checkOut,
         string  $hotelId,
         float   $displayedPrice = 0.0,
-        ?string $hotelName = null
+        ?string $hotelName = null,
+        ?string $roomName = null,
+        ?string $board = null
     ): array {
         // ── Resolve the net price + prebook session ──────────────────────────
         if (DemoHotelData::isEnabled()) {
@@ -79,6 +81,16 @@ class HotelBookingService
                                   ?? $prebookData['cancellation_penalties']
                                   ?? [];
             $roomData          = $prebookData['room_data'] ?? $prebookData['rooms'] ?? [];
+        }
+
+        // Carry the room the customer actually selected (name + board) so it is
+        // stored and shown on the confirmation/invoice. Used when the provider
+        // response carries no structured room data (e.g. demo mode).
+        if (empty($roomData) && ($roomName !== null && $roomName !== '')) {
+            $roomData = [[
+                'room_type' => $roomName,
+                'meal_plan' => ($board !== null && $board !== '') ? $board : null,
+            ]];
         }
 
         // Apply the platform commission (admin "Commissions" page) on top of the

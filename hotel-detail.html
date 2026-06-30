@@ -340,6 +340,8 @@ function bookRoom() {
     hotel_id:   hotelData.id || hotelData.provider_hotel_id || '',
     hotel_name: hotelData.name || 'فندق',
     room_id:    room.id || room.room_id || '',
+    room_name:  room.name || room.room_name || '',
+    board:      room.meal_plan || room.board || '',
     book_hash:  room.book_hash || room.id || '',
     check_in:   inVal,
     check_out:  outVal,
