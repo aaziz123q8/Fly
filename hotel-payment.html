@@ -38,6 +38,15 @@
     .price-total { display:flex; justify-content:space-between; padding:16px 0 0; font-size:1.15rem; font-weight:800; color:var(--primary); border-top:2px solid var(--primary); margin-top:8px; }
     #payError { color:var(--error,#ef4444); font-size:0.88rem; margin-top:12px; display:none; }
     .step-done { background:var(--primary)!important; color:#fff!important; }
+    /* Payment-method tabs (card / wallet / mixed) */
+    .hp-tabs { display:flex; gap:0; margin-bottom:16px; border:1.5px solid #e4e8ef; border-radius:12px; overflow:hidden; }
+    .hp-tab { flex:1; padding:11px 8px; font-family:inherit; font-size:0.85rem; font-weight:700; border:none; background:#f8fafc; color:var(--text-muted); cursor:pointer; border-left:1px solid #e4e8ef; transition:background .15s,color .15s; }
+    .hp-tab:first-child { border-left:none; }
+    .hp-tab.active { background:var(--primary); color:#fff; }
+    .hp-tab:disabled { opacity:.5; cursor:not-allowed; }
+    .wallet-box { display:flex; justify-content:space-between; align-items:center; background:#f0fdf4; border:1.5px solid #86efac; border-radius:10px; padding:12px 14px; margin-bottom:14px; font-weight:700; color:#15803d; }
+    .wallet-box.insufficient { background:#fef2f2; border-color:#fca5a5; color:#991b1b; }
+    .mixed-wrap { margin-bottom:14px; }
   </style>
 </head>
 <body>
@@ -83,8 +92,32 @@
         <div class="pay-card">
           <h2>🔒 الدفع الآمن</h2>
 
+          <!-- Payment method tabs (card / wallet / mixed) -->
+          <div class="hp-tabs" id="payTabs">
+            <button class="hp-tab active" id="tabCard"   onclick="setPayMethod('card')">💳 بطاقة</button>
+            <button class="hp-tab"        id="tabWallet" onclick="setPayMethod('wallet')">👛 محفظة</button>
+            <button class="hp-tab"        id="tabMixed"  onclick="setPayMethod('mixed')">💳+👛 مختلط</button>
+          </div>
+
+          <!-- Wallet balance -->
+          <div class="wallet-box" id="walletInfoBox" style="display:none">
+            <span id="walletLbl">👛 رصيد محفظتك</span><span id="walletBal">—</span>
+          </div>
+
+          <!-- Mixed split slider -->
+          <div class="mixed-wrap" id="mixedWrap" style="display:none">
+            <label style="font-size:.82rem;font-weight:600;color:#374151;display:block;margin-bottom:6px">💡 حدد المبلغ من المحفظة</label>
+            <input type="range" id="mixedSlider" min="0" max="100" value="50" oninput="onMixedSlider()" style="width:100%;accent-color:var(--primary)">
+            <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-top:6px">
+              <span style="color:#16a34a;font-weight:700">👛 المحفظة: <span id="mixedWalletAmt">—</span></span>
+              <span style="color:var(--primary);font-weight:700">💳 البطاقة: <span id="mixedCardAmt">—</span></span>
+            </div>
+          </div>
+
           <!-- Unified checkout gateway (Apple/Google Pay + card fields) -->
-          <div id="fmGateway"></div>
+          <div id="cardSection">
+            <div id="fmGateway"></div>
+          </div>
 
           <div id="stripeUnavailable" class="stripe-unavailable" style="display:none">
             ⚠️ نظام الدفع غير مُفعّل بعد (مفتاح Stripe غير مُهيّأ على الخادم).
@@ -146,17 +179,22 @@
   if (typeof formatPrice === 'undefined') window.formatPrice = a => '£ ' + parseFloat(a||0).toFixed(2);
   if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
 
-  const p            = new URLSearchParams(window.location.search);
-  const sessionKey   = p.get('session') || '';
-  const piId         = p.get('pi')      || '';
-  const clientSecret = p.get('secret')  || '';
-  const amountGBP    = parseFloat(p.get('amount') || '0');      // total (net + commission), in GBP
-  const netGBP       = parseFloat(p.get('net') || '0') || amountGBP;
-  const commissionGBP= parseFloat(p.get('commission') || '0');
-  const hotelLabel   = p.get('hotel')   || 'فندق';
-  const nights       = parseInt(p.get('nights') || '1');
+  const p             = new URLSearchParams(window.location.search);
+  const sessionKey    = p.get('session') || '';
+  const amountGBP     = parseFloat(p.get('amount') || '0');      // total (net + commission), GBP
+  const netGBP        = parseFloat(p.get('net') || '0') || amountGBP;
+  const commissionGBP = parseFloat(p.get('commission') || '0');
+  const hotelLabel    = p.get('hotel')  || 'فندق';
+  const nights        = parseInt(p.get('nights') || '1');
+  const couponCode    = p.get('coupon') || '';
 
-  let gw = null;  // unified checkout gateway controller
+  let gw            = null;     // unified checkout gateway controller
+  let walletBalance = 0;
+  let payMethod     = 'card';   // 'card' | 'wallet' | 'mixed'
+  let mixedWalletAmt = 0;
+
+  function round2(n){ return Math.round(n * 100) / 100; }
+  function getNetTotal(){ return amountGBP; }
 
   function showError(msg) {
     const el = document.getElementById('payError');
@@ -182,14 +220,92 @@
   function showStripeUnavailable() {
     const u = document.getElementById('stripeUnavailable');
     if (u) u.style.display = 'block';
+    // Card/mixed need Stripe; wallet-only can still proceed.
+    if (payMethod !== 'wallet') document.getElementById('payBtn').disabled = true;
+  }
+
+  // ── Wallet / mixed UI (mirrors the flight payment page) ───────────────────
+  async function loadWalletBalance() {
+    try { const d = await Api.get('/api/wallet/balance', true); walletBalance = parseFloat(d.balance || 0); }
+    catch(e) { walletBalance = 0; }
+    updateWalletUI();
+  }
+  function updateWalletUI() {
+    const net = getNetTotal();
+    const box = document.getElementById('walletInfoBox');
+    const tabWallet = document.getElementById('tabWallet');
+    const tabMixed  = document.getElementById('tabMixed');
+    if (walletBalance > 0) {
+      box.style.display = 'flex';
+      document.getElementById('walletBal').textContent = formatPrice(walletBalance);
+      const sufficient = walletBalance >= net;
+      box.classList.toggle('insufficient', !sufficient);
+      document.getElementById('walletLbl').textContent = sufficient ? '👛 رصيد محفظتك' : '⚠️ رصيد محفظتك (غير كافٍ للكامل)';
+      tabWallet.disabled = !sufficient;
+      tabMixed.disabled  = false;
+    } else {
+      box.style.display = 'none';
+      tabWallet.disabled = true;
+      tabMixed.disabled  = true;
+    }
+    updateMixedSlider();
+    updatePayLabel();
+  }
+  function setPayMethod(m) {
+    const net = getNetTotal();
+    if (m === 'wallet' && walletBalance < net) return;
+    if (m === 'mixed'  && walletBalance <= 0)  return;
+    payMethod = m;
+    ['Card','Wallet','Mixed'].forEach(s =>
+      document.getElementById('tab' + s).classList.toggle('active', s.toLowerCase() === m));
+    document.getElementById('cardSection').style.display = (m === 'wallet') ? 'none' : 'block';
+    document.getElementById('mixedWrap').style.display   = (m === 'mixed')  ? 'block' : 'none';
+    document.getElementById('walletInfoBox').style.display = (walletBalance > 0) ? 'flex' : 'none';
+    if (m === 'mixed') updateMixedSlider();
+    updatePayLabel();
+  }
+  function updateMixedSlider() {
+    const net = getNetTotal();
+    const slider = document.getElementById('mixedSlider');
+    const maxWallet = Math.min(walletBalance, net - 0.5);
+    if (maxWallet <= 0) { mixedWalletAmt = 0; return; }
+    const pct = parseInt(slider.value);
+    mixedWalletAmt = round2(maxWallet * pct / 100);
+    document.getElementById('mixedWalletAmt').textContent = formatPrice(mixedWalletAmt);
+    document.getElementById('mixedCardAmt').textContent   = formatPrice(round2(net - mixedWalletAmt));
+  }
+  function onMixedSlider() { updateMixedSlider(); }
+  function updatePayLabel() {
+    const net = getNetTotal();
+    const tx = document.getElementById('payBtnTxt');
+    if (payMethod === 'wallet')      tx.textContent = '👛 ادفع ' + formatPrice(net) + ' من المحفظة';
+    else if (payMethod === 'mixed')  tx.textContent = '💳+👛 ادفع الآن';
+    else                             tx.textContent = 'ادفع ' + formatPrice(net) + ' 🔒';
+  }
+
+  function setLoading(loading) {
     const btn = document.getElementById('payBtn');
-    if (btn) btn.disabled = true;
+    const sp  = document.getElementById('paySpinner');
+    const tx  = document.getElementById('payBtnTxt');
+    btn.disabled = loading;
+    sp.classList.toggle('hidden', !loading);
+    tx.classList.toggle('hidden', loading);
+    if (!loading) updatePayLabel();
+  }
+
+  // Create the Stripe PaymentIntent now (card amount = total − wallet portion).
+  async function createHotelPaymentIntent(walletAmount) {
+    return await Api.post('/api/hotels/checkout/payment-intent', {
+      session_key:   sessionKey,
+      coupon_code:   couponCode || null,
+      wallet_amount: walletAmount > 0 ? walletAmount : undefined,
+    }, true);
   }
 
   // ── Finalize: poll the server until the hotel booking is confirmed. ────────
-  async function finalizeBooking() {
+  async function finalizeBooking(piId) {
     let bookingRef = '';
-    const delays = [2000, 4000, 8000, 16000, 16000, 16000];
+    const delays = [1500, 3000, 6000, 10000, 16000, 16000];
     for (let attempt = 0; attempt < delays.length; attempt++) {
       await new Promise(r => setTimeout(r, delays[attempt]));
       try {
@@ -211,56 +327,80 @@
   }
 
   async function initGateway() {
-    // The hotel PaymentIntent is created during prebook; its clientSecret comes
-    // in via the URL, so the wallet flow just reuses that same secret.
     gw = await FMCheckout.mount({
       fieldsEl:    document.getElementById('fmGateway'),
       currency:    'GBP',                          // Stripe charges in GBP
-      amountMinor: Math.round(amountGBP * 100),    // for the Apple/Google Pay sheet
+      amountMinor: Math.round(amountGBP * 100),    // Apple/Google Pay sheet amount
       onUnavailable: showStripeUnavailable,
-      express: (clientSecret ? {
-        getClientSecret: async () => ({ clientSecret }),
-        onSuccess: async () => { await finalizeBooking(); },
-      } : null),
+      express: {
+        getClientSecret: async () => {
+          const pi = await createHotelPaymentIntent(0); // wallets pay the full card amount
+          return { clientSecret: pi.client_secret, paymentIntentId: pi.payment_intent_id };
+        },
+        onSuccess: async (paymentIntent) => { await finalizeBooking(paymentIntent && paymentIntent.id); },
+      },
     });
   }
 
   async function submitPayment() {
-    if (!gw || gw.unavailable || !gw.stripe) { showError('⚠️ لم يتم تحميل نظام الدفع. يرجى تحديث الصفحة.'); return; }
-    if (!clientSecret) { showError('بيانات الدفع غير متوفرة. يرجى العودة وإعادة المحاولة.'); return; }
-
-    const cardName = gw.cardName;
-    if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة'); return; }
-
-    const btn = document.getElementById('payBtn');
-    const sp  = document.getElementById('paySpinner');
-    const tx  = document.getElementById('payBtnTxt');
-    btn.disabled = true; sp.classList.remove('hidden'); tx.classList.add('hidden');
+    if (!sessionKey) { showError('⚠️ انتهت صلاحية الجلسة. ارجع واختر الغرفة مجدداً.'); return; }
+    setLoading(true);
     document.getElementById('payError').style.display = 'none';
 
-    try {
-      const result = await gw.confirmCard(clientSecret, { name: cardName });
+    // ── Wallet-only ───────────────────────────────────────────────────────
+    if (payMethod === 'wallet') {
+      try {
+        const cr = await Api.post('/api/hotels/checkout/wallet-confirm', {
+          session_key: sessionKey,
+          coupon_code: couponCode || null,
+        }, true);
+        window.location.href = 'hotel-confirmation.html'
+          + '?ref='    + encodeURIComponent(cr.booking_reference || '')
+          + '&hotel='  + encodeURIComponent(hotelLabel)
+          + '&nights=' + encodeURIComponent(nights)
+          + '&amount=' + encodeURIComponent(amountGBP);
+      } catch(e) {
+        showError('⚠️ ' + (e.message || 'فشل الدفع من المحفظة.'));
+        setLoading(false);
+      }
+      return;
+    }
 
+    // ── Card or Mixed — need Stripe ───────────────────────────────────────
+    if (!gw || gw.unavailable || !gw.stripe) { showError('⚠️ لم يتم تحميل نظام الدفع. يرجى تحديث الصفحة.'); setLoading(false); return; }
+    const cardName = gw.cardName;
+    if (!cardName) { showError('يرجى إدخال اسم حامل البطاقة'); setLoading(false); return; }
+
+    try {
+      const walletForServer = (payMethod === 'mixed') ? mixedWalletAmt : 0;
+      let pi;
+      try { pi = await createHotelPaymentIntent(walletForServer); }
+      catch(e) { showError('⚠️ ' + (e.message || 'فشل إنشاء طلب الدفع.')); setLoading(false); return; }
+
+      const cs   = pi.client_secret     || '';
+      const piId = pi.payment_intent_id || '';
+      if (!cs) { showError('⚠️ لم يتم استلام بيانات الدفع من الخادم.'); setLoading(false); return; }
+
+      const result = await gw.confirmCard(cs, { name: cardName });
       if (result.error) {
         showError(result.error.message || 'فشل الدفع. يرجى التحقق من بيانات البطاقة.');
-        btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+        setLoading(false);
         return;
       }
-
       if (result.paymentIntent && result.paymentIntent.status === 'succeeded') {
-        await finalizeBooking();
+        await finalizeBooking(piId);
       } else {
         showError('حالة الدفع غير معروفة. يرجى التواصل مع الدعم.');
-        btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+        setLoading(false);
       }
     } catch(err) {
       showError(err.message || 'حدث خطأ أثناء الدفع');
-      btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
+      setLoading(false);
     }
   }
 
-  // Guard: if clientSecret missing on load, show back button
-  if (!clientSecret || !sessionKey) {
+  // Guard: missing session → can't proceed.
+  if (!sessionKey) {
     document.getElementById('payError').textContent = '⚠️ انتهت صلاحية جلسة الدفع أو حدث خطأ. يرجى العودة وإعادة المحاولة.';
     document.getElementById('payError').style.display = 'block';
     document.getElementById('payBtn').disabled = true;
@@ -275,6 +415,8 @@
   initCurrency();
   loadSummary();
   initGateway();
+  loadWalletBalance();
+  updatePayLabel();
 </script>
 <script src="js/bottom-nav.js"></script>
 </body>

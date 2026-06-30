@@ -129,7 +129,8 @@
           <div id="priceSummaryContent">
             <div class="price-row"><span>سعر الغرفة لليلة</span><span id="pricePerNight">—</span></div>
             <div class="price-row"><span>عدد الليالي</span><span id="priceNights">—</span></div>
-            <div class="price-row"><span>الضرائب والرسوم</span><span id="priceTax">—</span></div>
+            <div class="price-row" id="priceFeeRow" style="display:none"><span>رسوم الخدمة</span><span id="priceTax">—</span></div>
+            <div class="price-row" id="priceDiscountRow" style="display:none"><span style="color:#16a34a">الخصم</span><span id="priceDiscount" style="color:#16a34a">—</span></div>
             <div class="price-total"><span>الإجمالي</span><span id="priceTotal">—</span></div>
           </div>
           <div style="margin-top:16px">
@@ -216,10 +217,21 @@
   const currency   = p.get('currency')   || 'GBP';
   const hotelImg   = p.get('img')        || '';
 
-  let totalAmount  = priceRaw;
+  let totalAmount  = priceRaw;   // NET stay price (room only) — drift-guarded against backend
+  let commissionAmt = 0;         // real platform commission (admin "Commissions"), same source as backend
   let discountAmt  = 0;
   let sessionKey   = null;
   let expiryTimer  = null;
+
+  // Fetch the REAL commission from the same source the backend uses at prebook,
+  // so the booking summary matches the payment page exactly (no fake estimate).
+  async function loadCommission() {
+    try {
+      const q = await Api.get('/api/commissions/quote?type=hotel&amount=' + encodeURIComponent(priceRaw), false);
+      commissionAmt = parseFloat(q.commission || 0);
+    } catch(e) { commissionAmt = 0; }
+    buildHotelSummary();
+  }
 
   // Calculate nights
   function calcNights() {
@@ -237,7 +249,7 @@
   function buildHotelSummary() {
     const nights = calcNights();
     const perNight = priceRaw > 0 ? (priceRaw / nights) : 0;
-    const tax = totalAmount * 0.10;
+    const fee = commissionAmt;
 
     const el = document.getElementById('hotelSummaryContent');
     el.innerHTML = `
@@ -260,8 +272,17 @@
 
     document.getElementById('pricePerNight').textContent = formatPrice(perNight);
     document.getElementById('priceNights').textContent   = nights + ' ليلة';
-    document.getElementById('priceTax').textContent      = formatPrice(tax);
-    document.getElementById('priceTotal').textContent    = formatPrice(totalAmount + tax);
+
+    const feeRow = document.getElementById('priceFeeRow');
+    if (fee > 0) { feeRow.style.display = 'flex'; document.getElementById('priceTax').textContent = formatPrice(fee); }
+    else { feeRow.style.display = 'none'; }
+
+    const discRow = document.getElementById('priceDiscountRow');
+    if (discountAmt > 0) { discRow.style.display = 'flex'; document.getElementById('priceDiscount').textContent = '−' + formatPrice(discountAmt); }
+    else { discRow.style.display = 'none'; }
+
+    const grand = Math.max(0, totalAmount + fee - discountAmt);
+    document.getElementById('priceTotal').textContent = formatPrice(grand);
   }
 
   // Build extra guest forms for additional guests beyond 1
@@ -324,10 +345,12 @@
       discountAmt = parseFloat(res.discount_amount || res.discount || 0);
       msg.style.color = '#16a34a';
       msg.textContent = '✅ تم تطبيق الكوبون — خصم ' + formatPrice(discountAmt);
+      buildHotelSummary();
     } catch(err) {
       discountAmt = 0;
       msg.style.color = 'var(--error)';
       msg.textContent = '⚠️ ' + (err.message || 'كوبون غير صالح');
+      buildHotelSummary();
     }
   }
 
@@ -438,9 +461,12 @@
         policyCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
-      // Start 15-minute session expiry countdown
-      const expiresAt = prebookRes.offer_expires_at
-        ? new Date(prebookRes.offer_expires_at).getTime()
+      // Start the session-expiry countdown. Prefer a RELATIVE duration
+      // (expires_in seconds) so it is immune to server/browser timezone skew —
+      // parsing the server's naive datetime string as browser-local time was
+      // making the banner show "expired" immediately.
+      const expiresAt = (prebookRes.expires_in && prebookRes.expires_in > 0)
+        ? Date.now() + parseInt(prebookRes.expires_in) * 1000
         : Date.now() + 15 * 60 * 1000;
       startExpiryCountdown(expiresAt);
 
@@ -459,21 +485,18 @@
         special_requests: document.getElementById('specialRequests').value.trim() || null,
       }, true);
 
-      // Step 3: Create payment intent
-      const piRes = await Api.post('/api/hotels/checkout/payment-intent', {
-        session_key: sessionKey,
-        coupon_code: document.getElementById('couponInput').value.trim() || null,
-      }, true);
-
+      // Step 3: go to payment. The PaymentIntent is now created ON the payment
+      // page (after the customer picks card / wallet / mixed) so the wallet split
+      // can change the charged amount — same model as flights.
+      const totalDue = (netPriceGBP || totalAmount) + (commissionGBP || 0);
       window.location.href = 'hotel-payment.html'
         + '?session='  + encodeURIComponent(sessionKey)
-        + '&pi='       + encodeURIComponent(piRes.payment_intent_id || '')
-        + '&secret='   + encodeURIComponent(piRes.client_secret     || '')
-        + '&amount='   + encodeURIComponent(piRes.amount            || totalAmount)
-        + '&net='      + encodeURIComponent(netPriceGBP   || '')
-        + '&commission=' + encodeURIComponent(commissionGBP || '')
+        + '&amount='   + encodeURIComponent(totalDue)
+        + '&net='      + encodeURIComponent(netPriceGBP   || totalAmount)
+        + '&commission=' + encodeURIComponent(commissionGBP || 0)
         + '&hotel='    + encodeURIComponent(hotelName)
-        + '&nights='   + encodeURIComponent(calcNights());
+        + '&nights='   + encodeURIComponent(calcNights())
+        + '&coupon='   + encodeURIComponent(document.getElementById('couponInput').value.trim() || '');
 
     } catch(err) {
       btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
@@ -483,6 +506,7 @@
 
   // Init
   initCurrency();
+  loadCommission();
   const user = Auth.getUser();
   if (user) {
     document.getElementById('contactEmail').value = user.email  || '';

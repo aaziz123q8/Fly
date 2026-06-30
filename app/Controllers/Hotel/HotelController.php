@@ -176,18 +176,55 @@ class HotelController
 
         try {
             $result = $this->bookingService->createPaymentIntent(
-                sessionKey: (string) $request->input('session_key'),
-                userId:     (int)    $user['id'],
-                couponCode: $request->input('coupon_code')
-                             ? (string) $request->input('coupon_code')
-                             : null
+                sessionKey:   (string) $request->input('session_key'),
+                userId:       (int)    $user['id'],
+                couponCode:   $request->input('coupon_code')
+                               ? (string) $request->input('coupon_code')
+                               : null,
+                walletAmount: (float) ($request->input('wallet_amount') ?? 0)
             );
             Response::json([
                 'client_secret'     => $result['client_secret'],
                 'payment_intent_id' => $result['payment_intent_id'],
                 'amount'            => $result['amount'],
+                'total'             => $result['total']         ?? $result['amount'],
+                'wallet_amount'     => $result['wallet_amount'] ?? 0,
                 'currency'          => $result['currency'],
             ]);
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage(), $e->getCode() >= 400 ? $e->getCode() : 400);
+        }
+    }
+
+    // =========================================================================
+    // POST /api/hotels/checkout/wallet-confirm  (full wallet payment, no Stripe)
+    // =========================================================================
+
+    public function walletConfirm(Request $request): void
+    {
+        $errors = $request->validate(['session_key' => 'required']);
+        if (!empty($errors)) Response::validationError($errors);
+
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) { Response::unauthorized(); return; }
+
+        try {
+            $result = $this->bookingService->walletCheckout(
+                (string) $request->input('session_key'),
+                (int)    $user['id'],
+                $request->input('coupon_code') ? (string) $request->input('coupon_code') : null
+            );
+
+            if (($result['status'] ?? '') === 'confirmed') {
+                try {
+                    (new \App\Services\GuestAccountService())
+                        ->upgrade((int) $user['id'], $result['booking_reference'] ?? '');
+                } catch (\Throwable $ge) {
+                    error_log('[GUEST_ACCOUNT_CREATE|hotel-wallet] ' . $ge->getMessage());
+                }
+            }
+
+            Response::json($result);
         } catch (\RuntimeException $e) {
             Response::error($e->getMessage(), $e->getCode() >= 400 ? $e->getCode() : 400);
         }

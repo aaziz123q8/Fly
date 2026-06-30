@@ -152,6 +152,7 @@ class HotelBookingService
             'currency'            => $currency,
             'cancellation_policy' => $cancellationPolicy,
             'offer_expires_at'    => $offerExpiresAt,
+            'expires_in'          => 900, // seconds — frontend countdown (timezone-proof)
             'price_changed'       => $priceChanged,
         ];
     }
@@ -227,7 +228,8 @@ class HotelBookingService
     public function createPaymentIntent(
         string  $sessionKey,
         int     $userId,
-        ?string $couponCode = null
+        ?string $couponCode = null,
+        float   $walletAmount = 0.0
     ): array {
         $session = $this->requireSession($sessionKey, $userId);
 
@@ -264,7 +266,21 @@ class HotelBookingService
             }
         }
 
-        $amountInPence  = (int) round($totalAmount * 100);
+        // ── Mixed payment: validate the wallet portion and reduce the card charge ──
+        $walletAmount = max(0.0, min($walletAmount, $totalAmount));
+        if ($walletAmount > 0) {
+            $wallet = (new WalletService($this->db))->getWallet($userId);
+            if ((float) $wallet['balance'] < $walletAmount) {
+                throw new RuntimeException('رصيد المحفظة غير كافٍ للمبلغ المطلوب.', 422);
+            }
+        }
+        $stripeAmount = round($totalAmount - $walletAmount, 2);
+        if ($stripeAmount < 0.5) {
+            throw new RuntimeException('المبلغ المتبقي للبطاقة أقل من الحد الأدنى. استخدم الدفع بالمحفظة بالكامل.', 422);
+        }
+        $pricingSnapshot['wallet_amount'] = $walletAmount > 0 ? $walletAmount : 0;
+
+        $amountInPence  = (int) round($stripeAmount * 100);
 
         // C-01 hardening: reuse the idempotency key already minted for this
         // session when the charge amount/currency is unchanged, so a retry or
@@ -293,9 +309,9 @@ class HotelBookingService
         $payStmt->execute([
             ':booking_type' => 'hotel',
             ':user_id'      => $userId,
-            ':method'       => 'stripe',
+            ':method'       => $walletAmount > 0 ? 'mixed' : 'stripe',
             ':idem_key'     => $idempotencyKey,
-            ':amount'       => number_format($totalAmount, 2, '.', ''),
+            ':amount'       => number_format($stripeAmount, 2, '.', ''),
             ':currency'     => strtoupper($currency),
             ':status'       => 'pending',
         ]);
@@ -330,7 +346,9 @@ class HotelBookingService
         return [
             'client_secret'     => $stripeResult['client_secret'],
             'payment_intent_id' => $paymentIntentId,
-            'amount'            => $totalAmount,
+            'amount'            => $stripeAmount,      // amount charged to the card
+            'total'             => $totalAmount,       // full booking total
+            'wallet_amount'     => $walletAmount > 0 ? $walletAmount : 0,
             'currency'          => strtoupper($currency),
         ];
     }
@@ -807,13 +825,125 @@ class HotelBookingService
             return ['status' => 'pending', 'message' => 'جارٍ معالجة الدفع…'];
         }
 
+        // Mixed payment: debit the wallet portion before completing the booking.
+        $pricingSnap   = is_string($session['pricing_snapshot'] ?? null)
+            ? json_decode($session['pricing_snapshot'], true)
+            : ($session['pricing_snapshot'] ?? []);
+        $walletPortion = (float) ($pricingSnap['wallet_amount'] ?? 0);
+        $wCurrency     = strtoupper($pricingSnap['currency'] ?? 'GBP');
+        $walletService = null;
+        $walletDebited = false;
+        if ($walletPortion > 0.009) {
+            $walletService = new WalletService($this->db);
+            $walletService->debit($userId, $walletPortion, $wCurrency, 'دفع مختلط — حجز فندق', $sessionKey);
+            $walletDebited = true;
+        }
+
         // Payment confirmed — complete booking synchronously
         try {
             $this->completeBooking($sessionKey, $paymentIntentId);
             return $this->fetchCompletedBookingResult($userId);
         } catch (\Throwable $e) {
+            // Re-credit the wallet portion if the booking failed after debit.
+            if ($walletDebited && $walletService !== null) {
+                try {
+                    $walletService->credit($userId, $walletPortion, $wCurrency, 'استرداد دفع مختلط فاشل', $sessionKey);
+                } catch (\Throwable) {}
+            }
             error_log('[HOTEL_CONFIRM_CHECKOUT_FAIL] sk=' . $sessionKey . ' pi=' . $paymentIntentId . ' err=' . $e->getMessage());
             throw new \RuntimeException($e->getMessage(), (int)$e->getCode() ?: 500);
+        }
+    }
+
+    // =========================================================================
+    // walletCheckout — full wallet payment (no Stripe involved)
+    // =========================================================================
+
+    /**
+     * Pay for a hotel booking entirely from the wallet, then complete it.
+     * Mirrors the flight wallet flow: debit first, complete, re-credit on failure.
+     */
+    public function walletCheckout(string $sessionKey, int $userId, ?string $couponCode = null): array
+    {
+        $session = $this->requireSession($sessionKey, $userId);
+
+        if ($session['current_step'] !== 'payment') {
+            throw new RuntimeException('Session is not at the payment step.', 422);
+        }
+
+        $pricingSnapshot = is_string($session['pricing_snapshot'])
+            ? json_decode($session['pricing_snapshot'], true)
+            : ($session['pricing_snapshot'] ?? null);
+        if (empty($pricingSnapshot)) {
+            throw new RuntimeException('Pricing snapshot not found. Please prebook again.', 422);
+        }
+
+        $totalAmount = (float) ($pricingSnapshot['confirmed_price'] ?? 0);
+        $currency    = strtoupper($pricingSnapshot['currency'] ?? 'GBP');
+
+        // Apply coupon if provided (same rules as the card path).
+        if ($couponCode !== null && $couponCode !== '') {
+            $coupon = $this->findActiveCoupon($couponCode);
+            if ($coupon) {
+                $discount = ($coupon['discount_type'] === 'percentage')
+                    ? round($totalAmount * ((float) $coupon['discount_value'] / 100), 2)
+                    : min($totalAmount, (float) $coupon['discount_value']);
+                $totalAmount = max(0.0, $totalAmount - $discount);
+                $pricingSnapshot['coupon_code']     = $couponCode;
+                $pricingSnapshot['discount_amount'] = $discount;
+                $pricingSnapshot['total']           = $totalAmount;
+            }
+        }
+
+        if ($totalAmount < 0.009) {
+            throw new RuntimeException('قيمة الحجز غير صالحة.', 422);
+        }
+
+        // Record a wallet payment row (no Stripe PI). The wallet token is stored
+        // in stripe_payment_intent_id so completeBooking's link-up UPDATE (which
+        // keys on that column) attaches the booking_id and marks it succeeded.
+        $idempotencyKey = bin2hex(random_bytes(32));
+        $walletPiToken  = 'WALLET-' . $idempotencyKey;
+        $this->db->prepare(
+            'INSERT INTO payments
+               (booking_type, booking_id, user_id, payment_method,
+                idempotency_key, stripe_payment_intent_id, amount, currency, status)
+             VALUES
+               (:bt, 0, :uid, :method, :idem, :pi, :amount, :cur, :status)'
+        )->execute([
+            ':bt'     => 'hotel',
+            ':uid'    => $userId,
+            ':method' => 'wallet',
+            ':idem'   => $idempotencyKey,
+            ':pi'     => $walletPiToken,
+            ':amount' => number_format($totalAmount, 2, '.', ''),
+            ':cur'    => $currency,
+            ':status' => 'pending',
+        ]);
+
+        // Mark this session as wallet-paid so completeBooking can finalise it.
+        $pricingSnapshot['wallet_full'] = true;
+        $this->sessionService->update($sessionKey, [
+            'payment_intent_id' => $walletPiToken,
+            'idempotency_key'   => $idempotencyKey,
+            'pricing_snapshot'  => $pricingSnapshot,
+            'current_step'      => 'payment',
+        ]);
+
+        // Debit the wallet (throws if insufficient balance).
+        $walletService = new WalletService($this->db);
+        $walletService->debit($userId, $totalAmount, $currency, 'دفع حجز فندق', $sessionKey);
+
+        try {
+            $this->completeBooking($sessionKey, $walletPiToken);
+            return $this->fetchCompletedBookingResult($userId);
+        } catch (\Throwable $e) {
+            // Booking failed — re-credit the wallet.
+            try {
+                $walletService->credit($userId, $totalAmount, $currency, 'استرداد حجز فندق فاشل', $sessionKey);
+            } catch (\Throwable) {}
+            error_log('[HOTEL_WALLET_CHECKOUT_FAIL] sk=' . $sessionKey . ' err=' . $e->getMessage());
+            throw new \RuntimeException($e->getMessage(), (int) $e->getCode() ?: 500);
         }
     }
 

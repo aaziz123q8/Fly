@@ -361,6 +361,11 @@ $router->group('api/hotels', function (Router $r): void {
         (new HotelController())->confirmCheckout($req);
     }, [AuthMiddleware::handle()]);
 
+    // Checkout: full wallet payment — no Stripe (auth required).
+    $r->post('/checkout/wallet-confirm', function (Request $req): void {
+        (new HotelController())->walletConfirm($req);
+    }, [AuthMiddleware::handle()]);
+
     // User bookings list (auth required) — must come before /:provider_hotel_id
     $r->get('/bookings', function (Request $req): void {
         (new HotelController())->listBookings($req);
@@ -500,6 +505,18 @@ $router->get('api/config/stripe-key', function (Request $req): void {
         error_log('[STRIPE_KEY_MISSING] publishable_key not found in config/apis.php or STRIPE_PUBLISHABLE_KEY env');
     }
     Response::json(['publishable_key' => $key]);
+});
+
+// ---------------------------------------------------------------------------
+// Routes — Public Commission Quote (so the booking summary shows the SAME
+// platform commission the backend applies at prebook — no fake estimate).
+// ---------------------------------------------------------------------------
+
+$router->get('api/commissions/quote', function (Request $req): void {
+    $type   = (string) ($req->query('type') ?? 'hotel');
+    $type   = in_array($type, ['flight', 'hotel'], true) ? $type : 'hotel';
+    $amount = (float) ($req->query('amount') ?? 0);
+    Response::json((new \App\Services\CommissionService())->apply($amount, $type));
 });
 
 // ---------------------------------------------------------------------------
