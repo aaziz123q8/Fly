@@ -65,7 +65,7 @@
       <div>
         <!-- Hotel Summary -->
         <div class="booking-card" id="hotelSummaryCard">
-          <h2>🏨 تفاصيل الفندق</h2>
+          <h2><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg> تفاصيل الفندق</h2>
           <div id="hotelSummaryContent" style="color:var(--text-muted);text-align:center;padding:20px">
             <div class="spinner"></div>
           </div>
@@ -144,7 +144,7 @@
 
         <div class="booking-card" style="background:#f0f5ff;border:2px solid #c5d5e8">
           <div style="display:flex;gap:12px;align-items:flex-start">
-            <span style="font-size:1.5rem">🔒</span>
+            <span style="font-size:1.5rem"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
             <div>
               <div style="font-weight:700;color:var(--primary);margin-bottom:4px">حجز آمن ومضمون</div>
               <div style="font-size:0.82rem;color:var(--text-muted)">بياناتك محمية بتشفير SSL. لا نخزن بيانات بطاقتك.</div>
@@ -165,7 +165,7 @@
         <!-- Cancellation Policy (shown after prebook) -->
         <div id="cancelPolicyCard" class="booking-card" style="display:none;border:2px solid #fde68a;background:#fffbeb">
           <div style="display:flex;gap:10px;align-items:flex-start">
-            <span style="font-size:1.4rem">📋</span>
+            <span style="font-size:1.4rem"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg></span>
             <div>
               <div style="font-weight:700;color:#92400e;margin-bottom:6px">سياسة الإلغاء</div>
               <div id="cancelPolicyText" style="font-size:0.82rem;color:#78350f"></div>
@@ -190,8 +190,8 @@
       notice.innerHTML = '<div style="font-weight:700;color:#1e40af;margin-bottom:4px">كيف تريد إتمام الحجز؟</div>'
         + '<div style="font-size:.85rem;color:#475569;margin-bottom:12px">سجّل الدخول، أو تابع كضيف وسننشئ لك حساباً تلقائياً ونرسل كلمة المرور إلى بريدك عند الدفع.</div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-        + '<a href="login.html?redirect=' + encodeURIComponent(window.location.href) + '" class="btn btn-primary btn-sm">🔐 تسجيل الدخول</a>'
-        + '<span class="btn btn-outline btn-sm" style="cursor:default">👤 أو أكمل البيانات بالأسفل كضيف</span>'
+        + '<a href="login.html?redirect=' + encodeURIComponent(window.location.href) + '" class="btn btn-primary btn-sm"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> تسجيل الدخول</a>'
+        + '<span class="btn btn-outline btn-sm" style="cursor:default"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> أو أكمل البيانات بالأسفل كضيف</span>'
         + '</div>';
       const container = document.querySelector('.booking-page .container') || document.querySelector('.booking-grid');
       if (container) container.parentElement ? container.parentElement.insertBefore(notice, container) : container.prepend(notice);
@@ -255,17 +255,17 @@
     el.innerHTML = `
       <div style="display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
         <div style="width:80px;height:80px;border-radius:10px;background:linear-gradient(135deg,#1a2e5a,#0056b3);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:2rem">
-          ${hotelImg ? `<img src="${hotelImg}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : '🏨'}
+          ${hotelImg ? `<img src="${hotelImg}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">` : '<svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg>'}
         </div>
         <div style="flex:1">
           <div style="font-size:1.05rem;font-weight:700;margin-bottom:6px">${hotelName}</div>
-          ${roomName ? `<div style="font-size:0.9rem;font-weight:600;color:var(--primary);margin-bottom:6px">🛏️ ${roomName}${board ? ` · ${board}` : ''}</div>` : ''}
+          ${roomName ? `<div style="font-size:0.9rem;font-weight:600;color:var(--primary);margin-bottom:6px"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg> ${roomName}${board ? ` · ${board}` : ''}</div>` : ''}
           <div style="display:flex;flex-wrap:wrap;gap:4px">
-            <span class="info-chip">📅 ${fmtDate(checkIn)}</span>
-            <span class="info-chip">📅 ${fmtDate(checkOut)}</span>
-            <span class="info-chip">🌙 ${nights} ليلة</span>
-            <span class="info-chip">👤 ${adults} بالغ${adults > 1 ? 'ين' : ''}${children ? ` + ${children} طفل` : ''}</span>
-            <span class="info-chip">🛏️ ${rooms} غرفة</span>
+            <span class="info-chip"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${fmtDate(checkIn)}</span>
+            <span class="info-chip"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> ${fmtDate(checkOut)}</span>
+            <span class="info-chip"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg> ${nights} ليلة</span>
+            <span class="info-chip"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ${adults} بالغ${adults > 1 ? 'ين' : ''}${children ? ` + ${children} طفل` : ''}</span>
+            <span class="info-chip"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B4F8E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M2 4v16M2 8h18a2 2 0 0 1 2 2v10M2 17h20M6 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg> ${rooms} غرفة</span>
           </div>
         </div>
       </div>`;
