@@ -127,6 +127,12 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/currency.js"></script>
+<script>
+  if (typeof formatPrice === 'undefined') window.formatPrice = a => '£ ' + parseFloat(a||0).toFixed(2);
+  if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
+  initCurrency();
+</script>
 <script>
 var hotelData  = null;
 var selectedRoom = null;
@@ -249,7 +255,7 @@ function renderRooms(rooms) {
           (r.free_cancellation ? '<span style="color:green">✓ إلغاء مجاني</span>' : '') +
         '</div>' +
         '<div class="room-price">' +
-          '<div class="room-price-amount">' + cur + ' ' + price.toFixed(0) + '</div>' +
+          '<div class="room-price-amount">' + formatPrice(price) + '</div>' +
           '<div class="room-price-label">لليلة</div>' +
           '<button class="btn btn-primary btn-sm" style="margin-top:6px" onclick="selectRoom(' + i + ')">' +
             (selectedRoom === i ? '✓ محدد' : 'اختر') +
@@ -316,9 +322,9 @@ function updatePriceSummary() {
   var outVal = document.getElementById('checkOut').value;
   if (!inVal || !outVal) return;
   var nights = Math.max(1, Math.round((new Date(outVal) - new Date(inVal)) / 86400000));
-  document.getElementById('pricePerNight').textContent = cur + ' ' + price.toFixed(2);
+  document.getElementById('pricePerNight').textContent = formatPrice(price);
   document.getElementById('nightsCount').textContent   = nights + ' ليلة';
-  document.getElementById('totalPrice').textContent    = cur + ' ' + (price * nights).toFixed(2);
+  document.getElementById('totalPrice').textContent    = formatPrice(price * nights);
   document.getElementById('priceSummary').style.display = 'block';
 }
 
@@ -334,6 +340,8 @@ function bookRoom() {
     hotel_id:   hotelData.id || hotelData.provider_hotel_id || '',
     hotel_name: hotelData.name || 'فندق',
     room_id:    room.id || room.room_id || '',
+    room_name:  room.name || room.room_name || '',
+    board:      room.meal_plan || room.board || '',
     book_hash:  room.book_hash || room.id || '',
     check_in:   inVal,
     check_out:  outVal,

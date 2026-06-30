@@ -117,7 +117,9 @@ class HotelController
                 checkOut:       (string) $request->input('check_out'),
                 hotelId:        (string) $request->input('hotel_id'),
                 displayedPrice: (float)  $request->input('displayed_price'),
-                hotelName:      $request->input('hotel_name') !== null ? (string) $request->input('hotel_name') : null
+                hotelName:      $request->input('hotel_name') !== null ? (string) $request->input('hotel_name') : null,
+                roomName:       $request->input('room_name')  !== null ? (string) $request->input('room_name')  : null,
+                board:          $request->input('board')      !== null ? (string) $request->input('board')      : null
             );
             Response::json($result);
         } catch (\RuntimeException $e) {
@@ -240,13 +242,18 @@ class HotelController
 
     public function getBooking(Request $request): void
     {
-        $id   = (int) $request->param('id');
+        $raw  = (string) $request->param('id');
         $user = AuthMiddleware::currentUser();
         if ($user === null) { Response::unauthorized(); return; }
-        $booking = $this->bookingService->getBookingById($id, (int) $user['id']);
+
+        // Accept either the numeric id or the HM booking reference.
+        $booking = (stripos($raw, 'HM') === 0)
+            ? $this->bookingService->getBookingByReference($raw, (int) $user['id'])
+            : $this->bookingService->getBookingById((int) $raw, (int) $user['id']);
 
         if ($booking === null) {
             Response::notFound('Booking not found.');
+            return;
         }
 
         Response::json(['booking' => $booking]);

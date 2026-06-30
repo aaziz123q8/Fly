@@ -54,7 +54,9 @@ class HotelBookingService
         string  $checkOut,
         string  $hotelId,
         float   $displayedPrice = 0.0,
-        ?string $hotelName = null
+        ?string $hotelName = null,
+        ?string $roomName = null,
+        ?string $board = null
     ): array {
         // ── Resolve the net price + prebook session ──────────────────────────
         if (DemoHotelData::isEnabled()) {
@@ -79,6 +81,16 @@ class HotelBookingService
                                   ?? $prebookData['cancellation_penalties']
                                   ?? [];
             $roomData          = $prebookData['room_data'] ?? $prebookData['rooms'] ?? [];
+        }
+
+        // Carry the room the customer actually selected (name + board) so it is
+        // stored and shown on the confirmation/invoice. Used when the provider
+        // response carries no structured room data (e.g. demo mode).
+        if (empty($roomData) && ($roomName !== null && $roomName !== '')) {
+            $roomData = [[
+                'room_type' => $roomName,
+                'meal_plan' => ($board !== null && $board !== '') ? $board : null,
+            ]];
         }
 
         // Apply the platform commission (admin "Commissions" page) on top of the
@@ -127,6 +139,8 @@ class HotelBookingService
             'session_key'         => $sessionKey,
             'prebook_id'          => $prebookSessionId,
             'confirmed_price'     => $confirmedPrice,
+            'net_price'           => $netPrice,
+            'commission'          => $commission['commission'],
             'currency'            => $currency,
             'cancellation_policy' => $cancellationPolicy,
             'offer_expires_at'    => $offerExpiresAt,
@@ -671,19 +685,42 @@ class HotelBookingService
      */
     public function getBookingById(int $bookingId, int $userId): ?array
     {
+        return $this->fetchBooking('hb.id = :key', $bookingId, $userId);
+    }
+
+    /**
+     * Look up a hotel booking by its HM reference (so confirmation/invoice pages
+     * can load by reference, not just numeric id).
+     */
+    public function getBookingByReference(string $reference, int $userId): ?array
+    {
+        return $this->fetchBooking('hb.booking_reference = :key', $reference, $userId);
+    }
+
+    /**
+     * @param string     $whereCol e.g. 'hb.id = :key' or 'hb.booking_reference = :key'
+     * @param int|string $key
+     */
+    private function fetchBooking(string $whereCol, int|string $key, int $userId): ?array
+    {
         $stmt = $this->db->prepare(
-            'SELECT hb.*,
+            "SELECT hb.*,
                     hc.name_en     AS hotel_name_en,
                     hc.name_ar     AS hotel_name_ar,
                     hc.main_image_url,
                     hc.star_rating,
-                    hc.guest_rating
+                    hc.guest_rating,
+                    hc.address_en, hc.address_ar,
+                    ci.name_en AS city_name_en,  ci.name_ar AS city_name_ar,
+                    co.name_en AS country_name_en, co.name_ar AS country_name_ar
              FROM hotel_bookings hb
              LEFT JOIN hotels_content hc ON hc.provider_hotel_id = hb.provider_hotel_id
-             WHERE hb.id = :id AND hb.user_id = :uid
-             LIMIT 1'
+             LEFT JOIN cities    ci ON ci.id = hc.city_id
+             LEFT JOIN countries co ON co.id = hc.country_id
+             WHERE {$whereCol} AND hb.user_id = :uid
+             LIMIT 1"
         );
-        $stmt->execute([':id' => $bookingId, ':uid' => $userId]);
+        $stmt->execute([':key' => $key, ':uid' => $userId]);
         $booking = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$booking) {
@@ -693,6 +730,8 @@ class HotelBookingService
         if (isset($booking['cancellation_policy']) && is_string($booking['cancellation_policy'])) {
             $booking['cancellation_policy'] = json_decode($booking['cancellation_policy'], true) ?? [];
         }
+
+        $bookingId = (int) $booking['id'];
 
         // Guests
         $gStmt = $this->db->prepare(
@@ -707,6 +746,20 @@ class HotelBookingService
         );
         $rStmt->execute([':id' => $bookingId]);
         $booking['rooms'] = $rStmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Demo hotels have no hotels_content row — enrich location/amenities from
+        // the demo catalog so the confirmation/invoice can show full details.
+        if (empty($booking['hotel_name_en']) && DemoHotelData::isEnabled()) {
+            $demo = DemoHotelData::hotel((string) ($booking['provider_hotel_id'] ?? ''));
+            if ($demo) {
+                $booking['hotel_name_en'] = $demo['name_en'] ?? $booking['hotel_name'];
+                $booking['hotel_name_ar'] = $demo['name']    ?? null;
+                $booking['address_ar']    = $demo['address']  ?? null;
+                $booking['city_name_ar']  = $demo['city']     ?? null;
+                $booking['star_rating']   = $demo['stars']    ?? null;
+                $booking['amenities']     = $demo['amenities'] ?? [];
+            }
+        }
 
         return $booking;
     }

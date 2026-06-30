@@ -383,22 +383,39 @@
       </div>`;
       return;
     }
-    el.innerHTML = bookings.map(b => `
-    <div style="background:#fff;border-radius:16px;box-shadow:0 2px 14px rgba(27,79,142,.07);margin-bottom:12px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:160px">
-        <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#E8A020,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">🏨</div>
-        <div>
-          <div style="font-weight:700;font-size:.95rem;color:#0f2444">${b.hotel_name || b.name || 'فندق'}</div>
-          <div style="font-size:.78rem;color:#6b7280;margin-top:2px">
-            ${b.city ? b.city + ' &nbsp;|&nbsp; ' : ''}${b.check_in || '—'} → ${b.check_out || '—'}${b.rooms ? ` &nbsp;|&nbsp; ${b.rooms} غرفة` : ''}
+    el.innerHTML = bookings.map(b => {
+      const ref      = b.booking_reference || b.id || '';
+      const amount   = b.total_amount || b.total_price;
+      const currency = b.currency || 'GBP';
+      const checkIn  = b.check_in_date  || b.check_in  || '—';
+      const checkOut = b.check_out_date || b.check_out || '—';
+      const rooms    = b.rooms_count || b.rooms;
+      const nights   = b.nights_count;
+      const voucherBtn = ref ? `<a href="hotel-confirmation.html?ref=${encodeURIComponent(ref)}" class="btn btn-sm" style="background:#ecfdf5;color:#047857;border:1px solid #6ee7b7">🧾 القسيمة</a>` : '';
+      const invoiceBtn = ref ? `<a href="invoice.html?ref=${encodeURIComponent(ref)}" class="btn btn-sm" style="background:#f0f9ff;color:#0369a1;border:1px solid #7dd3fc">📄 الفاتورة</a>` : '';
+      return `
+    <div style="background:#fff;border-radius:16px;box-shadow:0 2px 14px rgba(27,79,142,.07);margin-bottom:12px;padding:16px 20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:160px">
+          <div style="width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#E8A020,#f59e0b);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0">🏨</div>
+          <div>
+            <div style="font-weight:700;font-size:.95rem;color:#0f2444">${b.hotel_name || b.hotel_name_ar || b.hotel_name_en || 'فندق'}</div>
+            <div style="font-size:.78rem;color:#6b7280;margin-top:2px">
+              ${checkIn} → ${checkOut}${rooms ? ` &nbsp;|&nbsp; ${rooms} غرفة` : ''}${nights ? ` &nbsp;|&nbsp; ${nights} ليلة` : ''}
+            </div>
+            ${ref ? `<div style="font-size:.72rem;color:#94a3b8;margin-top:2px">رقم الحجز: <strong>${ref}</strong></div>` : ''}
           </div>
         </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          ${badgeHtml(b.status || 'pending')}
+          <div style="font-weight:800;color:#E8A020;font-size:.95rem">${amount ? parseFloat(amount).toFixed(2) + ' ' + currency : '—'}</div>
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        ${badgeHtml(b.status || 'pending')}
-        <div style="font-weight:800;color:#E8A020;font-size:.95rem">${b.total_price ? Number(b.total_price).toLocaleString('ar-SA') + ' ر.س' : '—'}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9">
+        ${voucherBtn}${invoiceBtn}
       </div>
-    </div>`).join('');
+    </div>`;
+    }).join('');
   }
 
   async function loadFlightBookings() {
