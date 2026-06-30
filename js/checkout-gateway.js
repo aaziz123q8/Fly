@@ -90,6 +90,12 @@
     if (w) w.style.display = 'none';
     if (d) { d.style.display = 'none'; }
   }
+  function showWallets(root) {
+    var w = root.querySelector('[data-fmco="wallets"]');
+    var d = root.querySelector('[data-fmco="divider"]');
+    if (w) w.style.display = '';
+    if (d) d.style.display = '';
+  }
 
   var FMCheckout = {
     mount: function (cfg) {
@@ -117,10 +123,15 @@
         },
         setError: setErr,
         confirmCard: function () { return Promise.reject(new Error('not-ready')); },
-        // Keep the Apple/Google Pay sheet amount in sync (e.g. after a coupon).
+        // Keep the Apple/Google Pay sheet amount in sync (e.g. after a coupon),
+        // and lazily create the wallet element the first time a positive amount
+        // is known (the flight page loads its price after mount).
         updateAmount: function (minor) {
-          if (controller.expressElements && minor > 0) {
+          if (!(minor > 0)) return;
+          if (controller.expressElements) {
             try { controller.expressElements.update({ amount: Math.round(minor) }); } catch (e) {}
+          } else if (controller._mountExpress) {
+            controller._mountExpress(minor);
           }
         }
       };
@@ -170,17 +181,24 @@
           });
         };
 
-        // ── Express Checkout Element (Apple Pay / Google Pay) — optional. ────
-        if (cfg.express && cfg.amountMinor > 0 && cfg.currency) {
+        // ── Express Checkout Element (Apple Pay / Google Pay) ───────────────
+        // Created LAZILY: when the page mounts the gateway before it knows the
+        // amount (e.g. the flight page loads the price asynchronously), the
+        // wallet element is created the first time updateAmount() supplies a
+        // positive amount. Otherwise it is created immediately.
+        var expressMounted = false;
+        controller._mountExpress = function (minorAmount) {
+          if (expressMounted || !cfg.express || !cfg.currency || !(minorAmount > 0)) return;
           try {
             var exElements = stripe.elements({
               mode: 'payment',
-              amount: Math.round(cfg.amountMinor),
+              amount: Math.round(minorAmount),
               currency: String(cfg.currency).toLowerCase(),
               locale: 'ar'
             });
             controller.expressElements = exElements;
             var expr = exElements.create('expressCheckout', { buttonHeight: 48 });
+            expressMounted = true;
 
             expr.on('ready', function (e) {
               if (!e || !e.availablePaymentMethods) hideWallets(root);
@@ -212,10 +230,15 @@
               }
             });
 
+            showWallets(root);
             expr.mount(root.querySelector('[data-fmco="wallets"]'));
           } catch (e) {
             hideWallets(root);
           }
+        };
+
+        if (cfg.express && cfg.amountMinor > 0 && cfg.currency) {
+          controller._mountExpress(cfg.amountMinor);
         } else {
           hideWallets(root);
         }
