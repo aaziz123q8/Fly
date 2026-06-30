@@ -127,6 +127,8 @@ class HotelBookingService
             'session_key'         => $sessionKey,
             'prebook_id'          => $prebookSessionId,
             'confirmed_price'     => $confirmedPrice,
+            'net_price'           => $netPrice,
+            'commission'          => $commission['commission'],
             'currency'            => $currency,
             'cancellation_policy' => $cancellationPolicy,
             'offer_expires_at'    => $offerExpiresAt,

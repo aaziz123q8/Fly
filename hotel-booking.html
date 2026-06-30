@@ -389,12 +389,15 @@
         displayed_price: totalAmount,
       }, true);
       sessionKey = prebookRes.session_key || prebookRes.booking_session_key || prebookRes.id || '';
+      const netPriceGBP   = parseFloat(prebookRes.net_price  || 0);
+      const commissionGBP = parseFloat(prebookRes.commission || 0);
+      if (parseFloat(prebookRes.confirmed_price || 0) > 0) totalAmount = parseFloat(prebookRes.confirmed_price);
 
       // Warn user if price changed during prebook
       if (prebookRes.price_changed) {
         const newPrice = parseFloat(prebookRes.new_price || prebookRes.final_price || totalAmount);
         const confirmed = confirm(
-          `⚠️ تغيّر سعر الغرفة!\n\nالسعر الجديد: £ ${newPrice.toFixed(2)}\n\nهل تريد المتابعة بالسعر الجديد؟`
+          `⚠️ تغيّر سعر الغرفة!\n\nالسعر الجديد: ${formatPrice(newPrice)}\n\nهل تريد المتابعة بالسعر الجديد؟`
         );
         if (!confirmed) {
           btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
@@ -414,11 +417,11 @@
         } else if (cancelPolicy.free_cancellation_before) {
           const beforeDate = new Date(cancelPolicy.free_cancellation_before).toLocaleDateString('ar-KW', {year:'numeric',month:'long',day:'numeric'});
           policyHtml = `إلغاء مجاني حتى ${beforeDate}.`;
-          if (cancelPolicy.penalty_amount) policyHtml += ` بعد ذلك رسوم إلغاء: £ ${parseFloat(cancelPolicy.penalty_amount).toFixed(2)}`;
+          if (cancelPolicy.penalty_amount) policyHtml += ` بعد ذلك رسوم إلغاء: ${formatPrice(parseFloat(cancelPolicy.penalty_amount))}`;
         } else if (Array.isArray(cancelPolicy)) {
           policyHtml = cancelPolicy.map(r => {
             const from = r.start_at ? new Date(r.start_at).toLocaleDateString('ar-KW',{month:'short',day:'numeric'}) : '';
-            const penalty = r.amount ? `£ ${parseFloat(r.amount).toFixed(2)}` : 'مجاني';
+            const penalty = r.amount ? formatPrice(parseFloat(r.amount)) : 'مجاني';
             return `<div>من ${from}: ${penalty}</div>`;
           }).join('');
         } else {
@@ -461,6 +464,8 @@
         + '&pi='       + encodeURIComponent(piRes.payment_intent_id || '')
         + '&secret='   + encodeURIComponent(piRes.client_secret     || '')
         + '&amount='   + encodeURIComponent(piRes.amount            || totalAmount)
+        + '&net='      + encodeURIComponent(netPriceGBP   || '')
+        + '&commission=' + encodeURIComponent(commissionGBP || '')
         + '&hotel='    + encodeURIComponent(hotelName)
         + '&nights='   + encodeURIComponent(calcNights());
 
