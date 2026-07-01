@@ -116,12 +116,13 @@
     .bag-blocks  { display: flex; gap: 0; border-top: 1px solid var(--vborder); }
     .bag-block   { flex: 1; padding: 14px 22px; border-left: 1px solid var(--vborder); }
     .bag-block:last-child { border-left: none; }
-    .bag-block-title { font-size: .76rem; font-weight: 700; color: var(--v3); margin-bottom: 8px; }
+    .bag-block-title { font-size: .76rem; font-weight: 700; color: var(--v3); margin-bottom: 8px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 3px 7px; }
     .bag-row     { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 5px; }
     .bag-check   { color: #16A34A; font-weight: 700; font-size: .85rem; flex-shrink: 0; margin-top: 1px; }
     .bag-x       { color: #DC2626; font-weight: 700; font-size: .85rem; flex-shrink: 0; margin-top: 1px; }
     .bag-label   { font-size: .78rem; font-weight: 600; color: var(--vink); display: block; }
     .bag-sub     { font-size: .7rem; color: var(--vmuted); display: block; margin-top: 1px; }
+    .bag-route   { font-size: .68rem; font-weight: 700; color: var(--vmuted); letter-spacing: .3px; }
 
     /* Sort bar */
     .sort-bar { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
@@ -155,37 +156,63 @@
     .skeleton-line { height: 14px; background: linear-gradient(90deg,#F4EEFE 25%,#EAE0FA 50%,#F4EEFE 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 6px; margin-bottom: 10px; }
     @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
 
-    /* ── Mobile: cleaner, calmer result card ────────────────────── */
+    /* ── Mobile: compact, scannable result card (all data, small footprint) ── */
     @media(max-width:768px){
-      .flight-card{ border-radius:16px; margin-bottom:14px; }
-      /* compact airline strip */
-      .fc-airline{ padding:12px 14px; gap:4px; border-left:0; border-bottom:1px solid var(--vline,#eef1f7); }
-      .fc-airline img,.fc-airline .al-logo-fallback{ width:36px; height:36px; }
-      .fc-airline .al-name{ font-size:.9rem; }
-      .fc-airline .al-operated{ display:none; }
-      .fc-airline .al-code[style]{ display:none; }      /* hide the aircraft line, keep airline code */
-      /* roomier, calmer route */
-      .fc-route{ padding:16px 16px; gap:10px; }
-      .fc-point .time{ font-size:1.3rem; }
-      .fc-point .iata{ font-size:.8rem; }
-      .fc-point .apt-name{ max-width:84px; font-size:.72rem; }
-      .terminal-lbl{ display:none; }                     /* terminal is detail — hide on the list card */
-      /* price block */
-      .fc-price{ border-right:0; padding:16px; }
-      .fc-price .amount{ font-size:1.7rem; }
-      .fc-price .select-btn{ padding:12px; font-size:1rem; }
-      /* baggage — kept and made clear: stacked, full-width, easy to read */
-      .bag-blocks{ flex-direction:column; gap:0; background:#FBFAFF; }
-      .bag-block{ flex:none; border-left:0; border-bottom:1px solid var(--vline,#eef1f7); padding:13px 16px; }
-      .bag-block:last-child{ border-bottom:0; }
-      .bag-block-title{ font-size:.82rem; color:var(--v3,#4C1D95); font-weight:800; margin-bottom:9px; display:flex; align-items:center; gap:6px; }
-      .bag-block-title::before{ content:"🧳"; font-size:.95rem; }
-      .bag-row{ gap:9px; margin-bottom:7px; align-items:flex-start; }
-      .bag-check,.bag-x{ font-size:.95rem; }
-      .bag-label{ font-size:.84rem; font-weight:600; }
-      .bag-sub{ font-size:.74rem; line-height:1.5; }
-      /* footer tags + links kept, just tidy */
-      .fc-footer{ padding:10px 14px; gap:8px; min-height:0; }
+      .flight-card{ border-radius:16px; margin-bottom:12px; overflow:hidden; }
+
+      /* Reflow the 3-col grid into a flexbox we can reorder into a tight header */
+      .fc-main{ display:flex; flex-wrap:wrap; align-items:stretch; }
+
+      /* HEADER ROW: airline (right) + price & CTA (left) on a single strip */
+      .fc-airline{
+        order:1; flex:1 1 52%; flex-direction:row; align-items:center; justify-content:flex-start;
+        gap:9px; padding:11px 13px; border-left:0; border-bottom:1px solid var(--vline,#eef1f7);
+      }
+      .fc-airline img,.fc-airline .al-logo-fallback{ width:34px; height:34px; flex-shrink:0; }
+      .fc-airline .al-name{ font-size:.88rem; text-align:right; line-height:1.2; }
+      .fc-airline .al-code,.fc-airline .al-operated,.fc-airline .al-code[style]{ display:none; }
+
+      .fc-price{
+        order:2; flex:0 0 auto; flex-direction:column; align-items:flex-end; justify-content:center;
+        gap:4px; padding:9px 13px; border-right:0; border-bottom:1px solid var(--vline,#eef1f7);
+        background:transparent; min-width:0;
+      }
+      .fc-price .amount{ font-size:1.15rem; }
+      .fc-price .per-pax{ display:block; font-size:.6rem; margin-top:-2px; }
+      .fc-price .select-btn{ width:auto; padding:7px 20px; font-size:.86rem; box-shadow:0 8px 16px -8px rgba(124,58,237,.7); }
+
+      /* ROUTES: full width under the header, compact but readable */
+      .fc-routes{ order:3; flex-basis:100%; width:100%; }
+      .fc-route{ padding:12px 14px; gap:8px; }
+      .fc-route + .fc-route{ border-top:1px dashed var(--vborder); }
+      .fc-point{ min-width:0; }
+      .fc-point .time{ font-size:1.18rem; }
+      .fc-point .iata{ font-size:.78rem; margin-top:2px; }
+      .fc-point .apt-name{ max-width:72px; font-size:.68rem; margin-top:1px; }
+      .fc-point .date-lbl{ font-size:.66rem; margin-top:1px; }
+      .fc-duration{ font-size:.7rem; }
+      .fc-stops-lbl{ font-size:.68rem; }
+      .terminal-lbl{ display:none; }                     /* terminal is a detail — off the list card */
+
+      /* BAGGAGE: both directions side-by-side, compact, all info kept */
+      .bag-blocks{ display:grid; grid-template-columns:1fr 1fr; gap:0; background:#FBFAFF; }
+      .bag-block{ padding:10px 12px; border-left:1px solid var(--vline,#eef1f7); border-bottom:0; }
+      .bag-block:last-child{ border-left:0; }
+      .bag-block-title{ font-size:.74rem; color:var(--v3,#4C1D95); font-weight:800; margin-bottom:7px; display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px; line-height:1.3; }
+      .bag-block-title::before{ content:"🧳"; font-size:.9rem; }
+      .bag-row{ gap:6px; margin-bottom:5px; align-items:flex-start; }
+      .bag-check,.bag-x{ font-size:.82rem; }
+      .bag-label{ font-size:.76rem; font-weight:600; }
+      .bag-sub{ font-size:.68rem; line-height:1.4; }
+
+      /* FOOTER: tags kept, tidy and low */
+      .fc-footer{ padding:9px 13px; gap:6px; min-height:0; }
+      .fc-footer .tag{ font-size:.66rem; padding:2px 9px; }
+    }
+    @media(max-width:360px){
+      /* very narrow: let header wrap gracefully */
+      .fc-airline{ flex-basis:100%; }
+      .fc-price{ flex-basis:100%; justify-content:space-between; }
     }
   </style>
 </head>
@@ -596,21 +623,23 @@ function renderSliceBaggageBlock(o, sliceIdx, label) {
   var origCode = getSliceOriginCode(o, sliceIdx);
   var destCode = getSliceDestCode(o, sliceIdx);
   var d = getSliceBaggageDetails(o, sliceIdx);
+  var titleTxt = label ? ('أمتعة ' + label) : 'الأمتعة';
   var html = '<div class="bag-block">';
-  html += '<div class="bag-block-title">معلومات الأمتعة (' + origCode + '-' + destCode + ')</div>';
+  html += '<div class="bag-block-title"><span>' + titleTxt + '</span>'
+        + '<span class="bag-route">' + origCode + '→' + destCode + '</span></div>';
   if (d.carryon > 0) {
     html += '<div class="bag-row"><span class="bag-check">✓</span><div>'
-      + '<span class="bag-label">' + d.carryon + ' حقيبة مقصورة</span>'
+      + '<span class="bag-label">حقيبة يد × ' + d.carryon + '</span>'
     + '</div></div>';
   }
   if (d.checked > 0) {
     html += '<div class="bag-row"><span class="bag-check">✓</span><div>'
-      + '<span class="bag-label">شاملة أمتعة السفر</span>'
-      + '<span class="bag-sub">' + d.checked + ' حقيبة — وزن 23 كغم للحقيبة الواحدة عادةً</span>'
+      + '<span class="bag-label">حقيبة مسجّلة × ' + d.checked + '</span>'
+      + '<span class="bag-sub">حتى 23 كغم للحقيبة</span>'
     + '</div></div>';
   } else {
     html += '<div class="bag-row"><span class="bag-x">✗</span><div>'
-      + '<span class="bag-label">بدون أمتعة مسجلة</span>'
+      + '<span class="bag-label">بدون حقيبة مسجّلة</span>'
     + '</div></div>';
   }
   html += '</div>';
