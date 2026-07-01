@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>فلاي مسار — معاينة التصميم الجديد</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --v1:#7C3AED; --v2:#9333EA; --v3:#4C1D95; --plum:#2E1065;
+  --coral:#FB7185; --amber:#F59E0B;
+  --ink:#1B172B; --muted:#6B6880; --line:#ECE8F4; --bg:#FAF8FF; --paper:#fff;
+  --grad:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);
+  --shadow:0 24px 60px -30px rgba(76,29,149,.45);
+  --shadow-sm:0 8px 24px -14px rgba(76,29,149,.4);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:inherit}
+h1,h2,h3{line-height:1.22;letter-spacing:-.4px}
+img{display:block;max-width:100%}
+.wrap{max-width:1200px;margin:0 auto;padding:0 22px}
+.gc{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* NAV */
+.nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.8);backdrop-filter:saturate(160%) blur(14px);border-bottom:1px solid var(--line)}
+.nav-in{max-width:1200px;margin:0 auto;padding:0 22px;height:72px;display:flex;align-items:center;gap:24px}
+.brand{display:flex;align-items:center;gap:10px;font-size:1.42rem;font-weight:700}
+.brand .mk{width:40px;height:40px;border-radius:13px;background:var(--grad);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 10px 22px -8px rgba(124,58,237,.7)}
+.brand .mk svg{width:22px;height:22px}
+.brand b{font-weight:700}.brand b em{font-style:normal;color:var(--v2)}
+.nlinks{display:flex;gap:2px;margin-inline-start:14px}
+.nlinks a{color:var(--muted);font-weight:600;font-size:.97rem;padding:9px 14px;border-radius:11px;transition:.2s}
+.nlinks a:hover,.nlinks a.on{color:var(--v2);background:#F4EEFE}
+.nsp{margin-inline-start:auto;display:flex;align-items:center;gap:10px}
+.seg{display:flex;background:#F4F1FA;border:1px solid var(--line);border-radius:12px;padding:3px}
+.seg button{border:0;background:none;font:inherit;font-weight:700;font-size:.82rem;color:var(--muted);padding:6px 11px;border-radius:9px;cursor:pointer}
+.seg button.on{background:#fff;color:var(--v2);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.b-ghost{color:var(--ink);border:1.5px solid var(--line);padding:9px 18px;border-radius:12px;font-weight:700;font-size:.9rem}
+.b-cta{background:var(--grad);color:#fff;padding:10px 20px;border-radius:12px;font-weight:700;font-size:.9rem;box-shadow:0 12px 24px -10px rgba(124,58,237,.7)}
+
+/* HERO */
+.hero{position:relative;min-height:560px;display:flex;align-items:center;overflow:hidden;background:linear-gradient(135deg,#3b0f6e,#6d28d9 55%,#7e22ce)}
+.hero-img{position:absolute;inset:0}
+.hero-img img{width:100%;height:100%;object-fit:cover;opacity:.55}
+.hero-ov{position:absolute;inset:0;background:linear-gradient(90deg,rgba(46,16,101,.92) 10%,rgba(46,16,101,.45) 60%,rgba(46,16,101,.2))}
+.hero .wrap{position:relative;z-index:3;padding-top:56px;padding-bottom:120px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);padding:8px 16px;border-radius:40px;font-size:.85rem;font-weight:600;margin-bottom:22px;backdrop-filter:blur(6px)}
+.hero h1{color:#fff;font-size:clamp(2.4rem,5.4vw,4rem);font-weight:700;max-width:760px;margin-bottom:16px}
+.hero h1 em{font-style:normal;background:linear-gradient(90deg,#FDE68A,#FB7185);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:#e7ddff;font-size:1.18rem;max-width:520px}
+
+/* SEARCH */
+.search{max-width:1080px;margin:-88px auto 0;position:relative;z-index:20;background:rgba(255,255,255,.92);backdrop-filter:blur(20px) saturate(160%);border:1px solid #fff;border-radius:24px;box-shadow:var(--shadow);padding:14px}
+.stabs{display:flex;gap:8px;padding:6px 6px 14px}
+.stab{display:flex;align-items:center;gap:8px;padding:12px 24px;border-radius:15px;font-weight:700;color:var(--muted);cursor:pointer;transition:.2s}
+.stab.on{background:var(--grad);color:#fff;box-shadow:0 12px 24px -12px rgba(124,58,237,.8)}
+.stab svg{width:19px;height:19px}
+.srow{display:grid;grid-template-columns:1.25fr 1.25fr 1fr 1fr auto;gap:10px;align-items:stretch}
+.fld{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 16px;display:flex;flex-direction:column;gap:4px;transition:.2s;cursor:pointer}
+.fld:hover{border-color:#c9b6f2;box-shadow:var(--shadow-sm)}
+.fld label{font-size:.72rem;font-weight:600;color:var(--muted);display:flex;align-items:center;gap:5px}
+.fld label svg{width:13px;height:13px;color:var(--v2)}
+.fld .v{font-size:1.02rem;font-weight:700}
+.fld .v.ph{color:#a99fc0;font-weight:500}
+.go{background:var(--grad);color:#fff;border:0;border-radius:16px;padding:0 30px;font-weight:700;font-size:1.06rem;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;box-shadow:0 14px 28px -12px rgba(124,58,237,.85)}
+.go svg{width:20px;height:20px}
+
+/* TRUST */
+.trust{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;padding:30px 0 0}
+.tchip{display:flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:40px;padding:9px 18px;font-weight:600;font-size:.9rem;color:var(--ink);box-shadow:var(--shadow-sm)}
+.tchip svg{width:18px;height:18px;color:var(--v2)}
+
+/* SECTION */
+.sec{padding:64px 0}
+.sec-h{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+.sec-h h2{font-size:2.05rem;font-weight:700}
+.sec-h p{color:var(--muted);margin-top:4px}
+.more{color:var(--v2);font-weight:700}
+
+/* DESTINATIONS */
+.dgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.dcard{position:relative;height:320px;border-radius:22px;overflow:hidden;box-shadow:var(--shadow-sm);display:block;isolation:isolate}
+.dcard .ph{position:absolute;inset:0;background:linear-gradient(135deg,#7c3aed,#c026d3)}
+.dcard .ph img{width:100%;height:100%;object-fit:cover;transition:transform .5s ease}
+.dcard:hover .ph img{transform:scale(1.08)}
+.dcard::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 38%,rgba(20,8,45,.86));z-index:1}
+.dcard .badge{position:absolute;top:14px;inset-inline-start:14px;z-index:3;background:rgba(255,255,255,.95);color:var(--v3);font-weight:700;font-size:.76rem;padding:5px 12px;border-radius:30px}
+.dcard .cap{position:absolute;bottom:0;inset-inline:0;z-index:3;padding:18px;color:#fff;display:flex;justify-content:space-between;align-items:flex-end}
+.dcard .cap h3{font-size:1.35rem;font-weight:700}
+.dcard .cap .sub{font-size:.85rem;color:#e3d7ff;opacity:.9}
+.dcard .cap .pr{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.35);backdrop-filter:blur(6px);border-radius:14px;padding:8px 12px;text-align:center;line-height:1.2}
+.dcard .cap .pr b{font-size:1.05rem;display:block}.dcard .cap .pr span{font-size:.68rem;opacity:.85}
+
+/* OFFERS strip */
+.ogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.ocard{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:var(--shadow-sm);transition:.25s}
+.ocard:hover{transform:translateY(-5px);box-shadow:var(--shadow)}
+.ocard .oimg{height:170px;position:relative;background:linear-gradient(135deg,#a78bfa,#7c3aed)}
+.ocard .oimg img{width:100%;height:100%;object-fit:cover}
+.ocard .otag{position:absolute;top:12px;inset-inline-start:12px;background:var(--coral);color:#fff;font-weight:700;font-size:.78rem;padding:5px 12px;border-radius:30px}
+.ocard .obody{padding:16px 18px}
+.ocard .obody h3{font-size:1.12rem;margin-bottom:4px}
+.ocard .obody p{color:var(--muted);font-size:.88rem;margin-bottom:12px}
+.ocard .obody .row{display:flex;justify-content:space-between;align-items:center}
+.ocard .price{font-weight:700;font-size:1.2rem;color:var(--v2)}
+.ocard .price s{font-size:.82rem;color:#b3aac6;font-weight:500}
+.mini{background:var(--grad);color:#fff;border-radius:11px;padding:8px 16px;font-weight:700;font-size:.85rem}
+
+/* FEATURES */
+.fgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.fcard{background:#fff;border:1px solid var(--line);border-radius:20px;padding:24px;transition:.2s}
+.fcard:hover{border-color:#d6c6f7;box-shadow:var(--shadow-sm)}
+.fcard .ic{width:52px;height:52px;border-radius:15px;background:#F3EDFE;color:var(--v2);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.fcard .ic svg{width:24px;height:24px}
+.fcard h3{font-size:1.1rem;margin-bottom:6px}
+.fcard p{color:var(--muted);font-size:.9rem}
+
+/* CTA band */
+.band{position:relative;overflow:hidden;border-radius:28px;padding:52px 44px;color:#fff;background:var(--grad);box-shadow:0 30px 60px -30px rgba(124,58,237,.8);display:flex;justify-content:space-between;align-items:center;gap:24px;flex-wrap:wrap}
+.band::before{content:"";position:absolute;width:340px;height:340px;border-radius:50%;background:rgba(255,255,255,.12);top:-120px;inset-inline-start:-60px}
+.band h2{font-size:2rem;position:relative}
+.band p{color:#efe6ff;margin-top:8px;position:relative}
+.band .b{background:#fff;color:var(--v2);padding:15px 30px;border-radius:15px;font-weight:700;position:relative}
+
+/* FOOTER */
+footer{background:#160B2E;color:#b7abd6;padding:56px 0 26px;margin-top:64px}
+.fg{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:34px;margin-bottom:32px}
+.fg h4{color:#fff;margin-bottom:14px}
+.fg a{display:block;color:#b7abd6;padding:5px 0;font-size:.92rem}
+.fcopy{border-top:1px solid rgba(255,255,255,.1);padding-top:22px;text-align:center;font-size:.85rem;color:#8577ab}
+svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+@media(max-width:960px){.dgrid{grid-template-columns:1fr 1fr}.ogrid{grid-template-columns:1fr}.fgrid{grid-template-columns:1fr 1fr}.nlinks,.seg{display:none}.srow{grid-template-columns:1fr 1fr}.fg{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.dgrid,.fgrid,.fg{grid-template-columns:1fr}.srow{grid-template-columns:1fr}.hero h1{font-size:2.1rem}}
+</style></head>
+<body>
+
+<!-- NAV -->
+<nav class="nav"><div class="nav-in">
+  <a class="brand"><span class="mk"><svg class="i" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span><b>فلاي<em> مسار</em></b></a>
+  <div class="nlinks"><a class="on">الرئيسية</a><a>رحلات</a><a>فنادق</a><a>العروض</a><a>استعلام</a></div>
+  <div class="nsp">
+    <div class="seg"><button class="on">د.ك</button><button>﷼</button><button>$</button></div>
+    <a class="b-ghost">دخول</a><a class="b-cta">حساب جديد</a>
+  </div>
+</div></nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-img"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=70" alt=""></div>
+  <div class="hero-ov"></div>
+  <div class="wrap">
+    <div class="eyebrow">✦ منصّة السفر الأولى في الخليج</div>
+    <h1>وجهتك القادمة، <em>بأفضل سعر</em> وأسهل حجز</h1>
+    <p>قارن آلاف الرحلات والفنادق لحظياً من أكثر من ٥٠٠ شركة طيران، واحجز بثقة خلال دقائق.</p>
+  </div>
+</section>
+
+<!-- SEARCH -->
+<div class="wrap">
+  <div class="search">
+    <div class="stabs">
+      <div class="stab on"><svg class="i" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg> رحلات</div>
+      <div class="stab"><svg class="i" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01"/></svg> فنادق</div>
+    </div>
+    <div class="srow">
+      <div class="fld"><label><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/></svg> من</label><span class="v">الكويت · KWI</span></div>
+      <div class="fld"><label><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"/></svg> إلى</label><span class="v ph">اختر وجهتك</span></div>
+      <div class="fld"><label><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> المغادرة</label><span class="v">١٢ يوليو</span></div>
+      <div class="fld"><label><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg> المسافرون</label><span class="v">١ بالغ · اقتصادية</span></div>
+      <button class="go"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg> بحث</button>
+    </div>
+  </div>
+  <div class="trust">
+    <div class="tchip"><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg> أفضل سعر مضمون</div>
+    <div class="tchip"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> دفع آمن ١٠٠٪</div>
+    <div class="tchip"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 6v6l4 2"/></svg> تأكيد فوري</div>
+    <div class="tchip"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.9V21a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 3 5.2 2 2 0 0 1 5 3h4a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L9.1 11a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.4c1 .3 1.9.6 2.9.7A2 2 0 0 1 22 16.9z"/></svg> دعم عربي ٢٤/٧</div>
+  </div>
+</div>
+
+<!-- DESTINATIONS -->
+<section class="sec"><div class="wrap">
+  <div class="sec-h"><div><h2>وجهات مميّزة</h2><p>اخترنا لك أجمل المدن بأفضل الأسعار</p></div><a class="more">عرض الكل ←</a></div>
+  <div class="dgrid">
+    <a class="dcard"><div class="ph"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=700&q=70" alt="دبي"></div><span class="badge">الأكثر طلباً</span><div class="cap"><div><h3>دبي</h3><span class="sub">الإمارات · ٣ ساعات</span></div><div class="pr"><b>٤٥</b><span>د.ك</span></div></div></a>
+    <a class="dcard"><div class="ph"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=700&q=70" alt="إسطنبول"></div><span class="badge">-٢٠٪</span><div class="cap"><div><h3>إسطنبول</h3><span class="sub">تركيا · ٥ ساعات</span></div><div class="pr"><b>٦٢</b><span>د.ك</span></div></div></a>
+    <a class="dcard"><div class="ph"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1572252009286-268acec5ca0a?auto=format&fit=crop&w=700&q=70" alt="القاهرة"></div><div class="cap"><div><h3>القاهرة</h3><span class="sub">مصر · ٤ ساعات</span></div><div class="pr"><b>٣٨</b><span>د.ك</span></div></div></a>
+    <a class="dcard"><div class="ph"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=700&q=70" alt="لندن"></div><span class="badge">عرض خاص</span><div class="cap"><div><h3>لندن</h3><span class="sub">بريطانيا · ٧ ساعات</span></div><div class="pr"><b>١٤٥</b><span>د.ك</span></div></div></a>
+  </div>
+</div></section>
+
+<!-- OFFERS -->
+<section class="sec" style="padding-top:0"><div class="wrap">
+  <div class="sec-h"><div><h2>عروض لا تُفوَّت</h2><p>باقات طيران وفندق بأسعار حصرية</p></div><a class="more">كل العروض ←</a></div>
+  <div class="ogrid">
+    <div class="ocard"><div class="oimg"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=700&q=70" alt=""><span class="otag">وفّر ٣٠٪</span></div><div class="obody"><h3>جزر المالديف · ٥ ليالٍ</h3><p>طيران + منتجع ٥ نجوم مع إفطار</p><div class="row"><div class="price">٣٢٠ <s>٤٦٠</s> د.ك</div><a class="mini">احجز</a></div></div></div>
+    <div class="ocard"><div class="oimg"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=700&q=70" alt=""><span class="otag">وفّر ٢٥٪</span></div><div class="obody"><h3>باريس · ٤ ليالٍ</h3><p>طيران + فندق وسط المدينة</p><div class="row"><div class="price">٢١٠ <s>٢٨٠</s> د.ك</div><a class="mini">احجز</a></div></div></div>
+    <div class="ocard"><div class="oimg"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=700&q=70" alt=""><span class="otag">وفّر ٤٠٪</span></div><div class="obody"><h3>دبي · ٣ ليالٍ</h3><p>طيران + فندق مع تذكرة برج خليفة</p><div class="row"><div class="price">١٥٥ <s>٢٦٠</s> د.ك</div><a class="mini">احجز</a></div></div></div>
+  </div>
+</div></section>
+
+<!-- FEATURES -->
+<section class="sec" style="padding-top:0"><div class="wrap">
+  <div class="sec-h"><div><h2>لماذا فلاي مسار؟</h2><p>تجربة حجز سلسة من البحث حتى الوصول</p></div></div>
+  <div class="fgrid">
+    <div class="fcard"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><h3>أفضل سعر مضمون</h3><p>نقارن آلاف العروض ونعيد لك الفرق إن وجدت أرخص.</p></div>
+    <div class="fcard"><div class="ic"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>دفع آمن</h3><p>تشفير كامل وبوابات دفع عالمية موثوقة.</p></div>
+    <div class="fcard"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10"/><path d="m9 12 2 2 4-4"/></svg></div><h3>تأكيد فوري</h3><p>تذكرتك وتأكيد فندقك خلال دقائق على واتساب.</p></div>
+    <div class="fcard"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M22 16.9V21a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 3 5.2 2 2 0 0 1 5 3h4a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.5 2.1L9.1 11a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.4c1 .3 1.9.6 2.9.7A2 2 0 0 1 22 16.9z"/></svg></div><h3>دعم عربي ٢٤/٧</h3><p>فريق متخصص يساعدك في أي وقت.</p></div>
+  </div>
+</div></section>
+
+<!-- CTA BAND -->
+<section class="sec" style="padding-top:0"><div class="wrap">
+  <div class="band"><div><h2>حمّل تطبيق فلاي مسار</h2><p>عروض حصرية وإشعارات بأفضل الأسعار — لمستخدمي التطبيق فقط</p></div><a class="b">ابدأ الآن</a></div>
+</div></section>
+
+<!-- FOOTER -->
+<footer><div class="wrap">
+  <div class="fg">
+    <div><a class="brand" style="margin-bottom:12px"><span class="mk"><svg class="i" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span><span style="color:#fff">فلاي<em style="color:#c4b5fd;font-style:normal"> مسار</em></span></a><p style="max-width:300px;color:#b7abd6">منصّة السفر الأولى للعالم العربي — أفضل الأسعار وحجز آمن وسريع.</p></div>
+    <div><h4>الشركة</h4><a>من نحن</a><a>خدماتنا</a><a>اتصل بنا</a></div>
+    <div><h4>الدعم</h4><a>استعلام عن حجز</a><a>الأسئلة الشائعة</a></div>
+    <div><h4>قانوني</h4><a>سياسة الخصوصية</a><a>الشروط والأحكام</a></div>
+  </div>
+  <div class="fcopy">© ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.</div>
+</div></footer>
+</body></html>
