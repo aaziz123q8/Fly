@@ -183,8 +183,35 @@ class DatePicker {
   }
 
   show() {
-    const rect = this.trigger.getBoundingClientRect();
+    // Only one date picker open at a time (prevents overlapping popups).
+    (window.DatePickerInstances || []).forEach((dp) => { if (dp !== this) dp.hide(); });
     this.popup.style.display = 'block';
+
+    // Phones: show as a centered modal with a dim backdrop, full width, one month per row.
+    if (window.innerWidth <= 768) {
+      if (!this._backdrop) {
+        const b = document.createElement('div');
+        b.className = 'dp-backdrop';
+        b.style.cssText = 'position:fixed;inset:0;background:rgba(20,8,45,.5);z-index:1999';
+        document.body.appendChild(b);
+        this._backdrop = b;
+      }
+      this._backdrop.style.display = 'block';
+      this._backdrop.onclick = () => this.hide();
+      this.popup.style.left = '12px';
+      this.popup.style.right = '12px';
+      this.popup.style.width = 'auto';
+      this.popup.style.maxWidth = 'none';
+      this.popup.querySelectorAll('.dp-month-block').forEach((b) => { b.style.minWidth = '0'; b.style.width = '100%'; });
+      const wrap = this.popup.querySelector('.dp-wrap'); if (wrap) wrap.style.flexDirection = 'column';
+      this.popup.style.maxHeight = (window.innerHeight - 40) + 'px';
+      this.popup.style.overflowY = 'auto';
+      const popH = this.popup.offsetHeight || 360;
+      this.popup.style.top = Math.max(20, (window.innerHeight - popH) / 2) + 'px';
+      return;
+    }
+
+    const rect = this.trigger.getBoundingClientRect();
     const popW = this.popup.offsetWidth || 300;
     const popH = this.popup.offsetHeight || 320;
     let left = rect.left;
@@ -195,9 +222,13 @@ class DatePicker {
     if (top < 10) top = 10;
     this.popup.style.top = top + 'px';
     this.popup.style.left = left + 'px';
+    this.popup.style.right = 'auto';
   }
 
-  hide() { this.popup.style.display = 'none'; }
+  hide() {
+    this.popup.style.display = 'none';
+    if (this._backdrop) this._backdrop.style.display = 'none';
+  }
 
   toggle() {
     if (this.popup.style.display === 'block') this.hide(); else this.show();
