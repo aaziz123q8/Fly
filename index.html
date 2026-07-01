@@ -1077,7 +1077,10 @@ function closeDrawer() {
   @media(prefers-reduced-motion:reduce){.ml-orb,.ml-plane,.ml-mark,.ml-mark::before,.ml-ic,.ml-eyebrow,.ml-name,.ml-btn,.ml-slogan{animation:none!important}}
 
   /* SEARCH STATE (reached from a launcher button) */
-  body.m-search .search-wrap{display:block!important;margin:0 auto!important;padding-top:12px}
+  body.m-search .mlaunch{display:none!important}            /* hide the launcher so the search shows */
+  body.m-search .search-wrap{display:block!important;margin:0 auto!important;padding:12px 14px 40px}
+  /* dedicated single-engine search: hide the flights/hotels tab switcher */
+  body.m-search .tabs{display:none!important}
   body.m-search .msearch-bar{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:800;background:linear-gradient(120deg,#7C3AED,#9333EA 60%,#C026D3);color:#fff;padding:calc(12px + env(safe-area-inset-top,0)) 16px 14px;box-shadow:0 6px 20px -10px rgba(76,29,149,.7)}
   .msb-back{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.16);border:0;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
   .msb-back svg{width:22px;height:22px}
