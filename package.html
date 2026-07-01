@@ -33,6 +33,26 @@ a{text-decoration:none;color:inherit}
 .why h3{font-size:1.02rem;margin-bottom:5px}
 .why p{font-size:.85rem;color:var(--muted)}
 svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fg input[readonly]{cursor:pointer}
+/* violet date picker */
+.dp-popup{display:none;position:fixed;background:#fff;border-radius:18px;box-shadow:0 24px 60px -24px rgba(76,29,149,.5);border:1px solid var(--line);z-index:2000;padding:16px;user-select:none}
+.dp-wrap{display:flex;gap:16px;flex-wrap:wrap}
+.dp-month-block{min-width:250px}
+.dp-month-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.dp-month-title{font-weight:700;font-size:.95rem}
+.dp-nav{background:none;border:1px solid var(--line);border-radius:9px;width:30px;height:30px;cursor:pointer;font-size:1.1rem;display:flex;align-items:center;justify-content:center;font-family:inherit;transition:.2s}
+.dp-nav:hover{background:var(--grad);color:#fff;border-color:transparent}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+.dp-day-name{text-align:center;font-size:.72rem;font-weight:600;color:var(--muted);padding:4px 0}
+.dp-day{text-align:center;padding:9px 4px;border-radius:9px;cursor:pointer;font-size:.88rem;transition:all .15s}
+.dp-day:hover:not(.dp-disabled){background:#F4EEFE}
+.dp-disabled{color:#d1cbe0;cursor:not-allowed}
+.dp-today{font-weight:700;color:var(--v2)}
+.dp-selected{background:var(--v1)!important;color:#fff!important;font-weight:700}
+.dp-in-range{background:#EDE4FC;border-radius:0}
+.dp-start{border-radius:9px 0 0 9px}
+.dp-end{border-radius:0 9px 9px 0}
+.dp-nights{text-align:center;margin-top:10px;font-weight:700;color:var(--v2)}
 @media(max-width:600px){.row{grid-template-columns:1fr}.why{grid-template-columns:1fr}.phero h1{font-size:1.6rem}}
 </style>
 </head>
@@ -54,8 +74,8 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
         <div class="fg"><label>الوجهة</label><input id="pTo" placeholder="مثال: DXB دبي" autocomplete="off" required></div>
       </div>
       <div class="row">
-        <div class="fg"><label>تاريخ الذهاب</label><input id="pDep" type="date" required></div>
-        <div class="fg"><label>تاريخ العودة</label><input id="pRet" type="date" required></div>
+        <div class="fg"><label>تاريخ الذهاب</label><input id="pDep" readonly placeholder="اختر التاريخ" autocomplete="off" dir="rtl"></div>
+        <div class="fg"><label>تاريخ العودة</label><input id="pRet" readonly placeholder="اختر التاريخ" autocomplete="off" dir="rtl"></div>
       </div>
       <div class="row">
         <div class="fg"><label>المسافرون</label>
@@ -79,17 +99,30 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 <script src="js/auth.js"></script>
 <script src="js/currency.js?v=2026070101"></script>
 <script src="js/i18n.js?v=2026070101"></script>
+<script src="js/datepicker.js?v=2026070102"></script>
 <script>
+window.I18N = window.I18N || {};
+window.I18N.ar = window.I18N.ar || { months:['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'], days:['أح','إث','ثل','أر','خم','جم','سب'], nights:'ليلة' };
+window.currentLang = 'ar';
+(function(){
+  if (typeof DatePicker === 'undefined') return;
+  var dep = document.getElementById('pDep'), ret = document.getElementById('pRet');
+  if (dep) new DatePicker(dep, { lang:'ar' });
+  if (ret) new DatePicker(ret, { lang:'ar' });
+})();
 function goPackage(e){
   e.preventDefault();
   var from = (document.getElementById('pFrom').value||'').trim();
   var to   = (document.getElementById('pTo').value||'').trim();
   // pull an IATA-looking token if present, else send the raw text
   function code(s){ var m=(s.match(/[A-Za-z]{3}/)||[])[0]; return (m||s).toUpperCase(); }
+  var depISO = document.getElementById('pDep').dataset.isoDate || '';
+  var retISO = document.getElementById('pRet').dataset.isoDate || '';
+  if (!depISO) { alert('يرجى اختيار تاريخ الذهاب'); return false; }
   var params = new URLSearchParams({
     from: code(from), to: code(to),
-    dep: document.getElementById('pDep').value||'',
-    ret: document.getElementById('pRet').value||'',
+    dep: depISO,
+    ret: retISO,
     pax: document.getElementById('pPax').value||'1',
     cabin: 'economy', type: 'round',
     pkg: '1', rooms: document.getElementById('pRooms').value||'1'

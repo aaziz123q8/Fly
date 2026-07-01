@@ -272,11 +272,6 @@ select.fi{cursor:pointer}
     </button>
   </div>
   <p class="ml-slogan">كل رحلتك في مكان واحد — طيران وفنادق و<b>باقات حصريّة</b> لا تجدها إلا في فلاي مسار.</p>
-  <div class="ml-trust">
-    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> دفع آمن</span>
-    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> أفضل سعر</span>
-    <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> تأكيد فوري</span>
-  </div>
 </div>
 
 <!-- NAV -->
@@ -1050,35 +1045,36 @@ function closeDrawer() {
   .ml-slogan{color:#e7ddff;font-size:1rem;line-height:1.7;max-width:360px;margin-top:2px}
   .ml-slogan b{color:#FDE68A}
 
-  /* ---- animated background + motion ---- */
+  /* ---- animated background + motion (strong, continuous) ---- */
   .mlaunch>*:not(.ml-bg){position:relative;z-index:1}
   .ml-bg{position:absolute;inset:0;overflow:hidden;z-index:0;pointer-events:none}
-  .ml-orb{position:absolute;border-radius:50%;filter:blur(34px)}
-  .ml-orb1{width:230px;height:230px;background:#C026D3;opacity:.5;top:-50px;inset-inline-end:-60px;animation:mlFloat1 9s ease-in-out infinite}
-  .ml-orb2{width:190px;height:190px;background:#7C3AED;opacity:.45;bottom:20px;inset-inline-start:-50px;animation:mlFloat2 11s ease-in-out infinite}
-  .ml-orb3{width:150px;height:150px;background:#9333EA;opacity:.3;top:42%;inset-inline-start:26%;animation:mlFloat1 13s ease-in-out infinite}
-  @keyframes mlFloat1{0%,100%{transform:translate(0,0)}50%{transform:translate(-16px,22px)}}
-  @keyframes mlFloat2{0%,100%{transform:translate(0,0)}50%{transform:translate(18px,-20px)}}
-  .ml-plane{position:absolute;top:11%;color:rgba(255,255,255,.32);animation:mlFly 15s linear infinite}
-  .ml-plane svg{width:30px;height:30px;transform:rotate(-6deg)}
-  @keyframes mlFly{0%{inset-inline-start:-14%;transform:translateY(0)}50%{transform:translateY(-16px)}100%{inset-inline-start:114%;transform:translateY(0)}}
+  .ml-orb{position:absolute;border-radius:50%;filter:blur(40px);mix-blend-mode:screen}
+  .ml-orb1{width:270px;height:270px;background:#E04BFF;opacity:.6;top:-60px;inset-inline-end:-70px;animation:mlFloat1 7s ease-in-out infinite}
+  .ml-orb2{width:220px;height:220px;background:#8B5CF6;opacity:.6;bottom:24px;inset-inline-start:-60px;animation:mlFloat2 8s ease-in-out infinite}
+  .ml-orb3{width:180px;height:180px;background:#C026D3;opacity:.5;top:40%;inset-inline-start:22%;animation:mlFloat3 9s ease-in-out infinite}
+  @keyframes mlFloat1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-44px,42px) scale(1.14)}}
+  @keyframes mlFloat2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(42px,-40px) scale(1.16)}}
+  @keyframes mlFloat3{0%,100%{transform:translate(0,0)}50%{transform:translate(32px,-34px)}}
+  .ml-plane{position:absolute;top:9%;color:rgba(255,255,255,.5);animation:mlFly 9s linear infinite}
+  .ml-plane svg{width:34px;height:34px;transform:rotate(-6deg)}
+  @keyframes mlFly{0%{inset-inline-start:-16%;transform:translateY(0)}50%{transform:translateY(-22px)}100%{inset-inline-start:116%;transform:translateY(0)}}
 
-  .ml-eyebrow{display:inline-flex;align-items:center;gap:7px;color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:8px 16px;border-radius:40px;font-size:.82rem;font-weight:700;animation:mlUp .6s .05s backwards}
-  .ml-mark{position:relative;animation:mlBob 4.2s ease-in-out infinite}
-  .ml-mark::before{content:"";position:absolute;inset:-16px;border-radius:38px;background:radial-gradient(circle,rgba(253,230,138,.4),transparent 70%);z-index:-1;animation:mlPulse 3.2s ease-in-out infinite}
-  @keyframes mlBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-  @keyframes mlPulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.18);opacity:.95}}
-  .ml-name{animation:mlUp .7s .12s backwards}
-  .ml-btn{animation:mlUp .6s backwards}
-  .ml-btns .ml-btn:nth-child(1){animation-delay:.24s}
-  .ml-btns .ml-btn:nth-child(2){animation-delay:.32s}
-  .ml-btns .ml-btn:nth-child(3){animation-delay:.40s}
-  .ml-slogan{animation:mlUp .6s .46s backwards}
-  .ml-trust{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:4px;animation:mlUp .6s .54s backwards}
-  .ml-trust span{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);color:#efe6ff;font-size:.74rem;font-weight:600;padding:7px 13px;border-radius:30px}
-  .ml-trust svg{width:14px;height:14px}
-  @keyframes mlUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-  @media(prefers-reduced-motion:reduce){.ml-orb,.ml-plane,.ml-mark,.ml-mark::before,.ml-eyebrow,.ml-name,.ml-btn,.ml-slogan,.ml-trust{animation:none!important}}
+  .ml-eyebrow{display:inline-flex;align-items:center;gap:7px;color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:8px 16px;border-radius:40px;font-size:.82rem;font-weight:700;animation:mlUp .7s .1s backwards}
+  .ml-mark{position:relative;animation:mlBob 3.4s ease-in-out infinite}
+  .ml-mark::before{content:"";position:absolute;inset:-22px;border-radius:44px;background:radial-gradient(circle,rgba(253,230,138,.6),transparent 66%);z-index:-1;animation:mlPulse 2.4s ease-in-out infinite}
+  @keyframes mlBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-11px)}}
+  @keyframes mlPulse{0%,100%{transform:scale(.9);opacity:.4}50%{transform:scale(1.4);opacity:1}}
+  .ml-name{animation:mlUp .7s .18s backwards}
+  .ml-btn{animation:mlUp .7s backwards}
+  .ml-btns .ml-btn:nth-child(1){animation-delay:.3s}
+  .ml-btns .ml-btn:nth-child(2){animation-delay:.42s}
+  .ml-btns .ml-btn:nth-child(3){animation-delay:.54s}
+  .ml-ic{animation:mlBob 3s ease-in-out infinite}
+  .ml-btns .ml-btn:nth-child(2) .ml-ic{animation-delay:.35s}
+  .ml-btns .ml-btn:nth-child(3) .ml-ic{animation-delay:.7s}
+  .ml-slogan{animation:mlUp .7s .66s backwards}
+  @keyframes mlUp{from{opacity:0;transform:translateY(28px) scale(.94)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @media(prefers-reduced-motion:reduce){.ml-orb,.ml-plane,.ml-mark,.ml-mark::before,.ml-ic,.ml-eyebrow,.ml-name,.ml-btn,.ml-slogan{animation:none!important}}
 
   /* SEARCH STATE (reached from a launcher button) */
   body.m-search .search-wrap{display:block!important;margin:0 auto!important;padding-top:12px}
