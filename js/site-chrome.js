@@ -327,7 +327,9 @@
     // currency buttons -> official setCurrency() (updates prices + .active state)
     document.querySelectorAll('.sc-nav .currency-btn, .sc-drawer .currency-btn').forEach(function (b) {
       b.addEventListener('click', function () {
-        if (window.setCurrency) setCurrency(b.dataset.currency);
+        var cf = window.setCurrency || window.setCur; // official helper, or a page's inline one
+        if (cf) cf(b.dataset.currency);
+        document.querySelectorAll('.currency-btn').forEach(function (x) { x.classList.toggle('active', x.dataset.currency === b.dataset.currency); });
       });
     });
 
