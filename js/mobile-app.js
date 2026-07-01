@@ -47,7 +47,7 @@
   var css =
     ".mapp{display:none}" +
     "@media(max-width:768px){" +
-      ".nav,.sc-nav,.mdrawer,.moverlay,.sc-dr,.sc-ov,.bottom-nav,.sc-bnav,.page-header{display:none!important}" +
+      ".nav,.sc-nav,.mdrawer,.moverlay,.sc-dr,.sc-ov,.bottom-nav,.sc-bnav{display:none!important}" +
       "body{padding-bottom:calc(66px + env(safe-area-inset-bottom,0)) !important}" +
       ".mapp{display:block}" +
       ".mapp-top{position:sticky;top:0;z-index:800;background:linear-gradient(120deg,#7C3AED,#9333EA 60%,#C026D3);color:#fff;padding:calc(10px + env(safe-area-inset-top,0)) 14px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 6px 20px -10px rgba(76,29,149,.7)}" +

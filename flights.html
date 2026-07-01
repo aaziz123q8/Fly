@@ -81,6 +81,16 @@
     .sscard { background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.28); border-radius:12px; padding:6px 12px; display:flex; flex-direction:column; gap:1px; cursor:default; }
     .sscard-lbl { font-size:.65rem; color:rgba(255,255,255,.7); font-weight:600; }
     .sscard-val { font-size:.88rem; color:#fff; font-weight:700; white-space:nowrap; }
+    .ss-cards { display:flex; flex-wrap:wrap; }
+    .ss-edit { display:flex; flex-wrap:wrap; }
+    .ss-hide { display:none !important; }
+    @media(max-width:768px){
+      /* mobile: من|الى · ذهاب|عودة · مسافرون|درجة */
+      .ss-cards{ display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:stretch; }
+      #searchSummaryCards > div:not(.sscard){ display:none; }   /* hide the → arrow */
+      #searchSummaryCards .sscard{ align-items:stretch; }
+      #searchSummaryCards > button{ grid-column:1 / -1; justify-content:center; margin-right:0 !important; }
+    }
 
     /* Currency dropdown option */
     .curr-opt { padding:10px 16px; font-size:.82rem; color:var(--v3); cursor:pointer; transition:background .12s; white-space:nowrap; }
@@ -157,7 +167,7 @@
     <!-- Compact Search — summary cards + edit mode -->
     <div class="search-bar-compact" id="searchBarView">
       <!-- Summary display (default) -->
-      <div id="searchSummaryCards" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;width:100%">
+      <div id="searchSummaryCards" class="ss-cards" style="gap:10px;align-items:center;width:100%">
         <div class="sscard" id="ss_from"><span class="sscard-lbl">من</span><span class="sscard-val" id="ss_from_val">—</span></div>
         <div style="color:rgba(255,255,255,.5);font-size:1.1rem">→</div>
         <div class="sscard" id="ss_to"><span class="sscard-lbl">إلى</span><span class="sscard-val" id="ss_to_val">—</span></div>
@@ -170,7 +180,7 @@
       </div>
 
       <!-- Edit fields (hidden by default) -->
-      <div id="searchEditFields" style="display:none;flex-wrap:wrap;gap:10px;align-items:flex-end;width:100%">
+      <div id="searchEditFields" class="ss-edit ss-hide" style="gap:10px;align-items:flex-end;width:100%">
         <div style="flex:1;min-width:90px" class="ac-wrap">
           <div class="form-label">من</div>
           <input type="text" class="form-control" id="sFrom" placeholder="مدينة أو مطار" autocomplete="off">
@@ -730,8 +740,8 @@ function getSliceRow(o, sliceIdx, isReturn) {
 
 // ─── Init ───────────────────────────────────────────────────────
 function toggleSearchEdit(show) {
-  document.getElementById('searchSummaryCards').style.display = show ? 'none' : 'flex';
-  document.getElementById('searchEditFields').style.display   = show ? 'flex' : 'none';
+  document.getElementById('searchSummaryCards').classList.toggle('ss-hide', show);
+  document.getElementById('searchEditFields').classList.toggle('ss-hide', !show);
 }
 
 function updateSearchSummaryCards() {
