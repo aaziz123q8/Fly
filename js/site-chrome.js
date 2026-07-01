@@ -146,13 +146,19 @@
 
   function ensureMobileApp(){
     if (document.getElementById('mappTabs') || document.getElementById('sc-mapp')) return;
-    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070104'; document.body.appendChild(s);
+    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070105'; document.body.appendChild(s);
+  }
+
+  function ensurePwa(){
+    if (document.getElementById('sc-pwa')) return;
+    var s=document.createElement('script'); s.id='sc-pwa'; s.src='js/pwa.js?v=2026070105'; document.body.appendChild(s);
   }
 
   function mount(){
     if (document.getElementById('scDrawer')) return;
     ensureFont();
     ensureMobileApp();
+    ensurePwa();
     document.body.classList.add('fm');
     var s=document.createElement('style'); s.id='sc-styles'; s.textContent=css; document.head.appendChild(s);
     var host=document.getElementById('sc-header');
