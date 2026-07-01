@@ -146,7 +146,7 @@
 
   function ensureMobileApp(){
     if (document.getElementById('mappTabs') || document.getElementById('sc-mapp')) return;
-    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070103'; document.body.appendChild(s);
+    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070104'; document.body.appendChild(s);
   }
 
   function mount(){

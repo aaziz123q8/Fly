@@ -100,7 +100,7 @@
       ".mapp-tab svg{width:23px;height:23px}" +
       ".mapp-tab.on{color:#7C3AED}" +
       ".mapp-tab.on .mapp-dot{position:absolute;top:-8px;width:22px;height:3px;border-radius:3px;background:linear-gradient(90deg,#7C3AED,#C026D3)}" +
-      ".sc-footer{margin-bottom:66px}" +
+      ".sc-footer{display:none!important}" +
     "}";
 
   function activeKey(){ for (var i=0;i<TABS.length;i++){ if (TABS[i].match.indexOf(here)>=0) return TABS[i].k; } return isHome?'home':''; }
