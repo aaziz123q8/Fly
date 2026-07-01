@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <title>مركز التحكم — لوحة الإدارة</title>
+  <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070105">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="adminSidebar"></aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1>🛠️ مركز التحكم</h1>
+      <a href="../index.html" class="btn btn-ghost btn-sm">← الموقع</a>
+    </div>
+
+    <div class="admin-content">
+      <div class="adm-page-head">
+        <div>
+          <h2>🛠️ مركز التحكم الشامل</h2>
+          <p>تحكّم كامل في كل جوانب الموقع — المستخدمون، الحجوزات، المدفوعات، التسعير، المحتوى والإعدادات، من مكان واحد.</p>
+        </div>
+      </div>
+
+      <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">الإدارة</h4>
+      <div class="adm-hub" style="margin-bottom:26px">
+        <a class="adm-hub-card" href="users.html"><span class="adm-hub-ic">👤</span><h3>المستخدمون</h3><span>إدارة الحسابات والأدوار والصلاحيات</span></a>
+        <a class="adm-hub-card" href="travelers.html"><span class="adm-hub-ic">👥</span><h3>المسافرون</h3><span>ملفات المسافرين المحفوظة</span></a>
+        <a class="adm-hub-card" href="bookings.html"><span class="adm-hub-ic">📋</span><h3>الحجوزات</h3><span>متابعة وتعديل حجوزات الطيران والفنادق</span></a>
+        <a class="adm-hub-card" href="payments.html"><span class="adm-hub-ic">💳</span><h3>المدفوعات</h3><span>المعاملات وطلبات الاسترداد</span></a>
+        <a class="adm-hub-card" href="support.html"><span class="adm-hub-ic">🎧</span><h3>الدعم</h3><span>تذاكر الدعم والردود</span></a>
+      </div>
+
+      <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">التسويق والتسعير</h4>
+      <div class="adm-hub" style="margin-bottom:26px">
+        <a class="adm-hub-card" href="pricing.html"><span class="adm-hub-ic">💲</span><h3>التسعير والهوامش</h3><span>هوامش الربح والعمولات والرسوم والضرائب</span></a>
+        <a class="adm-hub-card" href="commissions.html"><span class="adm-hub-ic">💰</span><h3>العمولات</h3><span>قواعد العمولة حسب النوع والمسار</span></a>
+        <a class="adm-hub-card" href="coupons.html"><span class="adm-hub-ic">🎟️</span><h3>القسائم</h3><span>أكواد الخصم والعروض الترويجية</span></a>
+        <a class="adm-hub-card" href="notifications.html"><span class="adm-hub-ic">🔔</span><h3>الإشعارات</h3><span>إرسال إشعارات جماعية للمستخدمين</span></a>
+      </div>
+
+      <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">المحتوى والإعدادات</h4>
+      <div class="adm-hub" style="margin-bottom:26px">
+        <a class="adm-hub-card" href="cms.html"><span class="adm-hub-ic">📝</span><h3>المحتوى (CMS)</h3><span>صفحات الموقع والمحتوى التعريفي</span></a>
+        <a class="adm-hub-card" href="currencies.html"><span class="adm-hub-ic">💱</span><h3>العملات</h3><span>العملات المعتمدة وأسعار الصرف</span></a>
+        <a class="adm-hub-card" href="api-settings.html"><span class="adm-hub-ic">⚙️</span><h3>إعدادات API</h3><span>مفاتيح Duffel وRateHawk وStripe</span></a>
+        <a class="adm-hub-card" href="analytics.html"><span class="adm-hub-ic">📈</span><h3>التحليلات</h3><span>الإيرادات والمسارات الأكثر بحثاً</span></a>
+      </div>
+
+      <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">أدوات النظام</h4>
+      <div class="card" style="padding:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+          <div>
+            <strong style="color:var(--adm-3,#4C1D95)">تحديث أسعار صرف العملات</strong>
+            <div style="font-size:.84rem;color:var(--text-muted)">يجلب أحدث أسعار الصرف من المزوّد لجميع العملات المعتمدة.</div>
+          </div>
+          <button class="btn btn-primary btn-sm" id="refreshRatesBtn" onclick="refreshRates()">🔄 تحديث الأسعار</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/admin.js?v=2026070105"></script>
+<script src="../js/admin-sidebar.js?v=2026070105"></script>
+<script>
+function refreshRates() {
+  var btn = document.getElementById('refreshRatesBtn');
+  btn.disabled = true; btn.textContent = '... جاري التحديث';
+  Api.post('/api/admin/currencies/refresh-rates', {}, true).then(function() {
+    if (window.showToast) showToast('تم تحديث أسعار الصرف','success'); else alert('تم تحديث أسعار الصرف');
+  }).catch(function() {
+    if (window.showToast) showToast('تعذر تحديث الأسعار','error'); else alert('تعذر تحديث الأسعار');
+  }).finally(function() {
+    btn.disabled = false; btn.textContent = '🔄 تحديث الأسعار';
+  });
+}
+</script>
+</body>
+</html>

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>المسافرون — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070105">
 </head>
 <body>
 <div class="admin-layout">
@@ -84,8 +85,8 @@
 
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js"></script>
-<script src="../js/admin-sidebar.js"></script>
+<script src="../js/admin.js?v=2026070105"></script>
+<script src="../js/admin-sidebar.js?v=2026070105"></script>
 <script>
   const user = Auth.getUser();
   if (!Auth.isLoggedIn() || !user || (user.role !== 'admin' && user.role !== 'super_admin')) {

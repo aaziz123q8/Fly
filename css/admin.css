@@ -1,0 +1,138 @@
+/* ============================================================================
+   FlyMasar — Admin Panel theme (violet identity) + native mobile app shell
+   Loaded AFTER app.css on every admin page, so it overrides the base admin
+   styles. On desktop: a polished violet dashboard. On phones (<=768px): the
+   sidebar disappears and a native app experience takes over — a violet top
+   app-bar, a fixed bottom tab bar, and a slide-up "More" sheet.
+   ==========================================================================*/
+:root{
+  --adm-1:#7C3AED; --adm-2:#9333EA; --adm-3:#4C1D95; --adm-deep:#2E1065;
+  --adm-mag:#C026D3; --adm-ink:#1B172B; --adm-muted:#6B6880; --adm-line:#ECE8F4;
+  --adm-bg:#F6F3FC; --adm-grad:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);
+}
+
+body{ background:var(--adm-bg); }
+
+/* ── Sidebar (desktop) ─────────────────────────────────────────────────── */
+.sidebar{
+  background:linear-gradient(185deg,#2E1065,#4C1D95 58%,#5B21B6);
+  box-shadow:-4px 0 34px -22px rgba(46,16,101,.9);
+  border-left:1px solid rgba(255,255,255,.06);
+}
+.sidebar-brand span{ color:#FDE68A; }
+.sidebar-nav a{ border-radius:12px; }
+.sidebar-nav a:hover{ background:rgba(255,255,255,.09); }
+.sidebar-nav a.active{
+  background:linear-gradient(90deg,rgba(192,38,211,.40),rgba(124,58,237,.28));
+  color:#fff; box-shadow:0 10px 20px -12px rgba(192,38,211,.85);
+}
+.sidebar-section-title{ color:rgba(255,255,255,.42); }
+.sidebar-footer .btn{ border-radius:12px; }
+
+/* ── Topbar ────────────────────────────────────────────────────────────── */
+.admin-topbar{ background:rgba(255,255,255,.92); backdrop-filter:saturate(1.2) blur(6px); }
+.admin-topbar h1{ color:var(--adm-3); font-weight:800; }
+
+/* ── Stat cards ────────────────────────────────────────────────────────── */
+.stat-card{ border-radius:18px; border-color:var(--adm-line); box-shadow:0 22px 46px -34px rgba(76,29,149,.5); }
+.stat-card:hover{ box-shadow:0 28px 52px -28px rgba(76,29,149,.55); border-color:#DED2F7; }
+.stat-icon{ border-radius:14px; }
+.stat-icon.blue{ background:linear-gradient(135deg,#EDE9FE,#DDD6FE); }
+.stat-icon.gold{ background:linear-gradient(135deg,#FEF3C7,#FDE68A); }
+.stat-icon.green{ background:linear-gradient(135deg,#D1FAE5,#A7F3D0); }
+.stat-icon.red{ background:linear-gradient(135deg,#FEE2E2,#FECACA); }
+.stat-value{ color:var(--adm-3); }
+
+/* ── Table cards ───────────────────────────────────────────────────────── */
+.table-card{ border-radius:18px; border-color:var(--adm-line); box-shadow:0 22px 46px -36px rgba(76,29,149,.45); }
+.table-card .card-header{ color:var(--adm-3); font-weight:800; background:linear-gradient(180deg,#FBFAFF,#F6F1FE); }
+th{ background:#F7F4FD; color:var(--adm-3); }
+tr:hover td{ background:#FBFAFF; }
+.badge-info{ background:rgba(124,58,237,.12); color:var(--adm-1); }
+
+/* Section/page heading used by the new capability pages */
+.adm-page-head{ display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:20px; flex-wrap:wrap; }
+.adm-page-head h2{ font-size:1.3rem; font-weight:800; color:var(--adm-3); display:flex; align-items:center; gap:10px; }
+.adm-page-head p{ font-size:.86rem; color:var(--adm-muted); margin-top:2px; }
+
+/* Control hub tiles (settings landing) */
+.adm-hub{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.adm-hub-card{ background:#fff; border:1px solid var(--adm-line); border-radius:18px; padding:20px; text-decoration:none; color:var(--adm-ink); display:flex; flex-direction:column; gap:8px; transition:.18s; box-shadow:0 22px 46px -38px rgba(76,29,149,.45); }
+.adm-hub-card:hover{ transform:translateY(-2px); border-color:#DED2F7; box-shadow:0 28px 52px -30px rgba(76,29,149,.55); }
+.adm-hub-ic{ width:46px; height:46px; border-radius:13px; background:var(--adm-grad); color:#fff; display:flex; align-items:center; justify-content:center; font-size:1.4rem; }
+.adm-hub-card h3{ font-size:1rem; font-weight:800; color:var(--adm-3); }
+.adm-hub-card span{ font-size:.82rem; color:var(--adm-muted); }
+
+/* ── Native mobile app shell (hidden on desktop) ───────────────────────── */
+.adm-mbar,.adm-sheet,.adm-sheet-ov{ display:none; }
+
+@media(max-width:768px){
+  html{ touch-action:pan-x pan-y; -ms-touch-action:pan-x pan-y; }
+
+  /* Kill the desktop sidebar entirely on phones */
+  .admin-layout{ display:block; }
+  .sidebar,.sidebar-overlay,#sidebarToggleBtn{ display:none !important; }
+  .admin-main{ margin-right:0; }
+
+  /* Turn the existing topbar into a violet app bar */
+  .admin-topbar{
+    background:var(--adm-grad); color:#fff; height:auto; border-bottom:0;
+    padding:calc(11px + env(safe-area-inset-top,0)) 15px 13px;
+    box-shadow:0 8px 22px -12px rgba(76,29,149,.7); position:sticky; top:0;
+  }
+  .admin-topbar h1{ color:#fff !important; font-size:1.08rem; }
+  .admin-topbar span, .admin-topbar a, .admin-topbar button{ color:#fff !important; }
+  .admin-topbar .btn{ background:rgba(255,255,255,.16); border:1.5px solid rgba(255,255,255,.34); color:#fff; border-radius:11px; }
+
+  .admin-content{ padding:16px 13px calc(84px + env(safe-area-inset-bottom,0)); }
+
+  /* Stats: two-up compact tiles */
+  .stats-grid{ grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
+  .stat-card{ padding:15px 14px; border-radius:16px; flex-direction:column; align-items:flex-start; gap:9px; }
+  .stat-icon{ width:42px; height:42px; font-size:1.25rem; }
+  .stat-value{ font-size:1.35rem; }
+  .stat-label{ font-size:.76rem; }
+
+  /* Any two-column dashboard grids collapse */
+  .admin-content > div[style*="grid-template-columns:1fr 1fr"],
+  .admin-content > div[style*="grid-template-columns: 1fr 1fr"]{ grid-template-columns:1fr !important; }
+
+  /* Tables scroll horizontally instead of squashing */
+  .table-card{ border-radius:16px; }
+  .table-card table{ display:block; overflow-x:auto; white-space:nowrap; }
+
+  /* ── Bottom tab bar ── */
+  .adm-mbar{
+    display:flex; position:fixed; left:0; right:0; bottom:0; z-index:900; background:#fff;
+    border-top:1px solid var(--adm-line); justify-content:space-around;
+    padding:7px 4px calc(7px + env(safe-area-inset-bottom,0));
+    box-shadow:0 -6px 24px -14px rgba(76,29,149,.4);
+  }
+  .adm-tab{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:#9a93ad;
+    font-size:.63rem; font-weight:700; text-decoration:none; background:none; border:0; cursor:pointer;
+    position:relative; font-family:inherit;
+  }
+  .adm-tab .ic{ font-size:1.18rem; line-height:1; }
+  .adm-tab.on{ color:var(--adm-1); }
+  .adm-tab.on::before{ content:""; position:absolute; top:-7px; width:22px; height:3px; border-radius:3px; background:var(--adm-grad); }
+
+  /* ── More sheet ── */
+  .adm-sheet-ov{ display:block; position:fixed; inset:0; background:rgba(20,8,45,.5); z-index:950; opacity:0; pointer-events:none; transition:opacity .2s; }
+  .adm-sheet-ov.open{ opacity:1; pointer-events:auto; }
+  .adm-sheet{
+    display:block; position:fixed; left:0; right:0; bottom:0; z-index:960; background:#fff;
+    border-radius:22px 22px 0 0; padding:8px 14px calc(20px + env(safe-area-inset-bottom,0));
+    transform:translateY(100%); transition:transform .26s cubic-bezier(.4,0,.2,1);
+    max-height:82vh; overflow:auto; box-shadow:0 -20px 50px -20px rgba(46,16,101,.5);
+  }
+  .adm-sheet.open{ transform:translateY(0); }
+  .adm-sheet-grip{ width:44px; height:5px; border-radius:5px; background:var(--adm-line); margin:6px auto 10px; }
+  .adm-sheet-title{ font-weight:800; color:var(--adm-3); font-size:1.02rem; margin:0 4px 8px; }
+  .adm-sheet h4{ font-size:.7rem; color:var(--adm-muted); text-transform:uppercase; letter-spacing:.06em; margin:14px 6px 7px; }
+  .adm-sheet-grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+  .adm-sheet a{ display:flex; align-items:center; gap:9px; padding:13px 12px; border:1px solid var(--adm-line); border-radius:14px; color:var(--adm-ink); font-weight:600; font-size:.85rem; text-decoration:none; }
+  .adm-sheet a .ic{ font-size:1.1rem; }
+  .adm-sheet a.active{ border-color:var(--adm-1); background:#F6F1FE; color:var(--adm-3); }
+  .adm-sheet-logout{ margin-top:14px; width:100%; padding:13px; border-radius:14px; border:1.5px solid #FECACA; background:#FEF2F2; color:#DC2626; font-weight:800; font-size:.9rem; font-family:inherit; cursor:pointer; }
+}

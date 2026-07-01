@@ -1,7 +1,9 @@
 /**
- * admin-sidebar.js — FlyMasar Admin Panel
- * Dynamically injects the sidebar into #adminSidebar element
- * and handles auth check, active nav item, admin name display.
+ * admin-sidebar.js — FlyMasar Admin Panel chrome
+ * Desktop: injects the violet sidebar into #adminSidebar.
+ * Phones (<=768px): injects a NATIVE app shell instead — a fixed bottom tab
+ * bar plus a slide-up "More" sheet — and the desktop sidebar is hidden by CSS.
+ * Also enforces the app-like zoom lock on phones.
  */
 (function () {
   'use strict';
@@ -23,13 +25,15 @@
     { href: 'bookings.html',      icon: '📋', label: 'الحجوزات' },
     { href: 'payments.html',      icon: '💳', label: 'المدفوعات' },
     { href: 'support.html',       icon: '🎧', label: 'الدعم' },
-    { section: 'التسويق' },
+    { section: 'التسويق والتسعير' },
     { href: 'coupons.html',       icon: '🎟️', label: 'القسائم' },
     { href: 'commissions.html',   icon: '💰', label: 'العمولات' },
+    { href: 'pricing.html',       icon: '💲', label: 'التسعير والهوامش' },
     { section: 'التحليلات' },
     { href: 'analytics.html',     icon: '📈', label: 'التحليلات والتقارير' },
     { href: 'notifications.html', icon: '🔔', label: 'الإشعارات' },
-    { section: 'الإعدادات' },
+    { section: 'الإعدادات والتحكم' },
+    { href: 'settings.html',      icon: '🛠️', label: 'مركز التحكم' },
     { href: 'currencies.html',    icon: '💱', label: 'العملات' },
     { href: 'api-settings.html',  icon: '⚙️', label: 'إعدادات API' },
     { href: 'cms.html',           icon: '📝', label: 'المحتوى' },
@@ -37,8 +41,12 @@
     { href: '../index.html',      icon: '🌐', label: 'الموقع الرئيسي' },
   ];
 
+  // Which items appear as the 4 primary phone tabs (5th is "More").
+  const MOBILE_TABS = ['index.html', 'bookings.html', 'users.html', 'analytics.html'];
+
   // ── Active detection ──────────────────────────────────────────────────────
   const currentPath = window.location.pathname;
+  const here = (currentPath.split('/').pop() || 'index.html') || 'index.html';
 
   function isActive(href) {
     if (!href) return false;
@@ -48,19 +56,17 @@
 
   function buildNav() {
     return NAV_ITEMS.map(function (item) {
-      if (item.section) {
-        return '<div class="sidebar-section-title">' + item.section + '</div>';
-      }
+      if (item.section) return '<div class="sidebar-section-title">' + item.section + '</div>';
       var cls = isActive(item.href) ? ' class="active"' : '';
       return '<a href="' + item.href + '"' + cls + '><span class="nav-icon">' + item.icon + '</span> ' + item.label + '</a>';
     }).join('\n');
   }
 
-  // ── Admin name / initial ──────────────────────────────────────────────────
+  // ── Admin identity ────────────────────────────────────────────────────────
   var adminName = user.first_name || user.email || 'المشرف';
   var adminInitial = adminName[0].toUpperCase();
 
-  // ── Build sidebar HTML ────────────────────────────────────────────────────
+  // ── Sidebar HTML (desktop) ────────────────────────────────────────────────
   var sidebarHTML = [
     '<div class="sidebar-header" style="display:flex;align-items:center;justify-content:space-between">',
     '  <div>',
@@ -84,41 +90,88 @@
     '</div>',
   ].join('\n');
 
+  // ── Mobile bottom tab bar ─────────────────────────────────────────────────
+  function buildMobileBar() {
+    var tabs = MOBILE_TABS.map(function (href) {
+      var it = NAV_ITEMS.find(function (n) { return n.href === href; });
+      if (!it) return '';
+      var on = isActive(href) ? ' on' : '';
+      return '<a class="adm-tab' + on + '" href="' + href + '"><span class="ic">' + it.icon + '</span><span>' + it.label + '</span></a>';
+    }).join('');
+    var moreActive = MOBILE_TABS.indexOf(here) < 0 ? ' on' : '';
+    tabs += '<button type="button" class="adm-tab' + moreActive + '" id="admMoreBtn"><span class="ic">☰</span><span>المزيد</span></button>';
+    return '<nav class="adm-mbar" id="admMbar">' + tabs + '</nav>';
+  }
+
+  // ── Mobile "More" sheet (full menu) ───────────────────────────────────────
+  function buildSheet() {
+    var html = '<div class="adm-sheet-grip"></div><div class="adm-sheet-title">القائمة الكاملة</div>';
+    var openGrid = false;
+    NAV_ITEMS.forEach(function (item) {
+      if (item.section) {
+        if (openGrid) { html += '</div>'; openGrid = false; }
+        html += '<h4>' + item.section + '</h4><div class="adm-sheet-grid">';
+        openGrid = true;
+      } else {
+        var cls = isActive(item.href) ? ' class="active"' : '';
+        html += '<a href="' + item.href + '"' + cls + '><span class="ic">' + item.icon + '</span>' + item.label + '</a>';
+      }
+    });
+    if (openGrid) html += '</div>';
+    html += '<button class="adm-sheet-logout" onclick="Auth.logout()">🚪 تسجيل الخروج</button>';
+    return '<div class="adm-sheet-ov" id="admSheetOv"></div><div class="adm-sheet" id="admSheet">' + html + '</div>';
+  }
+
+  // ── Zoom lock on phones (app feel) ────────────────────────────────────────
+  function lockZoom() {
+    try {
+      var vp = document.querySelector('meta[name="viewport"]');
+      if (!vp) { vp = document.createElement('meta'); vp.name = 'viewport'; document.head.appendChild(vp); }
+      vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+      var isPhone = function () { return window.innerWidth <= 768; };
+      ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) {
+        document.addEventListener(ev, function (e) { if (isPhone()) e.preventDefault(); }, { passive: false });
+      });
+      document.addEventListener('touchmove', function (e) {
+        if (isPhone() && e.touches && e.touches.length > 1) e.preventDefault();
+      }, { passive: false });
+      var last = 0;
+      document.addEventListener('touchend', function (e) {
+        if (!isPhone()) return;
+        var now = Date.now();
+        if (now - last <= 320) e.preventDefault();
+        last = now;
+      }, { passive: false });
+    } catch (e) {}
+  }
+
   // ── Inject into DOM ───────────────────────────────────────────────────────
   function inject() {
-    var el = document.getElementById('adminSidebar');
-    if (el) {
-      el.innerHTML = sidebarHTML;
-    }
+    lockZoom();
 
-    // Create mobile overlay
+    var el = document.getElementById('adminSidebar');
+    if (el) el.innerHTML = sidebarHTML;
+
+    // Desktop drawer overlay + hamburger (kept for tablet ≤768 fallback isn't used;
+    // the phone shell below is the primary mobile UI).
     var overlay = document.createElement('div');
     overlay.className = 'sidebar-overlay';
     overlay.id = 'sidebarOverlay';
     overlay.onclick = function () { closeSidebar(); };
     document.body.appendChild(overlay);
 
-    // Inject hamburger button into topbar if not already present
-    var topbar = document.querySelector('.admin-topbar');
-    if (topbar && !document.getElementById('sidebarToggleBtn')) {
-      var ham = document.createElement('button');
-      ham.id = 'sidebarToggleBtn';
-      ham.onclick = function () { window.toggleSidebar(); };
-      ham.setAttribute('style', 'border:none;background:none;cursor:pointer;font-size:1.3rem;color:var(--text-muted);padding:4px 8px;display:none');
-      ham.innerHTML = '☰';
-      topbar.insertBefore(ham, topbar.firstChild);
-    }
+    // Mobile app shell
+    var bar = document.createElement('div');
+    bar.innerHTML = buildMobileBar() + buildSheet();
+    while (bar.firstChild) document.body.appendChild(bar.firstChild);
 
-    // Show/hide hamburger + close button based on screen size
-    function updateMobileBtns() {
-      var isMobile = window.innerWidth <= 768;
-      var ham2 = document.getElementById('sidebarToggleBtn');
-      var closeBtn = document.getElementById('sidebarCloseBtn');
-      if (ham2) ham2.style.display = isMobile ? 'inline-block' : 'none';
-      if (closeBtn) closeBtn.style.display = isMobile ? 'block' : 'none';
-    }
-    updateMobileBtns();
-    window.addEventListener('resize', updateMobileBtns);
+    var moreBtn = document.getElementById('admMoreBtn');
+    var sheet = document.getElementById('admSheet');
+    var sheetOv = document.getElementById('admSheetOv');
+    function openSheet() { if (sheet) sheet.classList.add('open'); if (sheetOv) sheetOv.classList.add('open'); }
+    function closeSheet() { if (sheet) sheet.classList.remove('open'); if (sheetOv) sheetOv.classList.remove('open'); }
+    if (moreBtn) moreBtn.addEventListener('click', openSheet);
+    if (sheetOv) sheetOv.addEventListener('click', closeSheet);
 
     function closeSidebar() {
       var s = document.getElementById('adminSidebar');
@@ -127,6 +180,7 @@
       if (o) o.classList.remove('active');
     }
 
+    // Kept for any legacy onclick="toggleSidebar()" in page markup.
     window.toggleSidebar = function () {
       var s = document.getElementById('adminSidebar');
       var o = document.getElementById('sidebarOverlay');
@@ -136,10 +190,6 @@
     };
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', inject);
-  } else {
-    inject();
-  }
-
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inject);
+  else inject();
 })();
