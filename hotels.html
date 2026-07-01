@@ -71,12 +71,7 @@
 </head>
 <body>
 
-<nav class="navbar">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
-    <div style="display:flex;gap:8px" id="navAuth"></div>
-  </div>
-</nav>
+<!-- Global header injected by js/site-chrome.js -->
 
 <section class="hotel-hero">
   <div class="container">
@@ -221,13 +216,15 @@
     initLang();
     initCurrency();
 
-    // Auth nav
+    // Auth nav is handled by the shared site chrome; keep this null-safe.
     const nav = document.getElementById('navAuth');
-    if (Auth.isLoggedIn()) {
-      const u = Auth.getUser();
-      nav.innerHTML = `<a href="dashboard.html" class="btn btn-ghost btn-sm">${u?.first_name||'حجوزاتي'}</a><button onclick="Auth.logout()" class="btn btn-outline btn-sm">خروج</button>`;
-    } else {
-      nav.innerHTML = `<a href="login.html" class="btn btn-ghost btn-sm">دخول</a><a href="register.html" class="btn btn-primary btn-sm">تسجيل</a>`;
+    if (nav) {
+      if (Auth.isLoggedIn()) {
+        const u = Auth.getUser();
+        nav.innerHTML = `<a href="dashboard.html" class="btn btn-ghost btn-sm">${u?.first_name||'حجوزاتي'}</a><button onclick="Auth.logout()" class="btn btn-outline btn-sm">خروج</button>`;
+      } else {
+        nav.innerHTML = `<a href="login.html" class="btn btn-ghost btn-sm">دخول</a><a href="register.html" class="btn btn-primary btn-sm">تسجيل</a>`;
+      }
     }
 
     // Date pickers (range)
@@ -412,6 +409,6 @@
     document.body.appendChild(t); setTimeout(()=>t.remove(),3500);
   }
 </script>
-<script src="js/bottom-nav.js"></script>
+<script src="js/site-chrome.js?v=2026070101"></script>
 </body>
 </html>

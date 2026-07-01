@@ -135,15 +135,11 @@
 </head>
 <body>
 
-<!-- Header -->
+<!-- Global header injected by js/site-chrome.js -->
+
+<!-- Contextual search header -->
 <div class="page-header">
-  <div style="max-width:1200px;margin:0 auto;padding:0 20px">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <a href="index.html" style="color:#fff;font-size:1.2rem;font-weight:700;text-decoration:none">✈️ FlyMasar</a>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div id="navAuth"></div>
-      </div>
-    </div>
+  <div style="max-width:1200px;margin:0 auto;padding:16px 20px 0">
 
     <!-- Compact Search — summary cards + edit mode -->
     <div class="search-bar-compact" id="searchBarView">
@@ -301,6 +297,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
+<script src="js/i18n.js?v=2026070101"></script>
 <script src="js/datepicker.js"></script>
 <script>
 var allOffers     = [];
@@ -798,8 +795,9 @@ function initPage() {
   // Populate summary cards
   updateSearchSummaryCards();
 
-  // Nav
-  document.getElementById('navAuth').innerHTML = Auth.isLoggedIn()
+  // Nav auth is handled by the shared site chrome; keep this null-safe.
+  var _na = document.getElementById('navAuth');
+  if (_na) _na.innerHTML = Auth.isLoggedIn()
     ? '<a href="dashboard.html" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">حسابي</a>'
     : '<a href="login.html" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">دخول</a>';
 
@@ -1253,5 +1251,6 @@ initPage();
 })();
 </script>
 <script src="js/airport-ac.js"></script>
+<script src="js/site-chrome.js?v=2026070101"></script>
 </body>
 </html>
