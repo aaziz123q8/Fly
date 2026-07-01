@@ -978,6 +978,17 @@ function closeDrawer() {
   document.body.style.overflow = '';
 }
 </script>
-<script src="js/mobile-app.js?v=2026070101"></script>
+<style>
+/* Mobile app home: raise the search under the app header, hide everything below it */
+@media(max-width:768px){
+  .hero{display:none!important}
+  .search-wrap{margin-top:16px!important}
+  .search-box{box-shadow:0 12px 34px -18px rgba(76,29,149,.45)}
+  .trust{display:none!important}
+  section.sec{display:none!important}
+  body>footer{display:none!important}
+}
+</style>
+<script src="js/mobile-app.js?v=2026070102"></script>
 </body>
 </html>

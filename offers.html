@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>العروض — فلاي مسار</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--v1:#7C3AED;--v2:#9333EA;--v3:#4C1D95;--coral:#FB7185;--ink:#1B172B;--muted:#6B6880;--line:#ECE8F4;--bg:#FAF8FF;--grad:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);--shadow-sm:0 8px 24px -14px rgba(76,29,149,.4);--shadow:0 24px 60px -30px rgba(76,29,149,.45)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1200px;margin:0 auto;padding:0 22px}
+.ohero{background:var(--grad);color:#fff;padding:46px 0 34px}
+.ohero h1{font-size:2.1rem;font-weight:700;margin-bottom:6px}
+.ohero p{color:#efe6ff}
+.sec{padding:34px 0 60px}
+.ogrid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.ocard{background:#fff;border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:var(--shadow-sm);transition:.25s}
+.ocard:hover{transform:translateY(-5px);box-shadow:var(--shadow)}
+.oimg{height:180px;position:relative;background:linear-gradient(135deg,#a78bfa,#7c3aed)}
+.oimg img{width:100%;height:100%;object-fit:cover}
+.otag{position:absolute;top:12px;inset-inline-start:12px;background:var(--coral);color:#fff;font-weight:700;font-size:.78rem;padding:5px 12px;border-radius:30px}
+.obody{padding:16px 18px}
+.obody h3{font-size:1.14rem;margin-bottom:4px}
+.obody p{color:var(--muted);font-size:.88rem;margin-bottom:12px}
+.orow{display:flex;justify-content:space-between;align-items:center}
+.price{font-weight:700;font-size:1.24rem;color:var(--v2)}
+.price s{font-size:.82rem;color:#b3aac6;font-weight:500}
+.mini{background:var(--grad);color:#fff;border-radius:12px;padding:9px 18px;font-weight:700;font-size:.85rem}
+@media(max-width:960px){.ogrid{grid-template-columns:1fr 1fr}}
+@media(max-width:768px){.ohero{padding:22px 0}.ohero h1{font-size:1.5rem}.sec{padding:20px 0 40px}.ogrid{grid-template-columns:1fr;gap:16px}}
+</style>
+</head>
+<body>
+
+<!-- Global header/app-shell injected by js/site-chrome.js + js/mobile-app.js -->
+
+<section class="ohero"><div class="wrap">
+  <h1>عروض لا تُفوَّت</h1>
+  <p>باقات طيران وفندق بأسعار حصرية لفترة محدودة</p>
+</div></section>
+
+<section class="sec"><div class="wrap">
+  <div class="ogrid" id="offersGrid">
+    <div class="ocard"><div class="oimg"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=700&q=70" alt=""><span class="otag">وفّر ٣٠٪</span></div><div class="obody"><h3>جزر المالديف · ٥ ليالٍ</h3><p>طيران + منتجع ٥ نجوم مع إفطار</p><div class="orow"><div class="price">٣٢٠ <s>٤٦٠</s> د.ك</div><a class="mini" href="hotels.html">احجز</a></div></div></div>
+    <div class="ocard"><div class="oimg"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=700&q=70" alt=""><span class="otag">وفّر ٢٥٪</span></div><div class="obody"><h3>باريس · ٤ ليالٍ</h3><p>طيران + فندق وسط المدينة</p><div class="orow"><div class="price">٢١٠ <s>٢٨٠</s> د.ك</div><a class="mini" href="hotels.html">احجز</a></div></div></div>
+    <div class="ocard"><div class="oimg"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1518684079-3c830dcef090?auto=format&fit=crop&w=700&q=70" alt=""><span class="otag">وفّر ٤٠٪</span></div><div class="obody"><h3>دبي · ٣ ليالٍ</h3><p>طيران + فندق مع تذكرة برج خليفة</p><div class="orow"><div class="price">١٥٥ <s>٢٦٠</s> د.ك</div><a class="mini" href="hotels.html">احجز</a></div></div></div>
+    <div class="ocard"><div class="oimg"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?auto=format&fit=crop&w=700&q=70" alt=""><span class="otag">وفّر ٢٠٪</span></div><div class="obody"><h3>إسطنبول · ٤ ليالٍ</h3><p>طيران + فندق مع جولة بحرية</p><div class="orow"><div class="price">١٩٥ <s>٢٤٥</s> د.ك</div><a class="mini" href="flights.html">احجز</a></div></div></div>
+    <div class="ocard"><div class="oimg"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1572252009286-268acec5ca0a?auto=format&fit=crop&w=700&q=70" alt=""><span class="otag">وفّر ٣٥٪</span></div><div class="obody"><h3>القاهرة · ٥ ليالٍ</h3><p>طيران + فندق مع زيارة الأهرامات</p><div class="orow"><div class="price">١٤٠ <s>٢١٥</s> د.ك</div><a class="mini" href="flights.html">احجز</a></div></div></div>
+    <div class="ocard"><div class="oimg"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=700&q=70" alt=""><span class="otag">وفّر ١٥٪</span></div><div class="obody"><h3>لندن · ٤ ليالٍ</h3><p>طيران + فندق في وسط لندن</p><div class="orow"><div class="price">٣٩٠ <s>٤٦٠</s> د.ك</div><a class="mini" href="flights.html">احجز</a></div></div></div>
+  </div>
+</div></section>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/currency.js?v=2026070101"></script>
+<script src="js/i18n.js?v=2026070101"></script>
+<script src="js/site-chrome.js?v=2026070102"></script>
+</body>
+</html>

@@ -144,9 +144,15 @@
   function openDrawer(){ var d=document.getElementById('scDrawer'),o=document.querySelector('.sc-ov'); if(d)d.classList.add('open'); if(o)o.classList.add('open'); }
   function closeDrawer(){ var d=document.getElementById('scDrawer'),o=document.querySelector('.sc-ov'); if(d)d.classList.remove('open'); if(o)o.classList.remove('open'); }
 
+  function ensureMobileApp(){
+    if (document.getElementById('mappTabs') || document.getElementById('sc-mapp')) return;
+    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070102'; document.body.appendChild(s);
+  }
+
   function mount(){
     if (document.getElementById('scDrawer')) return;
     ensureFont();
+    ensureMobileApp();
     document.body.classList.add('fm');
     var s=document.createElement('style'); s.id='sc-styles'; s.textContent=css; document.head.appendChild(s);
     var host=document.getElementById('sc-header');
