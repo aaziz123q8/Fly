@@ -259,6 +259,57 @@ select.fi{cursor:pointer}
   <button class="nav-ham" onclick="openDrawer()" aria-label="القائمة"><span></span><span></span><span></span></button>
 </div></nav>
 
+<!-- MOBILE DRAWER -->
+<style>
+.moverlay{position:fixed;inset:0;background:rgba(20,8,45,.5);z-index:70;opacity:0;visibility:hidden;transition:.25s}
+.moverlay.open{opacity:1;visibility:visible}
+.mdrawer{position:fixed;top:0;right:0;height:100%;width:300px;max-width:86vw;background:#fff;z-index:71;transform:translateX(110%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(20,8,45,.25)}
+.mdrawer.open{transform:translateX(0)}
+.mdrawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--line)}
+.mdrawer-x{border:0;background:none;font-size:1.4rem;color:var(--muted);cursor:pointer;line-height:1}
+.mdrawer-body{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:16px}
+.mdrawer-links{display:flex;flex-direction:column;gap:2px}
+.mdrawer-links a{padding:12px;border-radius:12px;font-weight:600;color:var(--ink);transition:.15s}
+.mdrawer-links a:hover,.mdrawer-links a:active{background:#F4EEFE;color:var(--v2)}
+.mdrawer-t{font-size:.72rem;font-weight:700;color:var(--muted);letter-spacing:.04em;margin-bottom:8px}
+.mdrawer-cur{display:flex;gap:6px;flex-wrap:wrap}
+.mdrawer-cur button{flex:1;min-width:70px;border:1.5px solid var(--line);background:none;border-radius:11px;padding:10px;font:inherit;font-weight:700;font-size:.85rem;color:var(--muted);cursor:pointer}
+.mdrawer-cur button.on{border-color:var(--v2);color:var(--v2);background:#F4EEFE}
+.mdrawer-foot{padding:14px 18px;border-top:1px solid var(--line);font-size:.78rem;color:var(--muted);text-align:center}
+</style>
+<div class="moverlay" id="mobOverlay" onclick="closeDrawer()"></div>
+<aside class="mdrawer" id="mobDrawer">
+  <div class="mdrawer-head">
+    <span class="brand" style="font-size:1.18rem"><span class="mk" style="width:34px;height:34px;border-radius:11px"><svg class="i" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span><b>فلاي<em> مسار</em></b></span>
+    <button class="mdrawer-x" onclick="closeDrawer()" aria-label="إغلاق">✕</button>
+  </div>
+  <div class="mdrawer-body">
+    <div id="mobAuthSection"></div>
+    <div class="mdrawer-links">
+      <a href="index.html">الرئيسية</a>
+      <a href="flights.html">رحلات</a>
+      <a href="hotels.html">فنادق</a>
+      <a href="#offers" onclick="closeDrawer()">العروض</a>
+      <a href="lookup.html">استعلام عن حجز</a>
+    </div>
+    <div>
+      <div class="mdrawer-t">العملة</div>
+      <div class="mdrawer-cur">
+        <button data-cur="KWD" onclick="setCur('KWD')">د.ك</button>
+        <button data-cur="SAR" onclick="setCur('SAR')">﷼ ريال</button>
+        <button data-cur="USD" onclick="setCur('USD')">$ دولار</button>
+      </div>
+    </div>
+    <div class="mdrawer-links">
+      <a href="about.html">من نحن</a>
+      <a href="contact.html">اتصل بنا</a>
+      <a href="privacy.html">سياسة الخصوصية</a>
+      <a href="terms.html">الشروط والأحكام</a>
+    </div>
+  </div>
+  <div class="mdrawer-foot">© ٢٠٢٦ فلاي مسار — جميع الحقوق محفوظة</div>
+</aside>
+
 <!-- HERO -->
 <section class="hero">
   <div class="hero-img"><img onerror="this.style.display='none'" src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=70" alt=""></div>
