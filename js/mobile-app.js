@@ -10,10 +10,37 @@
 (function () {
   'use strict';
 
-  // Lock pinch-zoom for the app-like feel (harmless on desktop).
+  // ── Lock zoom on phones for a native-app feel ──────────────────────────
+  // The viewport `user-scalable=no` alone is ignored by iOS Safari, so we also
+  // (1) set `touch-action` on the root to kill pinch + double-tap zoom in modern
+  // browsers, and (2) preventDefault iOS gesture events and multi-touch moves.
+  // All guarded to phone widths so desktop/touch-laptops are unaffected.
   try {
     var _vp = document.querySelector('meta[name="viewport"]');
-    if (_vp) _vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+    if (!_vp) { _vp = document.createElement('meta'); _vp.name = 'viewport'; document.head.appendChild(_vp); }
+    _vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+
+    var zs = document.createElement('style');
+    zs.textContent = '@media(max-width:768px){html{touch-action:pan-x pan-y;-ms-touch-action:pan-x pan-y}}';
+    document.head.appendChild(zs);
+
+    var isPhone = function () { return window.innerWidth <= 768; };
+    // iOS Safari pinch gestures
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) { if (isPhone()) e.preventDefault(); }, { passive: false });
+    });
+    // Multi-touch (pinch) moves
+    document.addEventListener('touchmove', function (e) {
+      if (isPhone() && e.touches && e.touches.length > 1) e.preventDefault();
+    }, { passive: false });
+    // Double-tap to zoom
+    var _lastTouch = 0;
+    document.addEventListener('touchend', function (e) {
+      if (!isPhone()) return;
+      var now = Date.now();
+      if (now - _lastTouch <= 320) e.preventDefault();
+      _lastTouch = now;
+    }, { passive: false });
   } catch (e) {}
 
   var path = (location.pathname || '').toLowerCase();
