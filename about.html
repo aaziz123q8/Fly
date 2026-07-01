@@ -6,24 +6,6 @@
   <title>من نحن — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
   <style>
-    .app-overlay{display:none;position:fixed!important;inset:0;background:rgba(0,0,0,.55);z-index:9998}
-    .app-overlay.open{display:block!important}
-    .app-drawer{display:none;position:fixed!important;top:0!important;right:0!important;width:300px;max-width:86vw;height:100%!important;background:#fff!important;z-index:9999!important;overflow-y:auto;flex-direction:column;box-shadow:-6px 0 30px rgba(0,0,0,.25)}
-    .app-drawer.open{display:flex!important}
-    .app-drawer-head{background:linear-gradient(135deg,#0f2444,#1B4F8E);padding:20px 18px 16px;display:flex;justify-content:space-between;align-items:center}
-    .app-drawer-brand{font-size:1.2rem;font-weight:800;color:#fff}
-    .app-drawer-brand em{color:#E8A020;font-style:normal}
-    .app-drawer-close{background:none;border:none;color:rgba(255,255,255,.8);font-size:1.5rem;cursor:pointer;line-height:1;padding:4px 8px}
-    .app-drawer-body{padding:14px;flex:1}
-    .app-drawer-sec{margin-bottom:18px}
-    .app-drawer-sec-title{font-size:.68rem;font-weight:800;color:#9ca3af;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #f0f2f5}
-    .app-drawer-links{display:flex;flex-direction:column;gap:2px}
-    .app-drawer-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#374151;font-size:.9rem;font-weight:600;text-decoration:none}
-    .app-drawer-link:hover{background:#f0f5ff;color:#1B4F8E}
-    .app-drawer-link .dl-ico{width:22px;text-align:center}
-    .app-drawer-auth{background:#f0f5ff;border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:10px}
-    .app-drawer-avatar{width:38px;height:38px;border-radius:50%;background:#1B4F8E;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;flex-shrink:0}
-    .app-drawer-footer-copy{padding:12px 14px;border-top:1px solid #f0f2f5;font-size:.72rem;color:#9ca3af;text-align:center}
     .page-hero { background:linear-gradient(135deg,#0f2444,#1B4F8E); padding:60px 0; text-align:center; color:#fff; }
     .page-hero h1 { font-size:2.2rem; font-weight:800; margin:0 0 12px; }
     .page-hero p { color:rgba(255,255,255,0.8); font-size:1.05rem; }
@@ -40,39 +22,7 @@
   </style>
 </head>
 <body>
-<nav class="navbar">
-  <div class="container">
-    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
-    <div class="navbar-actions" id="navAuthArea">
-      <a href="login.html" class="btn btn-ghost btn-sm">دخول</a>
-      <a href="register.html" class="btn btn-primary btn-sm">تسجيل</a>
-    </div>
-    <button class="hamburger" onclick="openAppDrawer()" aria-label="القائمة"><span></span><span></span><span></span></button>
-  </div>
-</nav>
-<div class="app-overlay" id="appOverlay" onclick="closeAppDrawer()"></div>
-<div class="app-drawer" id="appDrawer">
-  <div class="app-drawer-head">
-    <div class="app-drawer-brand">✈️ فلاي <em>مسار</em></div>
-    <button class="app-drawer-close" onclick="closeAppDrawer()">✕</button>
-  </div>
-  <div class="app-drawer-body">
-    <div id="drawerAuthSection" class="app-drawer-sec"></div>
-    <div class="app-drawer-sec">
-      <a href="lookup.html" class="app-drawer-link" style="font-weight:700;color:var(--primary)"><span class="dl-ico">🔍</span> استعلام عن حجز</a>
-    </div>
-    <div class="app-drawer-sec">
-      <div class="app-drawer-sec-title">روابط مهمة</div>
-      <div class="app-drawer-links">
-        <a href="about.html" class="app-drawer-link"><span class="dl-ico">ℹ️</span> من نحن</a>
-        <a href="contact.html" class="app-drawer-link"><span class="dl-ico">📞</span> اتصل بنا</a>
-        <a href="privacy.html" class="app-drawer-link"><span class="dl-ico">🔒</span> سياسة الخصوصية</a>
-        <a href="terms.html" class="app-drawer-link"><span class="dl-ico">📄</span> الشروط والأحكام</a>
-      </div>
-    </div>
-  </div>
-  <div class="app-drawer-footer-copy">© ٢٠٢٦ فلاي مسار — جميع الحقوق محفوظة</div>
-</div>
+<!-- Unified header/drawer injected by js/site-chrome.js -->
 
 <section class="page-hero">
   <div class="container">
@@ -121,43 +71,10 @@
   </div>
 </section>
 
-<footer style="background:#0f2444;color:#fff;padding:32px 0;text-align:center">
-  <div class="container">
-    <p style="margin:0 0 12px;font-size:1.1rem;font-weight:700">✈️ فلاي مسار</p>
-    <p style="color:rgba(255,255,255,0.5);font-size:0.85rem">© ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.</p>
-  </div>
-</footer>
-
-<script src="js/bottom-nav.js"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
-<script>
-(function(){
-  const area = document.getElementById('navAuthArea');
-  if(Auth.isLoggedIn()){
-    const u = Auth.getUser();
-    const name = u.first_name || u.email || 'مستخدم';
-    area.innerHTML = `<span style="font-weight:600;font-size:.88rem">${name}</span><button onclick="Auth.logout()" class="btn btn-ghost btn-sm">خروج</button>`;
-  }
-})();
-function openAppDrawer(){
-  document.getElementById('appDrawer').classList.add('open');
-  document.getElementById('appOverlay').classList.add('open');
-  document.body.style.overflow='hidden';
-  const sec=document.getElementById('drawerAuthSection');
-  if(Auth.isLoggedIn()){
-    const u=Auth.getUser(); const name=u.first_name||u.email||'مستخدم';
-    sec.innerHTML=`<div class="app-drawer-auth"><div class="app-drawer-avatar">${name[0].toUpperCase()}</div><div><div style="font-weight:700;font-size:.88rem">${name}</div><div style="font-size:.74rem;color:#6b7280">${u.email||''}</div></div></div><div class="app-drawer-links"><a href="dashboard.html" class="app-drawer-link"><span class="dl-ico">📋</span> حجوزاتي</a><a href="#" class="app-drawer-link" onclick="Auth.logout()"><span class="dl-ico">🚪</span> تسجيل الخروج</a></div>`;
-  } else {
-    sec.innerHTML=`<div style="display:flex;gap:8px;margin-bottom:4px"><a href="login.html" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:.88rem;font-weight:700;border:1.5px solid #1B4F8E;color:#1B4F8E;background:none;text-decoration:none">دخول</a><a href="register.html" style="flex:1;text-align:center;padding:10px;border-radius:10px;font-size:.88rem;font-weight:700;background:#1B4F8E;color:#fff;text-decoration:none">تسجيل</a></div>`;
-  }
-}
-function closeAppDrawer(){
-  document.getElementById('appDrawer').classList.remove('open');
-  document.getElementById('appOverlay').classList.remove('open');
-  document.body.style.overflow='';
-}
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAppDrawer();});
-</script>
+<script src="js/currency.js?v=2026070101"></script>
+<script src="js/i18n.js?v=2026070101"></script>
+<script src="js/site-chrome.js?v=2026070101"></script>
 </body>
 </html>

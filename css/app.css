@@ -37,9 +37,24 @@
   --radius-lg: 20px;
   --radius-xl: 28px;
   --transition: 0.2s ease;
-  --navbar-h: 68px;
+  --navbar-h: 64px;
   --font-ar: 'Tajawal', 'Arial', sans-serif;
   --font-en: 'Inter', sans-serif;
+
+  /* --- Unified design scales (Phase 0) --------------------------------
+     Use THESE tokens instead of arbitrary px/rem so every page shares one
+     rhythm. Spacing = 4px base; type = ~1.2 ratio. */
+  --sp-1: 4px;   --sp-2: 8px;   --sp-3: 12px;  --sp-4: 16px;
+  --sp-5: 24px;  --sp-6: 32px;  --sp-7: 48px;  --sp-8: 64px;
+
+  --fs-xs: 0.75rem;   --fs-sm: 0.875rem;  --fs-base: 1rem;   --fs-md: 1.125rem;
+  --fs-lg: 1.25rem;   --fs-xl: 1.5rem;    --fs-2xl: 1.875rem; --fs-3xl: 2.25rem;
+
+  --lh-tight: 1.25;   --lh-normal: 1.6;
+
+  /* Canonical breakpoints (for reference in media queries):
+     mobile ≤ 480px · tablet ≤ 768px · laptop ≤ 1024px · content max 1200px */
+  --container: 1200px;
 }
 
 /* ====================================
