@@ -36,7 +36,7 @@
 
   var TITLES = {
     'flights.html':'الرحلات','hotels.html':'الفنادق','hotel-detail.html':'تفاصيل الفندق',
-    'offers.html':'العروض','dashboard.html':'حسابي','travelers.html':'المسافرون',
+    'offers.html':'العروض','package.html':'باقة سفر','dashboard.html':'حسابي','travelers.html':'المسافرون',
     'login.html':'تسجيل الدخول','register.html':'حساب جديد','lookup.html':'استعلام عن حجز',
     'booking.html':'إتمام الحجز','payment.html':'الدفع','confirmation.html':'تأكيد الحجز',
     'hotel-booking.html':'إتمام الحجز','hotel-payment.html':'الدفع','hotel-confirmation.html':'تأكيد الحجز',

@@ -242,6 +242,33 @@ select.fi{cursor:pointer}
 </head>
 <body>
 
+<!-- MOBILE LAUNCHER (phones only) -->
+<div class="mlaunch">
+  <div class="ml-logo">
+    <span class="ml-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>
+    <div class="ml-name">فلاي<b> مسار</b></div>
+  </div>
+  <div class="ml-btns">
+    <button type="button" class="ml-btn" onclick="mGo('flights')">
+      <span class="ml-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>
+      <span class="ml-txt"><b>طيران</b><small>ابحث واحجز رحلتك</small></span>
+      <span class="ml-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>
+    </button>
+    <button type="button" class="ml-btn" onclick="mGo('hotels')">
+      <span class="ml-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg></span>
+      <span class="ml-txt"><b>فنادق</b><small>أفضل الإقامات بأفضل سعر</small></span>
+      <span class="ml-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>
+    </button>
+    <button type="button" class="ml-btn ml-btn-pkg" onclick="mGo('package')">
+      <span class="ml-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
+      <span class="ml-txt"><b>باقة</b><small>طيران + فندق بسعر واحد موفّر</small></span>
+      <span class="ml-badge">حصري</span>
+      <span class="ml-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>
+    </button>
+  </div>
+  <p class="ml-slogan">كل رحلتك في مكان واحد — طيران وفنادق و<b>باقات حصريّة</b> لا تجدها إلا في فلاي مسار.</p>
+</div>
+
 <!-- NAV -->
 <nav class="nav"><div class="nav-in">
   <a class="brand" href="index.html"><span class="mk"><svg class="i" viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span><b>فلاي<em> مسار</em></b></a>
@@ -320,6 +347,9 @@ select.fi{cursor:pointer}
     <p data-i18n="hero_sub">قارن آلاف الرحلات والفنادق لحظياً من أكثر من ٥٠٠ شركة طيران، واحجز بثقة خلال دقائق.</p>
   </div>
 </section>
+
+<!-- Mobile search back-bar (phones, search state only) -->
+<div class="msearch-bar"><button type="button" class="msb-back" onclick="mGo('home')" aria-label="رجوع"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button><span class="msb-title" id="msbTitle">بحث الرحلات</span></div>
 
 <!-- SEARCH BOX (functional) -->
 <div class="search-wrap">
@@ -979,16 +1009,61 @@ function closeDrawer() {
 }
 </script>
 <style>
-/* Mobile app home: raise the search under the app header, hide everything below it */
+/* ---- Mobile launcher + search states (phones only) ---- */
+.mlaunch{display:none}
+.msearch-bar{display:none}
 @media(max-width:768px){
-  .hero{display:none!important}
-  .search-wrap{margin-top:16px!important}
-  .search-box{box-shadow:0 12px 34px -18px rgba(76,29,149,.45)}
-  .trust{display:none!important}
-  section.sec{display:none!important}
-  body>footer{display:none!important}
+  /* homepage uses its own launcher/search chrome — hide the generic app shell here */
+  #mappTabs,.mapp{display:none!important}
+  .hero,.trust,section.sec,body>footer{display:none!important}
+
+  /* LAUNCHER (fixed, non-scroll, non-zoom, no bottom bar) */
+  body.m-launch{overflow:hidden;position:fixed;inset:0;width:100%;height:100%}
+  body.m-launch .search-wrap,body.m-launch .msearch-bar{display:none!important}
+  .mlaunch{display:flex;position:fixed;inset:0;z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:32px 24px calc(32px + env(safe-area-inset-bottom,0));text-align:center;touch-action:none;-webkit-user-select:none;user-select:none;background:radial-gradient(120% 80% at 50% -10%,#7C3AED 0%,#4C1D95 45%,#2E1065 100%)}
+  .ml-logo{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:4px}
+  .ml-mark{width:96px;height:96px;border-radius:28px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px -20px rgba(0,0,0,.6)}
+  .ml-mark svg{width:52px;height:52px}
+  .ml-name{color:#fff;font-size:2.2rem;font-weight:800;letter-spacing:-.5px}
+  .ml-name b{color:#FDE68A;font-weight:800}
+  .ml-btns{display:flex;flex-direction:column;gap:14px;width:100%;max-width:400px}
+  .ml-btn{display:flex;align-items:center;gap:14px;width:100%;background:rgba(255,255,255,.97);border:0;border-radius:20px;padding:16px 18px;cursor:pointer;text-align:start;position:relative;box-shadow:0 16px 34px -20px rgba(0,0,0,.7);transition:transform .12s}
+  .ml-btn:active{transform:scale(.98)}
+  .ml-ic{width:52px;height:52px;border-radius:15px;background:linear-gradient(135deg,#7C3AED,#C026D3);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .ml-ic svg{width:26px;height:26px}
+  .ml-btn-pkg .ml-ic{background:linear-gradient(135deg,#F59E0B,#FB7185)}
+  .ml-txt{display:flex;flex-direction:column;gap:2px;flex:1}
+  .ml-txt b{font-size:1.2rem;font-weight:800;color:#1B172B}
+  .ml-txt small{font-size:.8rem;color:#6B6880}
+  .ml-arrow{color:#c9b6f2;display:flex}.ml-arrow svg{width:20px;height:20px}
+  .ml-badge{position:absolute;top:10px;inset-inline-start:14px;background:#FB7185;color:#fff;font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:20px}
+  .ml-slogan{color:#e7ddff;font-size:1rem;line-height:1.7;max-width:360px;margin-top:2px}
+  .ml-slogan b{color:#FDE68A}
+
+  /* SEARCH STATE (reached from a launcher button) */
+  body.m-search .search-wrap{display:block!important;margin:0 auto!important;padding-top:12px}
+  body.m-search .msearch-bar{display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:800;background:linear-gradient(120deg,#7C3AED,#9333EA 60%,#C026D3);color:#fff;padding:calc(12px + env(safe-area-inset-top,0)) 16px 14px;box-shadow:0 6px 20px -10px rgba(76,29,149,.7)}
+  .msb-back{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.16);border:0;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .msb-back svg{width:22px;height:22px}
+  .msb-title{font-weight:800;font-size:1.15rem}
 }
 </style>
+<script>
+(function(){
+  var mq = window.matchMedia('(max-width:768px)');
+  window.mGo = function(view){
+    if(view==='package'){ window.location.href='package.html'; return; }
+    var b=document.body;
+    if(view==='home'){ b.classList.remove('m-search'); b.classList.add('m-launch'); window.scrollTo(0,0); return; }
+    b.classList.remove('m-launch'); b.classList.add('m-search');
+    try{ if(window.switchTab) switchTab(view,null); }catch(e){}
+    var t=document.getElementById('msbTitle'); if(t) t.textContent = (view==='hotels') ? 'بحث الفنادق' : 'بحث الرحلات';
+    window.scrollTo(0,0);
+  };
+  function init(){ if(mq.matches) document.body.classList.add('m-launch'); }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
 <script src="js/mobile-app.js?v=2026070102"></script>
 </body>
 </html>

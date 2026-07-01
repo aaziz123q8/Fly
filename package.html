@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>باقة سفر — فلاي مسار</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--v1:#7C3AED;--v2:#9333EA;--v3:#4C1D95;--deep:#2E1065;--coral:#FB7185;--amber:#F59E0B;--ink:#1B172B;--muted:#6B6880;--line:#ECE8F4;--bg:#FAF8FF;--grad:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);--shadow-sm:0 8px 24px -14px rgba(76,29,149,.4);--shadow:0 24px 60px -30px rgba(76,29,149,.45)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px}
+.phero{background:radial-gradient(120% 90% at 50% -20%,#7C3AED,#4C1D95 55%,#2E1065);color:#fff;padding:52px 0 90px;text-align:center}
+.phero .tag{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);padding:7px 15px;border-radius:30px;font-size:.85rem;font-weight:700;margin-bottom:16px}
+.phero h1{font-size:2rem;font-weight:800;margin-bottom:10px}
+.phero h1 em{font-style:normal;color:#FDE68A}
+.phero p{color:#e7ddff;max-width:520px;margin:0 auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:20px;margin-top:-60px;position:relative;z-index:5}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+.fg.full{grid-column:1/-1}
+.fg label{font-size:.78rem;font-weight:700;color:var(--muted)}
+.fg input,.fg select{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:14px;font:inherit;font-size:.95rem;background:#faf8ff;color:var(--ink);transition:.2s}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--v1);background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,.12)}
+.pkg-btn{width:100%;margin-top:6px;background:var(--grad);color:#fff;border:0;border-radius:16px;padding:15px;font:inherit;font-size:1.06rem;font-weight:800;cursor:pointer;box-shadow:0 14px 28px -12px rgba(124,58,237,.8);display:flex;align-items:center;justify-content:center;gap:9px}
+.pkg-btn svg{width:20px;height:20px}
+.note{margin-top:12px;font-size:.82rem;color:var(--muted);text-align:center}
+.why{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:40px 0 60px}
+.why div{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;text-align:center}
+.why .ic{width:48px;height:48px;border-radius:14px;background:#F3EDFE;color:var(--v2);display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+.why .ic svg{width:24px;height:24px}
+.why h3{font-size:1.02rem;margin-bottom:5px}
+.why p{font-size:.85rem;color:var(--muted)}
+svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:600px){.row{grid-template-columns:1fr}.why{grid-template-columns:1fr}.phero h1{font-size:1.6rem}}
+</style>
+</head>
+<body>
+
+<!-- Global header/app-shell injected by js/site-chrome.js + js/mobile-app.js -->
+
+<section class="phero"><div class="wrap">
+  <div class="tag">✦ حصري لعملاء فلاي مسار</div>
+  <h1>باقة <em>طيران + فندق</em> بسعر واحد موفّر</h1>
+  <p>احجز رحلتك وإقامتك معاً ووفّر أكثر — بسعر أقل من حجزهما منفصلين.</p>
+</div></section>
+
+<div class="wrap">
+  <div class="card">
+    <form id="pkgForm" onsubmit="return goPackage(event)">
+      <div class="row">
+        <div class="fg"><label>مدينة المغادرة</label><input id="pFrom" placeholder="مثال: KWI الكويت" autocomplete="off" required></div>
+        <div class="fg"><label>الوجهة</label><input id="pTo" placeholder="مثال: DXB دبي" autocomplete="off" required></div>
+      </div>
+      <div class="row">
+        <div class="fg"><label>تاريخ الذهاب</label><input id="pDep" type="date" required></div>
+        <div class="fg"><label>تاريخ العودة</label><input id="pRet" type="date" required></div>
+      </div>
+      <div class="row">
+        <div class="fg"><label>المسافرون</label>
+          <select id="pPax"><option value="1">١ بالغ</option><option value="2">٢ بالغ</option><option value="3">٣ بالغ</option><option value="4">٤ بالغ</option></select></div>
+        <div class="fg"><label>عدد الغرف</label>
+          <select id="pRooms"><option value="1">١ غرفة</option><option value="2">٢ غرفة</option><option value="3">٣ غرف</option></select></div>
+      </div>
+      <button class="pkg-btn" type="submit"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg> ابحث عن باقتي</button>
+      <p class="note">نعرض لك أفضل رحلة طيران لوجهتك، ثم نرشّح لك أفضل الفنادق لإكمال الباقة عند الحجز.</p>
+    </form>
+  </div>
+
+  <div class="why">
+    <div><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div><h3>سعر أوفر</h3><p>خصم إضافي عند جمع الطيران والفندق في باقة واحدة.</p></div>
+    <div><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></div><h3>حجز واحد</h3><p>تذكرتك وفندقك في عملية دفع واحدة وتأكيد فوري.</p></div>
+    <div><div class="ic"><svg class="i" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>مرونة وأمان</h3><p>دعم عربي ٢٤/٧ ودفع آمن ١٠٠٪ على كامل الباقة.</p></div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/currency.js?v=2026070101"></script>
+<script src="js/i18n.js?v=2026070101"></script>
+<script>
+function goPackage(e){
+  e.preventDefault();
+  var from = (document.getElementById('pFrom').value||'').trim();
+  var to   = (document.getElementById('pTo').value||'').trim();
+  // pull an IATA-looking token if present, else send the raw text
+  function code(s){ var m=(s.match(/[A-Za-z]{3}/)||[])[0]; return (m||s).toUpperCase(); }
+  var params = new URLSearchParams({
+    from: code(from), to: code(to),
+    dep: document.getElementById('pDep').value||'',
+    ret: document.getElementById('pRet').value||'',
+    pax: document.getElementById('pPax').value||'1',
+    cabin: 'economy', type: 'round',
+    pkg: '1', rooms: document.getElementById('pRooms').value||'1'
+  });
+  try { localStorage.setItem('fly_package', JSON.stringify({from:code(from),to:code(to),rooms:document.getElementById('pRooms').value})); } catch(_){}
+  window.location.href = 'flights.html?' + params.toString();
+  return false;
+}
+</script>
+<script src="js/site-chrome.js?v=2026070102"></script>
+</body>
+</html>
