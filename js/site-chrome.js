@@ -1,362 +1,181 @@
 /* ============================================================================
-   FlyMasar — Unified Site Chrome
+   FlyMasar — Unified Site Chrome (v2 · violet identity)
    ----------------------------------------------------------------------------
-   ONE source of truth for the header, mobile drawer, footer and bottom nav that
-   used to be copy-pasted (and diverge) across every .html page. Include this on
-   any page with:
+   ONE source of truth for the header, mobile drawer and footer across every
+   page, matching the new homepage design (index.html). Include with:
 
-       <div id="sc-header"></div>              (optional explicit mount point)
-       ...page content...
        <script src="js/site-chrome.js?v=..."></script>
 
-   If no #sc-header element exists, the header is prepended to <body> and the
-   footer + bottom-nav appended, so most pages need nothing but the <script>.
-
-   It reuses the project's OFFICIAL shared helpers when present — setLang() /
-   setCurrency() (i18n.js / currency.js) and the Auth object (auth.js) — instead
-   of re-implementing them, and degrades gracefully if they are absent.
-
-   Active page can be forced with `window.FLY_CHROME = { active: 'flights' }`
-   BEFORE this script; otherwise it is inferred from the URL.
+   It reuses the project's official helpers when present — setLang()/setCurrency()
+   (i18n.js/currency.js) and the Auth object (auth.js) — and degrades gracefully.
+   Self-contained CSS + font so it renders consistently even without app.css.
+   Force the active tab with `window.FLY_CHROME = { active: 'flights' }` before
+   this script; otherwise it is inferred from the URL.
    ==========================================================================*/
 (function () {
   'use strict';
-
   var CFG = window.FLY_CHROME || {};
-  var THEME_KEY = 'flymasar_theme';
 
-  /* --- which page are we on -------------------------------------------- */
   var path = (location.pathname || '').toLowerCase();
-  function file(p) { return (p.split('/').pop() || 'index.html'); }
-  var here = file(path);
-  if (here === '' || here === '/') here = 'index.html';
+  var here = (path.split('/').pop() || 'index.html'); if (!here) here = 'index.html';
   var active = CFG.active || ({
-    'index.html': 'home',
+    'index.html': 'home', '': 'home',
     'flights.html': 'flights',
-    'hotels.html': 'hotels',
-    'hotel-detail.html': 'hotels',
-    'hotels-detail.html': 'hotels',
-    'dashboard.html': 'account',
-    'travelers.html': 'account',
+    'hotels.html': 'hotels', 'hotel-detail.html': 'hotels',
     'lookup.html': 'lookup'
   }[here] || '');
 
-  /* --- brand mark ------------------------------------------------------ */
-  var LOGO =
-    '<svg class="sc-logo" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">' +
-    '<circle cx="12" cy="12" r="12" fill="currentColor"/>' +
-    '<path d="M18.5 12.3l-5.1-1.2-2-4.3a.9.9 0 0 0-1.65.05L7.9 10.4 5.6 11a.6.6 0 0 0-.12 1.1l2 .95.55 2.2a.5.5 0 0 0 .93.08l1.05-2 4.9 1.15a.7.7 0 0 0 .32-1.35l-3.1-1 3.9-.9a.6.6 0 0 0 .07-1.13z" fill="#fff"/>' +
-    '</svg>';
-
-  var ICONS = {
-    home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>',
-    flights: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>',
-    hotels: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg>',
-    account: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
-    lookup: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>'
-  };
-
-  /* --- primary navigation model --------------------------------------- */
+  var MK = '<span class="scmk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>';
   var NAV = [
-    { k: 'home',    href: 'index.html',     label: 'الرئيسية', icon: ICONS.home },
-    { k: 'flights', href: 'flights.html',   label: 'رحلات',    icon: ICONS.flights },
-    { k: 'hotels',  href: 'hotels.html',    label: 'فنادق',    icon: ICONS.hotels },
-    { k: 'lookup',  href: 'lookup.html',    label: 'استعلام',  icon: ICONS.lookup }
+    { k:'home',    href:'index.html',   label:'الرئيسية' },
+    { k:'flights', href:'flights.html', label:'رحلات' },
+    { k:'hotels',  href:'hotels.html',  label:'فنادق' },
+    { k:'lookup',  href:'lookup.html',  label:'استعلام' }
   ];
-  var CURRENCIES = [
-    { code: 'KWD', label: 'د.ك' },
-    { code: 'SAR', label: 'ر.س' },
-    { code: 'USD', label: '$' },
-    { code: 'GBP', label: '£' }
-  ];
+  var CUR = [ {c:'KWD',t:'د.ك'}, {c:'SAR',t:'﷼'}, {c:'USD',t:'$'} ];
 
-  /* --- styles (self-contained; work even without app.css) ------------- */
   var css = [
-    ':root{--sc-h:64px}',
-    '.sc-nav{position:sticky;top:0;z-index:900;background:var(--white,#fff);border-bottom:1px solid var(--border,#e5e7eb);box-shadow:0 1px 3px rgba(0,0,0,.05)}',
-    '.sc-nav-inner{max-width:1200px;margin:0 auto;height:var(--sc-h);display:flex;align-items:center;gap:18px;padding:0 20px}',
-    '.sc-brand{display:flex;align-items:center;gap:8px;font-size:1.3rem;font-weight:800;color:var(--primary,#1B4F8E);white-space:nowrap}',
-    '.sc-brand b{color:var(--secondary,#E8A020);font-weight:800}',
-    '.sc-logo{color:var(--primary,#1B4F8E);flex-shrink:0}',
-    '.sc-links{display:flex;align-items:center;gap:4px;margin-inline-start:8px}',
-    '.sc-links a{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;font-size:.95rem;font-weight:600;color:var(--text-muted,#6B7280);transition:.18s}',
-    '.sc-links a svg{width:18px;height:18px}',
-    '.sc-links a:hover{background:var(--bg-alt,#eef1f7);color:var(--primary,#1B4F8E)}',
-    '.sc-links a.on{color:var(--primary,#1B4F8E);background:rgba(27,79,142,.08)}',
-    '.sc-ctrls{display:flex;align-items:center;gap:8px;margin-inline-start:auto}',
-    '.sc-seg{display:inline-flex;background:var(--bg-alt,#eef1f7);border-radius:10px;padding:3px}',
-    '.sc-seg button{border:0;background:none;cursor:pointer;font:inherit;font-size:.82rem;font-weight:700;color:var(--text-muted,#6B7280);padding:5px 9px;border-radius:8px;line-height:1;transition:.15s}',
-    '.sc-seg button.active{background:var(--white,#fff);color:var(--primary,#1B4F8E);box-shadow:0 1px 2px rgba(0,0,0,.08)}',
-    '.sc-theme{border:1.5px solid var(--border,#e5e7eb);background:none;border-radius:10px;width:36px;height:36px;cursor:pointer;font-size:1rem;line-height:1;color:var(--text-muted,#6B7280);transition:.15s}',
-    '.sc-theme:hover{border-color:var(--primary,#1B4F8E);color:var(--primary,#1B4F8E)}',
-    '.sc-auth{display:flex;align-items:center;gap:8px}',
-    '.sc-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;font-size:.9rem;font-weight:700;cursor:pointer;border:1.5px solid transparent;transition:.18s;white-space:nowrap}',
-    '.sc-btn-primary{background:var(--primary,#1B4F8E);color:#fff}',
-    '.sc-btn-primary:hover{background:var(--primary-dark,#13396B);color:#fff}',
-    '.sc-btn-ghost{background:none;border-color:var(--border,#e5e7eb);color:var(--text,#1A1A2E)}',
-    '.sc-btn-ghost:hover{border-color:var(--primary,#1B4F8E);color:var(--primary,#1B4F8E)}',
-    '.sc-burger{display:none;flex-direction:column;gap:4px;width:40px;height:40px;align-items:center;justify-content:center;border:1.5px solid var(--border,#e5e7eb);border-radius:10px;background:none;cursor:pointer;margin-inline-start:auto}',
-    '.sc-burger span{display:block;width:20px;height:2px;background:var(--text,#1A1A2E);border-radius:2px}',
+    ":root{--sc-v1:#7C3AED;--sc-v2:#9333EA;--sc-v3:#4C1D95;--sc-ink:#1B172B;--sc-muted:#6B6880;--sc-line:#ECE8F4;--sc-grad:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3)}",
+    /* base type + bg to match the new identity (only if page opts in via body.fm) */
+    "body.fm{font-family:'IBM Plex Sans Arabic',sans-serif;background:#FAF8FF;color:var(--sc-ink)}",
+    ".sc-nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:saturate(160%) blur(14px);border-bottom:1px solid var(--sc-line)}",
+    ".sc-in{max-width:1200px;margin:0 auto;padding:0 22px;height:72px;display:flex;align-items:center;gap:22px}",
+    ".sc-brand{display:flex;align-items:center;gap:10px;font-size:1.4rem;font-weight:700;color:var(--sc-ink);white-space:nowrap}",
+    ".scmk{width:40px;height:40px;border-radius:13px;background:var(--sc-grad);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 10px 22px -8px rgba(124,58,237,.7)}",
+    ".scmk svg{width:22px;height:22px}",
+    ".sc-brand b{font-weight:700}.sc-brand b em{font-style:normal;color:var(--sc-v2)}",
+    ".sc-links{display:flex;gap:2px;margin-inline-start:12px}",
+    ".sc-links a{color:var(--sc-muted);font-weight:600;font-size:.97rem;padding:9px 14px;border-radius:11px;transition:.2s}",
+    ".sc-links a:hover,.sc-links a.on{color:var(--sc-v2);background:#F4EEFE}",
+    ".sc-ctrls{margin-inline-start:auto;display:flex;align-items:center;gap:10px}",
+    ".sc-seg{display:flex;background:#F4F1FA;border:1px solid var(--sc-line);border-radius:12px;padding:3px}",
+    ".sc-seg button{border:0;background:none;font:inherit;font-weight:700;font-size:.82rem;color:var(--sc-muted);padding:6px 11px;border-radius:9px;cursor:pointer;line-height:1}",
+    ".sc-seg button.active{background:#fff;color:var(--sc-v2);box-shadow:0 1px 3px rgba(0,0,0,.08)}",
+    ".sc-b-ghost{color:var(--sc-ink);border:1.5px solid var(--sc-line);padding:9px 18px;border-radius:12px;font-weight:700;font-size:.9rem}",
+    ".sc-b-ghost:hover{border-color:#c9b6f2;color:var(--sc-v2)}",
+    ".sc-b-cta{background:var(--sc-grad);color:#fff;padding:10px 20px;border-radius:12px;font-weight:700;font-size:.9rem;box-shadow:0 12px 24px -10px rgba(124,58,237,.7)}",
+    ".sc-ham{display:none;flex-direction:column;gap:5px;width:44px;height:44px;align-items:center;justify-content:center;border:1.5px solid var(--sc-line);border-radius:12px;background:#fff;cursor:pointer;margin-inline-start:auto}",
+    ".sc-ham span{display:block;width:20px;height:2px;background:var(--sc-v2);border-radius:2px}",
     /* drawer */
-    '.sc-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);opacity:0;visibility:hidden;transition:.25s;z-index:1000}',
-    '.sc-ov.open{opacity:1;visibility:visible}',
-    '.sc-drawer{position:fixed;top:0;right:0;height:100%;width:300px;max-width:85vw;background:var(--white,#fff);z-index:1001;transform:translateX(110%);transition:transform .28s ease;display:flex;flex-direction:column;box-shadow:0 0 40px rgba(0,0,0,.2)}',
-    'html[dir="ltr"] .sc-drawer{right:auto;left:0;transform:translateX(-110%)}',
-    '.sc-drawer.open{transform:translateX(0)}',
-    '.sc-dhead{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--border,#e5e7eb)}',
-    '.sc-dclose{border:0;background:none;font-size:1.4rem;cursor:pointer;color:var(--text-muted,#6B7280);line-height:1}',
-    '.sc-dbody{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:18px}',
-    '.sc-dsec-t{font-size:.75rem;font-weight:700;color:var(--text-light,#9CA3AF);margin-bottom:8px;text-transform:uppercase;letter-spacing:.4px}',
-    '.sc-dlink{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:10px;font-weight:600;color:var(--text,#1A1A2E);transition:.15s}',
-    '.sc-dlink svg{width:20px;height:20px;color:var(--text-muted,#6B7280)}',
-    '.sc-dlink:hover,.sc-dlink.on{background:var(--bg-alt,#eef1f7);color:var(--primary,#1B4F8E)}',
-    '.sc-dlink.on svg{color:var(--primary,#1B4F8E)}',
-    '.sc-drow{display:flex;flex-wrap:wrap;gap:6px}',
-    '.sc-drow button{flex:1;min-width:60px;border:1.5px solid var(--border,#e5e7eb);background:none;border-radius:9px;padding:9px;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer;color:var(--text-muted,#6B7280)}',
-    '.sc-drow button.active{border-color:var(--primary,#1B4F8E);color:var(--primary,#1B4F8E);background:rgba(27,79,142,.06)}',
-    '.sc-dfoot{padding:14px 18px;border-top:1px solid var(--border,#e5e7eb);font-size:.78rem;color:var(--text-light,#9CA3AF)}',
+    ".sc-ov{position:fixed;inset:0;background:rgba(20,8,45,.5);z-index:70;opacity:0;visibility:hidden;transition:.25s}",
+    ".sc-ov.open{opacity:1;visibility:visible}",
+    ".sc-dr{position:fixed;top:0;right:0;height:100%;width:300px;max-width:86vw;background:#fff;z-index:71;transform:translateX(110%);transition:transform .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:-10px 0 40px rgba(20,8,45,.25)}",
+    "html[dir='ltr'] .sc-dr{right:auto;left:0;transform:translateX(-110%)}",
+    ".sc-dr.open{transform:translateX(0)}",
+    ".sc-dh{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid var(--sc-line)}",
+    ".sc-dx{border:0;background:none;font-size:1.4rem;color:var(--sc-muted);cursor:pointer;line-height:1}",
+    ".sc-db{flex:1;overflow-y:auto;padding:14px 16px;display:flex;flex-direction:column;gap:16px}",
+    ".sc-dlinks{display:flex;flex-direction:column;gap:2px}",
+    ".sc-dlinks a{padding:12px;border-radius:12px;font-weight:600;color:var(--sc-ink);transition:.15s}",
+    ".sc-dlinks a:hover,.sc-dlinks a.on{background:#F4EEFE;color:var(--sc-v2)}",
+    ".sc-dt{font-size:.72rem;font-weight:700;color:var(--sc-muted);letter-spacing:.04em;margin-bottom:8px}",
+    ".sc-drow{display:flex;gap:6px;flex-wrap:wrap}",
+    ".sc-drow button{flex:1;min-width:66px;border:1.5px solid var(--sc-line);background:none;border-radius:11px;padding:10px;font:inherit;font-weight:700;font-size:.85rem;color:var(--sc-muted);cursor:pointer}",
+    ".sc-drow button.active{border-color:var(--sc-v2);color:var(--sc-v2);background:#F4EEFE}",
+    ".sc-df{padding:14px 18px;border-top:1px solid var(--sc-line);font-size:.78rem;color:var(--sc-muted);text-align:center}",
     /* footer */
-    '.sc-footer{background:var(--primary-dark,#13396B);color:#e8eef7;margin-top:56px}',
-    '.sc-footer-in{max-width:1200px;margin:0 auto;padding:44px 20px 22px}',
-    '.sc-fgrid{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:32px}',
-    '.sc-fbrand{display:flex;align-items:center;gap:8px;font-size:1.25rem;font-weight:800;color:#fff;margin-bottom:12px}',
-    '.sc-fbrand .sc-logo{color:#fff}',
-    '.sc-fdesc{font-size:.9rem;line-height:1.7;color:#b9c7db;max-width:320px}',
-    '.sc-footer h4{font-size:.95rem;color:#fff;margin-bottom:14px}',
-    '.sc-footer ul{display:flex;flex-direction:column;gap:9px}',
-    '.sc-footer a{font-size:.88rem;color:#b9c7db;transition:.15s}',
-    '.sc-footer a:hover{color:#fff}',
-    '.sc-fcopy{margin-top:34px;padding-top:18px;border-top:1px solid rgba(255,255,255,.12);text-align:center;font-size:.82rem;color:#93a6c2}',
-    /* bottom nav */
-    '.sc-bnav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--white,#fff);border-top:1px solid var(--border,#e5e7eb);z-index:900;padding:6px 0 env(safe-area-inset-bottom,6px);justify-content:space-around}',
-    '.sc-bnav a{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 14px;font-size:.68rem;font-weight:600;color:var(--text-muted,#6B7280);transition:.15s}',
-    '.sc-bnav a svg{width:22px;height:22px}',
-    '.sc-bnav a.on{color:var(--primary,#1B4F8E)}',
-    /* responsive */
-    '@media(max-width:900px){.sc-links{display:none}.sc-ctrls .sc-seg,.sc-ctrls .sc-theme,.sc-ctrls .sc-auth{display:none}.sc-burger{display:flex}}',
-    '@media(max-width:768px){.sc-bnav{display:flex}body{padding-bottom:64px}.sc-fgrid{grid-template-columns:1fr;gap:26px}}',
-    '[data-theme="dark"] .sc-nav{background:#1e293b;border-color:#334155}',
-    '[data-theme="dark"] .sc-drawer,[data-theme="dark"] .sc-bnav{background:#1e293b;border-color:#334155}'
+    ".sc-footer{background:#160B2E;color:#b7abd6;padding:52px 0 24px;margin-top:60px}",
+    ".sc-fin{max-width:1200px;margin:0 auto;padding:0 22px}",
+    ".sc-fg{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:32px;margin-bottom:30px}",
+    ".sc-fg h4{color:#fff;margin-bottom:13px;font-size:.98rem}",
+    ".sc-fg a{display:block;color:#b7abd6;padding:5px 0;font-size:.92rem}.sc-fg a:hover{color:#fff}",
+    ".sc-fbrand{display:flex;align-items:center;gap:9px;font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:12px}",
+    ".sc-fdesc{max-width:300px;color:#b7abd6;font-size:.92rem;line-height:1.7}",
+    ".sc-fcopy{border-top:1px solid rgba(255,255,255,.1);padding-top:20px;text-align:center;font-size:.85rem;color:#8577ab}",
+    "@media(max-width:960px){.sc-links{display:none}.sc-ctrls .sc-seg,.sc-ctrls .sc-auth{display:none}.sc-ham{display:flex}.sc-fg{grid-template-columns:1fr 1fr}}",
+    "@media(max-width:560px){.sc-fg{grid-template-columns:1fr}}"
   ].join('');
 
-  /* --- markup builders ------------------------------------------------- */
-  function navLinksHtml(cls) {
-    return NAV.map(function (n) {
-      var on = n.k === active ? ' on' : '';
-      return '<a class="' + cls + on + '" href="' + n.href + '">' + n.icon + '<span>' + n.label + '</span></a>';
-    }).join('');
+  function links(cls){ return NAV.map(function(n){return '<a class="'+cls+(n.k===active?' on':'')+'" href="'+n.href+'">'+n.label+'</a>';}).join(''); }
+  function curBtns(){ return CUR.map(function(x){return '<button type="button" class="currency-btn" data-currency="'+x.c+'">'+x.t+'</button>';}).join(''); }
+  function authDesktop(){
+    var on = (window.Auth && Auth.isLoggedIn && Auth.isLoggedIn());
+    return on ? '<a class="sc-b-ghost" href="dashboard.html">حسابي</a><button type="button" class="sc-b-cta" style="border:0;cursor:pointer" data-sc="logout">خروج</button>'
+              : '<a class="sc-b-ghost" href="login.html">دخول</a><a class="sc-b-cta" href="register.html">حساب جديد</a>';
   }
-  function curBtns(cls) {
-    return CURRENCIES.map(function (c) {
-      return '<button type="button" class="currency-btn" data-currency="' + c.code + '">' + c.label + '</button>';
-    }).join('');
-  }
-
-  function authDesktopHtml() {
-    var logged = (window.Auth && Auth.isLoggedIn && Auth.isLoggedIn());
-    if (logged) {
-      return '<a class="sc-btn sc-btn-ghost" href="dashboard.html">حسابي</a>' +
-             '<button type="button" class="sc-btn sc-btn-primary" data-sc="logout">خروج</button>';
-    }
-    return '<a class="sc-btn sc-btn-ghost" href="login.html">دخول</a>' +
-           '<a class="sc-btn sc-btn-primary" href="register.html">حساب جديد</a>';
-  }
-  function authDrawerHtml() {
-    var logged = (window.Auth && Auth.isLoggedIn && Auth.isLoggedIn());
-    if (logged) {
-      return '<a class="sc-dlink" href="dashboard.html">' + ICONS.account + '<span>حسابي وحجوزاتي</span></a>' +
-             '<a class="sc-dlink" href="travelers.html">' + ICONS.account + '<span>المسافرون</span></a>' +
-             '<button type="button" class="sc-dlink" data-sc="logout" style="width:100%;border:0;background:none;cursor:pointer;text-align:start">' +
-               '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>' +
-               '<span>تسجيل الخروج</span></button>';
-    }
-    return '<a class="sc-btn sc-btn-primary" href="login.html" style="justify-content:center">دخول</a>' +
-           '<a class="sc-btn sc-btn-ghost" href="register.html" style="justify-content:center;margin-top:8px">حساب جديد</a>';
+  function authDrawer(){
+    var on = (window.Auth && Auth.isLoggedIn && Auth.isLoggedIn());
+    return on ? '<a class="sc-b-cta" href="dashboard.html" style="display:block;text-align:center">حسابي وحجوزاتي</a><button type="button" class="sc-b-ghost" data-sc="logout" style="width:100%;margin-top:8px;cursor:pointer">تسجيل الخروج</button>'
+              : '<div style="display:flex;gap:8px"><a class="sc-b-cta" href="login.html" style="flex:1;text-align:center">دخول</a><a class="sc-b-ghost" href="register.html" style="flex:1;text-align:center">حساب جديد</a></div>';
   }
 
-  function headerHtml() {
-    return '' +
-    '<header class="sc-nav">' +
-      '<div class="sc-nav-inner">' +
-        '<a class="sc-brand" href="index.html">' + LOGO + 'فلاي<b>مسار</b></a>' +
-        '<nav class="sc-links">' + navLinksHtml('') + '</nav>' +
-        '<div class="sc-ctrls">' +
-          '<div class="sc-seg sc-lang">' +
-            '<button type="button" class="lang-btn" data-lang="ar">ع</button>' +
-            '<button type="button" class="lang-btn" data-lang="en">EN</button>' +
-          '</div>' +
-          '<div class="sc-seg sc-cur">' + curBtns() + '</div>' +
-          '<button type="button" class="sc-theme" data-sc="theme" title="الوضع الليلي">🌙</button>' +
-          '<span class="sc-auth" id="scAuth">' + authDesktopHtml() + '</span>' +
-        '</div>' +
-        '<button type="button" class="sc-burger" data-sc="open" aria-label="القائمة"><span></span><span></span><span></span></button>' +
-      '</div>' +
-    '</header>';
+  function headerHtml(){
+    return '<header class="sc-nav"><div class="sc-in">'
+      + '<a class="sc-brand" href="index.html">'+MK+'<b>فلاي<em> مسار</em></b></a>'
+      + '<nav class="sc-links">'+links('')+'</nav>'
+      + '<div class="sc-ctrls">'
+        + '<div class="sc-seg">'+curBtns()+'</div>'
+        + '<span class="sc-auth" id="scAuth">'+authDesktop()+'</span>'
+      + '</div>'
+      + '<button type="button" class="sc-ham" data-sc="open" aria-label="القائمة"><span></span><span></span><span></span></button>'
+      + '</div></header>'
+      + '<div class="sc-ov" data-sc="close"></div>'
+      + '<aside class="sc-dr" id="scDrawer">'
+        + '<div class="sc-dh"><span class="sc-brand" style="font-size:1.15rem">'+MK+'<b>فلاي<em> مسار</em></b></span><button type="button" class="sc-dx" data-sc="close">✕</button></div>'
+        + '<div class="sc-db">'
+          + '<div id="scDrawerAuth">'+authDrawer()+'</div>'
+          + '<div class="sc-dlinks">'+links('sc-dlink')+'</div>'
+          + '<div><div class="sc-dt">العملة</div><div class="sc-drow">'+curBtns()+'</div></div>'
+          + '<div class="sc-dlinks"><a href="about.html">من نحن</a><a href="contact.html">اتصل بنا</a><a href="privacy.html">سياسة الخصوصية</a><a href="terms.html">الشروط والأحكام</a></div>'
+        + '</div>'
+        + '<div class="sc-df">© ٢٠٢٦ فلاي مسار — جميع الحقوق محفوظة</div>'
+      + '</aside>';
+  }
+  function footerHtml(){
+    return '<footer class="sc-footer"><div class="sc-fin">'
+      + '<div class="sc-fg">'
+        + '<div><div class="sc-fbrand">'+MK+'<span style="color:#fff">فلاي<em style="font-style:normal;color:#c4b5fd"> مسار</em></span></div><p class="sc-fdesc">منصّة السفر الأولى للعالم العربي — أفضل الأسعار وحجز آمن وسريع.</p></div>'
+        + '<div><h4>الشركة</h4><a href="about.html">من نحن</a><a href="services.html">خدماتنا</a><a href="contact.html">اتصل بنا</a></div>'
+        + '<div><h4>الدعم</h4><a href="lookup.html">استعلام عن حجز</a><a href="contact.html">الأسئلة الشائعة</a></div>'
+        + '<div><h4>قانوني</h4><a href="privacy.html">سياسة الخصوصية</a><a href="terms.html">الشروط والأحكام</a></div>'
+      + '</div>'
+      + '<div class="sc-fcopy">© ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.</div>'
+      + '</div></footer>';
   }
 
-  function drawerHtml() {
-    return '' +
-    '<div class="sc-ov" data-sc="close"></div>' +
-    '<aside class="sc-drawer" id="scDrawer">' +
-      '<div class="sc-dhead"><span class="sc-brand" style="font-size:1.15rem">' + LOGO + 'فلاي<b>مسار</b></span>' +
-        '<button type="button" class="sc-dclose" data-sc="close" aria-label="إغلاق">✕</button></div>' +
-      '<div class="sc-dbody">' +
-        '<div id="scDrawerAuth" style="display:flex;flex-direction:column">' + authDrawerHtml() + '</div>' +
-        '<div><div class="sc-dsec-t">التنقل</div>' + navLinksHtml('sc-dlink') + '</div>' +
-        '<div><div class="sc-dsec-t">اللغة</div><div class="sc-drow">' +
-          '<button type="button" class="lang-btn" data-lang="ar">العربية</button>' +
-          '<button type="button" class="lang-btn" data-lang="en">English</button></div></div>' +
-        '<div><div class="sc-dsec-t">العملة</div><div class="sc-drow">' + curBtns() + '</div></div>' +
-        '<div><div class="sc-dsec-t">روابط</div>' +
-          '<a class="sc-dlink" href="about.html">من نحن</a>' +
-          '<a class="sc-dlink" href="services.html">خدماتنا</a>' +
-          '<a class="sc-dlink" href="contact.html">اتصل بنا</a>' +
-          '<a class="sc-dlink" href="privacy.html">سياسة الخصوصية</a>' +
-          '<a class="sc-dlink" href="terms.html">الشروط والأحكام</a></div>' +
-      '</div>' +
-      '<div class="sc-dfoot">© ٢٠٢٦ فلاي مسار — جميع الحقوق محفوظة</div>' +
-    '</aside>';
+  function ensureFont(){
+    if (document.getElementById('sc-font')) return;
+    var l1=document.createElement('link'); l1.rel='preconnect'; l1.href='https://fonts.googleapis.com'; document.head.appendChild(l1);
+    var l=document.createElement('link'); l.id='sc-font'; l.rel='stylesheet';
+    l.href='https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap';
+    document.head.appendChild(l);
   }
 
-  function footerHtml() {
-    return '' +
-    '<footer class="sc-footer">' +
-      '<div class="sc-footer-in">' +
-        '<div class="sc-fgrid">' +
-          '<div><div class="sc-fbrand">' + LOGO + 'فلاي مسار</div>' +
-            '<p class="sc-fdesc">منصّة السفر الأولى للعالم العربي — أفضل أسعار الطيران والفنادق، وحجز آمن وسريع.</p></div>' +
-          '<div><h4>الشركة</h4><ul>' +
-            '<li><a href="about.html">من نحن</a></li>' +
-            '<li><a href="services.html">خدماتنا</a></li>' +
-            '<li><a href="contact.html">اتصل بنا</a></li>' +
-            '<li><a href="lookup.html">استعلام عن حجز</a></li></ul></div>' +
-          '<div><h4>قانوني</h4><ul>' +
-            '<li><a href="privacy.html">سياسة الخصوصية</a></li>' +
-            '<li><a href="terms.html">الشروط والأحكام</a></li></ul></div>' +
-        '</div>' +
-        '<div class="sc-fcopy">© ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.</div>' +
-      '</div>' +
-    '</footer>';
-  }
+  function openDrawer(){ var d=document.getElementById('scDrawer'),o=document.querySelector('.sc-ov'); if(d)d.classList.add('open'); if(o)o.classList.add('open'); }
+  function closeDrawer(){ var d=document.getElementById('scDrawer'),o=document.querySelector('.sc-ov'); if(d)d.classList.remove('open'); if(o)o.classList.remove('open'); }
 
-  function bottomNavHtml() {
-    var items = [NAV[0], NAV[1], NAV[2], { k: 'account', href: 'dashboard.html', label: 'حسابي', icon: ICONS.account }];
-    return '<nav class="sc-bnav">' + items.map(function (n) {
-      var on = n.k === active ? ' on' : '';
-      return '<a class="' + on.trim() + '" href="' + n.href + '">' + n.icon + '<span>' + n.label + '</span></a>';
-    }).join('') + '</nav>';
-  }
-
-  /* --- theme ----------------------------------------------------------- */
-  function applyTheme(dark) {
-    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
-    document.querySelectorAll('[data-sc="theme"]').forEach(function (b) {
-      b.textContent = dark ? '☀️' : '🌙';
-      b.title = dark ? 'الوضع النهاري' : 'الوضع الليلي';
-    });
-  }
-
-  /* --- mount ----------------------------------------------------------- */
-  function mount() {
-    if (document.getElementById('scDrawer')) return; // already mounted
-
-    // styles
-    var s = document.createElement('style');
-    s.id = 'sc-styles';
-    s.textContent = css;
-    document.head.appendChild(s);
-
-    // header (into #sc-header if present, else top of body)
-    var headerHost = document.getElementById('sc-header');
-    if (headerHost) {
-      headerHost.innerHTML = headerHtml() + drawerHtml();
-    } else {
-      var wrap = document.createElement('div');
-      wrap.innerHTML = headerHtml() + drawerHtml();
-      while (wrap.firstChild) document.body.insertBefore(wrap.firstChild, document.body.firstChild);
-    }
-
-    // footer + bottom nav (into #sc-footer if present, else end of body)
-    var footerHost = document.getElementById('sc-footer');
-    if (footerHost) {
-      footerHost.innerHTML = footerHtml() + bottomNavHtml();
-    } else {
-      var w2 = document.createElement('div');
-      w2.innerHTML = footerHtml() + bottomNavHtml();
-      while (w2.firstChild) document.body.appendChild(w2.firstChild);
-    }
-
+  function mount(){
+    if (document.getElementById('scDrawer')) return;
+    ensureFont();
+    document.body.classList.add('fm');
+    var s=document.createElement('style'); s.id='sc-styles'; s.textContent=css; document.head.appendChild(s);
+    var host=document.getElementById('sc-header');
+    if(host){ host.innerHTML=headerHtml(); } else { var w=document.createElement('div'); w.innerHTML=headerHtml(); while(w.firstChild) document.body.insertBefore(w.firstChild, document.body.firstChild); }
+    var fh=document.getElementById('sc-footer');
+    if(fh){ fh.innerHTML=footerHtml(); } else { var w2=document.createElement('div'); w2.innerHTML=footerHtml(); while(w2.firstChild) document.body.appendChild(w2.firstChild); }
     wire();
   }
 
-  function openDrawer() {
-    var d = document.getElementById('scDrawer'), o = document.querySelector('.sc-ov');
-    if (d) d.classList.add('open');
-    if (o) o.classList.add('open');
-  }
-  function closeDrawer() {
-    var d = document.getElementById('scDrawer'), o = document.querySelector('.sc-ov');
-    if (d) d.classList.remove('open');
-    if (o) o.classList.remove('open');
-  }
-
-  function wire() {
-    // delegated clicks
-    document.addEventListener('click', function (e) {
-      var t = e.target.closest('[data-sc]');
-      if (!t) return;
-      var a = t.getAttribute('data-sc');
-      if (a === 'open') openDrawer();
-      else if (a === 'close') closeDrawer();
-      else if (a === 'theme') {
-        var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-        localStorage.setItem(THEME_KEY, !dark ? 'dark' : 'light');
-        applyTheme(!dark);
-      } else if (a === 'logout') {
-        if (window.Auth && Auth.logout) Auth.logout();
-        else { localStorage.removeItem('flymasar_token'); localStorage.removeItem('flymasar_user'); location.href = 'index.html'; }
-      }
+  function wire(){
+    document.addEventListener('click', function(e){
+      var t=e.target.closest('[data-sc]'); if(!t) return;
+      var a=t.getAttribute('data-sc');
+      if(a==='open') openDrawer();
+      else if(a==='close') closeDrawer();
+      else if(a==='logout'){ if(window.Auth&&Auth.logout) Auth.logout(); else { localStorage.removeItem('flymasar_token'); localStorage.removeItem('flymasar_user'); location.href='index.html'; } }
     });
-
-    // language buttons -> official setLang(); refresh chrome auth labels stay AR
-    document.querySelectorAll('.sc-nav .lang-btn, .sc-drawer .lang-btn').forEach(function (b) {
-      b.addEventListener('click', function () {
-        if (window.setLang) setLang(b.dataset.lang);
-      });
+    document.querySelectorAll('.sc-nav .currency-btn, .sc-dr .currency-btn').forEach(function(b){
+      b.addEventListener('click', function(){ var f=window.setCurrency||window.setCur; if(f) f(b.dataset.currency);
+        document.querySelectorAll('.currency-btn').forEach(function(x){x.classList.toggle('active', x.dataset.currency===b.dataset.currency);}); });
     });
-    // currency buttons -> official setCurrency() (updates prices + .active state)
-    document.querySelectorAll('.sc-nav .currency-btn, .sc-drawer .currency-btn').forEach(function (b) {
-      b.addEventListener('click', function () {
-        var cf = window.setCurrency || window.setCur; // official helper, or a page's inline one
-        if (cf) cf(b.dataset.currency);
-        document.querySelectorAll('.currency-btn').forEach(function (x) { x.classList.toggle('active', x.dataset.currency === b.dataset.currency); });
-      });
-    });
-
-    // reflect saved theme (dark-mode.js may also do this; idempotent)
-    applyTheme((localStorage.getItem(THEME_KEY) || 'light') === 'dark');
-
-    // sync currency + language highlight using official initializers if present
-    if (window.initCurrency) { try { initCurrency(); } catch (e) {} }
-    else {
-      var cur = localStorage.getItem('fly_cur') || localStorage.getItem('flymasar_currency') || 'KWD';
-      document.querySelectorAll('.currency-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.currency === cur); });
-    }
-    if (window.setLang) { try { setLang(localStorage.getItem('flymasar_lang') || 'ar'); } catch (e) {} }
-    else {
-      var lang = localStorage.getItem('flymasar_lang') || 'ar';
-      document.querySelectorAll('.lang-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.lang === lang); });
-    }
+    // reflect stored currency
+    var cur=localStorage.getItem('fly_cur')||localStorage.getItem('flymasar_currency')||'KWD';
+    if(window.initCurrency){ try{initCurrency();}catch(e){} }
+    document.querySelectorAll('.currency-btn').forEach(function(x){x.classList.toggle('active', x.dataset.currency===cur);});
+    if(window.setLang){ try{ setLang(localStorage.getItem('flymasar_lang')||'ar'); }catch(e){} }
   }
 
-  // expose a tiny API in case pages need it
-  window.SiteChrome = { open: openDrawer, close: closeDrawer, refreshAuth: function () {
-    var a = document.getElementById('scAuth'); if (a) a.innerHTML = authDesktopHtml();
-    var da = document.getElementById('scDrawerAuth'); if (da) da.innerHTML = authDrawerHtml();
-  } };
+  window.SiteChrome = { open:openDrawer, close:closeDrawer, refreshAuth:function(){ var a=document.getElementById('scAuth'); if(a)a.innerHTML=authDesktop(); var d=document.getElementById('scDrawerAuth'); if(d)d.innerHTML=authDrawer(); } };
 
-  // apply theme ASAP to avoid flash, then mount when DOM is ready
-  applyTheme((localStorage.getItem(THEME_KEY) || 'light') === 'dark');
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mount);
-  else mount();
+  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', mount); else mount();
 })();

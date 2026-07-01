@@ -10,9 +10,9 @@
    CSS Variables
    ==================================== */
 :root {
-  --primary: #1B4F8E;
-  --primary-dark: #13396B;
-  --primary-light: #2563B0;
+  --primary: #7C3AED;
+  --primary-dark: #6D28D9;
+  --primary-light: #9333EA;
   --secondary: #E8A020;
   --secondary-dark: #C8861A;
   --secondary-light: #F5C260;
@@ -27,7 +27,7 @@
   --warning: #F59E0B;
   --info: #3B82F6;
   --border: #E5E7EB;
-  --border-focus: #1B4F8E;
+  --border-focus: #7C3AED;
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
   --shadow: 0 4px 16px rgba(0,0,0,0.10);
   --shadow-lg: 0 8px 32px rgba(0,0,0,0.14);
