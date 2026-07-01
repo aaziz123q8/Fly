@@ -7,11 +7,11 @@
   <link rel="stylesheet" href="css/app.css">
   <style>
     /* ── Page Layout ── */
-    .page-bg { background:var(--bg,#f4f6fb); min-height:100vh; padding:32px 0 100px; }
+    .page-bg { background:var(--bg,#FAF8FF); min-height:100vh; padding:32px 0 100px; }
 
     /* ── Hero Header ── */
     .travelers-hero {
-      background:linear-gradient(135deg,#1B4F8E 0%,#2563eb 60%,#7c3aed 100%);
+      background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);
       border-radius:20px; padding:32px 28px; margin-bottom:28px;
       color:#fff; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
     }
@@ -25,21 +25,21 @@
     }
     .stat-card {
       background:#fff; border-radius:14px; padding:16px 18px;
-      box-shadow:0 2px 12px rgba(27,79,142,.07); text-align:center;
+      box-shadow:0 2px 12px rgba(76,29,149,.07); text-align:center;
     }
-    .stat-card .stat-num { font-size:1.8rem; font-weight:800; color:var(--primary,#1B4F8E); line-height:1; }
+    .stat-card .stat-num { font-size:1.8rem; font-weight:800; color:var(--primary,#7C3AED); line-height:1; }
     .stat-card .stat-lbl { font-size:0.75rem; color:var(--text-muted,#6b7280); margin-top:4px; }
 
     /* ── Traveler Cards ── */
     .travelers-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:16px; }
     .traveler-card {
       background:#fff; border-radius:18px;
-      box-shadow:0 2px 16px rgba(27,79,142,.08);
+      box-shadow:0 2px 16px rgba(76,29,149,.08);
       padding:0; overflow:hidden; transition:transform .2s,box-shadow .2s;
     }
-    .traveler-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(27,79,142,.14); }
+    .traveler-card:hover { transform:translateY(-3px); box-shadow:0 8px 28px rgba(76,29,149,.14); }
     .traveler-card-header {
-      background:linear-gradient(135deg,#1B4F8E,#2563eb);
+      background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);
       padding:18px 20px 14px; display:flex; align-items:center; gap:14px;
     }
     .traveler-avatar {
@@ -61,10 +61,10 @@
     /* ── Empty State ── */
     .empty-state {
       text-align:center; padding:60px 20px; background:#fff;
-      border-radius:20px; box-shadow:0 2px 16px rgba(27,79,142,.07);
+      border-radius:20px; box-shadow:0 2px 16px rgba(76,29,149,.07);
     }
     .empty-state .empty-icon { font-size:4rem; margin-bottom:16px; opacity:.6; }
-    .empty-state h3 { color:var(--primary,#1B4F8E); margin-bottom:8px; }
+    .empty-state h3 { color:var(--primary,#7C3AED); margin-bottom:8px; }
     .empty-state p  { color:var(--text-muted,#6b7280); margin-bottom:24px; font-size:0.9rem; }
 
     /* ── Modal ── */
@@ -76,7 +76,7 @@
     }
     @keyframes slideUp { from{opacity:0;transform:translateY(24px)} to{opacity:1;transform:translateY(0)} }
     .modal-header {
-      background:linear-gradient(135deg,#1B4F8E,#2563eb);
+      background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);
       padding:24px 24px 20px; border-radius:20px 20px 0 0;
       display:flex; justify-content:space-between; align-items:center;
     }
@@ -104,15 +104,7 @@
   </style>
 </head>
 <body>
-<nav class="navbar">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
-    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
-    <div style="display:flex;gap:8px">
-      <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
-      <button onclick="Auth.logout()" class="btn btn-outline btn-sm">خروج</button>
-    </div>
-  </div>
-</nav>
+<!-- Own navbar removed — shared violet header injected by js/site-chrome.js -->
 
 <div class="page-bg">
   <div class="container">
@@ -124,7 +116,7 @@
         <p>أضف وأدر بيانات مسافريك — وفّر الوقت في كل حجز</p>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
-        <button class="btn" style="background:#fff;color:#1B4F8E;font-weight:700;border-radius:12px;padding:10px 20px" onclick="openModal()">+ إضافة مسافر</button>
+        <button class="btn" style="background:#fff;color:#7C3AED;font-weight:700;border-radius:12px;padding:10px 20px" onclick="openModal()">+ إضافة مسافر</button>
       </div>
     </div>
 
@@ -282,6 +274,8 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/currency.js"></script>
+<script src="js/i18n.js"></script>
 <script>
 if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=travelers.html';
 Auth.checkTokenExpiry();
@@ -479,5 +473,6 @@ document.getElementById('travelerModal').addEventListener('click', e => {
 loadTravelers();
 </script>
 <script src="js/bottom-nav.js"></script>
+<script src="js/site-chrome.js?v=2026070102"></script>
 </body>
 </html>

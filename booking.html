@@ -7,7 +7,14 @@
   <link rel="stylesheet" href="css/app.css">
   <script src="js/dark-mode.js"></script>
   <style>
-    .booking-page { background:var(--bg); min-height:100vh; padding:32px 0 80px; }
+    /* Violet identity overrides (checkout re-skin) */
+    :root {
+      --primary:#7C3AED; --secondary:#9333EA;
+      --v1:#7C3AED; --v2:#9333EA; --v3:#4C1D95; --plum:#2E1065;
+      --vgrad:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);
+    }
+    body { background:#FAF8FF; }
+    .booking-page { background:#FAF8FF; min-height:100vh; padding:32px 0 80px; }
     .booking-grid { display:grid; grid-template-columns:1fr 380px; gap:24px; }
     @media(max-width:900px) { .booking-grid { grid-template-columns:1fr; } }
     .booking-card { background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:28px; margin-bottom:20px; }
@@ -29,7 +36,9 @@
     .coupon-row input { flex:1; }
     .saved-travelers { margin-bottom:16px; }
     .saved-traveler-item { display:flex; align-items:center; justify-content:space-between; padding:12px 16px; border:2px solid #e5e7eb; border-radius:12px; margin-bottom:8px; cursor:pointer; transition:all .2s; }
-    .saved-traveler-item:hover, .saved-traveler-item.selected { border-color:var(--primary); background:#f0f5ff; }
+    .saved-traveler-item:hover, .saved-traveler-item.selected { border-color:var(--primary); background:#F4EEFE; }
+    /* Primary CTA → violet gradient */
+    .btn-primary { background:var(--vgrad); border-color:transparent; }
 
     /* ── Offer Countdown Bar ─────────────────────────────────────────── */
     #offerCountdown {
@@ -48,15 +57,7 @@
   </style>
 </head>
 <body>
-<nav class="navbar">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
-    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
-    <div style="display:flex;gap:8px">
-      <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
-      <button onclick="Auth.logout()" class="btn btn-outline btn-sm">خروج</button>
-    </div>
-  </div>
-</nav>
+<!-- Duplicate top navbar removed — global violet header injected by js/site-chrome.js -->
 
 <!-- Steps indicator -->
 <div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:16px 0">
@@ -157,7 +158,7 @@
           </div>
         </div>
 
-        <div class="booking-card" style="background:#f0f5ff;border:2px solid #c5d5e8">
+        <div class="booking-card" style="background:#F4EEFE;border:2px solid #E5D8FA">
           <div style="display:flex;gap:12px;align-items:flex-start">
             <span style="font-size:1.5rem"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
             <div>
@@ -185,8 +186,8 @@
     document.addEventListener('DOMContentLoaded', function() {
       const notice = document.createElement('div');
       notice.id = 'authChoiceNotice';
-      notice.style.cssText = 'background:#f0f7ff;border:2px solid #bfdbfe;border-radius:14px;padding:18px 20px;margin-bottom:20px';
-      notice.innerHTML = '<div style="font-weight:700;color:#1e40af;margin-bottom:4px">كيف تريد إتمام الحجز؟</div>'
+      notice.style.cssText = 'background:#F4EEFE;border:2px solid #E5D8FA;border-radius:14px;padding:18px 20px;margin-bottom:20px';
+      notice.innerHTML = '<div style="font-weight:700;color:#4C1D95;margin-bottom:4px">كيف تريد إتمام الحجز؟</div>'
         + '<div style="font-size:.85rem;color:#475569;margin-bottom:12px">سجّل الدخول لاستخدام مسافريك المحفوظين، أو تابع كضيف وسننشئ لك حساباً تلقائياً ونرسل كلمة المرور إلى بريدك عند الدفع.</div>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
         + '<a href="login.html?redirect=booking.html' + encodeURIComponent(window.location.search) + '" class="btn btn-primary btn-sm"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> تسجيل الدخول</a>'
@@ -208,7 +209,7 @@
       n.style.borderColor = '#bbf7d0';
       n.innerHTML = '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:1.4rem"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>'
         + '<div style="font-size:.88rem;color:#166534"><b>أنت تتابع كضيف.</b> سيُنشأ حسابك تلقائياً وتُرسل كلمة المرور إلى بريدك بعد الدفع. '
-        + '<a href="login.html?redirect=booking.html' + encodeURIComponent(window.location.search) + '" style="color:#1e40af;font-weight:700">لديك حساب؟ سجّل الدخول</a></div></div>';
+        + '<a href="login.html?redirect=booking.html' + encodeURIComponent(window.location.search) + '" style="color:#4C1D95;font-weight:700">لديك حساب؟ سجّل الدخول</a></div></div>';
     }
   }
 
@@ -691,7 +692,7 @@
         const duffelLogo = '';
         const stops = Math.max(0, segs.length - 1);
         const label = idx === 0 ? '✈ ذهاب' : '↩ عودة';
-        const labelColor = idx === 0 ? '#1B4F8E' : '#7c3aed';
+        const labelColor = idx === 0 ? '#7C3AED' : '#9333EA';
         const mins  = durMins(depDt, arrDt);
         const logoEl = googleLogo
           ? `<img src="${googleLogo}" alt="${alName}" style="width:32px;height:32px;object-fit:contain;border-radius:6px" onerror="this.src='${duffelLogo}';this.onerror=function(){this.onerror=null;this.style.display='none'}">`
@@ -774,7 +775,7 @@
         <button onclick="document.getElementById('${overlayId}').remove()" style="background:none;border:none;font-size:1.5rem;cursor:pointer;line-height:1">✕</button>
       </div>
       ${savedTravelers.map((t,ti)=>`
-        <div style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#1B4F8E'" onmouseout="this.style.borderColor='#e5e7eb'" onclick="fillTraveler(${idx},${ti});document.getElementById('${overlayId}').remove()">
+        <div style="padding:12px 16px;border:2px solid #e5e7eb;border-radius:12px;margin-bottom:8px;cursor:pointer;transition:border-color .15s" onmouseover="this.style.borderColor='#7C3AED'" onmouseout="this.style.borderColor='#e5e7eb'" onclick="fillTraveler(${idx},${ti});document.getElementById('${overlayId}').remove()">
           <div style="font-weight:700;margin-bottom:2px">${t.first_name||''} ${t.last_name||''}</div>
           <div style="font-size:0.82rem;color:var(--text-muted)">${t.nationality||''} · ${t.document_type||'جواز سفر'} · ${t.document_number||'—'}</div>
         </div>`).join('')}
@@ -999,6 +1000,7 @@
   loadFlightInfo();
   if (Auth.isLoggedIn()) loadSavedTravelers();
 </script>
-<script src="js/bottom-nav.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/site-chrome.js?v=2026070102"></script>
 </body>
 </html>

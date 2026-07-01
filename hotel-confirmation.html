@@ -7,14 +7,14 @@
   <link rel="stylesheet" href="css/app.css">
   <script src="js/dark-mode.js"></script>
   <style>
-    .confirm-page { background:var(--bg); min-height:100vh; padding:32px 0 80px; }
+    .confirm-page { background:#FAF8FF; min-height:100vh; padding:32px 0 80px; }
     .voucher { background:#fff; border-radius:18px; box-shadow:var(--shadow); max-width:720px; margin:0 auto; overflow:hidden; }
     .voucher-head { background:linear-gradient(135deg,#16a34a,#22c55e); color:#fff; padding:28px 32px; text-align:center; }
     .voucher-head.cancelled { background:linear-gradient(135deg,#b91c1c,#ef4444); }
     .voucher-head .icon { font-size:2.6rem; }
     .voucher-body { padding:28px 32px; }
     .ref-grid { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
-    .ref-box { flex:1; min-width:160px; background:#f0f5ff; border:1.5px solid #c5d5e8; border-radius:12px; padding:14px 16px; text-align:center; }
+    .ref-box { flex:1; min-width:160px; background:#F3EDFE; border:1.5px solid #D6C6F7; border-radius:12px; padding:14px 16px; text-align:center; }
     .ref-box .lbl { font-size:0.72rem; color:var(--text-muted); margin-bottom:4px; }
     .ref-box .val { font-size:1.15rem; font-weight:800; color:var(--primary); letter-spacing:1px; word-break:break-all; }
     .sec { margin-top:22px; }
@@ -24,7 +24,7 @@
     .row .k { color:var(--text-muted); }
     .row .v { font-weight:600; text-align:left; }
     .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
-    .chip { background:#f0f5ff; color:var(--primary); border-radius:20px; padding:4px 12px; font-size:0.8rem; font-weight:600; }
+    .chip { background:#F3EDFE; color:var(--primary); border-radius:20px; padding:4px 12px; font-size:0.8rem; font-weight:600; }
     .price-total { display:flex; justify-content:space-between; padding:14px 0 0; font-size:1.2rem; font-weight:800; color:var(--primary); border-top:2px solid var(--primary); margin-top:6px; }
     .note { border-radius:12px; padding:14px 16px; margin-top:16px; font-size:0.85rem; }
     .note.amber { background:#fef3c7; color:#92400e; }
@@ -42,12 +42,7 @@
 </head>
 <body>
 
-<nav class="navbar no-print">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
-    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
-    <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
-  </div>
-</nav>
+<!-- Duplicate top navbar removed — shared violet header is injected by js/site-chrome.js -->
 
 <div class="confirm-page">
   <div class="container">
@@ -142,6 +137,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   if (typeof formatPrice === 'undefined') window.formatPrice = a => '£ ' + parseFloat(a||0).toFixed(2);
   if (typeof initCurrency === 'undefined') window.initCurrency = function(){};
@@ -270,5 +266,6 @@
   loadBooking();
 </script>
 <script src="js/bottom-nav.js"></script>
+<script src="js/site-chrome.js?v=2026070102"></script>
 </body>
 </html>

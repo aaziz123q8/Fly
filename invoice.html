@@ -6,7 +6,7 @@
   <title>فاتورة — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
   <style>
-    body { background:#f5f7fa; min-height:100vh; padding:24px 0 80px; }
+    body { background:#FAF8FF; min-height:100vh; padding:24px 0 80px; }
 
     .inv-page { max-width:760px; margin:0 auto; padding:0 16px; }
 
@@ -19,12 +19,12 @@
 
     /* Header strip */
     .inv-header {
-      background:linear-gradient(135deg,#0f2444,#1B4F8E);
+      background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);
       color:#fff; padding:28px 32px;
       display:flex; justify-content:space-between; align-items:flex-start;
     }
     .inv-logo { font-size:1.5rem; font-weight:900; }
-    .inv-logo span { color:#F5A623; }
+    .inv-logo span { color:#F59E0B; }
     .inv-logo-sub { font-size:.75rem; color:rgba(255,255,255,.6); margin-top:4px; }
     .inv-meta { text-align:left; font-size:.82rem; color:rgba(255,255,255,.8); line-height:1.8; }
     .inv-meta strong { color:#fff; font-size:1rem; display:block; margin-bottom:4px; }
@@ -38,7 +38,7 @@
     .inv-status-bar.confirmed { background:#dcfce7; color:#15803d; }
     .inv-status-bar.cancelled { background:#fee2e2; color:#b91c1c; }
     .inv-status-bar.pending   { background:#fef3c7; color:#92400e; }
-    .inv-status-bar.changed   { background:#eff6ff; color:#1d4ed8; }
+    .inv-status-bar.changed   { background:#F4EEFE; color:#9333EA; }
 
     /* Body */
     .inv-body { padding:28px 32px; }
@@ -55,39 +55,39 @@
     .inv-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     .inv-field { }
     .inv-field-label { font-size:.7rem; color:#888; font-weight:600; margin-bottom:2px; }
-    .inv-field-value { font-size:.92rem; font-weight:700; color:#0f2444; }
-    .inv-field-value.mono { font-family:monospace; font-size:1.05rem; letter-spacing:1px; color:#1B4F8E; }
+    .inv-field-value { font-size:.92rem; font-weight:700; color:#4C1D95; }
+    .inv-field-value.mono { font-family:monospace; font-size:1.05rem; letter-spacing:1px; color:#7C3AED; }
 
     /* Route */
     .inv-route {
-      background:#f8faff; border-radius:12px; padding:20px 24px;
+      background:#FAF8FF; border-radius:12px; padding:20px 24px;
       display:flex; align-items:center; justify-content:space-between;
       margin-bottom:12px;
     }
     .inv-airport { text-align:center; }
-    .inv-iata { font-size:2rem; font-weight:900; color:#0f2444; }
+    .inv-iata { font-size:2rem; font-weight:900; color:#4C1D95; }
     .inv-city-label { font-size:.72rem; color:#888; }
-    .inv-time { font-size:1.1rem; font-weight:700; color:#1B4F8E; margin-top:4px; }
+    .inv-time { font-size:1.1rem; font-weight:700; color:#7C3AED; margin-top:4px; }
     .inv-date-label { font-size:.75rem; color:#555; }
-    .inv-arrow { flex:1; text-align:center; color:#1B4F8E; font-size:1.4rem; }
+    .inv-arrow { flex:1; text-align:center; color:#7C3AED; font-size:1.4rem; }
     .inv-duration { font-size:.72rem; color:#888; margin-top:2px; }
 
     /* Segments table */
     .seg-table { width:100%; border-collapse:collapse; font-size:.83rem; }
-    .seg-table th { background:#f0f5ff; color:#555; font-weight:700; padding:8px 12px; text-align:right; font-size:.72rem; }
+    .seg-table th { background:#F4EEFE; color:#555; font-weight:700; padding:8px 12px; text-align:right; font-size:.72rem; }
     .seg-table td { padding:8px 12px; border-bottom:1px solid #f5f5f5; color:#333; }
     .seg-table tr:last-child td { border-bottom:none; }
 
     /* Passengers table */
     .pax-table { width:100%; border-collapse:collapse; font-size:.83rem; }
-    .pax-table th { background:#f0f5ff; color:#555; font-weight:700; padding:8px 12px; text-align:right; font-size:.72rem; }
+    .pax-table th { background:#F4EEFE; color:#555; font-weight:700; padding:8px 12px; text-align:right; font-size:.72rem; }
     .pax-table td { padding:8px 12px; border-bottom:1px solid #f5f5f5; color:#333; }
     .pax-table tr:last-child td { border-bottom:none; }
 
     /* Pricing */
     .price-row { display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #f0f0f0; font-size:.88rem; }
     .price-row:last-child { border-bottom:none; }
-    .price-total { display:flex; justify-content:space-between; padding:12px 0; margin-top:4px; border-top:2px solid #0f2444; font-size:1rem; font-weight:800; }
+    .price-total { display:flex; justify-content:space-between; padding:12px 0; margin-top:4px; border-top:2px solid #4C1D95; font-size:1rem; font-weight:800; }
 
     /* Refund */
     .refund-box { background:#fff8f8; border:1px solid #fca5a5; border-radius:10px; padding:16px 20px; }
@@ -103,11 +103,11 @@
 
     /* Footer */
     .inv-footer {
-      background:#0f2444; color:rgba(255,255,255,.7);
+      background:#4C1D95; color:rgba(255,255,255,.7);
       padding:18px 32px; font-size:.75rem;
       display:flex; justify-content:space-between; align-items:center;
     }
-    .inv-footer a { color:#F5A623; text-decoration:none; }
+    .inv-footer a { color:#F59E0B; text-decoration:none; }
 
     /* Action bar */
     .action-bar { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; }
@@ -119,12 +119,12 @@
     @media print {
       * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
       body { background:#fff !important; padding:0; }
-      .action-bar, .navbar, .bottom-nav, .print-hide { display:none !important; }
+      .action-bar, .navbar, .sc-nav, .sc-footer, .bottom-nav, .print-hide { display:none !important; }
       .inv-page { max-width:100% !important; padding:0; }
       .inv-card { box-shadow:none !important; border-radius:0 !important; border:1px solid #ddd; }
-      .inv-header { background:linear-gradient(135deg,#0f2444,#1B4F8E) !important; }
-      .inv-footer { background:#0f2444 !important; }
-      .inv-route { background:#f8faff !important; }
+      .inv-header { background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3) !important; }
+      .inv-footer { background:#4C1D95 !important; }
+      .inv-route { background:#FAF8FF !important; }
       .refund-box { background:#fff8f8 !important; }
       @page { margin:12mm; size:A4 portrait; }
     }
@@ -137,12 +137,7 @@
   </style>
 </head>
 <body>
-<nav class="navbar print-hide">
-  <div class="container" style="display:flex;align-items:center;justify-content:space-between">
-    <a href="index.html" class="navbar-brand">✈️ <span style="color:var(--secondary)">فلاي</span> مسار</a>
-    <a href="dashboard.html" class="btn btn-ghost btn-sm">حجوزاتي</a>
-  </div>
-</nav>
+<!-- Own navbar removed — shared violet header injected by js/site-chrome.js -->
 
 <div class="inv-page">
 
@@ -250,7 +245,7 @@
         <div id="priceRows"></div>
         <div class="price-total">
           <span>الإجمالي المدفوع</span>
-          <span id="priceTotal" style="color:#1B4F8E">—</span>
+          <span id="priceTotal" style="color:#7C3AED">—</span>
         </div>
       </div>
 
@@ -286,6 +281,8 @@
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+<script src="js/currency.js"></script>
+<script src="js/i18n.js"></script>
 <script>
 const urlP     = new URLSearchParams(window.location.search);
 const ref      = urlP.get('ref') || '';
@@ -565,5 +562,6 @@ async function load() {
 load();
 </script>
 <script src="js/bottom-nav.js"></script>
+<script src="js/site-chrome.js?v=2026070102"></script>
 </body>
 </html>

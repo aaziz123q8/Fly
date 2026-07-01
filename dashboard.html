@@ -13,7 +13,7 @@
     .app-overlay.open{display:block!important}
     .app-drawer{display:none;position:fixed!important;top:0!important;right:0!important;width:300px;max-width:86vw;height:100%!important;background:#fff!important;z-index:9999!important;overflow-y:auto;flex-direction:column;box-shadow:-6px 0 30px rgba(0,0,0,.25)}
     .app-drawer.open{display:flex!important}
-    .app-drawer-head{background:linear-gradient(135deg,#0f2444,#1B4F8E);padding:20px 18px 16px;display:flex;justify-content:space-between;align-items:center}
+    .app-drawer-head{background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);padding:20px 18px 16px;display:flex;justify-content:space-between;align-items:center}
     .app-drawer-brand{font-size:1.2rem;font-weight:800;color:#fff}
     .app-drawer-brand em{color:#E8A020;font-style:normal}
     .app-drawer-close{background:none;border:none;color:rgba(255,255,255,.8);font-size:1.5rem;cursor:pointer;line-height:1;padding:4px 8px}
@@ -22,10 +22,10 @@
     .app-drawer-sec-title{font-size:.68rem;font-weight:800;color:#9ca3af;text-transform:uppercase;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #f0f2f5}
     .app-drawer-links{display:flex;flex-direction:column;gap:2px}
     .app-drawer-link{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;color:#374151;font-size:.9rem;font-weight:600;text-decoration:none}
-    .app-drawer-link:hover{background:#f0f5ff;color:#1B4F8E}
+    .app-drawer-link:hover{background:#F4EEFE;color:#7C3AED}
     .app-drawer-link .dl-ico{width:22px;text-align:center}
-    .app-drawer-auth{background:#f0f5ff;border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:10px}
-    .app-drawer-avatar{width:38px;height:38px;border-radius:50%;background:#1B4F8E;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;flex-shrink:0}
+    .app-drawer-auth{background:#F4EEFE;border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:10px}
+    .app-drawer-avatar{width:38px;height:38px;border-radius:50%;background:#7C3AED;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;flex-shrink:0}
     .app-drawer-footer-copy{padding:12px 14px;border-top:1px solid #f0f2f5;font-size:.72rem;color:#9ca3af;text-align:center}
     /* Dashboard mobile fixes */
     html,body{overflow-x:hidden;max-width:100%}
@@ -45,28 +45,14 @@
 </head>
 <body>
 
-<nav class="navbar">
-  <div class="container">
-    <a href="index.html" class="navbar-brand">
-      <span class="brand-icon">✈️</span>
-      <div><span style="color:#1B4F8E">فلاي <span style="color:#E8A020">مسار</span></span></div>
-    </a>
-    <div class="navbar-nav">
-      <a href="index.html">الرئيسية</a>
-      <a href="flights.html">رحلات</a>
-      <a href="hotels.html">فنادق</a>
-      <a href="dashboard.html" class="active">حجوزاتي</a>
-    </div>
-    <div class="navbar-actions">
-      <div id="userMenu" class="user-menu">
-        <div class="user-avatar" id="userInitial">م</div>
-        <span id="userName" style="font-weight:600;font-size:.92rem"></span>
-        <button onclick="Auth.logout()" class="btn btn-ghost btn-sm">خروج</button>
-      </div>
-    </div>
-    <button class="hamburger" onclick="openAppDrawer()" aria-label="القائمة"><span></span><span></span><span></span></button>
-  </div>
-</nav>
+<!-- Own navbar removed — shared violet header injected by js/site-chrome.js.
+     The app-drawer/overlay below are kept (hidden) so existing openAppDrawer/
+     closeAppDrawer handlers still resolve their element IDs. The hidden #userMenu
+     holder below preserves the #userName / #userInitial IDs the page script writes to. -->
+<div id="userMenu" class="user-menu" style="display:none">
+  <span class="user-avatar" id="userInitial">م</span>
+  <span id="userName"></span>
+</div>
 
 <!-- App Drawer -->
 <div class="app-overlay" id="appOverlay" onclick="closeAppDrawer()"></div>
@@ -113,17 +99,17 @@
 <div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:0">
   <div class="container">
     <div style="display:grid;grid-template-columns:repeat(4,1fr)" class="stats-row">
-      <div style="text-align:center;padding:14px 8px;border-left:1px solid #f0f2f5;position:relative">
+      <div style="text-align:center;padding:14px 8px;border-left:1px solid #ECE8F4;position:relative">
         <div style="font-size:1.5rem;margin-bottom:2px"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></div>
-        <div style="font-size:1.4rem;font-weight:800;color:#1B4F8E;line-height:1" id="statFlights">—</div>
+        <div style="font-size:1.4rem;font-weight:800;color:#7C3AED;line-height:1" id="statFlights">—</div>
         <div style="font-size:.72rem;color:#6b7280;margin-top:3px">رحلات</div>
       </div>
-      <div style="text-align:center;padding:14px 8px;border-left:1px solid #f0f2f5">
+      <div style="text-align:center;padding:14px 8px;border-left:1px solid #ECE8F4">
         <div style="font-size:1.5rem;margin-bottom:2px"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg></div>
         <div style="font-size:1.4rem;font-weight:800;color:#E8A020;line-height:1" id="statHotels">—</div>
         <div style="font-size:.72rem;color:#6b7280;margin-top:3px">فنادق</div>
       </div>
-      <div style="text-align:center;padding:14px 8px;border-left:1px solid #f0f2f5">
+      <div style="text-align:center;padding:14px 8px;border-left:1px solid #ECE8F4">
         <div style="font-size:1.5rem;margin-bottom:2px"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
         <div style="font-size:1.4rem;font-weight:800;color:#16a34a;line-height:1" id="statUpcoming">—</div>
         <div style="font-size:.72rem;color:#6b7280;margin-top:3px">قادمة</div>
@@ -143,16 +129,16 @@
 
     <!-- Quick Actions -->
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px;padding-top:20px">
-      <a href="index.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(27,79,142,.07);text-decoration:none;color:#1B4F8E;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <a href="index.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(76,29,149,.07);text-decoration:none;color:#7C3AED;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
         <span style="font-size:1.6rem"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>حجز رحلة
       </a>
-      <a href="hotels.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(27,79,142,.07);text-decoration:none;color:#E8A020;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <a href="hotels.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(76,29,149,.07);text-decoration:none;color:#E8A020;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
         <span style="font-size:1.6rem"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg></span>حجز فندق
       </a>
-      <a href="travelers.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(27,79,142,.07);text-decoration:none;color:#7c3aed;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <a href="travelers.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(76,29,149,.07);text-decoration:none;color:#7c3aed;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
         <span style="font-size:1.6rem"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>مسافروني
       </a>
-      <a href="lookup.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(27,79,142,.07);text-decoration:none;color:#0369a1;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+      <a href="lookup.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(76,29,149,.07);text-decoration:none;color:#0369a1;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
         <span style="font-size:1.6rem"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg></span>استعلام
       </a>
     </div>
@@ -186,8 +172,8 @@
       <div style="max-width:580px">
 
         <!-- Profile Card -->
-        <div style="background:#fff;border-radius:18px;box-shadow:0 2px 14px rgba(27,79,142,.08);overflow:hidden;margin-bottom:16px">
-          <div style="background:linear-gradient(135deg,#1B4F8E,#2563eb);padding:20px 24px;display:flex;align-items:center;gap:14px">
+        <div style="background:#fff;border-radius:18px;box-shadow:0 2px 14px rgba(76,29,149,.08);overflow:hidden;margin-bottom:16px">
+          <div style="background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);padding:20px 24px;display:flex;align-items:center;gap:14px">
             <div style="width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.2);border:2.5px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:#fff;flex-shrink:0" id="profileAvatarLg">م</div>
             <div>
               <div style="font-size:1.1rem;font-weight:700;color:#fff" id="profileNameLg">—</div>
@@ -202,8 +188,8 @@
         </div>
 
         <!-- Change Password -->
-        <div style="background:#fff;border-radius:18px;box-shadow:0 2px 14px rgba(27,79,142,.08);padding:24px">
-          <div style="font-size:1rem;font-weight:700;color:#1B4F8E;margin-bottom:18px;display:flex;align-items:center;gap:8px"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> تغيير كلمة المرور</div>
+        <div style="background:#fff;border-radius:18px;box-shadow:0 2px 14px rgba(76,29,149,.08);padding:24px">
+          <div style="font-size:1rem;font-weight:700;color:#7C3AED;margin-bottom:18px;display:flex;align-items:center;gap:8px"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> تغيير كلمة المرور</div>
           <form onsubmit="changePassword(event)">
             <div class="form-group">
               <label class="form-label">كلمة المرور الحالية</label>
@@ -226,10 +212,7 @@
   </div>
 </div>
 
-<footer style="background:#0f2444;color:rgba(255,255,255,.5);text-align:center;padding:20px;font-size:.85rem;margin-top:40px">
-  © ٢٠٢٦ فلاي مسار. جميع الحقوق محفوظة.
-</footer>
-
+<!-- Own footer removed — shared violet footer injected by js/site-chrome.js -->
 
 <div class="toast-container" id="toastContainer"></div>
 
@@ -237,6 +220,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
+<script src="js/i18n.js"></script>
 <script>
   // Require auth
   if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=dashboard.html';
@@ -981,7 +965,7 @@
 <div id="changeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:12px;padding:28px;max-width:500px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <h3 style="margin:0;color:#1B4F8E"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> تغيير الرحلة</h3>
+      <h3 style="margin:0;color:#7C3AED"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg> تغيير الرحلة</h3>
       <button onclick="closeChangeModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888">×</button>
     </div>
     <!-- Step 1: pick date -->
@@ -992,7 +976,7 @@
       <div id="changeSearchErr" style="color:#dc2626;font-size:.85rem;min-height:18px;margin-bottom:8px"></div>
       <div style="display:flex;gap:10px;justify-content:flex-end">
         <button onclick="closeChangeModal()" style="padding:10px 18px;border:1px solid #ddd;border-radius:6px;background:#f9f9f9;cursor:pointer">إلغاء</button>
-        <button id="changeSearchBtn" onclick="searchChangeOffers()" style="padding:10px 22px;background:#1B4F8E;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700">🔍 بحث</button>
+        <button id="changeSearchBtn" onclick="searchChangeOffers()" style="padding:10px 22px;background:#7C3AED;color:#fff;border:none;border-radius:6px;cursor:pointer;font-weight:700">🔍 بحث</button>
       </div>
     </div>
     <!-- Step 2: pick offer -->
@@ -1022,7 +1006,7 @@
 <div id="servicesModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:12px;padding:28px;max-width:500px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <h3 style="margin:0;color:#1B4F8E"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="5" y="8" width="14" height="13" rx="1"/><path d="M9 8V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v3"/></svg> الخدمات الإضافية</h3>
+      <h3 style="margin:0;color:#7C3AED"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="5" y="8" width="14" height="13" rx="1"/><path d="M9 8V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v3"/></svg> الخدمات الإضافية</h3>
       <button onclick="closeServicesModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#888">×</button>
     </div>
     <div id="servicesModalBody"></div>
@@ -1050,12 +1034,13 @@
 <div id="walletModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">
   <div style="background:#fff;border-radius:16px;padding:28px;max-width:480px;width:94%;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:85vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
-      <h3 style="margin:0;color:#0f2444"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f2444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg> محفظتي</h3>
+      <h3 style="margin:0;color:#4C1D95"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4C1D95" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg> محفظتي</h3>
       <button onclick="closeWalletModal()" style="background:none;border:none;font-size:1.4rem;cursor:pointer;color:#999">×</button>
     </div>
     <div id="walletModalBody"></div>
   </div>
 </div>
 
+<script src="js/site-chrome.js?v=2026070102"></script>
 </body>
 </html>

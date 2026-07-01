@@ -16,32 +16,32 @@
     .steps{display:flex;justify-content:center;gap:0;padding:20px 16px 8px;max-width:700px;margin:0 auto}
     .step{flex:1;text-align:center;position:relative}
     .step:not(:last-child)::after{content:'';position:absolute;top:18px;left:-50%;width:100%;height:2px;background:#e5e7eb;z-index:0}
-    .step.done::after{background:#1B4F8E}
+    .step.done::after{background:#7C3AED}
     .step-circle{width:36px;height:36px;border-radius:50%;border:2px solid #e5e7eb;background:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;position:relative;z-index:1;color:#9ca3af}
-    .step.done .step-circle{background:#1B4F8E;border-color:#1B4F8E;color:#fff}
-    .step.active .step-circle{background:#fff;border-color:#1B4F8E;color:#1B4F8E}
+    .step.done .step-circle{background:#7C3AED;border-color:#7C3AED;color:#fff}
+    .step.active .step-circle{background:#fff;border-color:#7C3AED;color:#7C3AED}
     .step-label{font-size:.72rem;color:#9ca3af;margin-top:4px}
-    .step.done .step-label,.step.active .step-label{color:#1B4F8E;font-weight:600}
+    .step.done .step-label,.step.active .step-label{color:#7C3AED;font-weight:600}
 
     .container{max-width:860px;margin:0 auto;padding:16px}
     .card{background:#fff;border-radius:16px;box-shadow:0 2px 16px rgba(0,0,0,.07);padding:24px;margin-bottom:20px}
-    .card-title{font-size:1.1rem;font-weight:800;color:#1B4F8E;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+    .card-title{font-size:1.1rem;font-weight:800;color:#7C3AED;margin-bottom:16px;display:flex;align-items:center;gap:8px}
 
     /* Baggage cards */
     .service-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
     .service-card{border:2px solid #e5e7eb;border-radius:12px;padding:14px 16px;cursor:pointer;transition:.2s;position:relative}
-    .service-card:hover{border-color:#1B4F8E;background:#f0f5ff}
-    .service-card.selected{border-color:#1B4F8E;background:#eff6ff}
+    .service-card:hover{border-color:#7C3AED;background:#FAF5FF}
+    .service-card.selected{border-color:#7C3AED;background:#F4EEFE}
     .service-card .svc-icon{font-size:1.6rem;margin-bottom:6px}
     .service-card .svc-name{font-weight:700;font-size:.92rem;margin-bottom:2px}
     .service-card .svc-desc{font-size:.78rem;color:#6b7280;margin-bottom:8px}
-    .service-card .svc-price{font-size:1rem;font-weight:800;color:#1B4F8E}
+    .service-card .svc-price{font-size:1rem;font-weight:800;color:#7C3AED}
     .service-card .svc-per{font-size:.72rem;color:#9ca3af}
-    .svc-check{position:absolute;top:10px;left:10px;width:22px;height:22px;border-radius:50%;background:#1B4F8E;color:#fff;display:none;align-items:center;justify-content:center;font-size:.8rem}
+    .svc-check{position:absolute;top:10px;left:10px;width:22px;height:22px;border-radius:50%;background:#7C3AED;color:#fff;display:none;align-items:center;justify-content:center;font-size:.8rem}
     .service-card.selected .svc-check{display:flex}
     .svc-qty{display:flex;align-items:center;gap:8px;margin-top:10px}
     .svc-qty button{width:28px;height:28px;border-radius:50%;border:1.5px solid #e5e7eb;background:#fff;font-size:.95rem;font-weight:700;display:flex;align-items:center;justify-content:center;transition:.2s}
-    .svc-qty button:hover{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .svc-qty button:hover{background:#7C3AED;color:#fff;border-color:#7C3AED}
     .svc-qty span{min-width:24px;text-align:center;font-weight:700}
 
     /* Seat map */
@@ -54,15 +54,15 @@
     .aisle{width:20px;flex-shrink:0}
     .seat{width:34px;height:34px;border-radius:6px;border:1.5px solid #d1d5db;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;cursor:pointer;transition:.15s;flex-shrink:0}
     .seat.available{background:#fff;color:#374151;border-color:#d1d5db}
-    .seat.available:hover{background:#dbeafe;border-color:#1B4F8E}
-    .seat.selected{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .seat.available:hover{background:#EDE4FE;border-color:#7C3AED}
+    .seat.selected{background:#7C3AED;color:#fff;border-color:#7C3AED}
     .seat.occupied{background:#f3f4f6;color:#d1d5db;border-color:#e5e7eb;cursor:not-allowed}
     .seat.extra-legroom{background:#ecfdf5;border-color:#10b981}
     .seat.extra-legroom:hover{background:#d1fae5}
 
     .pax-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
     .pax-tab{padding:6px 14px;border-radius:20px;border:1.5px solid #e5e7eb;background:#fff;font-size:.84rem;font-weight:600;color:#6b7280;transition:.2s}
-    .pax-tab.on{background:#1B4F8E;color:#fff;border-color:#1B4F8E}
+    .pax-tab.on{background:#7C3AED;color:#fff;border-color:#7C3AED}
     .seg-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
     .seg-tab{padding:5px 12px;border-radius:8px;border:1.5px solid #e5e7eb;background:#fff;font-size:.8rem;font-weight:600;color:#6b7280;transition:.2s}
     .seg-tab.on{background:#7c3aed;color:#fff;border-color:#7c3aed}
@@ -72,9 +72,9 @@
     @media(max-width:768px){.layout{grid-template-columns:1fr}}
     .sticky-sidebar{position:sticky;top:80px}
     .summary-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f2f5;font-size:.88rem}
-    .summary-row:last-of-type{border:none;font-weight:800;font-size:.95rem;color:#1B4F8E;padding-top:10px}
-    .btn-proceed{display:block;width:100%;padding:13px;background:#1B4F8E;color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;margin-top:14px;transition:.2s}
-    .btn-proceed:hover{background:#13396B}
+    .summary-row:last-of-type{border:none;font-weight:800;font-size:.95rem;color:#7C3AED;padding-top:10px}
+    .btn-proceed{display:block;width:100%;padding:13px;background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);color:#fff;border:none;border-radius:12px;font-size:1rem;font-weight:700;margin-top:14px;transition:.2s}
+    .btn-proceed:hover{background:#4C1D95}
     .btn-skip{display:block;width:100%;padding:10px;background:none;color:#6b7280;border:1.5px solid #e5e7eb;border-radius:12px;font-size:.88rem;font-weight:600;margin-top:8px;transition:.2s}
     .btn-skip:hover{background:#f9fafb}
 
@@ -85,7 +85,7 @@
     .loading-msg{text-align:center;padding:30px;color:#6b7280}
     .err-msg{background:#fef2f2;color:#dc2626;border-radius:10px;padding:14px;margin-bottom:16px;font-size:.9rem}
     .section-divider{border:none;border-top:1px solid #f0f2f5;margin:20px 0}
-    .badge-pax{display:inline-block;background:#e0e7ff;color:#4338ca;border-radius:20px;padding:2px 8px;font-size:.73rem;font-weight:700;margin-right:4px}
+    .badge-pax{display:inline-block;background:#F4EEFE;color:#4C1D95;border-radius:20px;padding:2px 8px;font-size:.73rem;font-weight:700;margin-right:4px}
   </style>
 </head>
 <body>
@@ -134,7 +134,7 @@
         <div class="seg-tabs" id="segTabs"></div>
         <div class="seat-legend">
           <div class="legend-item"><div class="legend-box" style="background:#fff;border-color:#d1d5db"></div> متاح</div>
-          <div class="legend-item"><div class="legend-box" style="background:#1B4F8E;border-color:#1B4F8E"></div> محجوز لك</div>
+          <div class="legend-item"><div class="legend-box" style="background:#7C3AED;border-color:#7C3AED"></div> محجوز لك</div>
           <div class="legend-item"><div class="legend-box" style="background:#f3f4f6;border-color:#e5e7eb"></div> محجوز</div>
           <div class="legend-item"><div class="legend-box" style="background:#ecfdf5;border-color:#10b981"></div> مساحة أرجل إضافية</div>
         </div>
