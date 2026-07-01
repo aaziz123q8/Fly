@@ -23,44 +23,44 @@
     .range-input { width: 100%; accent-color: var(--primary); }
 
     /* ── Flight Card ─────────────────────────────────────────── */
-    .flight-card { background: #fff; border-radius: 14px; border: 1px solid #e8ecf0; margin-bottom: 12px; overflow: hidden; transition: box-shadow .2s, border-color .2s; }
-    .flight-card:hover { box-shadow: 0 6px 24px rgba(0,0,60,.1); border-color: #c5d5e8; }
+    .flight-card { background: var(--white,#fff); border-radius: 16px; border: 1px solid var(--border,#e5e7eb); margin-bottom: 14px; overflow: hidden; transition: box-shadow .2s, border-color .2s, transform .2s; box-shadow: var(--shadow-sm,0 1px 3px rgba(0,0,0,.08)); }
+    .flight-card:hover { box-shadow: var(--shadow,0 8px 28px rgba(16,42,92,.12)); border-color: #c5d5e8; transform: translateY(-2px); }
 
-    .fc-main { display: grid; grid-template-columns: 160px 1fr auto; gap: 0; align-items: stretch; }
+    .fc-main { display: grid; grid-template-columns: 150px 1fr 176px; gap: 0; align-items: stretch; }
     @media(max-width:640px) { .fc-main { grid-template-columns: 1fr; } }
 
     /* Airline column */
-    .fc-airline { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 14px; border-left: 1px solid #f0f2f5; gap: 6px; }
-    .fc-airline img { width: 44px; height: 44px; object-fit: contain; border-radius: 8px; background: #f5f7fa; }
-    .fc-airline .al-logo-fallback { width: 44px; height: 44px; border-radius: 8px; background: #e8f0fe; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 800; color: #1a2e5a; }
-    .fc-airline .al-name { font-size: .78rem; font-weight: 600; color: #1a2e5a; text-align: center; line-height: 1.2; }
-    .fc-airline .al-code { font-size: .7rem; color: #9ca3af; }
-    .fc-airline .al-operated { font-size: .65rem; color: #6b7280; text-align: center; margin-top: 2px; }
+    .fc-airline { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 16px; border-left: 1px solid var(--border,#eef1f7); gap: 8px; }
+    .fc-airline img { width: 48px; height: 48px; object-fit: contain; border-radius: 10px; background: var(--bg,#f5f7fa); padding: 4px; }
+    .fc-airline .al-logo-fallback { width: 48px; height: 48px; border-radius: 10px; background: #e8f0fe; display: flex; align-items: center; justify-content: center; font-size: .85rem; font-weight: 800; color: var(--primary,#1B4F8E); }
+    .fc-airline .al-name { font-size: .82rem; font-weight: 700; color: var(--text,#1a2e5a); text-align: center; line-height: 1.25; }
+    .fc-airline .al-code { font-size: .72rem; color: var(--text-light,#9ca3af); font-weight: 600; }
+    .fc-airline .al-operated { font-size: .68rem; color: var(--text-muted,#6b7280); text-align: center; margin-top: 2px; }
     .terminal-lbl { font-size: .68rem; color: #2563eb; font-weight: 600; margin-top: 2px; }
 
     /* Route section — supports stacked slices for round-trips */
-    .fc-routes { flex: 1; display: flex; flex-direction: column; }
-    .fc-route { padding: 14px 20px; display: flex; align-items: center; gap: 12px; }
-    .fc-route + .fc-route { border-top: 1px dashed #e5e7eb; }
-    .fc-point { text-align: center; min-width: 64px; }
-    .fc-point .time { font-size: 1.35rem; font-weight: 800; color: #111827; line-height: 1; }
-    .fc-point .iata { font-size: .8rem; font-weight: 700; color: var(--primary); margin-top: 2px; }
-    .fc-point .apt-name { font-size: .82rem; font-weight: 600; color: #374151; margin-top: 3px; max-width: 90px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .fc-point .date-lbl { font-size: .68rem; color: #6b7280; margin-top: 3px; }
-    .fc-mid { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-    .fc-duration { font-size: .72rem; color: #6b7280; font-weight: 600; }
-    .fc-line { width: 100%; display: flex; align-items: center; gap: 4px; }
-    .fc-line-bar { flex: 1; height: 2px; background: #d1d5db; }
-    .fc-plane { color: var(--primary); font-size: .9rem; }
-    .fc-stops-lbl { font-size: .7rem; color: #6b7280; }
-    .next-day-badge { background: #fef3c7; color: #92400e; border-radius: 4px; font-size: .65rem; font-weight: 700; padding: 1px 5px; }
-    .fc-return-label { font-size: .68rem; color: #7c3aed; font-weight: 700; background: #ede9fe; border-radius: 4px; padding: 1px 5px; white-space: nowrap; }
+    .fc-routes { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+    .fc-route { padding: 18px 22px; display: flex; align-items: center; gap: 16px; }
+    .fc-route + .fc-route { border-top: 1px dashed var(--border,#e5e7eb); }
+    .fc-point { text-align: center; min-width: 70px; }
+    .fc-point .time { font-size: 1.4rem; font-weight: 800; color: var(--text,#111827); line-height: 1.1; letter-spacing: -.5px; }
+    .fc-point .iata { font-size: .82rem; font-weight: 700; color: var(--primary); margin-top: 3px; }
+    .fc-point .apt-name { font-size: .74rem; font-weight: 500; color: var(--text-muted,#6b7280); margin-top: 3px; max-width: 96px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fc-point .date-lbl { font-size: .7rem; color: var(--text-light,#9ca3af); margin-top: 3px; }
+    .fc-mid { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .fc-duration { font-size: .74rem; color: var(--text-muted,#6b7280); font-weight: 700; }
+    .fc-line { width: 100%; display: flex; align-items: center; gap: 5px; }
+    .fc-line-bar { flex: 1; height: 2px; background: linear-gradient(90deg,#d1d5db,#9ca3af,#d1d5db); border-radius: 2px; }
+    .fc-plane { color: var(--primary); font-size: .95rem; display: flex; }
+    .fc-stops-lbl { font-size: .72rem; color: var(--text-muted,#6b7280); font-weight: 600; }
+    .next-day-badge { background: #fef3c7; color: #92400e; border-radius: 5px; font-size: .65rem; font-weight: 700; padding: 1px 5px; }
+    .fc-return-label { font-size: .68rem; color: #7c3aed; font-weight: 700; background: #ede9fe; border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
 
-    /* Stop badge — prominent banner at top of card */
-    .stop-badge { display: flex; align-items: center; gap: 6px; padding: 6px 16px; font-size: .78rem; font-weight: 800; border-bottom: 1px solid; }
-    .stop-badge-direct { background: #f0fdf4; color: #166534; border-color: #bbf7d0; }
-    .stop-badge-one    { background: #fffbeb; color: #92400e; border-color: #fde68a; }
-    .stop-badge-multi  { background: #fff1f2; color: #9f1239; border-color: #fecdd3; }
+    /* Stop badge — slim banner at top of card */
+    .stop-badge { display: flex; align-items: center; gap: 7px; padding: 7px 18px; font-size: .76rem; font-weight: 700; border-bottom: 1px solid; }
+    .stop-badge-direct { background: #f0fdf4; color: #166534; border-color: #dcfce7; }
+    .stop-badge-one    { background: #fffbeb; color: #92400e; border-color: #fef3c7; }
+    .stop-badge-multi  { background: #fff1f2; color: #9f1239; border-color: #ffe4e6; }
     .stop-badge-dot    { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .stop-badge-direct .stop-badge-dot { background: #16a34a; }
     .stop-badge-one    .stop-badge-dot { background: #d97706; }
@@ -76,14 +76,14 @@
     .curr-opt:hover { background:#f0f4ff; }
 
     /* Price column */
-    .fc-price { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 20px; border-right: 1px solid #f0f2f5; gap: 6px; min-width: 140px; }
-    .fc-price .amount { font-size: 1.5rem; font-weight: 800; color: var(--primary); white-space: nowrap; }
-    .fc-price .per-pax { font-size: .7rem; color: #9ca3af; }
-    .fc-price .select-btn { width: 100%; }
+    .fc-price { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 20px; border-right: 1px solid var(--border,#eef1f7); background: linear-gradient(180deg,#fafbfd,#f4f7fb); gap: 8px; min-width: 150px; }
+    .fc-price .amount { font-size: 1.6rem; font-weight: 800; color: var(--primary); white-space: nowrap; letter-spacing: -.5px; }
+    .fc-price .per-pax { font-size: .7rem; color: var(--text-muted,#9ca3af); font-weight: 600; }
+    .fc-price .select-btn { width: 100%; padding: 10px; font-weight: 700; border-radius: 10px; }
 
     /* Footer tags */
-    .fc-footer { border-top: 1px solid #f0f2f5; padding: 8px 20px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-height: 38px; }
-    .tag { border-radius: 20px; padding: 2px 10px; font-size: .72rem; font-weight: 600; }
+    .fc-footer { border-top: 1px solid var(--border,#f0f2f5); padding: 10px 22px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-height: 40px; background: #fcfdfe; }
+    .tag { border-radius: 20px; padding: 3px 11px; font-size: .72rem; font-weight: 700; }
     .tag-green  { background: #dcfce7; color: #166534; }
     .tag-blue   { background: #dbeafe; color: #1e40af; }
     .tag-orange { background: #fef3c7; color: #92400e; }
@@ -91,15 +91,15 @@
     .tag-red    { background: #fee2e2; color: #991b1b; }
 
     /* Baggage detail blocks */
-    .bag-blocks  { display: flex; gap: 0; border-top: 1px solid #f0f2f5; }
-    .bag-block   { flex: 1; padding: 12px 20px; border-left: 1px solid #f0f2f5; }
+    .bag-blocks  { display: flex; gap: 0; border-top: 1px solid var(--border,#f0f2f5); }
+    .bag-block   { flex: 1; padding: 14px 22px; border-left: 1px solid var(--border,#f0f2f5); }
     .bag-block:last-child { border-left: none; }
-    .bag-block-title { font-size: .75rem; font-weight: 700; color: #374151; margin-bottom: 8px; }
-    .bag-row     { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 4px; }
+    .bag-block-title { font-size: .76rem; font-weight: 700; color: var(--text,#374151); margin-bottom: 8px; }
+    .bag-row     { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 5px; }
     .bag-check   { color: #16a34a; font-weight: 700; font-size: .85rem; flex-shrink: 0; margin-top: 1px; }
     .bag-x       { color: #dc2626; font-weight: 700; font-size: .85rem; flex-shrink: 0; margin-top: 1px; }
     .bag-label   { font-size: .78rem; font-weight: 600; color: #1f2937; display: block; }
-    .bag-sub     { font-size: .7rem; color: #6b7280; display: block; margin-top: 1px; }
+    .bag-sub     { font-size: .7rem; color: var(--text-muted,#6b7280); display: block; margin-top: 1px; }
 
     /* Sort bar */
     .sort-bar { display: flex; gap: 8px; margin-bottom: 14px; align-items: center; flex-wrap: wrap; }
