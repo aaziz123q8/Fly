@@ -10,6 +10,12 @@
 (function () {
   'use strict';
 
+  // Lock pinch-zoom for the app-like feel (harmless on desktop).
+  try {
+    var _vp = document.querySelector('meta[name="viewport"]');
+    if (_vp) _vp.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no');
+  } catch (e) {}
+
   var path = (location.pathname || '').toLowerCase();
   var here = (path.split('/').pop() || 'index.html'); if (!here) here = 'index.html';
   var isHome = (here === 'index.html' || here === '');

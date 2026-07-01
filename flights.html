@@ -154,6 +154,31 @@
     .skeleton-card { background: #fff; border-radius: 18px; border: 1px solid var(--vborder); padding: 20px; margin-bottom: 12px; }
     .skeleton-line { height: 14px; background: linear-gradient(90deg,#F4EEFE 25%,#EAE0FA 50%,#F4EEFE 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 6px; margin-bottom: 10px; }
     @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── Mobile: cleaner, calmer result card ────────────────────── */
+    @media(max-width:768px){
+      .flight-card{ border-radius:16px; margin-bottom:14px; }
+      /* compact airline strip */
+      .fc-airline{ padding:12px 14px; gap:4px; border-left:0; border-bottom:1px solid var(--vline,#eef1f7); }
+      .fc-airline img,.fc-airline .al-logo-fallback{ width:36px; height:36px; }
+      .fc-airline .al-name{ font-size:.9rem; }
+      .fc-airline .al-operated{ display:none; }
+      .fc-airline .al-code[style]{ display:none; }      /* hide the aircraft line, keep airline code */
+      /* roomier, calmer route */
+      .fc-route{ padding:16px 16px; gap:10px; }
+      .fc-point .time{ font-size:1.3rem; }
+      .fc-point .iata{ font-size:.8rem; }
+      .fc-point .apt-name{ max-width:84px; font-size:.72rem; }
+      .terminal-lbl{ display:none; }                     /* terminal is detail — hide on the list card */
+      /* price block */
+      .fc-price{ border-right:0; padding:16px; }
+      .fc-price .amount{ font-size:1.7rem; }
+      .fc-price .select-btn{ padding:12px; font-size:1rem; }
+      /* declutter: move detailed baggage + secondary links off the list card */
+      .bag-blocks{ display:none; }
+      .fc-footer{ padding:10px 14px; justify-content:center; gap:6px; min-height:0; }
+      .fc-footer a{ display:none; }                      /* hide شروط النقل / واتساب links */
+    }
   </style>
 </head>
 <body>
