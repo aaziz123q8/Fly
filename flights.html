@@ -174,10 +174,18 @@
       .fc-price{ border-right:0; padding:16px; }
       .fc-price .amount{ font-size:1.7rem; }
       .fc-price .select-btn{ padding:12px; font-size:1rem; }
-      /* declutter: move detailed baggage + secondary links off the list card */
-      .bag-blocks{ display:none; }
-      .fc-footer{ padding:10px 14px; justify-content:center; gap:6px; min-height:0; }
-      .fc-footer a{ display:none; }                      /* hide شروط النقل / واتساب links */
+      /* baggage — kept and made clear: stacked, full-width, easy to read */
+      .bag-blocks{ flex-direction:column; gap:0; background:#FBFAFF; }
+      .bag-block{ flex:none; border-left:0; border-bottom:1px solid var(--vline,#eef1f7); padding:13px 16px; }
+      .bag-block:last-child{ border-bottom:0; }
+      .bag-block-title{ font-size:.82rem; color:var(--v3,#4C1D95); font-weight:800; margin-bottom:9px; display:flex; align-items:center; gap:6px; }
+      .bag-block-title::before{ content:"🧳"; font-size:.95rem; }
+      .bag-row{ gap:9px; margin-bottom:7px; align-items:flex-start; }
+      .bag-check,.bag-x{ font-size:.95rem; }
+      .bag-label{ font-size:.84rem; font-weight:600; }
+      .bag-sub{ font-size:.74rem; line-height:1.5; }
+      /* footer tags + links kept, just tidy */
+      .fc-footer{ padding:10px 14px; gap:8px; min-height:0; }
     }
   </style>
 </head>
