@@ -1026,17 +1026,17 @@ function closeDrawer() {
   .ml-mark svg{width:52px;height:52px}
   .ml-name{color:#fff;font-size:2.2rem;font-weight:800;letter-spacing:-.5px}
   .ml-name b{color:#FDE68A;font-weight:800}
-  .ml-btns{display:flex;flex-direction:column;gap:14px;width:100%;max-width:400px}
-  .ml-btn{display:flex;align-items:center;gap:14px;width:100%;background:rgba(255,255,255,.97);border:0;border-radius:20px;padding:16px 18px;cursor:pointer;text-align:start;position:relative;box-shadow:0 16px 34px -20px rgba(0,0,0,.7);transition:transform .12s}
-  .ml-btn:active{transform:scale(.98)}
-  .ml-ic{width:52px;height:52px;border-radius:15px;background:linear-gradient(135deg,#7C3AED,#C026D3);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-  .ml-ic svg{width:26px;height:26px}
-  .ml-btn-pkg .ml-ic{background:linear-gradient(135deg,#F59E0B,#FB7185)}
-  .ml-txt{display:flex;flex-direction:column;gap:2px;flex:1}
-  .ml-txt b{font-size:1.2rem;font-weight:800;color:#1B172B}
-  .ml-txt small{font-size:.8rem;color:#6B6880}
-  .ml-arrow{color:#c9b6f2;display:flex}.ml-arrow svg{width:20px;height:20px}
-  .ml-badge{position:absolute;top:10px;inset-inline-start:14px;background:#FB7185;color:#fff;font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:20px}
+  .ml-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:430px}
+  .ml-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;aspect-ratio:1;background:rgba(255,255,255,.97);border:0;border-radius:22px;padding:14px 8px;cursor:pointer;position:relative;box-shadow:0 16px 34px -20px rgba(0,0,0,.7);transition:transform .12s}
+  .ml-btn:active{transform:scale(.96)}
+  .ml-ic{width:56px;height:56px;border-radius:17px;background:linear-gradient(135deg,#7C3AED,#C026D3);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 10px 20px -10px rgba(124,58,237,.7)}
+  .ml-ic svg{width:28px;height:28px}
+  .ml-btn-pkg .ml-ic{background:linear-gradient(135deg,#F59E0B,#FB7185);box-shadow:0 10px 20px -10px rgba(251,113,133,.7)}
+  .ml-txt{display:flex;flex-direction:column;align-items:center}
+  .ml-txt b{font-size:1.04rem;font-weight:800;color:#1B172B}
+  .ml-txt small{display:none}
+  .ml-arrow{display:none}
+  .ml-badge{position:absolute;top:8px;inset-inline-start:8px;background:#FB7185;color:#fff;font-size:.58rem;font-weight:800;padding:2px 7px;border-radius:20px}
   .ml-slogan{color:#e7ddff;font-size:1rem;line-height:1.7;max-width:360px;margin-top:2px}
   .ml-slogan b{color:#FDE68A}
 
