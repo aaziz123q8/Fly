@@ -214,6 +214,10 @@
       .fc-airline{ flex-basis:100%; }
       .fc-price{ flex-basis:100%; justify-content:space-between; }
     }
+    /* Selected flight card + hand the bottom bar over to the price bar on phones */
+    .flight-card.selected{ border-color:#7C3AED; box-shadow:0 0 0 2px #7C3AED inset, 0 22px 46px -26px rgba(124,58,237,.6); }
+    .flight-card.selected .select-btn{ background:#4C1D95; }
+    @media(max-width:768px){ #mappTabs{ display:none !important; } }
   </style>
 </head>
 <body>
@@ -1230,7 +1234,7 @@ function renderResults() {
         + '<div class="fc-price">'
           + '<div class="amount" data-price-gbp="'+priceGBP+'">'+formatPrice(priceGBP)+'</div>'
           + '<div class="per-pax">'+(isRoundTrip?'ذهاب وعودة':'لكل مسافر')+'</div>'
-          + '<button class="btn btn-primary btn-sm select-btn" onclick="selectFlight(\''+offerId+'\')">اختيار</button>'
+          + '<button class="btn btn-primary btn-sm select-btn" onclick="pickFlight(\''+offerId+'\','+priceGBP+',event)">اختيار</button>'
         + '</div>'
 
       + '</div>'
@@ -1258,6 +1262,28 @@ function renderResults() {
   });
 
   document.getElementById('resultsList').innerHTML = html;
+}
+
+// ─── Selection → mobile price bar ────────────────────────────────
+// On phones, tapping "اختيار" marks the card and raises a fixed price bar
+// (total + التفاصيل + متابعة) instead of navigating immediately. On desktop
+// (no PriceBar / wide screen) it proceeds straight to booking as before.
+function pickFlight(offerId, priceGBP, ev) {
+  if (window.innerWidth > 768 || !window.PriceBar) { selectFlight(offerId); return; }
+  var card = ev && ev.target ? ev.target.closest('.flight-card') : null;
+  document.querySelectorAll('.flight-card.selected').forEach(function(c){ c.classList.remove('selected'); });
+  if (card) {
+    card.classList.add('selected');
+    var b = card.querySelector('.select-btn'); if (b) b.textContent = '✓ مُختارة';
+    document.querySelectorAll('.flight-card:not(.selected) .select-btn').forEach(function(x){ x.textContent = 'اختيار'; });
+  }
+  PriceBar.show({
+    items: [{ label: 'سعر الرحلة', sub: 'شاملة الضرائب والرسوم', amount: priceGBP }],
+    total: priceGBP,
+    note: 'الأمتعة والمقاعد تُضاف في الخطوة التالية',
+    actionText: 'متابعة',
+    onAction: function(){ selectFlight(offerId); }
+  });
 }
 
 // ─── Navigation ──────────────────────────────────────────────────
@@ -1336,6 +1362,7 @@ initPage();
 })();
 </script>
 <script src="js/airport-ac.js"></script>
+<script src="js/pricebar.js?v=2026070109"></script>
 <script src="js/site-chrome.js?v=2026070107"></script>
 </body>
 </html>
