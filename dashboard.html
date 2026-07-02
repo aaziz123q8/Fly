@@ -69,6 +69,12 @@
     .feat .feat-ic{width:52px;height:52px;border-radius:16px;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c);display:flex;align-items:center;justify-content:center}
     .feat .feat-ic svg{width:26px;height:26px}
     .feat .feat-badge{position:absolute;top:12px;left:12px;min-width:22px;height:22px;padding:0 7px;border-radius:12px;background:var(--c);color:#fff;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center}
+    /* grouped layout with separators */
+    #homeGrid .feat-grid{grid-template-columns:repeat(2,1fr);padding:0}
+    .feat-group{margin:0}
+    .feat-sep{height:1px;background:linear-gradient(90deg,transparent,#e0d8f2 20%,#e0d8f2 80%,transparent);margin:16px 6px}
+    .feat-wide{grid-column:1/-1;flex-direction:row;justify-content:flex-start;gap:16px;min-height:74px;padding:16px 22px}
+    .feat-wide .feat-ic{width:46px;height:46px}
 
     .panel-back{display:inline-flex;align-items:center;gap:6px;background:#F4EEFE;color:#7C3AED;border:0;border-radius:12px;padding:9px 16px;font:inherit;font-weight:800;font-size:.9rem;cursor:pointer;margin:20px 0 14px}
     .panel-title{font-size:1.3rem;font-weight:800;color:#4C1D95;margin:0 0 4px}
@@ -167,8 +173,9 @@
     <!-- Offers / notifications banner (read-only, prominent) -->
     <div id="offerBanner" class="offer-banner" style="display:none"></div>
 
-    <!-- HOME: feature grid -->
-    <div id="homeGrid">
+    <!-- HOME: feature grid, grouped with separators -->
+    <div id="homeGrid" style="padding-top:22px">
+      <!-- Group 1: profile + wallet -->
       <div class="feat-grid">
         <button class="feat" style="--c:#7C3AED" onclick="showFeature('profile')">
           <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>الملف الشخصي
@@ -176,9 +183,17 @@
         <button class="feat" style="--c:#9333EA" onclick="openWalletModal()">
           <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></span>المحفظة
         </button>
-        <a class="feat" style="--c:#0369a1" href="travelers.html">
-          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>المسافرون
+      </div>
+      <div class="feat-sep"></div>
+      <!-- Group 2: travelers -->
+      <div class="feat-grid">
+        <a class="feat feat-wide" style="--c:#0369a1" href="travelers.html">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>المسافرون <span style="font-weight:600;font-size:.78rem;color:#94a3b8">حتى ٨ مسافرين</span>
         </a>
+      </div>
+      <div class="feat-sep"></div>
+      <!-- Group 3: flights + hotels -->
+      <div class="feat-grid">
         <button class="feat" style="--c:#2563eb" onclick="showFeature('flights')">
           <span class="feat-badge" id="featFlights" style="display:none">0</span>
           <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>رحلاتي
@@ -187,13 +202,21 @@
           <span class="feat-badge" id="featHotels" style="display:none">0</span>
           <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg></span>الفنادق
         </button>
+      </div>
+      <div class="feat-sep"></div>
+      <!-- Group 4: support + help -->
+      <div class="feat-grid">
         <button class="feat" style="--c:#0891b2" onclick="showFeature('support')">
           <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>تذاكر الدعم
         </button>
         <button class="feat" style="--c:#16a34a" onclick="showFeature('help')">
           <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span>المساعدة
         </button>
-        <button class="feat" style="--c:#dc2626" onclick="Auth.logout()">
+      </div>
+      <div class="feat-sep"></div>
+      <!-- Group 5: logout -->
+      <div class="feat-grid">
+        <button class="feat feat-wide" style="--c:#dc2626" onclick="Auth.logout()">
           <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>تسجيل الخروج
         </button>
       </div>
@@ -1380,6 +1403,6 @@
   </div>
 </div>
 
-<script src="js/site-chrome.js?v=2026070203"></script>
+<script src="js/site-chrome.js?v=2026070204"></script>
 </body>
 </html>

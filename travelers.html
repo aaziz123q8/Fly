@@ -116,7 +116,8 @@
         <p>أضف وأدر بيانات مسافريك — وفّر الوقت في كل حجز</p>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
-        <button class="btn" style="background:#fff;color:#7C3AED;font-weight:700;border-radius:12px;padding:10px 20px" onclick="openModal()">+ إضافة مسافر</button>
+        <button class="btn" id="addTravelerBtn" style="background:#fff;color:#7C3AED;font-weight:700;border-radius:12px;padding:10px 20px" onclick="openModal()">+ إضافة مسافر</button>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.85);margin-top:6px" id="travelerCount">حتى ٨ مسافرين</div>
       </div>
     </div>
 
@@ -282,6 +283,7 @@ if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=travelers.ht
 Auth.checkTokenExpiry();
 
 let travelers = [];
+const MAX_TRAVELERS = 8;
 
 /* ══════════════════════ Data ══════════════════════ */
 async function loadTravelers() {
@@ -295,9 +297,18 @@ async function loadTravelers() {
   }
 }
 
+function updateAddState() {
+  const cnt = document.getElementById('travelerCount');
+  const btn = document.getElementById('addTravelerBtn');
+  const full = travelers.length >= MAX_TRAVELERS;
+  if (cnt) cnt.textContent = full ? 'اكتمل الحد الأقصى (٨/٨)' : (travelers.length + ' / ' + MAX_TRAVELERS + ' مسافرين');
+  if (btn) { btn.style.opacity = full ? '.55' : '1'; btn.style.cursor = full ? 'not-allowed' : 'pointer'; btn.title = full ? 'الحد الأقصى ٨ مسافرين' : ''; }
+}
+
 function renderTravelers() {
   const el = document.getElementById('travelersList');
   const stats = document.getElementById('statsBar');
+  updateAddState();
 
   if (!travelers.length) {
     stats.style.display = 'none';
@@ -324,6 +335,7 @@ function renderTravelers() {
   document.getElementById('statValid').textContent    = validCount;
   document.getElementById('statExpiring').textContent = expiringCount;
   stats.style.display = 'grid';
+  updateAddState();
 
   const natMap = {DZA:'جزائري',BHR:'بحريني',EGY:'مصري',ARE:'إماراتي',JOR:'أردني',KWT:'كويتي',LBN:'لبناني',LBY:'ليبي',MRT:'موريتاني',MAR:'مغربي',OMN:'عماني',PSE:'فلسطيني',QAT:'قطري',SAU:'سعودي',SDN:'سوداني',SYR:'سوري',TUN:'تونسي',YEM:'يمني',USA:'أمريكي',GBR:'بريطاني',FRA:'فرنسي',DEU:'ألماني',IND:'هندي',PAK:'باكستاني',PHL:'فلبيني',TUR:'تركي',IRN:'إيراني',IDN:'إندونيسي',MYS:'ماليزي',BGD:'بنغلاديشي',ETH:'إثيوبي',KEN:'كيني',NGA:'نيجيري',ZAF:'جنوب أفريقي',CAN:'كندي',AUS:'أسترالي',CHN:'صيني',JPN:'ياباني',KOR:'كوري',RUS:'روسي',ESP:'إسباني',ITA:'إيطالي',NLD:'هولندي',SWE:'سويدي',OTH:'أخرى'};
   const docMap = {passport:'جواز سفر',id_card:'بطاقة مدنية',national_id:'هوية وطنية'};
@@ -370,6 +382,11 @@ function renderTravelers() {
 
 /* ══════════════════════ Modal ══════════════════════ */
 function openModal(traveler = null) {
+  // Enforce the maximum of 8 saved travelers when adding a new one.
+  if (!traveler && travelers.length >= MAX_TRAVELERS) {
+    showToast('الحد الأقصى ' + MAX_TRAVELERS + ' مسافرين. احذف مسافراً لإضافة آخر.', 'error');
+    return;
+  }
   document.getElementById('modalTitle').textContent = traveler ? 'تعديل مسافر' : 'إضافة مسافر جديد';
   const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   set('travelerId', traveler?.id);
@@ -482,6 +499,6 @@ document.getElementById('travelerModal').addEventListener('click', e => {
 loadTravelers();
 </script>
 <script src="js/bottom-nav.js?v=2026070202"></script>
-<script src="js/site-chrome.js?v=2026070203"></script>
+<script src="js/site-chrome.js?v=2026070204"></script>
 </body>
 </html>

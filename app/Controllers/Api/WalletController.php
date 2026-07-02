@@ -53,6 +53,9 @@ class WalletController
 
         $row = self::findUser($id);
         if (!$row) Response::error('لا يوجد مستخدم بهذا الرقم.', 404, 'not_found');
+        if (!self::hasProfile($row)) {
+            Response::error('هذا المستخدم لم يُكمل بيانات حسابه (الاسم ورقم الهاتف)، لا يمكن التحويل إليه.', 422, 'incomplete_recipient');
+        }
 
         Response::json([
             'fu_number' => self::fu($id),
@@ -74,8 +77,16 @@ class WalletController
         if ($toId === $fromId)  Response::error('لا يمكنك التحويل إلى نفسك.', 422, 'self_transfer');
         if ($amount <= 0)       Response::error('المبلغ غير صحيح.', 422, 'invalid_amount');
 
+        // Both parties must have a completed profile (name + phone).
+        $sender = self::findUser($fromId);
+        if (!$sender || !self::hasProfile($sender)) {
+            Response::error('أكمل بياناتك (الاسم ورقم الهاتف) في ملفك الشخصي قبل إجراء التحويل.', 422, 'incomplete_sender');
+        }
         $recipient = self::findUser($toId);
         if (!$recipient) Response::error('لا يوجد مستخدم بهذا الرقم.', 404, 'not_found');
+        if (!self::hasProfile($recipient)) {
+            Response::error('هذا المستخدم لم يُكمل بيانات حسابه (الاسم ورقم الهاتف)، لا يمكن التحويل إليه.', 422, 'incomplete_recipient');
+        }
 
         $wallet     = $this->walletService->getWallet($fromId);
         $currency   = $wallet['currency'] ?? 'GBP';
@@ -121,9 +132,16 @@ class WalletController
 
     private static function findUser(int $id): ?array
     {
-        $stmt = Database::getInstance()->prepare('SELECT id, first_name, last_name FROM users WHERE id = ? LIMIT 1');
+        $stmt = Database::getInstance()->prepare('SELECT id, first_name, last_name, phone_number FROM users WHERE id = ? LIMIT 1');
         $stmt->execute([$id]);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
         return $row ?: null;
+    }
+
+    /** A wallet transfer requires both parties to have a name and a phone number. */
+    private static function hasProfile(array $u): bool
+    {
+        return trim((string) ($u['first_name'] ?? '')) !== ''
+            && trim((string) ($u['phone_number'] ?? '')) !== '';
     }
 }

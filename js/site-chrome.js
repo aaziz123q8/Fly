@@ -45,6 +45,9 @@
     ".sc-nav{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.82);backdrop-filter:saturate(160%) blur(14px);border-bottom:1px solid var(--sc-line)}",
     ".sc-in{max-width:1200px;margin:0 auto;padding:0 22px;height:72px;display:flex;align-items:center;gap:22px}",
     ".sc-brand{display:flex;align-items:center;gap:10px;font-size:1.4rem;font-weight:700;color:var(--sc-ink);white-space:nowrap}",
+    ".sc-back{display:inline-flex;align-items:center;gap:5px;background:#F4EEFE;color:#7C3AED;border:0;border-radius:11px;padding:8px 14px;font:inherit;font-weight:800;font-size:.9rem;cursor:pointer;white-space:nowrap}",
+    ".sc-back svg{width:16px;height:16px}",
+    "@media(max-width:768px){.sc-back{display:none!important}}",
     ".scmk{width:40px;height:40px;border-radius:13px;background:var(--sc-grad);display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 10px 22px -8px rgba(124,58,237,.7)}",
     ".scmk svg{width:22px;height:22px}",
     ".sc-brand b{font-weight:700}.sc-brand b em{font-style:normal;color:var(--sc-v2)}",
@@ -105,6 +108,7 @@
 
   function headerHtml(){
     return '<header class="sc-nav"><div class="sc-in">'
+      + (here === 'index.html' ? '' : '<button type="button" class="sc-back" data-sc="back" aria-label="رجوع"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg> رجوع</button>')
       + '<a class="sc-brand" href="index.html">'+MK+'<b>فلاي<em> مسار</em></b></a>'
       + '<nav class="sc-links">'+links('')+'</nav>'
       + '<div class="sc-ctrls">'
@@ -150,7 +154,7 @@
 
   function ensureMobileApp(){
     if (document.getElementById('mappTabs') || document.getElementById('sc-mapp')) return;
-    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070203'; document.body.appendChild(s);
+    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070204'; document.body.appendChild(s);
   }
 
   function ensurePwa(){
@@ -177,6 +181,7 @@
       var t=e.target.closest('[data-sc]'); if(!t) return;
       var a=t.getAttribute('data-sc');
       if(a==='open') openDrawer();
+      else if(a==='back'){ if(history.length > 1) history.back(); else location.href='index.html'; }
       else if(a==='close') closeDrawer();
       else if(a==='logout'){ if(window.Auth&&Auth.logout) Auth.logout(); else { localStorage.removeItem('flymasar_token'); localStorage.removeItem('flymasar_user'); location.href='index.html'; } }
     });

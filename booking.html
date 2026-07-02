@@ -865,6 +865,34 @@
   }
 
 
+  // Save the booking's passengers into the user's saved travelers so they are
+  // auto-filled next time. De-duplicated, and capped at the 8-traveler limit.
+  async function autoSaveTravelers(passengers) {
+    if (!Auth.isLoggedIn()) return;
+    let existing = [];
+    try { const r = await Api.get('/api/travelers', true); existing = r.data || r.travelers || (Array.isArray(r) ? r : []); }
+    catch (_) { return; }
+    const key = p => ((p.first_name||'') + '|' + (p.last_name||'') + '|' + (p.document_number||'')).toLowerCase().trim();
+    const seen = new Set(existing.map(key));
+    let slots = 8 - existing.length;
+    for (const p of passengers) {
+      if (slots <= 0) break;
+      const k = key(p);
+      if (!p.first_name || !p.last_name || seen.has(k)) continue;
+      seen.add(k);
+      try {
+        await Api.post('/api/travelers', {
+          title: p.title, first_name: p.first_name, middle_name: p.middle_name, last_name: p.last_name,
+          gender: p.gender, nationality: p.nationality, date_of_birth: p.date_of_birth,
+          email: p.email, phone_number: p.phone_number,
+          document_type: p.document_type, document_number: p.document_number,
+          document_issue: p.document_issue, document_expiry: p.document_expiry,
+        }, true);
+        slots--;
+      } catch (_) {}
+    }
+  }
+
   function collectPassengers() {
     const contactEmail = document.getElementById('contactEmail')?.value?.trim() || '';
     const contactPhone = document.getElementById('contactPhone')?.value?.trim() || '';
@@ -992,6 +1020,9 @@
         passengers,
       }, true);
 
+      // Best-effort: remember these passengers as saved travelers for next time.
+      try { await autoSaveTravelers(passengers); } catch(_) {}
+
       // Step 2: redirect to services/ancillaries selection
       localStorage.removeItem('booking_flight_id');
       window.location.href = 'services.html?session=' + encodeURIComponent(sessionKey)
@@ -1030,6 +1061,6 @@
 <script src="js/i18n.js"></script>
 <style>@media(max-width:768px){#mappTabs{display:none!important}#bookBtn{display:none!important}.price-summary{display:none!important}}</style>
 <script src="js/pricebar.js?v=2026070109"></script>
-<script src="js/site-chrome.js?v=2026070203"></script>
+<script src="js/site-chrome.js?v=2026070204"></script>
 </body>
 </html>
