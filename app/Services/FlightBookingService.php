@@ -1754,6 +1754,19 @@ class FlightBookingService
         $pStmt->execute([':id' => $bookingId]);
         $booking['passengers'] = $pStmt->fetchAll(PDO::FETCH_ASSOC);
 
+        // Account-holder contact (used by the e-ticket / invoice contact block).
+        // Contact email/phone are not stored on the booking or passenger rows —
+        // they belong to the booking's user account.
+        try {
+            $uStmt = $this->db->prepare('SELECT email, phone_number FROM users WHERE id = :id LIMIT 1');
+            $uStmt->execute([':id' => (int) ($booking['user_id'] ?? 0)]);
+            $u = $uStmt->fetch(PDO::FETCH_ASSOC);
+            if ($u) {
+                if (empty($booking['user_email']))   $booking['user_email']   = $u['email'] ?? null;
+                if (empty($booking['contact_phone'])) $booking['contact_phone'] = $u['phone_number'] ?? null;
+            }
+        } catch (\Throwable) {}
+
         // Documents (electronic tickets, itineraries).
         try {
             $dStmt = $this->db->prepare(
