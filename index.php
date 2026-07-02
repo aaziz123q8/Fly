@@ -527,6 +527,11 @@ $router->post('api/coupons/validate', function (Request $req): void {
     (new AdminCouponsController())->validate($req);
 }, [AuthMiddleware::handle()]);
 
+// Public list of active promo coupons for the storefront (no auth).
+$router->get('api/coupons/public', function (Request $req): void {
+    (new AdminCouponsController())->publicList($req);
+});
+
 // ---------------------------------------------------------------------------
 // Routes — Admin Panel
 // ---------------------------------------------------------------------------

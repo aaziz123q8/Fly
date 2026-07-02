@@ -497,6 +497,16 @@ select.fi{cursor:pointer}
           <span id="fTxt" data-i18n="btn_flights">🔍 بحث عن رحلات</span>
           <span id="fSpin" class="spin hidden"></span>
         </button>
+
+        <!-- Mobile extras: offers + recent searches (flights) -->
+        <div class="mo-sec" id="flOffers" style="display:none">
+          <div class="mo-head"><span>🎟️ عروض وأكواد خصم</span></div>
+          <div class="mo-coupons" id="flOffersList"></div>
+        </div>
+        <div class="mo-sec" id="flRecent" style="display:none">
+          <div class="mo-head"><span>🕘 آخر عمليات البحث</span><button type="button" class="mo-clear" onclick="clearRecent('flights')">مسح</button></div>
+          <div class="mo-recents" id="flRecentList"></div>
+        </div>
       </div>
     </div>
 
@@ -541,6 +551,16 @@ select.fi{cursor:pointer}
           </div>
         </div>
         <button class="btn-search" onclick="searchHotels()" data-i18n="btn_hotels">🔍 بحث عن فنادق</button>
+
+        <!-- Mobile extras: offers + recent searches (hotels) -->
+        <div class="mo-sec" id="htOffers" style="display:none">
+          <div class="mo-head"><span>🎟️ عروض وأكواد خصم</span></div>
+          <div class="mo-coupons" id="htOffersList"></div>
+        </div>
+        <div class="mo-sec" id="htRecent" style="display:none">
+          <div class="mo-head"><span>🕘 آخر عمليات البحث</span><button type="button" class="mo-clear" onclick="clearRecent('hotels')">مسح</button></div>
+          <div class="mo-recents" id="htRecentList"></div>
+        </div>
       </div>
     </div>
 
@@ -985,6 +1005,7 @@ function searchFlights() {
     children: pax.child, infants: pax.infant,
     type: ret ? 'round_trip' : 'one_way'
   });
+  try{ if(window.flySaveRecentFlight) flySaveRecentFlight({from:from,to:to,dep:dep,ret:ret,cabin:cabin,pax:pax.adult,children:pax.child,infants:pax.infant}); }catch(e){}
   window.location.href = 'flights.html?' + params.toString();
 }
 
@@ -1020,6 +1041,7 @@ function searchHotels() {
   const co = document.getElementById('hOut').dataset.iso || '';
   if (!dest) { toast(t('fill_dest'), 'err'); return; }
   if (!ci || !co) { toast(t('fill_fields'), 'err'); return; }
+  try{ if(window.flySaveRecentHotel) flySaveRecentHotel({dest:dest,ci:ci,co:co,rooms:rm.rooms,guests:rm.guests}); }catch(e){}
   window.location.href = `hotels.html?dest=${encodeURIComponent(dest)}&checkin=${ci}&checkout=${co}&rooms=${rm.rooms}&guests=${rm.guests}`;
 }
 
@@ -1182,6 +1204,29 @@ function closeDrawer() {
   .msb-back{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.16);border:0;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
   .msb-back svg{width:22px;height:22px}
   .msb-title{font-weight:800;font-size:1.15rem}
+
+  /* ── Mobile search extras: offers (coupons) + recent searches ── */
+  .mo-sec{margin-top:20px}
+  .mo-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;font-weight:800;color:#4C1D95;font-size:1rem}
+  .mo-clear{background:none;border:0;color:#9333EA;font-weight:700;font-size:.82rem;cursor:pointer;font-family:inherit}
+  .mo-coupons{display:flex;flex-direction:column;gap:10px}
+  .mo-coupon{display:flex;align-items:stretch;border:1.5px dashed #C4B5FD;border-radius:16px;overflow:hidden;background:linear-gradient(120deg,#F6F1FE,#FBF7FF)}
+  .mo-coupon-l{background:linear-gradient(135deg,#7C3AED,#C026D3);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:10px 14px;min-width:82px;text-align:center;flex-shrink:0}
+  .mo-coupon-val{font-size:1.25rem;font-weight:800;line-height:1;white-space:nowrap}
+  .mo-coupon-scope{font-size:.6rem;margin-top:5px;background:rgba(255,255,255,.22);padding:2px 7px;border-radius:20px;font-weight:700}
+  .mo-coupon-r{flex:1;display:flex;flex-direction:column;justify-content:center;gap:3px;padding:9px 12px;min-width:0}
+  .mo-coupon-code{font-weight:800;color:#4C1D95;font-size:1.02rem;letter-spacing:1.5px}
+  .mo-coupon-desc{font-size:.74rem;color:#6B6880;line-height:1.4}
+  .mo-coupon-copy{align-self:center;margin-inline-end:11px;background:#fff;border:1.5px solid #7C3AED;color:#7C3AED;border-radius:10px;padding:8px 12px;font-weight:800;font-size:.78rem;cursor:pointer;font-family:inherit;white-space:nowrap;flex-shrink:0}
+  .mo-coupon-copy.done{background:#7C3AED;color:#fff}
+  .mo-recents{display:flex;flex-direction:column;gap:8px}
+  .mo-recent{display:flex;align-items:center;gap:12px;width:100%;background:#fff;border:1.5px solid #ECE8F4;border-radius:14px;padding:12px 14px;cursor:pointer;text-align:start;font-family:inherit}
+  .mo-recent:active{background:#F6F1FE}
+  .mo-recent-ic{width:38px;height:38px;border-radius:11px;background:#F4EEFE;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.05rem}
+  .mo-recent-main{flex:1;min-width:0}
+  .mo-recent-route{font-weight:800;color:#1B172B;font-size:.96rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mo-recent-sub{font-size:.76rem;color:#6B6880;margin-top:2px}
+  .mo-recent-go{color:#9333EA;font-size:1.3rem;flex-shrink:0}
 }
 </style>
 <script>
@@ -1194,6 +1239,7 @@ function closeDrawer() {
     b.classList.remove('m-launch'); b.classList.add('m-search');
     try{ if(window.switchTab) switchTab(view,null); }catch(e){}
     var t=document.getElementById('msbTitle'); if(t) t.textContent = (view==='hotels') ? 'بحث الفنادق' : 'بحث الرحلات';
+    try{ if(window.mobileExtras) mobileExtras(view); }catch(e){}
     window.scrollTo(0,0);
   };
   function init(){ if(mq.matches) document.body.classList.add('m-launch'); }
@@ -1295,6 +1341,72 @@ function closeDrawer() {
 
   // Install button → PWA install hook (provided by pwa.js)
   window.mlInstall = function(){ if(window.flyInstall) window.flyInstall(); };
+})();
+</script>
+<script>
+/* ── Mobile search extras: offers (coupons) + recent searches ── */
+(function(){
+  var AR_MONTHS=['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  function fmtD(iso){ if(!iso) return ''; var p=String(iso).split('-'); if(p.length<3) return iso; var d=parseInt(p[2],10), m=parseInt(p[1],10)-1; return d+' '+(AR_MONTHS[m]||''); }
+
+  function getRecent(kind){ try{ return JSON.parse(localStorage.getItem('fly_recent_'+kind)||'[]'); }catch(e){ return []; } }
+  function pushRecent(kind,item){ var l=getRecent(kind).filter(function(x){return x.key!==item.key;}); l.unshift(item); l=l.slice(0,4); try{ localStorage.setItem('fly_recent_'+kind, JSON.stringify(l)); }catch(e){} }
+
+  window.flySaveRecentFlight=function(o){ if(!o.from||!o.to||!o.dep) return; pushRecent('flights',{key:o.from+o.to+o.dep+(o.ret||''),from:o.from,to:o.to,dep:o.dep,ret:o.ret||'',cabin:o.cabin||'economy',pax:o.pax||1,children:o.children||0,infants:o.infants||0}); };
+  window.flySaveRecentHotel=function(o){ if(!o.dest||!o.ci||!o.co) return; pushRecent('hotels',{key:o.dest+o.ci+o.co,dest:o.dest,ci:o.ci,co:o.co,rooms:o.rooms||1,guests:o.guests||2}); };
+  window.clearRecent=function(kind){ try{ localStorage.removeItem('fly_recent_'+kind); }catch(e){} renderRecents(kind); };
+
+  window.flyRerunFlight=function(i){ var it=getRecent('flights')[i]; if(!it) return;
+    var params=new URLSearchParams({from:it.from,to:it.to,dep:it.dep,ret:it.ret||'',pax:it.pax||1,cabin:it.cabin||'economy',children:it.children||0,infants:it.infants||0,type:(it.ret?'round_trip':'one_way')});
+    window.location.href='flights.html?'+params.toString();
+  };
+  window.flyRerunHotel=function(i){ var it=getRecent('hotels')[i]; if(!it) return;
+    window.location.href='hotels.html?dest='+encodeURIComponent(it.dest)+'&checkin='+it.ci+'&checkout='+it.co+'&rooms='+(it.rooms||1)+'&guests='+(it.guests||2);
+  };
+
+  function scopeLabel(a){ return a==='flight'?'على الطيران':a==='hotel'?'على الفنادق':'على الكل'; }
+  function couponVal(c){ return c.discount_type==='percentage' ? (parseFloat(c.discount_value)+'%') : (parseFloat(c.discount_value).toFixed(0)+' '+(c.currency||'£')); }
+  window.copyCoupon=function(code,btn){ try{ if(navigator.clipboard) navigator.clipboard.writeText(code); }catch(e){} if(btn){ var o=btn.textContent; btn.textContent='✓ نُسخ'; btn.classList.add('done'); setTimeout(function(){btn.textContent=o;btn.classList.remove('done');},1600);} };
+
+  var offersCache={};
+  function loadOffers(scope){
+    var listId=scope==='flight'?'flOffersList':'htOffersList', secId=scope==='flight'?'flOffers':'htOffers';
+    var el=document.getElementById(listId), sec=document.getElementById(secId);
+    if(!el||!sec) return;
+    function render(list){
+      if(!list||!list.length){ sec.style.display='none'; return; }
+      el.innerHTML=list.map(function(c){
+        var d=[]; if(c.max_discount_amount) d.push('حتى '+parseFloat(c.max_discount_amount).toFixed(0)+' '+(c.currency||'£')); if(c.min_booking_amount) d.push('حد أدنى '+parseFloat(c.min_booking_amount).toFixed(0)+' '+(c.currency||'£'));
+        return '<div class="mo-coupon"><div class="mo-coupon-l"><div class="mo-coupon-val">'+couponVal(c)+'</div><div class="mo-coupon-scope">'+scopeLabel(c.applies_to)+'</div></div>'
+          +'<div class="mo-coupon-r"><div class="mo-coupon-code">'+c.code+'</div><div class="mo-coupon-desc">'+(d.join(' · ')||'خصم فوري على حجزك')+'</div></div>'
+          +'<button type="button" class="mo-coupon-copy" onclick="copyCoupon(\''+c.code+'\',this)">نسخ</button></div>';
+      }).join('');
+      sec.style.display='block';
+    }
+    if(offersCache[scope]){ render(offersCache[scope]); return; }
+    fetch('/api/coupons/public?scope='+scope).then(function(r){return r.json();}).then(function(res){ var l=(res&&res.data)||[]; offersCache[scope]=l; render(l); }).catch(function(){ sec.style.display='none'; });
+  }
+
+  function renderRecents(kind){
+    var listId=kind==='flights'?'flRecentList':'htRecentList', secId=kind==='flights'?'flRecent':'htRecent';
+    var el=document.getElementById(listId), sec=document.getElementById(secId);
+    if(!el||!sec) return;
+    var items=getRecent(kind);
+    if(!items.length){ sec.style.display='none'; return; }
+    if(kind==='flights'){
+      el.innerHTML=items.map(function(it,i){ var dates=fmtD(it.dep)+(it.ret?(' - '+fmtD(it.ret)):''); return '<button type="button" class="mo-recent" onclick="flyRerunFlight('+i+')"><span class="mo-recent-ic">✈️</span><span class="mo-recent-main"><span class="mo-recent-route">'+it.from+' → '+it.to+'</span><span class="mo-recent-sub">'+dates+'</span></span><span class="mo-recent-go">‹</span></button>'; }).join('');
+    } else {
+      el.innerHTML=items.map(function(it,i){ var dates=fmtD(it.ci)+' - '+fmtD(it.co); return '<button type="button" class="mo-recent" onclick="flyRerunHotel('+i+')"><span class="mo-recent-ic">🏨</span><span class="mo-recent-main"><span class="mo-recent-route">'+it.dest+'</span><span class="mo-recent-sub">'+dates+'</span></span><span class="mo-recent-go">‹</span></button>'; }).join('');
+    }
+    sec.style.display='block';
+  }
+  window.renderRecents = renderRecents;
+
+  window.mobileExtras=function(view){
+    if(window.innerWidth>768) return; // mobile only
+    if(view==='hotels'){ loadOffers('hotel'); renderRecents('hotels'); }
+    else { loadOffers('flight'); renderRecents('flights'); }
+  };
 })();
 </script>
 <script src="js/mobile-app.js?v=2026070105"></script>

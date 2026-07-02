@@ -70,6 +70,41 @@ class AdminCouponsController
     }
 
     // -------------------------------------------------------------------------
+    // GET /api/coupons/public — active, currently-valid, non-personal coupons
+    // for storefront display. Optional ?scope=flight|hotel filters by applies_to
+    // (always includes "both"). Public: exposes only promo-safe columns.
+    // -------------------------------------------------------------------------
+
+    public function publicList(Request $request): void
+    {
+        $db    = Database::getInstance();
+        $scope = trim((string) ($request->input('scope', '')));
+
+        $where  = ['is_active = 1', 'user_id IS NULL', 'NOW() BETWEEN valid_from AND valid_until'];
+        $params = [];
+
+        if ($scope === 'flight' || $scope === 'hotel') {
+            $where[]  = "applies_to IN ('both', ?)";
+            $params[] = $scope;
+        }
+
+        $whereClause = implode(' AND ', $where);
+
+        $stmt = $db->prepare(
+            "SELECT code, discount_type, discount_value, currency, max_discount_amount,
+                    applies_to, min_booking_amount, valid_until
+             FROM coupons
+             WHERE $whereClause
+               AND (usage_limit IS NULL OR usage_count < usage_limit)
+             ORDER BY discount_value DESC
+             LIMIT 12"
+        );
+        $stmt->execute($params);
+
+        Response::json(['data' => $stmt->fetchAll(\PDO::FETCH_ASSOC)]);
+    }
+
+    // -------------------------------------------------------------------------
     // GET /api/admin/coupons/:id
     // -------------------------------------------------------------------------
 
