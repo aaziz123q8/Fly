@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>الدعم — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
 </head>
 <body>
 <div class="admin-layout">
@@ -13,42 +13,31 @@
 
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>🎧 تذاكر الدعم</h1>
-      <div id="statsBar" style="font-size:.85rem;color:var(--text-muted)"></div>
+      <h1><span data-ic="support" data-ic-size="22"></span> تذاكر الدعم</h1>
+      <div id="statsBar" style="font-size:.85rem;color:var(--adm-muted)"></div>
     </div>
 
     <div class="admin-content">
-      <div class="card" style="margin-bottom:20px;padding:0">
-        <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-          <div style="flex:1;min-width:200px">
-            <label class="form-label" style="font-size:.78rem">البحث</label>
-            <input type="search" class="form-control" id="searchInput" placeholder="البحث بالعنوان أو البريد الإلكتروني..." oninput="debouncedSearch()">
-          </div>
-          <div>
-            <label class="form-label" style="font-size:.78rem">الحالة</label>
-            <select class="form-control" id="statusFilter" onchange="loadTickets()" style="min-width:130px">
-              <option value="">الكل</option>
-              <option value="open">مفتوح</option>
-              <option value="in_progress">قيد المعالجة</option>
-              <option value="closed">مغلق</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" style="font-size:.78rem">الأولوية</label>
-            <select class="form-control" id="priorityFilter" onchange="loadTickets()" style="min-width:120px">
-              <option value="">الكل</option>
-              <option value="urgent">عاجل</option>
-              <option value="high">عالي</option>
-              <option value="medium">متوسط</option>
-              <option value="low">منخفض</option>
-            </select>
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">مسح</button>
-        </div>
+      <div class="adm-toolbar">
+        <div class="adm-search"><span data-ic="search"></span><input type="search" id="searchInput" placeholder="البحث بالعنوان أو البريد الإلكتروني..." oninput="debouncedSearch()"></div>
+        <select class="adm-select" style="max-width:160px" id="statusFilter" onchange="loadTickets()">
+          <option value="">كل الحالات</option>
+          <option value="open">مفتوح</option>
+          <option value="in_progress">قيد المعالجة</option>
+          <option value="closed">مغلق</option>
+        </select>
+        <select class="adm-select" style="max-width:140px" id="priorityFilter" onchange="loadTickets()">
+          <option value="">كل الأولويات</option>
+          <option value="urgent">عاجل</option>
+          <option value="high">عالي</option>
+          <option value="medium">متوسط</option>
+          <option value="low">منخفض</option>
+        </select>
+        <button class="adm-btn ghost sm" onclick="clearFilters()">مسح</button>
       </div>
 
       <div class="table-card">
-        <div id="tableLoading" class="loading-state" style="padding:48px">
+        <div id="tableLoading" class="loading-state" style="padding:44px">
           <div class="spinner"></div><p>جاري التحميل...</p>
         </div>
         <div id="tableWrapper" style="display:none;overflow-x:auto">
@@ -68,40 +57,40 @@
             <tbody id="ticketsTable"></tbody>
           </table>
         </div>
-        <div id="emptyState" class="empty-state" style="display:none">
-          <div class="empty-icon">🎧</div>
-          <h3>لا توجد تذاكر</h3>
+        <div id="emptyState" class="adm-empty" style="display:none">
+          <span data-ic="support" data-ic-size="40"></span>
+          <h4>لا توجد تذاكر</h4>
           <p>لم يتم العثور على نتائج</p>
         </div>
-        <div id="paginationContainer"></div>
+        <div id="paginationContainer" style="padding:12px 18px"></div>
       </div>
     </div>
   </main>
 </div>
 
 <!-- Ticket Detail Modal -->
-<div id="ticketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal" style="max-width:640px;max-height:80vh;display:flex;flex-direction:column">
-    <div class="modal-header">
-      <h3 id="ticketModalTitle">تفاصيل التذكرة</h3>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+<div id="ticketModal" class="adm-modal" onclick="if(event.target===this)closeModal()">
+  <div class="adm-modal-card lg" style="display:flex;flex-direction:column">
+    <div class="adm-modal-head">
+      <h3 id="ticketModalTitle"><span data-ic="ticket" data-ic-size="18"></span> تفاصيل التذكرة</h3>
+      <button class="adm-modal-x" onclick="closeModal()"><span data-ic="close" data-ic-size="16"></span></button>
     </div>
-    <div class="modal-body" style="flex:1;overflow-y:auto">
-      <div id="ticketInfo" style="margin-bottom:16px;padding:12px;background:var(--bg-secondary);border-radius:8px;font-size:.85rem"></div>
+    <div class="adm-modal-body" style="flex:1;overflow-y:auto">
+      <div id="ticketInfo" class="adm-note" style="margin-bottom:16px;font-size:.85rem"></div>
       <div id="repliesContainer"></div>
-      <div style="margin-top:16px">
-        <label class="form-label">ردك</label>
-        <textarea class="form-control" id="replyText" rows="3" placeholder="اكتب ردك هنا..."></textarea>
+      <div class="adm-field" style="margin-top:16px;margin-bottom:0">
+        <label>ردك</label>
+        <textarea class="adm-textarea" id="replyText" rows="3" placeholder="اكتب ردك هنا..."></textarea>
       </div>
     </div>
-    <div class="modal-footer" style="display:flex;gap:8px;justify-content:space-between">
+    <div class="adm-modal-foot" style="justify-content:space-between">
       <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost btn-sm" onclick="updateTicketStatus('closed')" id="btnClose">إغلاق التذكرة</button>
-        <button class="btn btn-ghost btn-sm" onclick="updateTicketStatus('open')">إعادة فتح</button>
+        <button class="adm-btn ghost sm" onclick="updateTicketStatus('closed')" id="btnClose"><span data-ic="close" data-ic-size="14"></span> إغلاق التذكرة</button>
+        <button class="adm-btn ghost sm" onclick="updateTicketStatus('open')"><span data-ic="refresh" data-ic-size="14"></span> إعادة فتح</button>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-        <button class="btn btn-primary" onclick="sendReply()">إرسال الرد</button>
+        <button class="adm-btn ghost" onclick="closeModal()">إلغاء</button>
+        <button class="adm-btn" onclick="sendReply()"><span data-ic="send" data-ic-size="15"></span> إرسال الرد</button>
       </div>
     </div>
   </div>
@@ -110,8 +99,9 @@
 <div class="toast-container" id="toastContainer"></div>
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070204"></script>
-<script src="../js/admin-sidebar.js?v=2026070204"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
 <script>
 var currentPage = 1;
 var currentTicketId = null;
@@ -161,7 +151,7 @@ function loadTickets() {
         '<td>' + (statusMap[t.status] || t.status) + '</td>' +
         '<td style="text-align:center">' + (t.reply_count||0) + '</td>' +
         '<td>' + new Date(t.created_at).toLocaleDateString('ar-KW') + '</td>' +
-        '<td><button class="btn btn-ghost btn-sm" onclick="openTicket(' + t.id + ')">عرض</button></td>' +
+        '<td><div class="table-actions"><button class="adm-act" onclick="openTicket(' + t.id + ')">' + Admin.icon('eye', 15) + ' عرض</button></div></td>' +
         '</tr>';
     });
     document.getElementById('ticketsTable').innerHTML = html;
@@ -176,14 +166,14 @@ function openTicket(id) {
   currentTicketId = id;
   document.getElementById('replyText').value = '';
   document.getElementById('repliesContainer').innerHTML = '<div style="text-align:center;padding:20px"><div class="spinner"></div></div>';
-  document.getElementById('ticketModal').style.display = 'flex';
+  document.getElementById('ticketModal').classList.add('open');
 
   Api.get('/api/admin/support/' + id, true).then(function(res) {
     var t = res.ticket;
-    document.getElementById('ticketModalTitle').textContent = '#' + t.id + ' — ' + t.subject;
+    document.getElementById('ticketModalTitle').innerHTML = Admin.icon('ticket', 18) + ' #' + t.id + ' — ' + t.subject;
     document.getElementById('ticketInfo').innerHTML =
-      '<strong>المستخدم:</strong> ' + (t.first_name||'') + ' ' + (t.last_name||'') + ' (' + (t.user_email||'') + ')<br>' +
-      '<strong>الحالة:</strong> ' + t.status + ' | <strong>الأولوية:</strong> ' + t.priority + ' | <strong>التاريخ:</strong> ' + new Date(t.created_at).toLocaleDateString('ar-KW');
+      '<div><strong>المستخدم:</strong> ' + (t.first_name||'') + ' ' + (t.last_name||'') + ' (' + (t.user_email||'') + ')<br>' +
+      '<strong>الحالة:</strong> ' + t.status + ' | <strong>الأولوية:</strong> ' + t.priority + ' | <strong>التاريخ:</strong> ' + new Date(t.created_at).toLocaleDateString('ar-KW') + '</div>';
 
     var replies = res.replies || [];
     if (replies.length === 0) {
@@ -192,8 +182,11 @@ function openTicket(id) {
       var html = '';
       replies.forEach(function(r) {
         var isAdmin = r.role === 'admin' || r.role === 'super_admin';
-        html += '<div style="margin-bottom:12px;padding:10px 14px;border-radius:8px;background:' + (isAdmin ? 'var(--primary-light,#e8f0fe)' : 'var(--bg-secondary)') + '">' +
-          '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">' + (isAdmin ? '🛡️ فريق الدعم' : '👤 ' + (r.first_name||'المستخدم')) + ' — ' + new Date(r.created_at).toLocaleString('ar-KW') + '</div>' +
+        var who = isAdmin
+          ? '<span style="display:inline-flex;align-items:center;gap:4px;color:var(--adm-1)">' + Admin.icon('shield', 14) + ' فريق الدعم</span>'
+          : '<span style="display:inline-flex;align-items:center;gap:4px">' + Admin.icon('traveler', 14) + ' ' + (r.first_name||'المستخدم') + '</span>';
+        html += '<div style="margin-bottom:12px;padding:10px 14px;border-radius:12px;background:' + (isAdmin ? 'var(--adm-soft)' : 'var(--bg-secondary,#f5f5f7)') + '">' +
+          '<div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px;display:flex;align-items:center;gap:6px">' + who + ' — ' + new Date(r.created_at).toLocaleString('ar-KW') + '</div>' +
           '<div>' + r.message + '</div>' +
           '</div>';
       });
@@ -217,14 +210,14 @@ function updateTicketStatus(status) {
   });
 }
 
-function closeModal() { document.getElementById('ticketModal').style.display = 'none'; currentTicketId = null; }
+function closeModal() { document.getElementById('ticketModal').classList.remove('open'); currentTicketId = null; }
 
 function renderPagination(meta) {
   if (!meta || meta.last_page <= 1) { document.getElementById('paginationContainer').innerHTML = ''; return; }
-  var html = '<div style="display:flex;justify-content:center;gap:8px;padding:16px">';
-  if (meta.page > 1) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page-1) + ')">السابق</button>';
-  html += '<span style="padding:6px 12px;font-size:.85rem">' + meta.page + ' / ' + meta.last_page + '</span>';
-  if (meta.page < meta.last_page) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page+1) + ')">التالي</button>';
+  var html = '<div class="pagination">';
+  if (meta.page > 1) html += '<button class="adm-btn ghost sm" onclick="goPage(' + (meta.page-1) + ')">السابق</button>';
+  html += '<span style="padding:6px 12px;font-size:.85rem;color:var(--adm-muted)">' + meta.page + ' / ' + meta.last_page + '</span>';
+  if (meta.page < meta.last_page) html += '<button class="adm-btn ghost sm" onclick="goPage(' + (meta.page+1) + ')">التالي</button>';
   html += '</div>';
   document.getElementById('paginationContainer').innerHTML = html;
 }

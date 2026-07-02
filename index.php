@@ -265,6 +265,7 @@ $router->group('api/flights', function (Router $r): void {
 
     // Checkout: create Stripe payment intent (auth required).
     $r->post('/checkout/payment-intent', function (Request $req): void {
+        \App\Services\SiteControl::assertBookingsEnabled();
         (new FlightController())->createPaymentIntent($req);
     }, [AuthMiddleware::handle()]);
 
@@ -570,6 +571,12 @@ $router->group('api/admin', function (Router $r): void {
     $r->put('/travelers/:id', function (Request $req): void {
         (new AdminTravelersController())->update($req);
     }, [AdminMiddleware::handle()]);
+    $r->put('/travelers/:id/profiles/:pid', function (Request $req): void {
+        (new AdminTravelersController())->updateProfile($req);
+    }, [AdminMiddleware::handle()]);
+    $r->delete('/travelers/:id/profiles/:pid', function (Request $req): void {
+        (new AdminTravelersController())->deleteProfile($req);
+    }, [AdminMiddleware::handle()]);
     $r->delete('/travelers/:id', function (Request $req): void {
         (new AdminTravelersController())->destroy($req);
     }, [AdminMiddleware::handle()]);
@@ -649,6 +656,10 @@ $router->group('api/admin/notifications', function (Router $r): void {
 // ---------------------------------------------------------------------------
 // Routes — Admin: Analytics
 // ---------------------------------------------------------------------------
+
+$router->group('api/admin/activity', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new \App\Controllers\Admin\AdminActivityController())->index($req), [AdminMiddleware::handle()]);
+});
 
 $router->group('api/admin/analytics', function (Router $r): void {
     $r->get('/overview', fn(Request $req) => (new AdminAnalyticsController())->overview($req), [AdminMiddleware::handle()]);

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>المدفوعات — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
 </head>
 <body>
 <div class="admin-layout">
@@ -13,8 +13,8 @@
 
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>💳 إدارة المدفوعات</h1>
-      <div id="summaryStats" style="font-size:.85rem;color:var(--text-muted)"></div>
+      <h1><span data-ic="payments" data-ic-size="22"></span> إدارة المدفوعات</h1>
+      <div id="summaryStats" style="font-size:.85rem;color:var(--adm-muted)"></div>
     </div>
 
     <div class="admin-content">
@@ -22,36 +22,22 @@
       <div class="stats-grid" style="margin-bottom:20px" id="statsCards"></div>
 
       <!-- Filters -->
-      <div class="card" style="margin-bottom:20px;padding:0">
-        <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-          <div style="flex:1;min-width:200px">
-            <label class="form-label" style="font-size:.78rem">البحث</label>
-            <input type="search" class="form-control" id="searchInput" placeholder="البحث برقم الدفع أو البريد الإلكتروني..." oninput="debouncedSearch()">
-          </div>
-          <div>
-            <label class="form-label" style="font-size:.78rem">الحالة</label>
-            <select class="form-control" id="statusFilter" onchange="loadPayments()" style="min-width:130px">
-              <option value="">الكل</option>
-              <option value="succeeded">ناجح</option>
-              <option value="pending">معلق</option>
-              <option value="failed">فاشل</option>
-              <option value="refunded">مسترد</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" style="font-size:.78rem">من</label>
-            <input type="date" class="form-control" id="fromDate" onchange="loadPayments()">
-          </div>
-          <div>
-            <label class="form-label" style="font-size:.78rem">إلى</label>
-            <input type="date" class="form-control" id="toDate" onchange="loadPayments()">
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">مسح</button>
-        </div>
+      <div class="adm-toolbar">
+        <div class="adm-search"><span data-ic="search"></span><input type="search" id="searchInput" placeholder="البحث برقم الدفع أو البريد الإلكتروني..." oninput="debouncedSearch()"></div>
+        <select class="adm-select" style="max-width:150px" id="statusFilter" onchange="loadPayments()">
+          <option value="">كل الحالات</option>
+          <option value="succeeded">ناجح</option>
+          <option value="pending">معلق</option>
+          <option value="failed">فاشل</option>
+          <option value="refunded">مسترد</option>
+        </select>
+        <input type="date" class="adm-input" style="max-width:160px" id="fromDate" onchange="loadPayments()" title="من تاريخ">
+        <input type="date" class="adm-input" style="max-width:160px" id="toDate" onchange="loadPayments()" title="إلى تاريخ">
+        <button class="adm-btn ghost sm" onclick="clearFilters()">مسح</button>
       </div>
 
       <div class="table-card">
-        <div id="tableLoading" class="loading-state" style="padding:48px">
+        <div id="tableLoading" class="loading-state" style="padding:44px">
           <div class="spinner"></div><p>جاري التحميل...</p>
         </div>
         <div id="tableWrapper" style="display:none;overflow-x:auto">
@@ -71,12 +57,12 @@
             <tbody id="paymentsTable"></tbody>
           </table>
         </div>
-        <div id="emptyState" class="empty-state" style="display:none">
-          <div class="empty-icon">💳</div>
-          <h3>لا توجد مدفوعات</h3>
+        <div id="emptyState" class="adm-empty" style="display:none">
+          <span data-ic="payments" data-ic-size="40"></span>
+          <h4>لا توجد مدفوعات</h4>
           <p>لم يتم العثور على نتائج</p>
         </div>
-        <div id="paginationContainer"></div>
+        <div id="paginationContainer" style="padding:12px 18px"></div>
       </div>
     </div>
   </main>
@@ -85,8 +71,9 @@
 <div class="toast-container" id="toastContainer"></div>
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070204"></script>
-<script src="../js/admin-sidebar.js?v=2026070204"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
 <script>
 var currentPage = 1;
 var searchTimer;
@@ -121,8 +108,8 @@ function loadPayments() {
 
     if (res.stats) {
       document.getElementById('statsCards').innerHTML =
-        '<div class="stat-card"><div class="stat-value">£' + parseFloat(res.stats.total||0).toLocaleString('en-GB',{minimumFractionDigits:2}) + '</div><div class="stat-label">إجمالي الإيرادات</div></div>' +
-        '<div class="stat-card"><div class="stat-value">' + (res.stats.count||0) + '</div><div class="stat-label">معاملات ناجحة</div></div>';
+        '<div class="stat-card"><div class="stat-icon green">' + Admin.icon('revenue', 24) + '</div><div><div class="stat-value">£' + parseFloat(res.stats.total||0).toLocaleString('en-GB',{minimumFractionDigits:2}) + '</div><div class="stat-label">إجمالي الإيرادات</div></div></div>' +
+        '<div class="stat-card"><div class="stat-icon violet">' + Admin.icon('check', 24) + '</div><div><div class="stat-value">' + (res.stats.count||0) + '</div><div class="stat-label">معاملات ناجحة</div></div></div>';
     }
 
     if (!res.data || res.data.length === 0) {
@@ -139,7 +126,9 @@ function loadPayments() {
         failed:    '<span class="badge badge-danger">فاشل</span>',
         refunded:  '<span class="badge badge-info">مسترد</span>',
       }[p.status] || '<span class="badge">' + p.status + '</span>';
-      var bookingType = p.booking_type === 'flight' ? '✈️ رحلة' : '🏨 فندق';
+      var bookingType = p.booking_type === 'flight'
+        ? '<span style="display:inline-flex;align-items:center;gap:5px"><span style="color:var(--adm-1)">' + Admin.icon('flight', 16) + '</span> رحلة</span>'
+        : '<span style="display:inline-flex;align-items:center;gap:5px"><span style="color:var(--adm-1)">' + Admin.icon('hotel', 16) + '</span> فندق</span>';
       var amount = (p.currency || 'GBP') + ' ' + parseFloat(p.amount||0).toFixed(2);
       var stripeId = p.stripe_payment_intent_id ? p.stripe_payment_intent_id.substring(0,20) + '...' : '—';
       html += '<tr>' +
@@ -150,7 +139,7 @@ function loadPayments() {
         '<td>' + bookingType + '</td>' +
         '<td>' + statusBadge + '</td>' +
         '<td>' + new Date(p.created_at).toLocaleDateString('ar-KW') + '</td>' +
-        '<td>' + (p.status === 'succeeded' ? '<button class="btn btn-ghost btn-sm" onclick="refundPayment(' + p.id + ')" style="color:var(--danger)">استرداد</button>' : '—') + '</td>' +
+        '<td>' + (p.status === 'succeeded' ? '<div class="table-actions"><button class="adm-act danger" onclick="refundPayment(' + p.id + ')">' + Admin.icon('refund', 15) + ' استرداد</button></div>' : '—') + '</td>' +
         '</tr>';
     });
     document.getElementById('paymentsTable').innerHTML = html;
@@ -168,10 +157,10 @@ function refundPayment(id) {
 
 function renderPagination(meta) {
   if (!meta || meta.last_page <= 1) { document.getElementById('paginationContainer').innerHTML = ''; return; }
-  var html = '<div style="display:flex;justify-content:center;gap:8px;padding:16px">';
-  if (meta.page > 1) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page-1) + ')">السابق</button>';
-  html += '<span style="padding:6px 12px;font-size:.85rem">' + meta.page + ' / ' + meta.last_page + '</span>';
-  if (meta.page < meta.last_page) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page+1) + ')">التالي</button>';
+  var html = '<div class="pagination">';
+  if (meta.page > 1) html += '<button class="adm-btn ghost sm" onclick="goPage(' + (meta.page-1) + ')">السابق</button>';
+  html += '<span style="padding:6px 12px;font-size:.85rem;color:var(--adm-muted)">' + meta.page + ' / ' + meta.last_page + '</span>';
+  if (meta.page < meta.last_page) html += '<button class="adm-btn ghost sm" onclick="goPage(' + (meta.page+1) + ')">التالي</button>';
   html += '</div>';
   document.getElementById('paginationContainer').innerHTML = html;
 }

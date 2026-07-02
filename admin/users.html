@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>المستخدمون — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
 </head>
 <body>
 <div class="admin-layout">
@@ -13,39 +13,28 @@
 
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>👤 إدارة المستخدمين</h1>
-      <div style="display:flex;align-items:center;gap:12px">
-        <span id="totalCount" style="font-size:.85rem;color:var(--text-muted)"></span>
-        <button class="adm-btn sm" onclick="openCreate()">+ مستخدم جديد</button>
+      <h1><span data-ic="users" data-ic-size="22"></span> المستخدمون</h1>
+      <div class="topbar-actions">
+        <span id="totalCount" style="font-size:.85rem;color:var(--adm-muted)"></span>
+        <button class="adm-btn sm" onclick="openCreate()"><span data-ic="plus" data-ic-size="15"></span> مستخدم جديد</button>
       </div>
     </div>
 
     <div class="admin-content">
-      <div class="card" style="margin-bottom:20px;padding:0">
-        <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-          <div style="flex:1;min-width:200px">
-            <label class="form-label" style="font-size:.78rem">البحث</label>
-            <input type="search" class="form-control" id="searchInput" placeholder="البحث بالاسم أو البريد الإلكتروني..." oninput="debouncedSearch()">
-          </div>
-          <div>
-            <label class="form-label" style="font-size:.78rem">الحالة</label>
-            <select class="form-control" id="statusFilter" onchange="loadUsers()" style="min-width:130px">
-              <option value="">الكل</option>
-              <option value="active">نشط</option>
-              <option value="inactive">غير نشط</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" style="font-size:.78rem">الدور</label>
-            <select class="form-control" id="roleFilter" onchange="loadUsers()" style="min-width:120px">
-              <option value="">الكل</option>
-              <option value="user">مستخدم</option>
-              <option value="admin">مشرف</option>
-              <option value="super_admin">مشرف رئيسي</option>
-            </select>
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">مسح</button>
-        </div>
+      <div class="adm-toolbar">
+        <div class="adm-search"><span data-ic="search"></span><input type="search" id="searchInput" placeholder="البحث بالاسم أو البريد الإلكتروني..." oninput="debouncedSearch()"></div>
+        <select class="adm-select" id="statusFilter" onchange="loadUsers()" style="max-width:150px">
+          <option value="">كل الحالات</option>
+          <option value="active">نشط</option>
+          <option value="inactive">غير نشط</option>
+        </select>
+        <select class="adm-select" id="roleFilter" onchange="loadUsers()" style="max-width:150px">
+          <option value="">كل الأدوار</option>
+          <option value="user">مستخدم</option>
+          <option value="admin">مشرف</option>
+          <option value="super_admin">مشرف رئيسي</option>
+        </select>
+        <button class="adm-btn ghost sm" onclick="clearFilters()">مسح</button>
       </div>
 
       <div class="table-card">
@@ -70,9 +59,9 @@
             <tbody id="usersTable"></tbody>
           </table>
         </div>
-        <div id="emptyState" class="empty-state" style="display:none">
-          <div class="empty-icon">👤</div>
-          <h3>لا يوجد مستخدمون</h3>
+        <div id="emptyState" class="adm-empty" style="display:none">
+          <span data-ic="users" data-ic-size="40"></span>
+          <h4>لا يوجد مستخدمون</h4>
           <p>لم يتم العثور على نتائج</p>
         </div>
         <div id="paginationContainer"></div>
@@ -82,60 +71,56 @@
 </div>
 
 <!-- Edit / Change Role Modal -->
-<div id="editModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-header">
-      <h3 id="modalTitle">تعديل المستخدم</h3>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+<div id="editModal" class="adm-modal" onclick="if(event.target===this)closeModal()">
+  <div class="adm-modal-card" style="max-width:480px">
+    <div class="adm-modal-head">
+      <h3 id="modalTitle"><span data-ic="edit" data-ic-size="18"></span> تعديل المستخدم</h3>
+      <button class="adm-modal-x" onclick="closeModal()"><span data-ic="close" data-ic-size="16"></span></button>
     </div>
-    <div class="modal-body">
+    <div class="adm-modal-body">
       <input type="hidden" id="editId">
-      <div class="form-group">
-        <label class="form-label">الاسم الأول</label>
-        <input type="text" class="form-control" id="editFirstName">
+      <div class="adm-row2">
+        <div class="adm-field"><label>الاسم الأول</label><input type="text" class="adm-input" id="editFirstName"></div>
+        <div class="adm-field"><label>الاسم الأخير</label><input type="text" class="adm-input" id="editLastName"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">الاسم الأخير</label>
-        <input type="text" class="form-control" id="editLastName">
-      </div>
-      <div class="form-group">
-        <label class="form-label">الدور</label>
-        <select class="form-control" id="editRole">
-          <option value="user">مستخدم</option>
-          <option value="admin">مشرف</option>
-          <option value="super_admin">مشرف رئيسي</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">الحالة</label>
-        <select class="form-control" id="editStatus">
-          <option value="1">نشط</option>
-          <option value="0">غير نشط</option>
-        </select>
+      <div class="adm-row2">
+        <div class="adm-field"><label>الدور</label>
+          <select class="adm-select" id="editRole">
+            <option value="user">مستخدم</option>
+            <option value="admin">مشرف</option>
+            <option value="super_admin">مشرف رئيسي</option>
+          </select>
+        </div>
+        <div class="adm-field"><label>الحالة</label>
+          <select class="adm-select" id="editStatus">
+            <option value="1">نشط</option>
+            <option value="0">غير نشط</option>
+          </select>
+        </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-      <button class="btn btn-primary" onclick="saveUser()">حفظ التعديلات</button>
+    <div class="adm-modal-foot">
+      <button class="adm-btn ghost" onclick="closeModal()">إلغاء</button>
+      <button class="adm-btn" onclick="saveUser()">حفظ التعديلات</button>
     </div>
   </div>
 </div>
 
 <!-- User Details Modal -->
-<div id="detailsModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeDetailsModal()">
-  <div class="modal" style="max-width:560px">
-    <div class="modal-header">
-      <h3>تفاصيل المستخدم</h3>
-      <button class="modal-close" onclick="closeDetailsModal()">✕</button>
+<div id="detailsModal" class="adm-modal" onclick="if(event.target===this)closeDetailsModal()">
+  <div class="adm-modal-card" style="max-width:560px">
+    <div class="adm-modal-head">
+      <h3><span data-ic="eye" data-ic-size="18"></span> تفاصيل المستخدم</h3>
+      <button class="adm-modal-x" onclick="closeDetailsModal()"><span data-ic="close" data-ic-size="16"></span></button>
     </div>
-    <div class="modal-body" id="detailsContent"></div>
+    <div class="adm-modal-body" id="detailsContent"></div>
   </div>
 </div>
 
 <!-- Create user modal -->
 <div id="createModal" class="adm-modal">
   <div class="adm-modal-card">
-    <div class="adm-modal-head"><h3>➕ إنشاء مستخدم جديد</h3><button class="adm-modal-x" onclick="closeCreate()">✕</button></div>
+    <div class="adm-modal-head"><h3><span data-ic="plus" data-ic-size="18"></span> إنشاء مستخدم جديد</h3><button class="adm-modal-x" onclick="closeCreate()"><span data-ic="close" data-ic-size="16"></span></button></div>
     <div class="adm-modal-body">
       <div class="adm-row2">
         <div class="adm-field"><label>الاسم الأول</label><input class="adm-input" id="cuFirst"></div>
@@ -159,7 +144,7 @@
 <!-- Wallet adjust modal -->
 <div id="walletModal" class="adm-modal">
   <div class="adm-modal-card">
-    <div class="adm-modal-head"><h3>💰 محفظة المستخدم</h3><button class="adm-modal-x" onclick="closeWallet()">✕</button></div>
+    <div class="adm-modal-head"><h3><span data-ic="wallet" data-ic-size="18"></span> محفظة المستخدم</h3><button class="adm-modal-x" onclick="closeWallet()"><span data-ic="close" data-ic-size="16"></span></button></div>
     <div class="adm-modal-body">
       <div style="text-align:center;background:var(--adm-grad);color:#fff;border-radius:14px;padding:16px;margin-bottom:16px">
         <div style="font-size:.78rem;opacity:.85" id="wmName">—</div>
@@ -168,8 +153,8 @@
       </div>
       <div class="adm-field"><label>نوع العملية</label>
         <div class="adm-seg" id="wmSeg">
-          <button type="button" class="on credit" data-t="credit" onclick="wmType('credit')">＋ إضافة رصيد</button>
-          <button type="button" data-t="debit" onclick="wmType('debit')">－ خصم رصيد</button>
+          <button type="button" class="on credit" data-t="credit" onclick="wmType('credit')">إضافة رصيد</button>
+          <button type="button" data-t="debit" onclick="wmType('debit')">خصم رصيد</button>
         </div>
       </div>
       <div class="adm-field"><label>المبلغ (GBP)</label><input class="adm-input" id="wmAmount" type="number" min="0" step="0.01" placeholder="0.00"></div>
@@ -183,7 +168,7 @@
 <!-- Reset password modal -->
 <div id="resetModal" class="adm-modal">
   <div class="adm-modal-card" style="max-width:420px">
-    <div class="adm-modal-head"><h3>🔑 تعيين كلمة مرور</h3><button class="adm-modal-x" onclick="closeResetPwd()">✕</button></div>
+    <div class="adm-modal-head"><h3><span data-ic="key" data-ic-size="18"></span> تعيين كلمة مرور</h3><button class="adm-modal-x" onclick="closeResetPwd()"><span data-ic="close" data-ic-size="16"></span></button></div>
     <div class="adm-modal-body">
       <div class="adm-field"><label>كلمة المرور الجديدة</label><input class="adm-input" id="rpPass" type="text" placeholder="8 أحرف على الأقل"></div>
       <div id="rpMsg" class="adm-msg"></div>
@@ -196,8 +181,9 @@
 
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070204"></script>
-<script src="../js/admin-sidebar.js?v=2026070204"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
 <script>
 var currentPage = 1;
 var searchTimer;
@@ -244,12 +230,13 @@ function loadUsers() {
       var statusBadge = isActive
         ? '<span class="badge badge-success">نشط</span>'
         : '<span class="badge badge-danger">غير نشط</span>';
-      var toggleLabel = isActive ? '🔴 تعطيل' : '🟢 تفعيل';
+      var toggleLabel = isActive ? 'تعطيل' : 'تفعيل';
       var phone = u.phone_country_code && u.phone_number ? u.phone_country_code + ' ' + u.phone_number : '—';
       var lastLogin = u.last_login_at ? new Date(u.last_login_at).toLocaleDateString('ar-KW') : '—';
       var userData = JSON.stringify(u).replace(/"/g, '&quot;');
-      html += '<tr style="cursor:pointer" onclick="showDetails(' + userData + ')" onmouseenter="this.style.background=\'var(--bg)\'" onmouseleave="this.style.background=\'\'">' +
-        '<td style="color:var(--text-muted);font-size:.8rem">' + u.id + '</td>' +
+      var fullName = ((u.first_name||'')+' '+(u.last_name||'')).replace(/"/g,'');
+      html += '<tr style="cursor:pointer" onclick="showDetails(' + userData + ')">' +
+        '<td style="color:var(--adm-muted);font-size:.8rem">' + u.id + '</td>' +
         '<td><strong>' + (u.first_name || '') + ' ' + (u.last_name || '') + '</strong>' +
           '<div class="adm-fu" style="font-size:.72rem">' + (u.fu_number || '') + '</div></td>' +
         '<td style="direction:ltr;text-align:right;font-size:.85rem">' + u.email + '</td>' +
@@ -260,10 +247,12 @@ function loadUsers() {
         '<td style="font-size:.82rem">' + lastLogin + '</td>' +
         '<td onclick="event.stopPropagation()">' +
           '<div class="table-actions">' +
-          '<button class="btn btn-ghost btn-sm" onclick="openEdit(' + userData + ')">✏️ تعديل</button>' +
-          '<button class="btn btn-ghost btn-sm" onclick="openWallet(' + u.id + ',&quot;' + ((u.first_name||'')+' '+(u.last_name||'')).replace(/"/g,'') + '&quot;)">💰 المحفظة</button>' +
-          '<button class="btn btn-ghost btn-sm" onclick="openResetPwd(' + u.id + ')">🔑 كلمة المرور</button>' +
-          '<button class="btn btn-ghost btn-sm" onclick="toggleStatus(' + u.id + ',' + (isActive?0:1) + ')">' + toggleLabel + '</button>' +
+          '<button class="adm-act" onclick="showDetails(' + userData + ')">' + Admin.icon('eye',15) + ' عرض</button>' +
+          '<button class="adm-act" onclick="openEdit(' + userData + ')">' + Admin.icon('edit',15) + ' تعديل</button>' +
+          '<button class="adm-act" onclick="openWallet(' + u.id + ',&quot;' + fullName + '&quot;)">' + Admin.icon('wallet',15) + ' المحفظة</button>' +
+          '<button class="adm-act" onclick="openResetPwd(' + u.id + ')">' + Admin.icon('key',15) + ' كلمة المرور</button>' +
+          '<button class="adm-act ' + (isActive?'':'success') + '" onclick="toggleStatus(' + u.id + ',' + (isActive?0:1) + ')">' + Admin.icon('power',15) + ' ' + toggleLabel + '</button>' +
+          '<button class="adm-act danger" onclick="deleteUser(' + u.id + ')">' + Admin.icon('trash',15) + ' حذف</button>' +
           '</div>' +
         '</td>' +
         '</tr>';
@@ -279,10 +268,10 @@ function loadUsers() {
 
 function renderPagination(meta) {
   if (meta.last_page <= 1) { document.getElementById('paginationContainer').innerHTML = ''; return; }
-  var html = '<div style="display:flex;justify-content:center;gap:8px;padding:16px">';
-  if (meta.page > 1) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page-1) + ')">السابق</button>';
+  var html = '<div class="pagination" style="display:flex;justify-content:center;gap:8px;padding:16px">';
+  if (meta.page > 1) html += '<button class="adm-btn ghost sm" onclick="goPage(' + (meta.page-1) + ')">السابق</button>';
   html += '<span style="padding:6px 12px;font-size:.85rem">' + meta.page + ' / ' + meta.last_page + '</span>';
-  if (meta.page < meta.last_page) html += '<button class="btn btn-ghost btn-sm" onclick="goPage(' + (meta.page+1) + ')">التالي</button>';
+  if (meta.page < meta.last_page) html += '<button class="adm-btn ghost sm" onclick="goPage(' + (meta.page+1) + ')">التالي</button>';
   html += '</div>';
   document.getElementById('paginationContainer').innerHTML = html;
 }
@@ -295,10 +284,10 @@ function openEdit(u) {
   document.getElementById('editLastName').value  = u.last_name || '';
   document.getElementById('editRole').value      = u.role || 'user';
   document.getElementById('editStatus').value    = u.is_active == 1 ? '1' : '0';
-  document.getElementById('editModal').style.display = 'flex';
+  document.getElementById('editModal').classList.add('open');
 }
 
-function closeModal() { document.getElementById('editModal').style.display = 'none'; }
+function closeModal() { document.getElementById('editModal').classList.remove('open'); }
 
 function saveUser() {
   var id = document.getElementById('editId').value;
@@ -328,33 +317,44 @@ function toggleStatus(id, newStatus) {
   });
 }
 
+function deleteUser(id) {
+  if (!confirm('هل تريد حذف هذا المستخدم نهائياً؟')) return;
+  Api.delete('/api/admin/users/' + id, true).then(function() {
+    showToast('تم حذف المستخدم', 'success');
+    loadUsers();
+  }).catch(function(e) {
+    showToast(e.message || 'فشل حذف المستخدم', 'error');
+  });
+}
+
 function showDetails(u) {
   var phone = u.phone_country_code && u.phone_number ? u.phone_country_code + ' ' + u.phone_number : '—';
   document.getElementById('detailsContent').innerHTML =
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
-      '<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الاسم الكامل</div><div style="font-weight:600">' + (u.first_name||'') + ' ' + (u.last_name||'') + '</div></div>' +
-      '<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">البريد الإلكتروني</div><div style="direction:ltr;text-align:right">' + u.email + '</div></div>' +
-      '<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">رقم الهاتف</div><div style="direction:ltr;text-align:right">' + phone + '</div></div>' +
-      '<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الدور</div><div>' + (u.role==='super_admin'?'<span class="badge badge-warning">مشرف رئيسي</span>':u.role==='admin'?'<span class="badge badge-info">مشرف</span>':'<span class="badge">مستخدم</span>') + '</div></div>' +
-      '<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الحالة</div><div>' + (u.is_active==1?'<span class="badge badge-success">نشط</span>':'<span class="badge badge-danger">غير نشط</span>') + '</div></div>' +
-      '<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">تاريخ التسجيل</div><div>' + new Date(u.created_at).toLocaleDateString('ar-SA') + '</div></div>' +
-      '<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">آخر تسجيل دخول</div><div>' + (u.last_login_at ? new Date(u.last_login_at).toLocaleString('ar-SA') : '—') + '</div></div>' +
-      '<div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">رقم المعرف</div><div style="font-family:monospace">' + u.id + '</div></div>' +
+    '<div class="adm-dl">' +
+      '<div class="adm-dl-item"><span class="k">الاسم الكامل</span><span class="v">' + (u.first_name||'') + ' ' + (u.last_name||'') + '</span></div>' +
+      '<div class="adm-dl-item"><span class="k">رقم FU</span><span class="v adm-fu">' + (u.fu_number||'—') + '</span></div>' +
+      '<div class="adm-dl-item"><span class="k">البريد الإلكتروني</span><span class="v" style="direction:ltr;text-align:right">' + u.email + '</span></div>' +
+      '<div class="adm-dl-item"><span class="k">رقم الهاتف</span><span class="v" style="direction:ltr;text-align:right">' + phone + '</span></div>' +
+      '<div class="adm-dl-item"><span class="k">الدور</span><span class="v">' + (u.role==='super_admin'?'<span class="badge badge-warning">مشرف رئيسي</span>':u.role==='admin'?'<span class="badge badge-info">مشرف</span>':'<span class="badge">مستخدم</span>') + '</span></div>' +
+      '<div class="adm-dl-item"><span class="k">الحالة</span><span class="v">' + (u.is_active==1?'<span class="badge badge-success">نشط</span>':'<span class="badge badge-danger">غير نشط</span>') + '</span></div>' +
+      '<div class="adm-dl-item"><span class="k">تاريخ التسجيل</span><span class="v">' + new Date(u.created_at).toLocaleDateString('ar-SA') + '</span></div>' +
+      '<div class="adm-dl-item"><span class="k">آخر تسجيل دخول</span><span class="v">' + (u.last_login_at ? new Date(u.last_login_at).toLocaleString('ar-SA') : '—') + '</span></div>' +
+      '<div class="adm-dl-item"><span class="k">رقم المعرف</span><span class="v" style="font-family:monospace">' + u.id + '</span></div>' +
     '</div>' +
-    '<div style="margin-top:16px;display:flex;gap:10px">' +
-      '<button class="btn btn-primary" onclick="openEdit(' + JSON.stringify(u).replace(/"/g,"&quot;") + ');closeDetailsModal()">✏️ تعديل</button>' +
-      '<button class="btn btn-ghost" onclick="closeDetailsModal()">إغلاق</button>' +
+    '<div style="margin-top:18px;display:flex;gap:10px">' +
+      '<button class="adm-btn" onclick="openEdit(' + JSON.stringify(u).replace(/"/g,"&quot;") + ');closeDetailsModal()">' + Admin.icon('edit',15) + ' تعديل</button>' +
+      '<button class="adm-btn ghost" onclick="closeDetailsModal()">إغلاق</button>' +
     '</div>';
-  document.getElementById('detailsModal').style.display = 'flex';
+  document.getElementById('detailsModal').classList.add('open');
 }
 
-function closeDetailsModal() { document.getElementById('detailsModal').style.display = 'none'; }
+function closeDetailsModal() { document.getElementById('detailsModal').classList.remove('open'); }
 
 // ── Create user ──────────────────────────────────────────────
 function openCreate() {
   ['cuFirst','cuLast','cuEmail','cuCC','cuPhone','cuPass'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('cuRole').value='user';
-  document.getElementById('cuMsg').textContent='';
+  document.getElementById('cuMsg').className='adm-msg'; document.getElementById('cuMsg').textContent='';
   document.getElementById('createModal').classList.add('open');
 }
 function closeCreate(){ document.getElementById('createModal').classList.remove('open'); }
@@ -368,7 +368,7 @@ function submitCreate(){
     role:document.getElementById('cuRole').value
   }, true).then(function(res){
     showToast(res.message||'تم إنشاء المستخدم', 'success'); closeCreate(); loadUsers();
-  }).catch(function(e){ msg.className='adm-msg err'; msg.textContent=e.message||'تعذّر إنشاء المستخدم'; btn.disabled=false; });
+  }).catch(function(e){ msg.className='adm-msg show err'; msg.textContent=e.message||'تعذّر إنشاء المستخدم'; btn.disabled=false; });
 }
 
 // ── Wallet adjust ────────────────────────────────────────────
@@ -378,7 +378,7 @@ function openWallet(id, name){
   document.getElementById('wmName').textContent=name||('مستخدم #'+id);
   document.getElementById('wmBalance').textContent='…';
   document.getElementById('wmAmount').value=''; document.getElementById('wmReason').value='';
-  document.getElementById('wmMsg').textContent='';
+  document.getElementById('wmMsg').className='adm-msg'; document.getElementById('wmMsg').textContent='';
   wmType('credit');
   document.getElementById('walletModal').classList.add('open');
   Api.get('/api/admin/users/'+id, true).then(function(res){
@@ -390,28 +390,28 @@ function wmType(t){ _wmType=t; document.querySelectorAll('#wmSeg button').forEac
 function submitWallet(){
   var msg=document.getElementById('wmMsg'); msg.className='adm-msg'; msg.textContent='';
   var amount=parseFloat(document.getElementById('wmAmount').value||0), reason=document.getElementById('wmReason').value.trim();
-  if(!(amount>0)){ msg.className='adm-msg err'; msg.textContent='أدخل مبلغاً صحيحاً'; return; }
-  if(!reason){ msg.className='adm-msg err'; msg.textContent='أدخل سبب العملية'; return; }
+  if(!(amount>0)){ msg.className='adm-msg show err'; msg.textContent='أدخل مبلغاً صحيحاً'; return; }
+  if(!reason){ msg.className='adm-msg show err'; msg.textContent='أدخل سبب العملية'; return; }
   var btn=document.getElementById('wmBtn'); btn.disabled=true;
   Api.post('/api/admin/users/'+_wmUserId+'/wallet', { type:_wmType, amount:amount, reason:reason }, true).then(function(res){
-    msg.className='adm-msg ok'; msg.textContent=res.message||'تم';
+    msg.className='adm-msg show ok'; msg.textContent=res.message||'تم';
     document.getElementById('wmBalance').textContent=(res.balance||'')+' '+(res.currency||'GBP');
     document.getElementById('wmAmount').value=''; document.getElementById('wmReason').value=''; btn.disabled=false;
     showToast(res.message||'تمت العملية','success');
-  }).catch(function(e){ msg.className='adm-msg err'; msg.textContent=e.message||'تعذّرت العملية'; btn.disabled=false; });
+  }).catch(function(e){ msg.className='adm-msg show err'; msg.textContent=e.message||'تعذّرت العملية'; btn.disabled=false; });
 }
 
 // ── Reset password ───────────────────────────────────────────
 var _rpUserId=null;
-function openResetPwd(id){ _rpUserId=id; document.getElementById('rpPass').value=''; document.getElementById('rpMsg').textContent=''; document.getElementById('resetModal').classList.add('open'); }
+function openResetPwd(id){ _rpUserId=id; document.getElementById('rpPass').value=''; document.getElementById('rpMsg').className='adm-msg'; document.getElementById('rpMsg').textContent=''; document.getElementById('resetModal').classList.add('open'); }
 function closeResetPwd(){ document.getElementById('resetModal').classList.remove('open'); }
 function submitResetPwd(){
   var msg=document.getElementById('rpMsg'); msg.className='adm-msg'; var pass=document.getElementById('rpPass').value;
-  if((pass||'').length<8){ msg.className='adm-msg err'; msg.textContent='كلمة المرور 8 أحرف على الأقل'; return; }
+  if((pass||'').length<8){ msg.className='adm-msg show err'; msg.textContent='كلمة المرور 8 أحرف على الأقل'; return; }
   var btn=document.getElementById('rpBtn'); btn.disabled=true;
   Api.post('/api/admin/users/'+_rpUserId+'/reset-password', { password:pass }, true).then(function(res){
     showToast(res.message||'تم تعيين كلمة المرور','success'); closeResetPwd(); btn.disabled=false;
-  }).catch(function(e){ msg.className='adm-msg err'; msg.textContent=e.message||'تعذّر التعيين'; btn.disabled=false; });
+  }).catch(function(e){ msg.className='adm-msg show err'; msg.textContent=e.message||'تعذّر التعيين'; btn.disabled=false; });
 }
 
 loadUsers();

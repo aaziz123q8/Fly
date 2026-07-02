@@ -1,9 +1,9 @@
 /**
  * admin-sidebar.js — FlyMasar Admin Panel chrome
  * Desktop: injects the violet sidebar into #adminSidebar.
- * Phones (<=768px): injects a NATIVE app shell instead — a fixed bottom tab
- * bar plus a slide-up "More" sheet — and the desktop sidebar is hidden by CSS.
- * Also enforces the app-like zoom lock on phones.
+ * Phones (<=768px): injects a NATIVE app shell — a fixed bottom tab bar plus a
+ * slide-up "More" sheet — and the desktop sidebar is hidden by CSS.
+ * Icons are inline SVG via AdminIcon() (js/admin-icons.js must load first).
  */
 (function () {
   'use strict';
@@ -15,30 +15,35 @@
     return;
   }
 
+  // Icon helper fallback (in case admin-icons.js failed to load).
+  const ic = (typeof AdminIcon === 'function')
+    ? AdminIcon
+    : function () { return ''; };
+
   // ── Navigation definition ─────────────────────────────────────────────────
   const NAV_ITEMS = [
     { section: 'الرئيسية' },
-    { href: 'index.html',         icon: '📊', label: 'لوحة التحكم' },
+    { href: 'index.html',         icon: 'dashboard',     label: 'لوحة التحكم' },
     { section: 'الإدارة' },
-    { href: 'users.html',         icon: '👤', label: 'المستخدمون' },
-    { href: 'travelers.html',     icon: '👥', label: 'المسافرون' },
-    { href: 'bookings.html',      icon: '📋', label: 'الحجوزات' },
-    { href: 'payments.html',      icon: '💳', label: 'المدفوعات' },
-    { href: 'support.html',       icon: '🎧', label: 'الدعم' },
+    { href: 'users.html',         icon: 'users',         label: 'المستخدمون' },
+    { href: 'travelers.html',     icon: 'traveler',      label: 'المسافرون' },
+    { href: 'bookings.html',      icon: 'bookings',      label: 'الحجوزات' },
+    { href: 'payments.html',      icon: 'payments',      label: 'المدفوعات' },
+    { href: 'support.html',       icon: 'support',       label: 'الدعم' },
     { section: 'التسويق والتسعير' },
-    { href: 'coupons.html',       icon: '🎟️', label: 'القسائم' },
-    { href: 'commissions.html',   icon: '💰', label: 'العمولات' },
-    { href: 'pricing.html',       icon: '💲', label: 'التسعير والهوامش' },
-    { section: 'التحليلات' },
-    { href: 'analytics.html',     icon: '📈', label: 'التحليلات والتقارير' },
-    { href: 'notifications.html', icon: '🔔', label: 'الإشعارات' },
-    { section: 'الإعدادات والتحكم' },
-    { href: 'settings.html',      icon: '🛠️', label: 'مركز التحكم' },
-    { href: 'currencies.html',    icon: '💱', label: 'العملات' },
-    { href: 'api-settings.html',  icon: '⚙️', label: 'إعدادات API' },
-    { href: 'cms.html',           icon: '📝', label: 'المحتوى' },
+    { href: 'commissions.html',   icon: 'pricing',       label: 'التسعير والعمولات' },
+    { href: 'coupons.html',       icon: 'coupons',       label: 'القسائم' },
+    { section: 'التحليلات والإشعارات' },
+    { href: 'analytics.html',     icon: 'analytics',     label: 'التحليلات والتقارير' },
+    { href: 'notifications.html', icon: 'notifications', label: 'الإشعارات' },
+    { section: 'المحتوى والإعدادات' },
+    { href: 'cms.html',           icon: 'cms',           label: 'المحتوى' },
+    { href: 'currencies.html',    icon: 'currencies',    label: 'العملات' },
+    { href: 'api-settings.html',  icon: 'api',           label: 'إعدادات API' },
+    { href: 'settings.html',      icon: 'settings',      label: 'إعدادات الموقع' },
+    { href: 'activity.html',      icon: 'activity',      label: 'سجل النشاط' },
     { section: 'النظام' },
-    { href: '../index.html',      icon: '🌐', label: 'الموقع الرئيسي' },
+    { href: '../index.html',      icon: 'site',          label: 'الموقع الرئيسي' },
   ];
 
   // Which items appear as the 4 primary phone tabs (5th is "More").
@@ -49,16 +54,15 @@
   const here = (currentPath.split('/').pop() || 'index.html') || 'index.html';
 
   function isActive(href) {
-    if (!href) return false;
-    const base = href.replace(/^\.\.\//, '');
-    return currentPath.endsWith('/' + href) || currentPath.endsWith('/' + base) || currentPath.endsWith(href);
+    if (!href || href.indexOf('../') === 0) return false;
+    return currentPath.endsWith('/' + href) || currentPath.endsWith(href);
   }
 
   function buildNav() {
     return NAV_ITEMS.map(function (item) {
       if (item.section) return '<div class="sidebar-section-title">' + item.section + '</div>';
       var cls = isActive(item.href) ? ' class="active"' : '';
-      return '<a href="' + item.href + '"' + cls + '><span class="nav-icon">' + item.icon + '</span> ' + item.label + '</a>';
+      return '<a href="' + item.href + '"' + cls + '>' + ic(item.icon, 19) + '<span>' + item.label + '</span></a>';
     }).join('\n');
   }
 
@@ -68,25 +72,23 @@
 
   // ── Sidebar HTML (desktop) ────────────────────────────────────────────────
   var sidebarHTML = [
-    '<div class="sidebar-header" style="display:flex;align-items:center;justify-content:space-between">',
-    '  <div>',
-    '    <div class="sidebar-brand">✈️ Fly<span>Masar</span></div>',
-    '    <div style="font-size:.75rem;color:rgba(255,255,255,.4);margin-top:4px">لوحة التحكم</div>',
-    '  </div>',
-    '  <button id="sidebarCloseBtn" onclick="toggleSidebar()" style="display:none;border:none;background:rgba(255,255,255,.15);color:white;border-radius:8px;padding:4px 10px;cursor:pointer;font-size:1.1rem">✕</button>',
+    '<div class="sidebar-header">',
+    '  <div class="sidebar-brand"><span dir="ltr" style="display:inline-flex;align-items:center;gap:9px">' + ic('flight', 22) + 'Fly<span>Masar</span></span></div>',
+    '  <div class="sidebar-sub">لوحة تحكم الإدارة</div>',
+    '  <button id="sidebarCloseBtn" onclick="toggleSidebar()" style="display:none">' + ic('close', 18) + '</button>',
     '</div>',
     '<nav class="sidebar-nav">',
     buildNav(),
     '</nav>',
     '<div class="sidebar-footer">',
-    '  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">',
-    '    <div class="user-avatar" style="background:rgba(255,255,255,.15);font-size:.8rem">' + adminInitial + '</div>',
+    '  <div class="user-info">',
+    '    <div class="user-avatar">' + adminInitial + '</div>',
     '    <div>',
-    '      <div style="color:white;font-weight:600;font-size:.88rem">' + adminName + '</div>',
-    '      <div style="color:rgba(255,255,255,.4);font-size:.75rem">مشرف النظام</div>',
+    '      <div class="user-name">' + adminName + '</div>',
+    '      <div class="user-role">مشرف النظام</div>',
     '    </div>',
     '  </div>',
-    '  <button onclick="Auth.logout()" class="btn btn-ghost btn-sm btn-block" style="border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.7)">🚪 تسجيل الخروج</button>',
+    '  <button onclick="Auth.logout()" class="sidebar-logout">' + ic('logout', 17) + ' تسجيل الخروج</button>',
     '</div>',
   ].join('\n');
 
@@ -96,10 +98,10 @@
       var it = NAV_ITEMS.find(function (n) { return n.href === href; });
       if (!it) return '';
       var on = isActive(href) ? ' on' : '';
-      return '<a class="adm-tab' + on + '" href="' + href + '"><span class="ic">' + it.icon + '</span><span>' + it.label + '</span></a>';
+      return '<a class="adm-tab' + on + '" href="' + href + '">' + ic(it.icon, 22) + '<span>' + it.label + '</span></a>';
     }).join('');
     var moreActive = MOBILE_TABS.indexOf(here) < 0 ? ' on' : '';
-    tabs += '<button type="button" class="adm-tab' + moreActive + '" id="admMoreBtn"><span class="ic">☰</span><span>المزيد</span></button>';
+    tabs += '<button type="button" class="adm-tab' + moreActive + '" id="admMoreBtn">' + ic('menu', 22) + '<span>المزيد</span></button>';
     return '<nav class="adm-mbar" id="admMbar">' + tabs + '</nav>';
   }
 
@@ -114,11 +116,11 @@
         openGrid = true;
       } else {
         var cls = isActive(item.href) ? ' class="active"' : '';
-        html += '<a href="' + item.href + '"' + cls + '><span class="ic">' + item.icon + '</span>' + item.label + '</a>';
+        html += '<a href="' + item.href + '"' + cls + '>' + ic(item.icon, 18) + item.label + '</a>';
       }
     });
     if (openGrid) html += '</div>';
-    html += '<button class="adm-sheet-logout" onclick="Auth.logout()">🚪 تسجيل الخروج</button>';
+    html += '<button class="adm-sheet-logout" onclick="Auth.logout()">' + ic('logout', 17) + ' تسجيل الخروج</button>';
     return '<div class="adm-sheet-ov" id="admSheetOv"></div><div class="adm-sheet" id="admSheet">' + html + '</div>';
   }
 
@@ -152,8 +154,6 @@
     var el = document.getElementById('adminSidebar');
     if (el) el.innerHTML = sidebarHTML;
 
-    // Desktop drawer overlay + hamburger (kept for tablet ≤768 fallback isn't used;
-    // the phone shell below is the primary mobile UI).
     var overlay = document.createElement('div');
     overlay.className = 'sidebar-overlay';
     overlay.id = 'sidebarOverlay';
@@ -180,7 +180,6 @@
       if (o) o.classList.remove('active');
     }
 
-    // Kept for any legacy onclick="toggleSidebar()" in page markup.
     window.toggleSidebar = function () {
       var s = document.getElementById('adminSidebar');
       var o = document.getElementById('sidebarOverlay');

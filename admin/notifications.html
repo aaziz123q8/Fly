@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>الإشعارات — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
 </head>
 <body>
 <div class="admin-layout">
@@ -13,42 +13,33 @@
 
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>🔔 إدارة الإشعارات</h1>
-      <button class="btn btn-primary btn-sm" onclick="openSendModal()">📤 إرسال إشعار جماعي</button>
+      <h1><span data-ic="notifications" data-ic-size="22"></span> إدارة الإشعارات</h1>
+      <div class="topbar-actions">
+        <button class="adm-btn sm" onclick="openSendModal()"><span data-ic="send" data-ic-size="15"></span> إرسال إشعار جماعي</button>
+      </div>
     </div>
 
     <div class="admin-content">
       <!-- Filters -->
-      <div class="card" style="margin-bottom:20px;padding:0">
-        <div style="padding:16px 20px;display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end">
-          <div style="flex:1;min-width:200px">
-            <label class="form-label" style="font-size:.78rem">البحث</label>
-            <input type="search" class="form-control" id="searchInput" placeholder="البحث في الرسائل أو المستلمين..." oninput="debouncedSearch()">
-          </div>
-          <div>
-            <label class="form-label" style="font-size:.78rem">النوع</label>
-            <select class="form-control" id="typeFilter" onchange="loadNotifications()" style="min-width:130px">
-              <option value="">الكل</option>
-              <option value="email">📧 بريد إلكتروني</option>
-              <option value="push">📱 إشعار فوري</option>
-              <option value="sms">💬 رسالة نصية</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" style="font-size:.78rem">الحالة</label>
-            <select class="form-control" id="statusFilter" onchange="loadNotifications()" style="min-width:120px">
-              <option value="">الكل</option>
-              <option value="sent">مُرسل</option>
-              <option value="pending">معلق</option>
-              <option value="failed">فاشل</option>
-            </select>
-          </div>
-          <button class="btn btn-ghost btn-sm" onclick="clearFilters()">مسح</button>
-        </div>
+      <div class="adm-toolbar">
+        <div class="adm-search"><span data-ic="search"></span><input type="search" id="searchInput" placeholder="البحث في الرسائل أو المستلمين..." oninput="debouncedSearch()"></div>
+        <select class="adm-select" style="max-width:170px" id="typeFilter" onchange="loadNotifications()">
+          <option value="">كل الأنواع</option>
+          <option value="email">بريد إلكتروني</option>
+          <option value="push">إشعار فوري</option>
+          <option value="sms">رسالة نصية</option>
+        </select>
+        <select class="adm-select" style="max-width:150px" id="statusFilter" onchange="loadNotifications()">
+          <option value="">كل الحالات</option>
+          <option value="sent">مُرسل</option>
+          <option value="pending">معلق</option>
+          <option value="failed">فاشل</option>
+        </select>
+        <button class="adm-btn ghost sm" onclick="clearFilters()">مسح</button>
       </div>
 
       <div class="table-card">
-        <div id="tableLoading" class="loading-state" style="padding:48px">
+        <div id="tableLoading" class="loading-state" style="padding:44px">
           <div class="spinner"></div><p>جاري تحميل الإشعارات...</p>
         </div>
 
@@ -68,60 +59,60 @@
           </table>
         </div>
 
-        <div id="emptyState" class="empty-state" style="display:none">
-          <div class="empty-icon">🔔</div>
-          <h3>لا توجد إشعارات</h3>
+        <div id="emptyState" class="adm-empty" style="display:none">
+          <span data-ic="notifications" data-ic-size="40"></span>
+          <h4>لا توجد إشعارات</h4>
           <p>لم يتم العثور على إشعارات</p>
         </div>
 
-        <div id="paginationContainer"></div>
+        <div id="paginationContainer" style="padding:12px 18px"></div>
       </div>
     </div>
   </main>
 </div>
 
 <!-- Send Notification Modal -->
-<div id="sendModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeSendModal()">
-  <div class="modal" style="max-width:520px">
-    <div class="modal-header">
-      <h3>📤 إرسال إشعار جماعي</h3>
-      <button class="modal-close" onclick="closeSendModal()">✕</button>
+<div id="sendModal" class="adm-modal" onclick="if(event.target===this)closeSendModal()">
+  <div class="adm-modal-card">
+    <div class="adm-modal-head">
+      <h3><span data-ic="send" data-ic-size="18"></span> إرسال إشعار جماعي</h3>
+      <button class="adm-modal-x" onclick="closeSendModal()"><span data-ic="close" data-ic-size="16"></span></button>
     </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">نوع الإشعار</label>
-        <select class="form-control" id="sendType">
-          <option value="email">📧 بريد إلكتروني</option>
-          <option value="push">📱 إشعار فوري (Push)</option>
-          <option value="sms">💬 رسالة نصية (SMS)</option>
+    <div class="adm-modal-body">
+      <div class="adm-field">
+        <label>نوع الإشعار</label>
+        <select class="adm-select" id="sendType">
+          <option value="email">بريد إلكتروني</option>
+          <option value="push">إشعار فوري (Push)</option>
+          <option value="sms">رسالة نصية (SMS)</option>
         </select>
       </div>
-      <div class="form-group">
-        <label class="form-label">الجمهور المستهدف</label>
-        <select class="form-control" id="sendTarget">
-          <option value="all">🌐 جميع المستخدمين</option>
-          <option value="flight_bookers">✈️ مستخدمو حجز الرحلات</option>
-          <option value="hotel_bookers">🏨 مستخدمو حجز الفنادق</option>
+      <div class="adm-field">
+        <label>الجمهور المستهدف</label>
+        <select class="adm-select" id="sendTarget">
+          <option value="all">جميع المستخدمين</option>
+          <option value="flight_bookers">مستخدمو حجز الرحلات</option>
+          <option value="hotel_bookers">مستخدمو حجز الفنادق</option>
         </select>
       </div>
-      <div class="form-group">
-        <label class="form-label">العنوان</label>
-        <input type="text" class="form-control" id="sendTitle" placeholder="عنوان الإشعار...">
+      <div class="adm-field">
+        <label>العنوان</label>
+        <input type="text" class="adm-input" id="sendTitle" placeholder="عنوان الإشعار...">
       </div>
-      <div class="form-group">
-        <label class="form-label">نص الرسالة</label>
-        <textarea class="form-control" id="sendMessage" rows="4" placeholder="اكتب نص الإشعار هنا..."></textarea>
+      <div class="adm-field">
+        <label>نص الرسالة</label>
+        <textarea class="adm-textarea" id="sendMessage" rows="4" placeholder="اكتب نص الإشعار هنا..."></textarea>
       </div>
 
-      <div style="background:var(--bg);border-radius:8px;padding:12px;margin-top:4px">
-        <div style="font-size:.78rem;font-weight:600;color:var(--text-muted);margin-bottom:8px">معاينة الإشعار</div>
-        <div style="font-weight:600;font-size:.9rem" id="previewTitle">—</div>
-        <div style="font-size:.85rem;color:var(--text-muted);margin-top:4px" id="previewMessage">—</div>
+      <div style="background:var(--adm-soft);border-radius:12px;padding:14px;margin-top:4px">
+        <div style="font-size:.78rem;font-weight:700;color:var(--adm-muted);margin-bottom:8px">معاينة الإشعار</div>
+        <div style="font-weight:700;font-size:.92rem;color:var(--adm-ink)" id="previewTitle">—</div>
+        <div style="font-size:.85rem;color:var(--adm-muted);margin-top:4px" id="previewMessage">—</div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeSendModal()">إلغاء</button>
-      <button class="btn btn-primary" id="sendBtn" onclick="sendNotification()">📤 إرسال الإشعار</button>
+    <div class="adm-modal-foot">
+      <button class="adm-btn ghost" onclick="closeSendModal()">إلغاء</button>
+      <button class="adm-btn" id="sendBtn" onclick="sendNotification()"><span data-ic="send" data-ic-size="15"></span> إرسال الإشعار</button>
     </div>
   </div>
 </div>
@@ -130,8 +121,9 @@
 
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070204"></script>
-<script src="../js/admin-sidebar.js?v=2026070204"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
 <script>
   let currentPage = 1, searchTimer;
 
@@ -149,9 +141,9 @@
   }
 
   const TYPE_MAP = {
-    email: ['📧 بريد', 'info'],
-    push:  ['📱 فوري', 'primary'],
-    sms:   ['💬 نصي', 'warning'],
+    email: ['بريد', 'info'],
+    push:  ['فوري', 'primary'],
+    sms:   ['نصي', 'warning'],
   };
 
   const STATUS_MAP = {
@@ -204,10 +196,10 @@
       const pc = document.getElementById('paginationContainer');
       if (pages > 1) {
         let html = '<div class="pagination">';
-        if (currentPage > 1) html += `<button class="btn btn-ghost btn-sm" onclick="goPage(${currentPage-1})">السابق</button>`;
+        if (currentPage > 1) html += `<button class="adm-btn ghost sm" onclick="goPage(${currentPage-1})">السابق</button>`;
         for (let i = Math.max(1,currentPage-2); i <= Math.min(pages,currentPage+2); i++)
-          html += `<button class="btn btn-sm ${i===currentPage?'btn-primary':'btn-ghost'}" onclick="goPage(${i})">${i}</button>`;
-        if (currentPage < pages) html += `<button class="btn btn-ghost btn-sm" onclick="goPage(${currentPage+1})">التالي</button>`;
+          html += `<button class="adm-btn sm ${i===currentPage?'':'ghost'}" onclick="goPage(${i})">${i}</button>`;
+        if (currentPage < pages) html += `<button class="adm-btn ghost sm" onclick="goPage(${currentPage+1})">التالي</button>`;
         html += '</div>';
         pc.innerHTML = html;
       } else pc.innerHTML = '';
@@ -226,10 +218,10 @@
     document.getElementById('sendMessage').value = '';
     document.getElementById('previewTitle').textContent = '—';
     document.getElementById('previewMessage').textContent = '—';
-    document.getElementById('sendModal').style.display = 'flex';
+    document.getElementById('sendModal').classList.add('open');
   }
 
-  function closeSendModal() { document.getElementById('sendModal').style.display = 'none'; }
+  function closeSendModal() { document.getElementById('sendModal').classList.remove('open'); }
 
   // Live preview
   document.addEventListener('DOMContentLoaded', function() {
@@ -255,15 +247,15 @@
     btn.textContent = 'جاري الإرسال...';
 
     try {
-      await Api.post('/api/admin/notifications/broadcast', { type, title, message, target }, true);
-      showToast('تم إرسال الإشعار بنجاح', 'success');
+      const res = await Api.post('/api/admin/notifications/broadcast', { type, title, message, target }, true);
+      showToast((res && res.message) ? res.message : 'تم إرسال الإشعار بنجاح', 'success');
       closeSendModal();
       loadNotifications();
     } catch (err) {
       showToast(err.message || 'فشل إرسال الإشعار', 'error');
     } finally {
       btn.disabled = false;
-      btn.textContent = '📤 إرسال الإشعار';
+      btn.innerHTML = Admin.icon('send', 15) + ' إرسال الإشعار';
     }
   }
 

@@ -2,10 +2,10 @@
 <html dir="rtl" lang="ar">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-  <title>مركز التحكم — لوحة الإدارة</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إعدادات الموقع — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
 </head>
 <body>
 <div class="admin-layout">
@@ -13,95 +13,76 @@
 
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>🛠️ مركز التحكم</h1>
-      <a href="../index.html" class="btn btn-ghost btn-sm">← الموقع</a>
+      <h1><span data-ic="settings" data-ic-size="22"></span> إعدادات الموقع</h1>
+      <div class="topbar-actions">
+        <a href="../index.html" class="adm-btn ghost sm"><span data-ic="site" data-ic-size="15"></span> الموقع</a>
+      </div>
     </div>
 
-    <div class="admin-content">
-      <div class="adm-page-head">
-        <div>
-          <h2>🛠️ مركز التحكم الشامل</h2>
-          <p>تحكّم كامل في كل جوانب الموقع — المستخدمون، الحجوزات، المدفوعات، التسعير، المحتوى والإعدادات، من مكان واحد.</p>
-        </div>
-      </div>
+    <div class="admin-content" style="max-width:920px">
 
-      <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">الإدارة</h4>
-      <div class="adm-hub" style="margin-bottom:26px">
-        <a class="adm-hub-card" href="users.html"><span class="adm-hub-ic">👤</span><h3>المستخدمون</h3><span>إدارة الحسابات والأدوار والصلاحيات</span></a>
-        <a class="adm-hub-card" href="travelers.html"><span class="adm-hub-ic">👥</span><h3>المسافرون</h3><span>ملفات المسافرين المحفوظة</span></a>
-        <a class="adm-hub-card" href="bookings.html"><span class="adm-hub-ic">📋</span><h3>الحجوزات</h3><span>متابعة وتعديل حجوزات الطيران والفنادق</span></a>
-        <a class="adm-hub-card" href="payments.html"><span class="adm-hub-ic">💳</span><h3>المدفوعات</h3><span>المعاملات وطلبات الاسترداد</span></a>
-        <a class="adm-hub-card" href="support.html"><span class="adm-hub-ic">🎧</span><h3>الدعم</h3><span>تذاكر الدعم والردود</span></a>
-      </div>
-
-      <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">التسويق والتسعير</h4>
-      <div class="adm-hub" style="margin-bottom:26px">
-        <a class="adm-hub-card" href="pricing.html"><span class="adm-hub-ic">💲</span><h3>التسعير والهوامش</h3><span>هوامش الربح والعمولات والرسوم والضرائب</span></a>
-        <a class="adm-hub-card" href="commissions.html"><span class="adm-hub-ic">💰</span><h3>العمولات</h3><span>قواعد العمولة حسب النوع والمسار</span></a>
-        <a class="adm-hub-card" href="coupons.html"><span class="adm-hub-ic">🎟️</span><h3>القسائم</h3><span>أكواد الخصم والعروض الترويجية</span></a>
-        <a class="adm-hub-card" href="notifications.html"><span class="adm-hub-ic">🔔</span><h3>الإشعارات</h3><span>إرسال إشعارات جماعية للمستخدمين</span></a>
-      </div>
-
-      <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">المحتوى والإعدادات</h4>
-      <div class="adm-hub" style="margin-bottom:26px">
-        <a class="adm-hub-card" href="cms.html"><span class="adm-hub-ic">📝</span><h3>المحتوى (CMS)</h3><span>صفحات الموقع والمحتوى التعريفي</span></a>
-        <a class="adm-hub-card" href="currencies.html"><span class="adm-hub-ic">💱</span><h3>العملات</h3><span>العملات المعتمدة وأسعار الصرف</span></a>
-        <a class="adm-hub-card" href="api-settings.html"><span class="adm-hub-ic">⚙️</span><h3>إعدادات API</h3><span>مفاتيح Duffel وRateHawk وStripe</span></a>
-        <a class="adm-hub-card" href="analytics.html"><span class="adm-hub-ic">📈</span><h3>التحليلات</h3><span>الإيرادات والمسارات الأكثر بحثاً</span></a>
-      </div>
-
-      <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">إعدادات الموقع</h4>
-      <div class="card" style="padding:22px;margin-bottom:26px">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
-          <span style="font-size:1.4rem">🌐</span>
-          <div>
-            <strong style="color:var(--adm-3,#4C1D95);font-size:1.02rem">بيانات الموقع الأساسية</strong>
-            <div style="font-size:.82rem;color:var(--text-muted)">البريد ورقم الهاتف والواتساب وشعار الموقع — تظهر في تذييل الموقع وصفحات التواصل.</div>
-          </div>
-        </div>
-
-        <div id="siteSettingsMsg" class="adm-msg" style="display:none"></div>
-
-        <form id="siteSettingsForm" onsubmit="saveSiteSettings(event)" style="margin-top:14px">
+      <!-- Site info -->
+      <div class="card" style="padding:22px;margin-bottom:20px">
+        <div class="adm-section" style="margin-top:0"><span data-ic="site"></span> بيانات الموقع الأساسية</div>
+        <p style="font-size:.84rem;color:var(--adm-muted);margin:-2px 0 14px">البريد ورقم الهاتف والواتساب وشعار الموقع — تظهر في تذييل الموقع وصفحات التواصل.</p>
+        <div id="infoMsg" class="adm-msg"></div>
+        <form id="infoForm" onsubmit="saveSiteInfo(event)">
           <div class="adm-row2">
-            <div class="adm-field">
-              <label>📧 بريد الموقع</label>
-              <input type="email" class="adm-input" id="ss_email" placeholder="info@flymasar.com" dir="ltr">
-            </div>
-            <div class="adm-field">
-              <label>📞 رقم هاتف الموقع</label>
-              <input type="tel" class="adm-input" id="ss_phone" placeholder="+966500000000" dir="ltr">
-            </div>
+            <div class="adm-field"><label>بريد الموقع</label><input type="email" class="adm-input" id="ss_email" placeholder="info@flymasar.com" dir="ltr"></div>
+            <div class="adm-field"><label>رقم هاتف الموقع</label><input type="tel" class="adm-input" id="ss_phone" placeholder="+966500000000" dir="ltr"></div>
           </div>
           <div class="adm-row2">
-            <div class="adm-field">
-              <label>💬 واتساب الموقع</label>
-              <input type="tel" class="adm-input" id="ss_whatsapp" placeholder="+966500000000" dir="ltr">
-            </div>
-            <div class="adm-field">
-              <label>🖼️ رابط شعار الموقع</label>
-              <input type="url" class="adm-input" id="ss_logo" placeholder="https://flymasar.com/logo.png" dir="ltr">
-            </div>
+            <div class="adm-field"><label>واتساب الموقع</label><input type="tel" class="adm-input" id="ss_whatsapp" placeholder="+966500000000" dir="ltr"></div>
+            <div class="adm-field"><label>رابط شعار الموقع</label><input type="url" class="adm-input" id="ss_logo" placeholder="https://flymasar.com/logo.png" dir="ltr"></div>
           </div>
           <div id="ss_logo_preview" style="display:none;margin:2px 0 12px">
-            <img id="ss_logo_img" alt="شعار الموقع" style="max-height:56px;max-width:200px;border-radius:10px;border:1px solid var(--border);padding:6px;background:#fff">
+            <img id="ss_logo_img" alt="شعار الموقع" style="max-height:56px;max-width:200px;border-radius:10px;border:1px solid var(--adm-line);padding:6px;background:#fff">
           </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <button type="submit" class="adm-btn" id="ss_saveBtn">💾 حفظ الإعدادات</button>
-          </div>
+          <button type="submit" class="adm-btn" id="infoBtn"><span data-ic="check" data-ic-size="16"></span> حفظ البيانات</button>
         </form>
       </div>
 
-      <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">أدوات النظام</h4>
-      <div class="card" style="padding:18px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
-          <div>
-            <strong style="color:var(--adm-3,#4C1D95)">تحديث أسعار صرف العملات</strong>
-            <div style="font-size:.84rem;color:var(--text-muted)">يجلب أحدث أسعار الصرف من المزوّد لجميع العملات المعتمدة.</div>
+      <!-- Site control / maintenance -->
+      <div class="card" style="padding:22px;margin-bottom:20px">
+        <div class="adm-section" style="margin-top:0"><span data-ic="power"></span> التحكم بالموقع والصيانة</div>
+        <p style="font-size:.84rem;color:var(--adm-muted);margin:-2px 0 14px">تحكّم كامل في حالة الموقع — تفعيل وضع الصيانة، إيقاف الحجز مؤقتاً، وعرض شريط إعلاني للزوّار.</p>
+        <div id="ctrlMsg" class="adm-msg"></div>
+        <form id="ctrlForm" onsubmit="saveSiteControl(event)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid var(--adm-line);border-radius:13px;margin-bottom:12px">
+            <div>
+              <strong style="color:var(--adm-ink)">وضع الصيانة</strong>
+              <div style="font-size:.82rem;color:var(--adm-muted)">عند التفعيل يُعرَض للزوّار إشعار بأن الموقع تحت الصيانة.</div>
+            </div>
+            <label class="adm-switch"><input type="checkbox" id="ss_maintenance"><span></span></label>
           </div>
-          <button class="btn btn-primary btn-sm" id="refreshRatesBtn" onclick="refreshRates()">🔄 تحديث الأسعار</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid var(--adm-line);border-radius:13px;margin-bottom:12px">
+            <div>
+              <strong style="color:var(--adm-ink)">تفعيل الحجز</strong>
+              <div style="font-size:.82rem;color:var(--adm-muted)">إيقافه يمنع إنشاء حجوزات جديدة مؤقتاً مع بقاء الموقع متاحاً للتصفح.</div>
+            </div>
+            <label class="adm-switch"><input type="checkbox" id="ss_bookings"><span></span></label>
+          </div>
+          <div class="adm-field">
+            <label>شريط إعلاني (اختياري)</label>
+            <textarea class="adm-textarea" id="ss_announcement" placeholder="مثال: خصم 10% على حجوزات الطيران هذا الأسبوع..."></textarea>
+            <div class="adm-hint">يظهر كشريط أعلى الموقع لجميع الزوّار. اتركه فارغاً لإخفائه.</div>
+          </div>
+          <button type="submit" class="adm-btn" id="ctrlBtn"><span data-ic="check" data-ic-size="16"></span> حفظ إعدادات التحكم</button>
+        </form>
+      </div>
+
+      <!-- System tools -->
+      <div class="card" style="padding:22px">
+        <div class="adm-section" style="margin-top:0"><span data-ic="refresh"></span> أدوات النظام</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:6px">
+          <div>
+            <strong style="color:var(--adm-ink)">تحديث أسعار صرف العملات</strong>
+            <div style="font-size:.84rem;color:var(--adm-muted)">يجلب أحدث أسعار الصرف من المزوّد لجميع العملات المعتمدة.</div>
+          </div>
+          <button class="adm-btn ghost" id="refreshRatesBtn" onclick="refreshRates()"><span data-ic="refresh" data-ic-size="16"></span> تحديث الأسعار</button>
         </div>
       </div>
+
     </div>
   </main>
 </div>
@@ -109,71 +90,85 @@
 <div class="toast-container" id="toastContainer"></div>
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070204"></script>
-<script src="../js/admin-sidebar.js?v=2026070204"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
 <script>
-function ssMsg(text, ok) {
-  var el = document.getElementById('siteSettingsMsg');
-  el.textContent = text;
-  el.className = 'adm-msg ' + (ok ? 'ok' : 'err');
-  el.style.display = 'block';
-}
+  function msg(id, text, ok) {
+    var el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'adm-msg show ' + (ok ? 'ok' : 'err');
+  }
 
-function ssLogoPreview() {
-  var url = document.getElementById('ss_logo').value.trim();
-  var box = document.getElementById('ss_logo_preview');
-  var img = document.getElementById('ss_logo_img');
-  if (url) { img.src = url; box.style.display = 'block'; }
-  else { box.style.display = 'none'; }
-}
+  function logoPreview() {
+    var url = document.getElementById('ss_logo').value.trim();
+    var box = document.getElementById('ss_logo_preview');
+    var img = document.getElementById('ss_logo_img');
+    if (url) { img.src = url; box.style.display = 'block'; } else { box.style.display = 'none'; }
+  }
 
-function loadSiteSettings() {
-  Api.get('/api/admin/site-settings', true).then(function(res) {
-    var s = (res && res.settings) || {};
-    document.getElementById('ss_email').value    = s.site_email    || '';
-    document.getElementById('ss_phone').value    = s.site_phone    || '';
-    document.getElementById('ss_whatsapp').value = s.site_whatsapp || '';
-    document.getElementById('ss_logo').value     = s.site_logo     || '';
-    ssLogoPreview();
-  }).catch(function() {});
-}
+  function loadSettings() {
+    Api.get('/api/admin/site-settings', true).then(function (res) {
+      var s = (res && res.settings) || {};
+      document.getElementById('ss_email').value        = s.site_email    || '';
+      document.getElementById('ss_phone').value        = s.site_phone    || '';
+      document.getElementById('ss_whatsapp').value     = s.site_whatsapp || '';
+      document.getElementById('ss_logo').value         = s.site_logo     || '';
+      document.getElementById('ss_maintenance').checked = String(s.maintenance_mode) === '1';
+      document.getElementById('ss_bookings').checked    = String(s.bookings_enabled) !== '0';
+      document.getElementById('ss_announcement').value  = s.announcement || '';
+      logoPreview();
+    }).catch(function () {});
+  }
 
-function saveSiteSettings(e) {
-  e.preventDefault();
-  var btn = document.getElementById('ss_saveBtn');
-  btn.disabled = true; btn.textContent = '... جاري الحفظ';
-  Api.put('/api/admin/site-settings', {
-    site_email:    document.getElementById('ss_email').value.trim(),
-    site_phone:    document.getElementById('ss_phone').value.trim(),
-    site_whatsapp: document.getElementById('ss_whatsapp').value.trim(),
-    site_logo:     document.getElementById('ss_logo').value.trim(),
-  }, true).then(function(res) {
-    ssMsg((res && res.message) || 'تم حفظ إعدادات الموقع بنجاح.', true);
-    if (window.showToast) showToast('تم حفظ إعدادات الموقع','success');
-  }).catch(function(ex) {
-    ssMsg((ex && ex.message) || 'تعذر حفظ الإعدادات. حاول مجدداً.', false);
-  }).finally(function() {
-    btn.disabled = false; btn.textContent = '💾 حفظ الإعدادات';
+  function saveSiteInfo(e) {
+    e.preventDefault();
+    var btn = document.getElementById('infoBtn');
+    btn.disabled = true;
+    Api.put('/api/admin/site-settings', {
+      site_email:    document.getElementById('ss_email').value.trim(),
+      site_phone:    document.getElementById('ss_phone').value.trim(),
+      site_whatsapp: document.getElementById('ss_whatsapp').value.trim(),
+      site_logo:     document.getElementById('ss_logo').value.trim(),
+    }, true).then(function (res) {
+      msg('infoMsg', (res && res.message) || 'تم الحفظ بنجاح.', true);
+      if (window.showToast) showToast('تم حفظ بيانات الموقع', 'success');
+    }).catch(function (ex) {
+      msg('infoMsg', (ex && ex.message) || 'تعذر الحفظ.', false);
+    }).finally(function () { btn.disabled = false; });
+  }
+
+  function saveSiteControl(e) {
+    e.preventDefault();
+    var btn = document.getElementById('ctrlBtn');
+    btn.disabled = true;
+    Api.put('/api/admin/site-settings', {
+      maintenance_mode: document.getElementById('ss_maintenance').checked,
+      bookings_enabled: document.getElementById('ss_bookings').checked,
+      announcement:     document.getElementById('ss_announcement').value.trim(),
+    }, true).then(function (res) {
+      msg('ctrlMsg', (res && res.message) || 'تم الحفظ بنجاح.', true);
+      if (window.showToast) showToast('تم حفظ إعدادات التحكم', 'success');
+    }).catch(function (ex) {
+      msg('ctrlMsg', (ex && ex.message) || 'تعذر الحفظ.', false);
+    }).finally(function () { btn.disabled = false; });
+  }
+
+  function refreshRates() {
+    var btn = document.getElementById('refreshRatesBtn');
+    btn.disabled = true;
+    Api.post('/api/admin/currencies/refresh-rates', {}, true).then(function () {
+      if (window.showToast) showToast('تم تحديث أسعار الصرف', 'success');
+    }).catch(function () {
+      if (window.showToast) showToast('تعذر تحديث الأسعار', 'error');
+    }).finally(function () { btn.disabled = false; });
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    loadSettings();
+    var logo = document.getElementById('ss_logo');
+    if (logo) logo.addEventListener('blur', logoPreview);
   });
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  loadSiteSettings();
-  var logoInput = document.getElementById('ss_logo');
-  if (logoInput) logoInput.addEventListener('blur', ssLogoPreview);
-});
-
-function refreshRates() {
-  var btn = document.getElementById('refreshRatesBtn');
-  btn.disabled = true; btn.textContent = '... جاري التحديث';
-  Api.post('/api/admin/currencies/refresh-rates', {}, true).then(function() {
-    if (window.showToast) showToast('تم تحديث أسعار الصرف','success'); else alert('تم تحديث أسعار الصرف');
-  }).catch(function() {
-    if (window.showToast) showToast('تعذر تحديث الأسعار','error'); else alert('تعذر تحديث الأسعار');
-  }).finally(function() {
-    btn.disabled = false; btn.textContent = '🔄 تحديث الأسعار';
-  });
-}
 </script>
 </body>
 </html>

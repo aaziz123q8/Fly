@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>إدارة المحتوى — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
 </head>
 <body>
 <div class="admin-layout">
@@ -13,11 +13,15 @@
 
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>📝 إدارة المحتوى (CMS)</h1>
-      <button class="btn btn-primary btn-sm" onclick="openAdd()">+ صفحة جديدة</button>
+      <h1><span data-ic="cms" data-ic-size="22"></span> المحتوى</h1>
+      <div class="topbar-actions">
+        <button class="adm-btn sm" onclick="openAdd()"><span data-ic="plus" data-ic-size="15"></span> صفحة جديدة</button>
+      </div>
     </div>
 
     <div class="admin-content">
+      <div class="adm-note"><span data-ic="cms"></span><div>إدارة صفحات المحتوى الثابتة في الموقع (من نحن، سياسة الخصوصية، الشروط والأحكام...).</div></div>
+
       <div class="table-card">
         <div id="tableLoading" class="loading-state" style="padding:48px">
           <div class="spinner"></div><p>جاري التحميل...</p>
@@ -37,9 +41,9 @@
             <tbody id="pagesTable"></tbody>
           </table>
         </div>
-        <div id="emptyState" class="empty-state" style="display:none">
-          <div class="empty-icon">📝</div>
-          <h3>لا توجد صفحات</h3>
+        <div id="emptyState" class="adm-empty" style="display:none">
+          <span data-ic="cms" data-ic-size="40"></span>
+          <h4>لا توجد صفحات</h4>
           <p>أنشئ صفحة جديدة لتبدأ</p>
         </div>
       </div>
@@ -48,47 +52,48 @@
 </div>
 
 <!-- Page Editor Modal -->
-<div id="pageModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal" style="max-width:700px;max-height:85vh;display:flex;flex-direction:column">
-    <div class="modal-header">
-      <h3 id="pageModalTitle">صفحة جديدة</h3>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+<div id="pageModal" class="adm-modal" onclick="if(event.target===this)closeModal()">
+  <div class="adm-modal-card lg">
+    <div class="adm-modal-head">
+      <h3 id="pageModalTitle"><span data-ic="cms" data-ic-size="18"></span> صفحة جديدة</h3>
+      <button class="adm-modal-x" onclick="closeModal()"><span data-ic="close" data-ic-size="16"></span></button>
     </div>
-    <div class="modal-body" style="flex:1;overflow-y:auto">
+    <div class="adm-modal-body">
       <input type="hidden" id="pageId">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-        <div class="form-group">
-          <label class="form-label">العنوان (عربي)</label>
-          <input type="text" class="form-control" id="pageTitleAr" dir="rtl">
+      <div class="adm-row2">
+        <div class="adm-field">
+          <label>العنوان (عربي)</label>
+          <input type="text" class="adm-input" id="pageTitleAr" dir="rtl">
         </div>
-        <div class="form-group">
-          <label class="form-label">العنوان (إنجليزي)</label>
-          <input type="text" class="form-control" id="pageTitleEn" dir="ltr">
+        <div class="adm-field">
+          <label>العنوان (إنجليزي)</label>
+          <input type="text" class="adm-input" id="pageTitleEn" dir="ltr">
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Slug (رابط الصفحة)</label>
-        <input type="text" class="form-control" id="pageSlug" dir="ltr" placeholder="مثال: about-us, privacy-policy">
+      <div class="adm-field">
+        <label>Slug (رابط الصفحة)</label>
+        <input type="text" class="adm-input" id="pageSlug" dir="ltr" placeholder="مثال: about-us, privacy-policy">
       </div>
-      <div class="form-group">
-        <label class="form-label">المحتوى (عربي)</label>
-        <textarea class="form-control" id="pageContentAr" rows="6" dir="rtl" placeholder="محتوى الصفحة بالعربية..."></textarea>
+      <div class="adm-field">
+        <label>المحتوى (عربي)</label>
+        <textarea class="adm-textarea" id="pageContentAr" rows="6" dir="rtl" placeholder="محتوى الصفحة بالعربية..."></textarea>
       </div>
-      <div class="form-group">
-        <label class="form-label">المحتوى (إنجليزي)</label>
-        <textarea class="form-control" id="pageContentEn" rows="6" dir="ltr" placeholder="Page content in English..."></textarea>
+      <div class="adm-field">
+        <label>المحتوى (إنجليزي)</label>
+        <textarea class="adm-textarea" id="pageContentEn" rows="6" dir="ltr" placeholder="Page content in English..."></textarea>
       </div>
-      <div class="form-group">
-        <label class="form-label">الحالة</label>
-        <select class="form-control" id="pageStatus">
+      <div class="adm-field">
+        <label>الحالة</label>
+        <select class="adm-select" id="pageStatus">
           <option value="published">منشور</option>
           <option value="draft">مسودة</option>
         </select>
       </div>
+      <div class="adm-msg" id="pageMsg"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-      <button class="btn btn-primary" onclick="savePage()">حفظ</button>
+    <div class="adm-modal-foot">
+      <button class="adm-btn ghost" onclick="closeModal()">إلغاء</button>
+      <button class="adm-btn" onclick="savePage()"><span data-ic="check" data-ic-size="15"></span> حفظ</button>
     </div>
   </div>
 </div>
@@ -96,8 +101,9 @@
 <div class="toast-container" id="toastContainer"></div>
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070204"></script>
-<script src="../js/admin-sidebar.js?v=2026070204"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
 <script>
 
 function loadPages() {
@@ -108,34 +114,55 @@ function loadPages() {
   Api.get('/api/admin/cms/pages', true).then(function(res) {
     document.getElementById('tableLoading').style.display = 'none';
     var pages = res.data || res;
-    if (!pages || pages.length === 0) { document.getElementById('emptyState').style.display = 'block'; return; }
+    if (!pages || pages.length === 0) {
+      var empty = document.getElementById('emptyState');
+      empty.style.display = 'block';
+      Admin.hydrateIcons(empty);
+      return;
+    }
     document.getElementById('tableWrapper').style.display = 'block';
 
     var html = '';
     pages.forEach(function(p) {
-      var statusBadge = p.status === 'published'
+      var isPub = Number(p.is_published) === 1;
+      var statusBadge = isPub
         ? '<span class="badge badge-success">منشور</span>'
-        : '<span class="badge badge-warning">مسودة</span>';
+        : '<span class="badge badge-neutral">مسودة</span>';
       html += '<tr>' +
-        '<td><strong>' + (p.title_ar || p.title || '—') + '</strong></td>' +
+        '<td><strong>' + (p.title_ar || '—') + '</strong></td>' +
         '<td>' + (p.title_en || '—') + '</td>' +
         '<td style="direction:ltr;text-align:right;font-family:monospace;font-size:.8rem">' + p.slug + '</td>' +
         '<td>' + statusBadge + '</td>' +
-        '<td style="font-size:.8rem;color:var(--text-muted)">' + (p.updated_at ? new Date(p.updated_at).toLocaleDateString('ar-KW') : '—') + '</td>' +
-        '<td style="display:flex;gap:6px">' +
-          '<button class="btn btn-ghost btn-sm" onclick="openEdit(' + JSON.stringify(p).replace(/"/g,'&quot;') + ')">تعديل</button>' +
-          '<button class="btn btn-ghost btn-sm" onclick="deletePage(' + p.id + ')" style="color:var(--danger)">حذف</button>' +
-        '</td>' +
+        '<td style="font-size:.8rem;color:var(--adm-muted)">' + (p.updated_at ? new Date(p.updated_at).toLocaleDateString('ar-KW') : '—') + '</td>' +
+        '<td><div class="table-actions">' +
+          '<button class="adm-act" onclick="openEdit(' + JSON.stringify(p).replace(/"/g,'&quot;') + ')">' + Admin.icon('edit',15) + ' تعديل</button>' +
+          '<button class="adm-act danger" onclick="deletePage(' + p.id + ')">' + Admin.icon('trash',15) + ' حذف</button>' +
+        '</div></td>' +
         '</tr>';
     });
     document.getElementById('pagesTable').innerHTML = html;
   }).catch(function() {
     document.getElementById('tableLoading').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'block';
+    var empty = document.getElementById('emptyState');
+    empty.style.display = 'block';
+    Admin.hydrateIcons(empty);
   });
 }
 
+function hideMsg() {
+  var m = document.getElementById('pageMsg');
+  m.className = 'adm-msg';
+  m.textContent = '';
+}
+
+function showMsg(text, kind) {
+  var m = document.getElementById('pageMsg');
+  m.className = 'adm-msg show ' + (kind || 'err');
+  m.textContent = text;
+}
+
 function openAdd() {
+  hideMsg();
   document.getElementById('pageId').value        = '';
   document.getElementById('pageTitleAr').value   = '';
   document.getElementById('pageTitleEn').value   = '';
@@ -143,43 +170,55 @@ function openAdd() {
   document.getElementById('pageContentAr').value = '';
   document.getElementById('pageContentEn').value = '';
   document.getElementById('pageStatus').value    = 'published';
-  document.getElementById('pageModalTitle').textContent = 'صفحة جديدة';
-  document.getElementById('pageModal').style.display = 'flex';
+  document.getElementById('pageModalTitle').innerHTML = Admin.icon('cms',18) + ' صفحة جديدة';
+  document.getElementById('pageModal').classList.add('open');
 }
 
 function openEdit(p) {
+  hideMsg();
   document.getElementById('pageId').value        = p.id;
-  document.getElementById('pageTitleAr').value   = p.title_ar || p.title || '';
+  document.getElementById('pageTitleAr').value   = p.title_ar || '';
   document.getElementById('pageTitleEn').value   = p.title_en || '';
   document.getElementById('pageSlug').value      = p.slug || '';
-  document.getElementById('pageContentAr').value = p.content_ar || p.content || '';
+  document.getElementById('pageContentAr').value = p.content_ar || '';
   document.getElementById('pageContentEn').value = p.content_en || '';
-  document.getElementById('pageStatus').value    = p.status || 'draft';
-  document.getElementById('pageModalTitle').textContent = 'تعديل الصفحة';
-  document.getElementById('pageModal').style.display = 'flex';
+  document.getElementById('pageStatus').value    = Number(p.is_published) === 1 ? 'published' : 'draft';
+  document.getElementById('pageModalTitle').innerHTML = Admin.icon('edit',18) + ' تعديل الصفحة';
+  document.getElementById('pageModal').classList.add('open');
 }
 
-function closeModal() { document.getElementById('pageModal').style.display = 'none'; }
+function closeModal() { document.getElementById('pageModal').classList.remove('open'); }
 
 function savePage() {
   var id = document.getElementById('pageId').value;
   var payload = {
-    title_ar:   document.getElementById('pageTitleAr').value,
-    title_en:   document.getElementById('pageTitleEn').value,
-    title:      document.getElementById('pageTitleAr').value,
-    slug:       document.getElementById('pageSlug').value,
-    content_ar: document.getElementById('pageContentAr').value,
-    content_en: document.getElementById('pageContentEn').value,
-    content:    document.getElementById('pageContentAr').value,
-    status:     document.getElementById('pageStatus').value,
+    slug:         document.getElementById('pageSlug').value,
+    title_en:     document.getElementById('pageTitleEn').value,
+    title_ar:     document.getElementById('pageTitleAr').value,
+    content_en:   document.getElementById('pageContentEn').value,
+    content_ar:   document.getElementById('pageContentAr').value,
+    is_published: (document.getElementById('pageStatus').value === 'published' ? 1 : 0),
   };
+  if (!payload.slug || !payload.title_en || !payload.title_ar || !payload.content_en || !payload.content_ar) {
+    showMsg('يرجى تعبئة جميع الحقول المطلوبة (Slug، العنوان بالعربية والإنجليزية، المحتوى بالعربية والإنجليزية).', 'err');
+    return;
+  }
   var req = id ? Api.put('/api/admin/cms/pages/' + id, payload, true) : Api.post('/api/admin/cms/pages', payload, true);
-  req.then(function() { closeModal(); loadPages(); });
+  req.then(function() {
+    closeModal();
+    loadPages();
+    if (typeof showToast === 'function') showToast('تم حفظ الصفحة بنجاح', 'success');
+  }).catch(function() {
+    showMsg('تعذر حفظ الصفحة، يرجى المحاولة مرة أخرى.', 'err');
+  });
 }
 
 function deletePage(id) {
   if (!confirm('هل تريد حذف هذه الصفحة؟')) return;
-  Api.delete('/api/admin/cms/pages/' + id, true).then(function() { loadPages(); });
+  Api.delete('/api/admin/cms/pages/' + id, true).then(function() {
+    loadPages();
+    if (typeof showToast === 'function') showToast('تم حذف الصفحة', 'success');
+  });
 }
 
 loadPages();

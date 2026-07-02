@@ -8,6 +8,7 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Helpers\Database;
 use App\Middleware\AdminMiddleware;
+use App\Services\AdminActivityLog;
 
 class AdminTravelersController
 {
@@ -202,7 +203,95 @@ class AdminTravelersController
         $stmt->execute([$id]);
         $user = $stmt->fetch(\PDO::FETCH_ASSOC);
 
+        AdminActivityLog::record('update', 'travelers', 'user', $id, 'تعديل بيانات المسافر (الحساب)');
+
         Response::json(['user' => $user]);
+    }
+
+    // -------------------------------------------------------------------------
+    // PUT /api/admin/travelers/:id/profiles/:pid — edit a saved traveler profile
+    // -------------------------------------------------------------------------
+
+    public function updateProfile(Request $request): void
+    {
+        $userId    = (int) $request->param('id');
+        $profileId = (int) $request->param('pid');
+        $db        = Database::getInstance();
+
+        $stmt = $db->prepare('SELECT id FROM travelers WHERE id = ? AND user_id = ? LIMIT 1');
+        $stmt->execute([$profileId, $userId]);
+        if (!$stmt->fetch()) {
+            Response::notFound('Traveler profile not found.');
+        }
+
+        // Whitelisted fields; enum fields validated against their allowed values.
+        $enums = [
+            'title'         => ['mr', 'ms', 'mrs', 'miss', 'dr'],
+            'gender'        => ['male', 'female'],
+            'document_type' => ['passport', 'civil_id', 'national_id'],
+        ];
+        $allowed = [
+            'title', 'first_name', 'middle_name', 'last_name', 'gender', 'date_of_birth',
+            'nationality', 'country', 'document_type', 'document_number',
+            'issue_date', 'expiry_date', 'document_country',
+            'phone_country_code', 'phone_number', 'email',
+        ];
+
+        $set    = [];
+        $params = [];
+        foreach ($allowed as $field) {
+            $val = $request->input($field);
+            if ($val === null) {
+                continue;
+            }
+            $val = trim((string) $val);
+            if (isset($enums[$field]) && $val !== '' && !in_array($val, $enums[$field], true)) {
+                Response::error("Invalid value for {$field}.", 422);
+            }
+            // Date fields: blank -> keep NULL rather than storing an empty string.
+            if (in_array($field, ['issue_date', 'expiry_date', 'date_of_birth'], true) && $val === '') {
+                continue;
+            }
+            $set[]    = "{$field} = ?";
+            $params[] = $val;
+        }
+
+        if (empty($set)) {
+            Response::error('No updatable fields provided.', 400);
+        }
+
+        $params[] = $profileId;
+        $db->prepare('UPDATE travelers SET ' . implode(', ', $set) . ', updated_at = NOW() WHERE id = ?')
+           ->execute($params);
+
+        AdminActivityLog::record('update_profile', 'travelers', 'traveler', $profileId, "تعديل ملف مسافر #{$profileId} للمستخدم #{$userId}");
+
+        $get = $db->prepare('SELECT * FROM travelers WHERE id = ? LIMIT 1');
+        $get->execute([$profileId]);
+        Response::json(['traveler' => $get->fetch(\PDO::FETCH_ASSOC)]);
+    }
+
+    // -------------------------------------------------------------------------
+    // DELETE /api/admin/travelers/:id/profiles/:pid — archive a traveler profile
+    // -------------------------------------------------------------------------
+
+    public function deleteProfile(Request $request): void
+    {
+        $userId    = (int) $request->param('id');
+        $profileId = (int) $request->param('pid');
+        $db        = Database::getInstance();
+
+        $stmt = $db->prepare('SELECT id FROM travelers WHERE id = ? AND user_id = ? AND archived_at IS NULL LIMIT 1');
+        $stmt->execute([$profileId, $userId]);
+        if (!$stmt->fetch()) {
+            Response::notFound('Traveler profile not found.');
+        }
+
+        $db->prepare('UPDATE travelers SET archived_at = NOW() WHERE id = ?')->execute([$profileId]);
+
+        AdminActivityLog::record('delete_profile', 'travelers', 'traveler', $profileId, "أرشفة ملف مسافر #{$profileId} للمستخدم #{$userId}");
+
+        Response::noContent();
     }
 
     // -------------------------------------------------------------------------

@@ -9,6 +9,7 @@ use App\Core\Response;
 use App\Helpers\Database;
 use App\Middleware\AdminMiddleware;
 use App\Middleware\AuthMiddleware;
+use App\Services\AdminActivityLog;
 
 class AdminNotificationsController
 {
@@ -26,40 +27,40 @@ class AdminNotificationsController
         $type   = $request->query('type');
         $status = $request->query('status');
 
-        $where  = [];
+        $where  = ['1=1'];
         $params = [];
 
         if ($type !== null && $type !== '') {
-            // filter notifications by channel (we use channel as type here)
             $where[]  = 'n.channel = ?';
             $params[] = $type;
         }
-
-        if ($status !== null && $status !== '') {
-            $where[]  = 'dl.status = ?';
-            $params[] = $status;
+        // status: 'sent' = every stored notification, 'read'/'unread' by flag
+        if ($status === 'read') {
+            $where[] = 'n.is_read = 1';
+        } elseif ($status === 'unread' || $status === 'pending') {
+            $where[] = 'n.is_read = 0';
         }
 
-        $whereClause = $where ? 'WHERE ' . implode(' AND ', $where) : '';
+        $whereClause = 'WHERE ' . implode(' AND ', $where);
 
         $countStmt = $db->prepare(
-            "SELECT COUNT(DISTINCT n.id)
-             FROM user_notifications n
-             LEFT JOIN notification_dispatch_log dl ON dl.notification_id = n.id
-             {$whereClause}"
+            "SELECT COUNT(*) FROM user_notifications n {$whereClause}"
         );
         $countStmt->execute($params);
         $total = (int)$countStmt->fetchColumn();
 
-        // Re-run with params
         $stmt = $db->prepare(
-            "SELECT n.id, n.user_id, n.channel, n.title_en, n.title_ar,
-                    n.is_read, n.created_at,
-                    dl.status AS dispatch_status, dl.sent_at
+            "SELECT n.id, n.user_id, n.channel AS type,
+                    COALESCE(NULLIF(n.title_ar,''), n.title_en) AS title,
+                    COALESCE(NULLIF(n.body_ar,''), n.body_en)  AS message,
+                    n.is_read, n.created_at, n.created_at AS sent_at,
+                    CASE WHEN n.is_read = 1 THEN 'read' ELSE 'sent' END AS status,
+                    u.email AS recipient_email,
+                    TRIM(CONCAT(COALESCE(u.first_name,''), ' ', COALESCE(u.last_name,''))) AS recipient_name
              FROM user_notifications n
-             LEFT JOIN notification_dispatch_log dl ON dl.notification_id = n.id
+             LEFT JOIN users u ON u.id = n.user_id
              {$whereClause}
-             ORDER BY n.created_at DESC
+             ORDER BY n.created_at DESC, n.id DESC
              LIMIT ? OFFSET ?"
         );
         $stmt->execute(array_merge($params, [$limit, $offset]));
@@ -67,6 +68,7 @@ class AdminNotificationsController
 
         Response::json([
             'data'       => $notifications,
+            'meta'       => ['total' => $total, 'page' => $page],
             'pagination' => [
                 'page'        => $page,
                 'limit'       => $limit,
@@ -84,21 +86,57 @@ class AdminNotificationsController
     {
         $db = Database::getInstance();
 
+        $title   = trim((string) $request->input('title'));
+        $message = trim((string) $request->input('message'));
+        $type    = (string) ($request->input('type') ?? 'push');
+        $target  = (string) ($request->input('target') ?? 'all');
+
+        $errors = [];
+        if ($title === '')   { $errors['title']   = 'العنوان مطلوب.'; }
+        if ($message === '') { $errors['message'] = 'نص الرسالة مطلوب.'; }
+        if (!empty($errors)) {
+            Response::validationError($errors);
+        }
+
+        // user_notifications.channel only allows email|whatsapp|push — map safely.
+        $channel = in_array($type, ['email', 'whatsapp', 'push'], true) ? $type : 'push';
+
+        // Resolve the audience to a WHERE clause over active customers.
+        $audience = 'u.role = "user" AND u.is_active = 1';
+        if ($target === 'flight_bookers') {
+            $audience .= ' AND EXISTS (SELECT 1 FROM flight_bookings fb WHERE fb.user_id = u.id)';
+        } elseif ($target === 'hotel_bookers') {
+            $audience .= ' AND EXISTS (SELECT 1 FROM hotel_bookings hb WHERE hb.user_id = u.id)';
+        }
+
+        // Bulk create in-app notifications in one INSERT … SELECT (atomic, fast).
         try {
-            $db->prepare(
-                'INSERT INTO error_logs (level, message, context, created_at)
-                 VALUES (?, ?, ?, NOW())'
-            )->execute([
-                'warning',
-                'broadcast() called but send_notification job type has no worker handler',
-                json_encode(['uri' => $_SERVER['REQUEST_URI'] ?? '']),
-            ]);
-        } catch (\Throwable) {}
+            $stmt = $db->prepare(
+                "INSERT INTO user_notifications
+                    (user_id, channel, title_ar, title_en, body_ar, body_en, is_read, created_at)
+                 SELECT u.id, ?, ?, ?, ?, ?, 0, NOW()
+                 FROM users u
+                 WHERE {$audience}"
+            );
+            $stmt->execute([$channel, $title, $title, $message, $message]);
+            $recipients = $stmt->rowCount();
+        } catch (\Throwable $e) {
+            Response::error('تعذر إرسال الإشعار الجماعي.', 500, 'broadcast_failed');
+            return;
+        }
+
+        AdminActivityLog::record(
+            'broadcast',
+            'notifications',
+            'notification',
+            null,
+            "إشعار جماعي «{$title}» إلى {$recipients} مستخدم ({$target})"
+        );
 
         Response::json([
-            'error'   => 'not_implemented',
-            'message' => 'Broadcast notifications are not yet available. The send_notification job type has no worker handler.',
-        ], 501);
+            'message'    => "تم إرسال الإشعار إلى {$recipients} مستخدم.",
+            'recipients' => $recipients,
+        ]);
     }
 
     // =========================================================================

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>العملات — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
 </head>
 <body>
 <div class="admin-layout">
@@ -13,16 +13,17 @@
 
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>💱 إدارة العملات</h1>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost btn-sm" onclick="refreshRates()">🔄 تحديث الأسعار</button>
-        <button class="btn btn-primary btn-sm" onclick="openAdd()">+ إضافة عملة</button>
+      <h1><span data-ic="currencies" data-ic-size="22"></span> العملات</h1>
+      <div class="topbar-actions">
+        <button class="adm-btn ghost sm" onclick="refreshRates()"><span data-ic="refresh" data-ic-size="15"></span> تحديث الأسعار</button>
+        <button class="adm-btn sm" onclick="openAdd()"><span data-ic="plus" data-ic-size="15"></span> إضافة عملة</button>
       </div>
     </div>
 
     <div class="admin-content">
-      <div class="card" style="padding:12px 16px;margin-bottom:16px;background:var(--bg-secondary);border:none">
-        <p style="margin:0;font-size:.85rem;color:var(--text-muted)">💡 العملة الأساسية هي <strong>GBP (الجنيه الإسترليني)</strong>. جميع الأسعار تُخزّن بالجنيه الإسترليني وتُعرض بعملة المستخدم المختارة.</p>
+      <div class="adm-note">
+        <span data-ic="currencies"></span>
+        <div>العملة الأساسية هي <strong>GBP (الجنيه الإسترليني)</strong>. جميع الأسعار تُخزّن بالجنيه الإسترليني وتُعرض بعملة المستخدم المختارة.</div>
       </div>
 
       <div class="table-card">
@@ -45,8 +46,8 @@
             <tbody id="currenciesTable"></tbody>
           </table>
         </div>
-        <div id="emptyState" class="empty-state" style="display:none">
-          <div class="empty-icon">💱</div><h3>لا توجد عملات</h3>
+        <div id="emptyState" class="adm-empty" style="display:none">
+          <span data-ic="currencies" data-ic-size="40"></span><h4>لا توجد عملات</h4><p>ابدأ بإضافة عملة جديدة</p>
         </div>
       </div>
     </div>
@@ -54,41 +55,43 @@
 </div>
 
 <!-- Add/Edit Modal -->
-<div id="curModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal" style="max-width:420px">
-    <div class="modal-header">
-      <h3 id="curModalTitle">إضافة عملة</h3>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+<div id="curModal" class="adm-modal" onclick="if(event.target===this)closeModal()">
+  <div class="adm-modal-card" style="max-width:440px">
+    <div class="adm-modal-head">
+      <h3 id="curModalTitle"><span data-ic="currencies" data-ic-size="18"></span> إضافة عملة</h3>
+      <button class="adm-modal-x" onclick="closeModal()"><span data-ic="close" data-ic-size="16"></span></button>
     </div>
-    <div class="modal-body">
+    <div class="adm-modal-body">
       <input type="hidden" id="curId">
-      <div class="form-group">
-        <label class="form-label">رمز العملة (ISO 4217)</label>
-        <input type="text" class="form-control" id="curCode" placeholder="مثال: USD, KWD, SAR" maxlength="3" style="text-transform:uppercase">
+      <div class="adm-field">
+        <label>رمز العملة (ISO 4217)</label>
+        <input type="text" class="adm-input" id="curCode" placeholder="مثال: USD, KWD, SAR" maxlength="3" style="text-transform:uppercase" dir="ltr">
       </div>
-      <div class="form-group">
-        <label class="form-label">الاسم</label>
-        <input type="text" class="form-control" id="curName" placeholder="مثال: دولار أمريكي">
+      <div class="adm-field">
+        <label>الاسم</label>
+        <input type="text" class="adm-input" id="curName" placeholder="مثال: دولار أمريكي">
       </div>
-      <div class="form-group">
-        <label class="form-label">رمز العرض</label>
-        <input type="text" class="form-control" id="curSymbol" placeholder="مثال: $, ك.د, ر.س">
+      <div class="adm-row2">
+        <div class="adm-field">
+          <label>رمز العرض</label>
+          <input type="text" class="adm-input" id="curSymbol" placeholder="مثال: $, ك.د, ر.س">
+        </div>
+        <div class="adm-field">
+          <label>سعر الصرف (1 GBP = ؟)</label>
+          <input type="number" class="adm-input" id="curRate" step="0.0001" min="0.0001" placeholder="1.0000" dir="ltr">
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">سعر الصرف (1 GBP = ؟)</label>
-        <input type="number" class="form-control" id="curRate" step="0.0001" min="0.0001" placeholder="1.0000">
-      </div>
-      <div class="form-group">
-        <label class="form-label">الحالة</label>
-        <select class="form-control" id="curStatus">
+      <div class="adm-field">
+        <label>الحالة</label>
+        <select class="adm-select" id="curStatus">
           <option value="1">نشط</option>
           <option value="0">غير نشط</option>
         </select>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-      <button class="btn btn-primary" onclick="saveCurrency()">حفظ</button>
+    <div class="adm-modal-foot">
+      <button class="adm-btn ghost" onclick="closeModal()">إلغاء</button>
+      <button class="adm-btn" onclick="saveCurrency()">حفظ</button>
     </div>
   </div>
 </div>
@@ -96,8 +99,9 @@
 <div class="toast-container" id="toastContainer"></div>
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070204"></script>
-<script src="../js/admin-sidebar.js?v=2026070204"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
 <script>
 
 function loadCurrencies() {
@@ -117,14 +121,16 @@ function loadCurrencies() {
         '<td><strong style="font-family:monospace;font-size:1rem">' + c.code + '</strong></td>' +
         '<td>' + c.name + '</td>' +
         '<td style="font-size:1.1rem">' + (c.symbol || '—') + '</td>' +
-        '<td>' + (isBase ? '<span style="color:var(--text-muted)">أساسي</span>' : parseFloat(c.rate_to_gbp).toFixed(4)) + '</td>' +
-        '<td style="font-size:.8rem;color:var(--text-muted)">' + (c.updated_at ? new Date(c.updated_at).toLocaleString('ar-KW') : '—') + '</td>' +
+        '<td>' + (isBase ? '<span class="badge badge-info">أساسي</span>' : parseFloat(c.rate_to_gbp).toFixed(4)) + '</td>' +
+        '<td style="font-size:.8rem;color:var(--adm-muted)">' + (c.updated_at ? new Date(c.updated_at).toLocaleString('ar-KW') : '—') + '</td>' +
         '<td>' + (c.is_active == 1 ? '<span class="badge badge-success">نشط</span>' : '<span class="badge badge-danger">غير نشط</span>') + '</td>' +
-        '<td style="display:flex;gap:6px">' +
-          (isBase ? '<span style="color:var(--text-muted);font-size:.8rem">لا يمكن تعديله</span>' :
-            '<button class="btn btn-ghost btn-sm" onclick="openEdit(' + JSON.stringify(c).replace(/"/g,'&quot;') + ')">تعديل</button>' +
-            '<button class="btn btn-ghost btn-sm" onclick="deleteCurrency(' + c.id + ')" style="color:var(--danger)">حذف</button>'
+        '<td>' +
+          '<div class="table-actions">' +
+          (isBase ? '<span style="color:var(--adm-muted);font-size:.8rem">لا يمكن تعديله</span>' :
+            '<button class="adm-act" onclick="openEdit(' + JSON.stringify(c).replace(/"/g,'&quot;') + ')">' + Admin.icon('edit',15) + ' تعديل</button>' +
+            '<button class="adm-act danger" onclick="deleteCurrency(' + c.id + ')">' + Admin.icon('trash',15) + ' حذف</button>'
           ) +
+          '</div>' +
         '</td>' +
         '</tr>';
     });
@@ -142,9 +148,9 @@ function openAdd() {
   document.getElementById('curSymbol').value = '';
   document.getElementById('curRate').value = '';
   document.getElementById('curStatus').value = '1';
-  document.getElementById('curModalTitle').textContent = 'إضافة عملة';
+  document.getElementById('curModalTitle').innerHTML = Admin.icon('currencies',18) + ' إضافة عملة';
   document.getElementById('curCode').disabled = false;
-  document.getElementById('curModal').style.display = 'flex';
+  document.getElementById('curModal').classList.add('open');
 }
 
 function openEdit(c) {
@@ -154,12 +160,12 @@ function openEdit(c) {
   document.getElementById('curSymbol').value = c.symbol || '';
   document.getElementById('curRate').value   = c.rate_to_gbp;
   document.getElementById('curStatus').value = c.is_active == 1 ? '1' : '0';
-  document.getElementById('curModalTitle').textContent = 'تعديل العملة';
+  document.getElementById('curModalTitle').innerHTML = Admin.icon('edit',18) + ' تعديل العملة';
   document.getElementById('curCode').disabled = true;
-  document.getElementById('curModal').style.display = 'flex';
+  document.getElementById('curModal').classList.add('open');
 }
 
-function closeModal() { document.getElementById('curModal').style.display = 'none'; }
+function closeModal() { document.getElementById('curModal').classList.remove('open'); }
 
 function saveCurrency() {
   var id = document.getElementById('curId').value;
@@ -181,8 +187,10 @@ function deleteCurrency(id) {
 
 function refreshRates() {
   Api.post('/api/admin/currencies/refresh-rates', {}, true).then(function() {
-    alert('تم طلب تحديث الأسعار');
+    showToast('تم طلب تحديث الأسعار', 'success');
     loadCurrencies();
+  }).catch(function(e) {
+    showToast(e.message || 'تعذّر تحديث الأسعار', 'error');
   });
 }
 

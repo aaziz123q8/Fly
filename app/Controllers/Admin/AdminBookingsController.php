@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controllers\Admin;
 
+use App\Adapters\Stripe\StripeAdapter;
 use App\Core\Request;
 use App\Core\Response;
 use App\Helpers\Database;
 use App\Middleware\AdminMiddleware;
+use App\Services\AdminActivityLog;
 
 class AdminBookingsController
 {
@@ -405,77 +407,136 @@ class AdminBookingsController
         $type      = $request->param('type');
         $id        = (int) $request->param('id');
         $newStatus = trim((string) ($request->input('status', '')));
+        $reason    = trim((string) ($request->input('reason', '')));
+        $doRefund  = filter_var($request->input('refund'), FILTER_VALIDATE_BOOLEAN);
         $db        = Database::getInstance();
 
-        $allowedStatuses = ['confirmed', 'cancelled', 'refunded'];
-        if (!in_array($newStatus, $allowedStatuses, true)) {
-            Response::error('Invalid status. Allowed: confirmed, cancelled, refunded.', 422);
-        }
-
-        if ($type === 'flight') {
-            $table        = 'flight_bookings';
-            $validStatuses = ['pending', 'confirmed', 'cancelled', 'changed'];
-        } elseif ($type === 'hotel') {
-            $table        = 'hotel_bookings';
-            $validStatuses = ['pending', 'confirmed', 'cancelled', 'no_show'];
-        } else {
+        if ($type !== 'flight' && $type !== 'hotel') {
             Response::error('Invalid booking type. Use "flight" or "hotel".', 400);
         }
+        $table = $type === 'flight' ? 'flight_bookings' : 'hotel_bookings';
 
-        // Fetch current booking.
-        $safeTable = $type === 'flight' ? 'flight_bookings' : 'hotel_bookings';
-        $stmt = $db->prepare("SELECT * FROM " . $safeTable . " WHERE id = ? LIMIT 1");
+        // Admin may set any of these lifecycle states (all valid in the enums).
+        $allowedStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'refunded'];
+        if (!in_array($newStatus, $allowedStatuses, true)) {
+            Response::error('Invalid status. Allowed: ' . implode(', ', $allowedStatuses) . '.', 422);
+        }
+
+        $stmt = $db->prepare("SELECT * FROM {$table} WHERE id = ? LIMIT 1");
         $stmt->execute([$id]);
         $booking = $stmt->fetch(\PDO::FETCH_ASSOC);
-
         if (!$booking) {
             Response::notFound('Booking not found.');
         }
 
-        // Map refunded -> cancelled for DB (refunded not in enum, store as cancelled).
+        // "refunded" is stored as cancelled + a real Stripe refund on the payment.
+        $isRefund = $newStatus === 'refunded' || ($newStatus === 'cancelled' && $doRefund);
         $dbStatus = $newStatus === 'refunded' ? 'cancelled' : $newStatus;
 
-        // Only update if status is valid for this table.
-        if (!in_array($dbStatus, $validStatuses, true)) {
-            Response::error("Status '$newStatus' is not valid for $type bookings.", 422);
+        // ── Issue a Stripe refund when requested ──────────────────────────────
+        $refundInfo = null;
+        if ($isRefund) {
+            $p = $db->prepare(
+                'SELECT * FROM payments
+                 WHERE booking_type = ? AND booking_id = ? AND status = "succeeded"
+                 ORDER BY created_at DESC LIMIT 1'
+            );
+            $p->execute([$type, $id]);
+            $payment = $p->fetch(\PDO::FETCH_ASSOC);
+
+            if ($payment && !empty($payment['stripe_payment_intent_id'])) {
+                try {
+                    $stripe = new StripeAdapter();
+                    $refund = $stripe->createRefund(
+                        (string) $payment['stripe_payment_intent_id'],
+                        null,
+                        'admin_refund_' . $type . '_' . $id,
+                        'requested_by_customer'
+                    );
+                    $db->prepare(
+                        'UPDATE payments SET status = "refunded", stripe_refund_id = ?, updated_at = NOW() WHERE id = ?'
+                    )->execute([$refund['id'] ?? null, $payment['id']]);
+                    $refundInfo = ['status' => 'refunded', 'refund_id' => $refund['id'] ?? null];
+                } catch (\Throwable $e) {
+                    // Cancel the booking anyway, but surface that the refund failed.
+                    $refundInfo = ['status' => 'failed', 'error' => $e->getMessage()];
+                }
+            } else {
+                $refundInfo = ['status' => 'no_payment'];
+            }
         }
 
+        // ── Update the booking status ─────────────────────────────────────────
         if ($dbStatus === 'cancelled') {
-            $db->prepare("UPDATE " . $safeTable . " SET status = ?, cancelled_at = NOW() WHERE id = ?")
+            $db->prepare("UPDATE {$table} SET status = ?, cancelled_at = NOW() WHERE id = ?")
                ->execute([$dbStatus, $id]);
         } else {
-            $db->prepare("UPDATE " . $safeTable . " SET status = ? WHERE id = ?")
+            $db->prepare("UPDATE {$table} SET status = ? WHERE id = ?")
                ->execute([$dbStatus, $id]);
         }
 
-        // Log to booking_audit_log.
+        // ── Audit trail (booking_audit_log) ───────────────────────────────────
         $admin = AdminMiddleware::currentAdmin();
-        $db->prepare(
-            'INSERT INTO booking_audit_log
-             (booking_type, booking_id, action, changed_by, changed_by_type, before_data, after_data)
-             VALUES (?, ?, ?, ?, "admin", ?, ?)'
-        )->execute([
-            $type,
-            $id,
-            'status_changed',
-            $admin['user_id'] ?? null,
-            json_encode(['status' => $booking['status']]),
-            json_encode(['status' => $dbStatus]),
-        ]);
-
-        // If cancelled, queue cancellation email.
-        if ($dbStatus === 'cancelled') {
+        try {
             $db->prepare(
-                'INSERT INTO job_queue (job_type, payload) VALUES ("cancel_booking_email", ?)'
+                'INSERT INTO booking_audit_log
+                 (booking_type, booking_id, action, changed_by, changed_by_type, before_data, after_data)
+                 VALUES (?, ?, ?, ?, "admin", ?, ?)'
             )->execute([
-                json_encode([
-                    'booking_type' => $type,
-                    'booking_id'   => $id,
-                    'user_id'      => $booking['user_id'],
-                ]),
+                $type, $id, 'status_changed', $admin['user_id'] ?? null,
+                json_encode(['status' => $booking['status']]),
+                json_encode(['status' => $dbStatus, 'reason' => $reason, 'refund' => $refundInfo]),
             ]);
+        } catch (\Throwable) {}
+
+        // ── Notify the customer in-app ────────────────────────────────────────
+        if (!empty($booking['user_id'])) {
+            $titleMap = [
+                'cancelled' => 'تم إلغاء حجزك',
+                'confirmed' => 'تم تأكيد حجزك',
+                'completed' => 'اكتمل حجزك',
+                'pending'   => 'تحديث على حجزك',
+            ];
+            $t   = $titleMap[$dbStatus] ?? 'تحديث على حجزك';
+            $ref = $booking['booking_reference'] ?? ('#' . $id);
+            $body = $t . ' (' . $ref . ')'
+                . ($reason !== '' ? ' — ' . $reason : '')
+                . (($refundInfo['status'] ?? '') === 'refunded' ? ' — تمت إعادة المبلغ إلى بطاقتك.' : '');
+            try {
+                $db->prepare(
+                    'INSERT INTO user_notifications
+                        (user_id, channel, title_ar, title_en, body_ar, body_en, is_read, created_at)
+                     VALUES (?, "push", ?, ?, ?, ?, 0, NOW())'
+                )->execute([$booking['user_id'], $t, $t, $body, $body]);
+            } catch (\Throwable) {}
         }
 
-        Response::json(['message' => 'Booking status updated.', 'status' => $dbStatus]);
+        // ── Cancellation email job ────────────────────────────────────────────
+        if ($dbStatus === 'cancelled') {
+            try {
+                $db->prepare('INSERT INTO job_queue (job_type, payload) VALUES ("cancel_booking_email", ?)')
+                   ->execute([json_encode([
+                       'booking_type' => $type,
+                       'booking_id'   => $id,
+                       'user_id'      => $booking['user_id'],
+                   ])]);
+            } catch (\Throwable) {}
+        }
+
+        AdminActivityLog::record(
+            'status_' . $dbStatus,
+            'bookings',
+            'booking',
+            $id,
+            "حجز {$type} #{$id} → {$dbStatus}"
+                . ($reason !== '' ? " ({$reason})" : '')
+                . ($refundInfo ? ' | استرداد: ' . ($refundInfo['status'] ?? '') : '')
+        );
+
+        Response::json([
+            'message' => 'Booking status updated.',
+            'status'  => $dbStatus,
+            'refund'  => $refundInfo,
+        ]);
     }
 }

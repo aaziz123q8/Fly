@@ -5,16 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>القسائم — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
 </head>
 <body>
 <div class="admin-layout">
-    <aside class="sidebar" id="adminSidebar"></aside>
+  <aside class="sidebar" id="adminSidebar"></aside>
 
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>🎟️ إدارة القسائم والخصومات</h1>
-      <button class="btn btn-primary" onclick="openCreateModal()">+ إنشاء قسيمة جديدة</button>
+      <h1><span data-ic="coupons" data-ic-size="22"></span> القسائم</h1>
+      <div class="topbar-actions">
+        <button class="adm-btn sm" onclick="openCreateModal()"><span data-ic="plus" data-ic-size="15"></span> إنشاء قسيمة جديدة</button>
+      </div>
     </div>
 
     <div class="admin-content">
@@ -22,9 +24,10 @@
         <!-- Coupons Table -->
         <div class="table-card">
           <div class="card-header">
-            <span style="font-weight:700">قائمة القسائم</span>
-            <div>
-              <input type="search" class="form-control" id="searchInput" placeholder="البحث برمز القسيمة..." oninput="filterCoupons()" style="min-width:200px">
+            <span style="display:flex;align-items:center;gap:8px;font-weight:700"><span data-ic="coupons"></span> قائمة القسائم</span>
+            <div class="adm-search" style="min-width:220px">
+              <span data-ic="search"></span>
+              <input type="search" id="searchInput" placeholder="البحث برمز القسيمة..." oninput="filterCoupons()">
             </div>
           </div>
 
@@ -39,7 +42,7 @@
                   <th>الرمز</th>
                   <th>الخصم</th>
                   <th>النوع</th>
-                  <th>الحد الأقصى</th>
+                  <th>الحد الأدنى</th>
                   <th>الاستخدامات</th>
                   <th>الانتهاء</th>
                   <th>الحالة</th>
@@ -50,82 +53,82 @@
             </table>
           </div>
 
-          <div id="emptyState" class="empty-state" style="display:none">
-            <div class="empty-icon">🎟️</div>
-            <h3>لا توجد قسائم</h3>
+          <div id="emptyState" class="adm-empty" style="display:none">
+            <span data-ic="coupons" data-ic-size="40"></span>
+            <h4>لا توجد قسائم</h4>
             <p>أنشئ أول قسيمة خصم الآن</p>
-            <button class="btn btn-primary" style="margin-top:12px" onclick="openCreateModal()">+ إنشاء قسيمة</button>
+            <button class="adm-btn sm" style="margin-top:14px" onclick="openCreateModal()"><span data-ic="plus" data-ic-size="15"></span> إنشاء قسيمة</button>
           </div>
         </div>
 
         <!-- Create/Edit Form -->
-        <div class="card" id="couponFormCard">
+        <div class="table-card" id="couponFormCard">
           <div class="card-header">
-            <span id="formTitle">+ إنشاء قسيمة جديدة</span>
+            <span style="display:flex;align-items:center;gap:8px;font-weight:700" id="formTitle"><span data-ic="plus"></span> إنشاء قسيمة جديدة</span>
           </div>
-          <div class="card-body">
+          <div style="padding:18px">
             <form id="couponForm" onsubmit="saveCoupon(event)">
               <input type="hidden" id="couponId">
-              <div class="form-group">
-                <label class="form-label">رمز القسيمة</label>
+              <div class="adm-field">
+                <label>رمز القسيمة</label>
                 <div style="display:flex;gap:8px">
-                  <input type="text" class="form-control" id="couponCode" placeholder="SUMMER20" required style="text-transform:uppercase">
-                  <button type="button" class="btn btn-ghost btn-sm" onclick="generateCode()" title="توليد تلقائي">🔀</button>
+                  <input type="text" class="adm-input" id="couponCode" placeholder="SUMMER20" required style="text-transform:uppercase">
+                  <button type="button" class="adm-btn ghost sm" onclick="generateCode()" title="توليد تلقائي" style="flex:0 0 auto"><span data-ic="refresh" data-ic-size="15"></span></button>
                 </div>
-                <div class="form-hint">يجب أن يكون فريداً، يُفضل بالأحرف اللاتينية</div>
+                <div class="adm-hint">يجب أن يكون فريداً، يُفضل بالأحرف اللاتينية</div>
               </div>
-              <div class="form-group">
-                <label class="form-label">نوع الخصم</label>
-                <select class="form-control" id="discountType" onchange="updateDiscountLabel()">
+              <div class="adm-field">
+                <label>نوع الخصم</label>
+                <select class="adm-select" id="discountType" onchange="updateDiscountLabel()">
                   <option value="percentage">نسبة مئوية (%)</option>
                   <option value="fixed">مبلغ ثابت (£)</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label class="form-label" id="discountLabel">نسبة الخصم (%)</label>
-                <input type="number" class="form-control" id="discountValue" placeholder="20" min="1" step="0.01" required>
+              <div class="adm-field">
+                <label id="discountLabel">نسبة الخصم (%)</label>
+                <input type="number" class="adm-input" id="discountValue" placeholder="20" min="1" step="0.01" required>
               </div>
-              <div class="form-group">
-                <label class="form-label">أقصى مبلغ خصم (£) — اختياري</label>
-                <input type="number" class="form-control" id="maxDiscount" placeholder="بدون حد" min="0" step="0.01">
-                <div class="form-hint">يُستخدم مع النسبة المئوية لتحديد سقف الخصم</div>
+              <div class="adm-field">
+                <label>أقصى مبلغ خصم (£) — اختياري</label>
+                <input type="number" class="adm-input" id="maxDiscount" placeholder="بدون حد" min="0" step="0.01">
+                <div class="adm-hint">يُستخدم مع النسبة المئوية لتحديد سقف الخصم</div>
               </div>
-              <div class="form-group">
-                <label class="form-label">الحد الأدنى للطلب (£)</label>
-                <input type="number" class="form-control" id="minOrder" placeholder="100" min="0" step="0.01">
+              <div class="adm-field">
+                <label>الحد الأدنى للطلب (£)</label>
+                <input type="number" class="adm-input" id="minOrder" placeholder="100" min="0" step="0.01">
               </div>
-              <div class="form-group">
-                <label class="form-label">أقصى عدد استخدامات</label>
-                <input type="number" class="form-control" id="maxUses" placeholder="بدون حد" min="1">
+              <div class="adm-field">
+                <label>أقصى عدد استخدامات</label>
+                <input type="number" class="adm-input" id="maxUses" placeholder="بدون حد" min="1">
               </div>
-              <div class="form-group">
-                <label class="form-label">تاريخ البداية</label>
-                <input type="date" class="form-control" id="startDate">
-                <div class="form-hint">اتركه فارغاً ليبدأ من اليوم</div>
+              <div class="adm-row2">
+                <div class="adm-field">
+                  <label>تاريخ البداية</label>
+                  <input type="date" class="adm-input" id="startDate">
+                  <div class="adm-hint">فارغ = يبدأ اليوم</div>
+                </div>
+                <div class="adm-field">
+                  <label>تاريخ الانتهاء</label>
+                  <input type="date" class="adm-input" id="expiryDate">
+                  <div class="adm-hint">فارغ = بلا انتهاء</div>
+                </div>
               </div>
-              <div class="form-group">
-                <label class="form-label">تاريخ الانتهاء</label>
-                <input type="date" class="form-control" id="expiryDate">
-                <div class="form-hint">اتركه فارغاً ليبقى ساري المفعول</div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">ينطبق على</label>
-                <select class="form-control" id="applicableTo">
+              <div class="adm-field">
+                <label>ينطبق على</label>
+                <select class="adm-select" id="applicableTo">
                   <option value="both">الكل (رحلات وفنادق)</option>
                   <option value="flight">رحلات جوية فقط</option>
                   <option value="hotel">فنادق فقط</option>
                 </select>
               </div>
-              <div class="form-group">
-                <label class="form-label">وصف (اختياري)</label>
-                <input type="text" class="form-control" id="couponDesc" placeholder="خصم الصيف 2025">
-              </div>
-              <div style="display:flex;gap:8px">
-                <button type="submit" class="btn btn-primary" style="flex:1" id="saveBtn">
+              <div id="couponMsg" class="adm-msg"></div>
+              <div style="display:flex;gap:8px;margin-top:6px">
+                <button type="submit" class="adm-btn" style="flex:1" id="saveBtn">
+                  <span data-ic="check" data-ic-size="15"></span>
                   <span id="saveBtnTxt">حفظ القسيمة</span>
                   <div class="spinner spinner-sm" id="saveSpinner" style="display:none;border-top-color:white"></div>
                 </button>
-                <button type="button" class="btn btn-ghost" onclick="resetForm()">إلغاء</button>
+                <button type="button" class="adm-btn ghost" onclick="resetForm()">إلغاء</button>
               </div>
             </form>
           </div>
@@ -138,8 +141,9 @@
 <div class="toast-container" id="toastContainer"></div>
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070204"></script>
-<script src="../js/admin-sidebar.js?v=2026070204"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
 <script>
   const user = Auth.getUser();
   if (!Auth.isLoggedIn() || !user || (user.role !== 'admin' && user.role !== 'super_admin')) window.location.href = 'login.html';
@@ -150,7 +154,7 @@
     const type = document.getElementById('discountType').value;
     document.getElementById('discountLabel').textContent = type === 'percentage' ? 'نسبة الخصم (%)' : 'مبلغ الخصم (£)';
     const input = document.getElementById('discountValue');
-    const maxDiscRow = document.getElementById('maxDiscount').closest('.form-group');
+    const maxDiscRow = document.getElementById('maxDiscount').closest('.adm-field');
     if (type === 'percentage') { input.max = 100; input.placeholder = '20'; if (maxDiscRow) maxDiscRow.style.display = ''; }
     else { input.removeAttribute('max'); input.placeholder = '50'; if (maxDiscRow) maxDiscRow.style.display = 'none'; }
   }
@@ -171,7 +175,9 @@
   function renderCoupons(list) {
     if (!list.length) {
       document.getElementById('tableWrapper').style.display = 'none';
-      document.getElementById('emptyState').style.display = 'block';
+      const es = document.getElementById('emptyState');
+      es.style.display = 'block';
+      Admin.hydrateIcons(es);
       return;
     }
     document.getElementById('tableWrapper').style.display = 'block';
@@ -192,8 +198,8 @@
         <td>${Admin.renderStatusBadge(status)}</td>
         <td>
           <div class="table-actions">
-            <button class="btn btn-ghost btn-sm" onclick="editCoupon(${JSON.stringify(c).replace(/"/g,'&quot;')})">تعديل</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteCoupon('${c.id}', this)">حذف</button>
+            <button class="adm-act" onclick="editCoupon(${JSON.stringify(c).replace(/"/g,'&quot;')})">${Admin.icon('edit',15)} تعديل</button>
+            <button class="adm-act danger" onclick="deleteCoupon('${c.id}', this)">${Admin.icon('trash',15)} حذف</button>
           </div>
         </td>
       </tr>`;
@@ -231,8 +237,7 @@
     const vu = dOnly(c.valid_until);
     document.getElementById('expiryDate').value = (vu && !vu.startsWith('2099')) ? vu : '';
     document.getElementById('applicableTo').value = c.applies_to || 'both';
-    document.getElementById('couponDesc').value = c.description || '';
-    document.getElementById('formTitle').textContent = '✏️ تعديل القسيمة';
+    document.getElementById('formTitle').innerHTML = Admin.icon('edit', 18) + ' تعديل القسيمة';
     document.getElementById('saveBtnTxt').textContent = 'حفظ التعديلات';
     document.getElementById('couponFormCard').scrollIntoView({behavior:'smooth'});
   }
@@ -240,8 +245,9 @@
   function resetForm() {
     document.getElementById('couponForm').reset();
     document.getElementById('couponId').value = '';
-    document.getElementById('formTitle').textContent = '+ إنشاء قسيمة جديدة';
+    document.getElementById('formTitle').innerHTML = Admin.icon('plus', 18) + ' إنشاء قسيمة جديدة';
     document.getElementById('saveBtnTxt').textContent = 'حفظ القسيمة';
+    document.getElementById('couponMsg').className = 'adm-msg';
     updateDiscountLabel();
   }
 
@@ -276,7 +282,7 @@
         showToast('تم تحديث القسيمة بنجاح', 'success');
       } else {
         await Api.post('/api/admin/coupons', data, true);
-        showToast('تم إنشاء القسيمة بنجاح 🎉', 'success');
+        showToast('تم إنشاء القسيمة بنجاح', 'success');
       }
       resetForm();
       loadCoupons();

@@ -3,22 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>العمولات — لوحة الإدارة</title>
+  <title>التسعير والعمولات — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
 </head>
 <body>
 <div class="admin-layout">
-    <aside class="sidebar" id="adminSidebar"></aside>
+  <aside class="sidebar" id="adminSidebar"></aside>
 
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>💰 إدارة العمولات</h1>
-      <button class="btn btn-primary btn-sm" onclick="openAdd()">+ إضافة عمولة</button>
+      <h1><span data-ic="pricing" data-ic-size="22"></span> التسعير والعمولات</h1>
+      <div class="topbar-actions">
+        <button class="adm-btn sm" onclick="openAdd()"><span data-ic="plus" data-ic-size="15"></span> إضافة قاعدة</button>
+      </div>
     </div>
 
     <div class="admin-content">
-      <div class="card" style="padding:0">
+      <div class="adm-note"><span data-ic="pricing"></span><div>هذه الصفحة تحدّد هامش الربح (العمولة) الذي يُضاف تلقائياً على السعر الصافي القادم من المزوّد لكل حجز. حدّد القاعدة حسب النوع (طيران / فندق / الكل)، ونوع القيمة (نسبة مئوية أو مبلغ ثابت). القواعد المفعّلة المطابقة لنوع الحجز تُجمَع معاً وتُطبَّق على السعر.</div></div>
+
+      <div class="table-card">
         <div id="tableLoading" class="loading-state" style="padding:48px">
           <div class="spinner"></div><p>جاري التحميل...</p>
         </div>
@@ -28,10 +32,8 @@
               <tr>
                 <th>الاسم</th>
                 <th>النوع</th>
-                <th>نوع العمولة</th>
+                <th>نوع القيمة</th>
                 <th>القيمة</th>
-                <th>تطبق على</th>
-                <th>الشرط</th>
                 <th>الحالة</th>
                 <th>الإجراءات</th>
               </tr>
@@ -39,10 +41,10 @@
             <tbody id="commissionsTable"></tbody>
           </table>
         </div>
-        <div id="emptyState" class="empty-state" style="display:none">
-          <div class="empty-icon">💰</div>
-          <h3>لا توجد عمولات</h3>
-          <p>أضف عمولة جديدة لتبدأ</p>
+        <div id="emptyState" class="adm-empty" style="display:none">
+          <span data-ic="pricing" data-ic-size="40"></span>
+          <h4>لا توجد قواعد تسعير</h4>
+          <p>أضف قاعدة عمولة جديدة لتبدأ في تحديد هامش الربح</p>
         </div>
       </div>
     </div>
@@ -50,61 +52,46 @@
 </div>
 
 <!-- Add/Edit Modal -->
-<div id="commModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal" style="max-width:480px">
-    <div class="modal-header">
-      <h3 id="commModalTitle">إضافة عمولة</h3>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+<div id="commModal" class="adm-modal">
+  <div class="adm-modal-card" style="max-width:480px">
+    <div class="adm-modal-head">
+      <h3><span class="ai" data-ic="pricing" data-ic-size="18"></span> <span id="commModalTitle">إضافة قاعدة</span></h3>
+      <button class="adm-modal-x" onclick="closeModal()"><span data-ic="close" data-ic-size="16"></span></button>
     </div>
-    <div class="modal-body">
+    <div class="adm-modal-body">
       <input type="hidden" id="commId">
-      <div class="form-group">
-        <label class="form-label">الاسم</label>
-        <input type="text" class="form-control" id="commName" placeholder="مثال: عمولة الرحلات الدولية">
+      <div class="adm-field">
+        <label>الاسم</label>
+        <input type="text" class="adm-input" id="commName" placeholder="مثال: عمولة الرحلات الدولية">
       </div>
-      <div class="form-group">
-        <label class="form-label">النوع</label>
-        <select class="form-control" id="commType">
+      <div class="adm-field">
+        <label>النوع</label>
+        <select class="adm-select" id="commType">
           <option value="flight">رحلات جوية</option>
           <option value="hotel">فنادق</option>
           <option value="all">الكل</option>
         </select>
       </div>
-      <div class="form-group">
-        <label class="form-label">نوع العمولة</label>
-        <select class="form-control" id="commCommType">
-          <option value="percentage">نسبة مئوية (%)</option>
-          <option value="fixed">مبلغ ثابت (£)</option>
-        </select>
+      <div class="adm-field">
+        <label>نوع القيمة</label>
+        <div class="adm-seg" id="commTypeSeg">
+          <button type="button" class="on primary" data-t="percentage" onclick="setCommType('percentage')">نسبة مئوية (%)</button>
+          <button type="button" data-t="fixed" onclick="setCommType('fixed')">مبلغ ثابت (£)</button>
+        </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">القيمة</label>
-        <input type="number" class="form-control" id="commValue" step="0.01" min="0" placeholder="0.00">
+      <div class="adm-field">
+        <label id="commValueLabel">القيمة (%)</label>
+        <input type="number" class="adm-input" id="commValue" step="0.01" min="0" placeholder="0.00">
       </div>
-      <div class="form-group">
-        <label class="form-label">تطبق على</label>
-        <select class="form-control" id="commAppliesTo">
-          <option value="all">الكل</option>
-          <option value="airline">شركة طيران</option>
-          <option value="country">دولة</option>
-          <option value="route">مسار</option>
-        </select>
+      <div class="adm-field" style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+        <label style="margin-bottom:0">القاعدة مفعّلة</label>
+        <label class="adm-switch"><input type="checkbox" id="commStatus" checked><span></span></label>
       </div>
-      <div class="form-group">
-        <label class="form-label">الشرط (مثال: KU, السعودية...)</label>
-        <input type="text" class="form-control" id="commCondition" placeholder="اتركه فارغاً للتطبيق على الكل">
-      </div>
-      <div class="form-group">
-        <label class="form-label">الحالة</label>
-        <select class="form-control" id="commStatus">
-          <option value="1">نشط</option>
-          <option value="0">غير نشط</option>
-        </select>
-      </div>
+      <div id="commMsg" class="adm-msg"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
-      <button class="btn btn-primary" onclick="saveCommission()">حفظ</button>
+    <div class="adm-modal-foot">
+      <button class="adm-btn ghost" onclick="closeModal()">إلغاء</button>
+      <button class="adm-btn" id="commSaveBtn" onclick="saveCommission()"><span data-ic="check" data-ic-size="15"></span> حفظ</button>
     </div>
   </div>
 </div>
@@ -112,9 +99,21 @@
 <div class="toast-container" id="toastContainer"></div>
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070204"></script>
-<script src="../js/admin-sidebar.js?v=2026070204"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
 <script>
+
+var _commType = 'percentage';
+
+function setCommType(t) {
+  _commType = t;
+  document.querySelectorAll('#commTypeSeg button').forEach(function(b){
+    b.classList.toggle('on', b.dataset.t === t);
+    b.classList.toggle('primary', b.dataset.t === t);
+  });
+  document.getElementById('commValueLabel').textContent = t === 'percentage' ? 'القيمة (%)' : 'القيمة (£)';
+}
 
 function loadCommissions() {
   document.getElementById('tableLoading').style.display = 'block';
@@ -123,79 +122,102 @@ function loadCommissions() {
 
   Api.get('/api/admin/commissions', true).then(function(res) {
     document.getElementById('tableLoading').style.display = 'none';
-    if (!res.data || res.data.length === 0) { document.getElementById('emptyState').style.display = 'block'; return; }
+    if (!res.data || res.data.length === 0) {
+      var es = document.getElementById('emptyState');
+      es.style.display = 'block';
+      Admin.hydrateIcons(es);
+      return;
+    }
     document.getElementById('tableWrapper').style.display = 'block';
 
-    var typeMap = { flight: '✈️ رحلات', hotel: '🏨 فنادق', all: 'الكل' };
+    var typeMap = {
+      flight: Admin.icon('flight', 15) + ' رحلات',
+      hotel:  Admin.icon('hotel', 15) + ' فنادق',
+      all:    'الكل'
+    };
     var html = '';
     res.data.forEach(function(c) {
       var val = c.commission_type === 'percentage' ? c.commission_value + '%' : '£' + parseFloat(c.commission_value).toFixed(2);
       html += '<tr>' +
-        '<td><strong>' + c.name + '</strong></td>' +
-        '<td>' + (typeMap[c.type] || c.type) + '</td>' +
+        '<td><strong>' + (c.name || '—') + '</strong></td>' +
+        '<td><span style="display:inline-flex;align-items:center;gap:5px;color:var(--adm-1)">' + (typeMap[c.type] || c.type) + '</span></td>' +
         '<td>' + (c.commission_type === 'percentage' ? 'نسبة مئوية' : 'مبلغ ثابت') + '</td>' +
-        '<td style="font-weight:600">' + val + '</td>' +
-        '<td>' + (c.applies_to || 'الكل') + '</td>' +
-        '<td>' + (c.condition_value || '—') + '</td>' +
-        '<td>' + (c.is_active == 1 ? '<span class="badge badge-success">نشط</span>' : '<span class="badge badge-danger">غير نشط</span>') + '</td>' +
-        '<td style="display:flex;gap:6px">' +
-          '<button class="btn btn-ghost btn-sm" onclick="openEdit(' + JSON.stringify(c).replace(/"/g,'&quot;') + ')">تعديل</button>' +
-          '<button class="btn btn-ghost btn-sm" onclick="deleteCommission(' + c.id + ')" style="color:var(--danger)">حذف</button>' +
+        '<td style="font-weight:700;color:var(--primary)">' + val + '</td>' +
+        '<td>' + (c.is_active == 1 ? '<span class="badge badge-success">مفعّلة</span>' : '<span class="badge badge-neutral">معطّلة</span>') + '</td>' +
+        '<td>' +
+          '<div class="table-actions">' +
+            '<button class="adm-act" onclick="openEdit(' + JSON.stringify(c).replace(/"/g,'&quot;') + ')">' + Admin.icon('edit', 15) + ' تعديل</button>' +
+            '<button class="adm-act danger" onclick="deleteCommission(' + c.id + ')">' + Admin.icon('trash', 15) + ' حذف</button>' +
+          '</div>' +
         '</td>' +
         '</tr>';
     });
     document.getElementById('commissionsTable').innerHTML = html;
   }).catch(function() {
     document.getElementById('tableLoading').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'block';
+    var es = document.getElementById('emptyState');
+    es.style.display = 'block';
+    Admin.hydrateIcons(es);
   });
 }
 
 function openAdd() {
-  document.getElementById('commId').value        = '';
-  document.getElementById('commName').value      = '';
-  document.getElementById('commType').value      = 'flight';
-  document.getElementById('commCommType').value  = 'percentage';
-  document.getElementById('commValue').value     = '';
-  document.getElementById('commAppliesTo').value = 'all';
-  document.getElementById('commCondition').value = '';
-  document.getElementById('commStatus').value    = '1';
-  document.getElementById('commModalTitle').textContent = 'إضافة عمولة';
-  document.getElementById('commModal').style.display = 'flex';
+  document.getElementById('commId').value      = '';
+  document.getElementById('commName').value    = '';
+  document.getElementById('commType').value    = 'flight';
+  document.getElementById('commValue').value   = '';
+  document.getElementById('commStatus').checked = true;
+  setCommType('percentage');
+  document.getElementById('commMsg').className = 'adm-msg';
+  document.getElementById('commModalTitle').textContent = 'إضافة قاعدة';
+  document.getElementById('commModal').classList.add('open');
 }
 
 function openEdit(c) {
-  document.getElementById('commId').value        = c.id;
-  document.getElementById('commName').value      = c.name;
-  document.getElementById('commType').value      = c.type;
-  document.getElementById('commCommType').value  = c.commission_type;
-  document.getElementById('commValue').value     = c.commission_value;
-  document.getElementById('commAppliesTo').value = c.applies_to || 'all';
-  document.getElementById('commCondition').value = c.condition_value || '';
-  document.getElementById('commStatus').value    = c.is_active == 1 ? '1' : '0';
-  document.getElementById('commModalTitle').textContent = 'تعديل العمولة';
-  document.getElementById('commModal').style.display = 'flex';
+  document.getElementById('commId').value      = c.id;
+  document.getElementById('commName').value    = c.name || '';
+  document.getElementById('commType').value    = c.type;
+  document.getElementById('commValue').value   = c.commission_value;
+  document.getElementById('commStatus').checked = (c.is_active == 1);
+  setCommType(c.commission_type || 'percentage');
+  document.getElementById('commMsg').className = 'adm-msg';
+  document.getElementById('commModalTitle').textContent = 'تعديل القاعدة';
+  document.getElementById('commModal').classList.add('open');
 }
 
-function closeModal() { document.getElementById('commModal').style.display = 'none'; }
+function closeModal() { document.getElementById('commModal').classList.remove('open'); }
 
 function saveCommission() {
+  var msg = document.getElementById('commMsg');
+  msg.className = 'adm-msg';
+  var name = document.getElementById('commName').value.trim();
+  var value = parseFloat(document.getElementById('commValue').value);
+  if (!name) { msg.className = 'adm-msg show err'; msg.textContent = 'أدخل اسم القاعدة'; return; }
+  if (!(value >= 0)) { msg.className = 'adm-msg show err'; msg.textContent = 'أدخل قيمة صحيحة'; return; }
+
   var id = document.getElementById('commId').value;
   var payload = {
-    name:             document.getElementById('commName').value,
+    name:             name,
     type:             document.getElementById('commType').value,
-    commission_type:  document.getElementById('commCommType').value,
-    commission_value: parseFloat(document.getElementById('commValue').value) || 0,
-    applies_to:       document.getElementById('commAppliesTo').value,
-    condition_value:  document.getElementById('commCondition').value,
-    is_active:        parseInt(document.getElementById('commStatus').value),
+    commission_type:  _commType,
+    commission_value: value,
+    is_active:        document.getElementById('commStatus').checked ? 1 : 0,
   };
+  var btn = document.getElementById('commSaveBtn'); btn.disabled = true;
   var req = id ? Api.put('/api/admin/commissions/' + id, payload, true) : Api.post('/api/admin/commissions', payload, true);
-  req.then(function() { closeModal(); loadCommissions(); });
+  req.then(function() {
+    btn.disabled = false;
+    closeModal();
+    loadCommissions();
+  }).catch(function(e) {
+    btn.disabled = false;
+    msg.className = 'adm-msg show err';
+    msg.textContent = (e && e.message) || 'تعذّر الحفظ';
+  });
 }
 
 function deleteCommission(id) {
-  if (!confirm('هل تريد حذف هذه العمولة؟')) return;
+  if (!confirm('هل تريد حذف هذه القاعدة؟')) return;
   Api.delete('/api/admin/commissions/' + id, true).then(function() { loadCommissions(); });
 }
 

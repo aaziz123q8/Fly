@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>المسافرون — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
 </head>
 <body>
 <div class="admin-layout">
@@ -13,28 +13,31 @@
 
   <main class="admin-main">
     <div class="admin-topbar">
-      <h1>👥 إدارة المسافرين</h1>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span id="totalCount" style="font-size:.85rem;color:var(--text-muted)"></span>
+      <h1><span data-ic="traveler" data-ic-size="22"></span> المسافرون</h1>
+      <div class="topbar-actions">
+        <span id="totalCount" style="font-size:.85rem;color:var(--adm-muted)"></span>
       </div>
     </div>
 
     <div class="admin-content">
-      <div class="table-card">
-        <div class="card-header">
-          <span style="font-weight:700">قائمة المسافرين</span>
-          <div class="table-search">
-            <input type="search" class="form-control" id="searchInput" placeholder="البحث بالاسم أو البريد..." oninput="debouncedSearch()" style="min-width:260px">
-            <select class="form-control" id="statusFilter" onchange="loadTravelers()" style="width:auto">
-              <option value="">كل الحالات</option>
-              <option value="active">نشط</option>
-              <option value="inactive">غير نشط</option>
-            </select>
-          </div>
-        </div>
+      <div class="adm-note"><span data-ic="traveler"></span><div>إدارة حسابات المسافرين وملفاتهم المحفوظة — عرض التفاصيل، تعديل بيانات الحساب، وإدارة ملفات المسافرين.</div></div>
 
+      <div class="adm-toolbar">
+        <div class="adm-search">
+          <span data-ic="search"></span>
+          <input type="search" id="searchInput" placeholder="البحث بالاسم أو البريد..." oninput="debouncedSearch()">
+        </div>
+        <select class="adm-select" style="max-width:180px" id="statusFilter" onchange="loadTravelers()">
+          <option value="">كل الحالات</option>
+          <option value="active">نشط</option>
+          <option value="inactive">غير نشط</option>
+        </select>
+        <button class="adm-btn ghost sm" onclick="clearFilters()"><span data-ic="refresh" data-ic-size="15"></span> مسح</button>
+      </div>
+
+      <div class="table-card">
         <!-- Loading -->
-        <div id="tableLoading" class="loading-state" style="padding:48px">
+        <div id="tableLoading" class="loading-state" style="padding:44px">
           <div class="spinner"></div>
           <p>جاري تحميل البيانات...</p>
         </div>
@@ -58,26 +61,124 @@
           </table>
         </div>
 
-        <div id="emptyState" class="empty-state" style="display:none">
-          <div class="empty-icon">👥</div>
-          <h3>لا يوجد مسافرون</h3>
+        <div id="emptyState" class="adm-empty" style="display:none">
+          <span data-ic="traveler" data-ic-size="40"></span>
+          <h4>لا يوجد مسافرون</h4>
           <p>لم يتم العثور على نتائج مطابقة للبحث</p>
         </div>
 
-        <div id="paginationContainer" class="pagination"></div>
+        <div id="paginationContainer" style="padding:12px 18px"></div>
       </div>
     </div>
   </main>
 </div>
 
 <!-- View User Modal -->
-<div class="modal-overlay" id="userModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 class="modal-title">👤 تفاصيل المسافر</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+<div class="adm-modal" id="userModal">
+  <div class="adm-modal-card lg">
+    <div class="adm-modal-head">
+      <h3><span data-ic="traveler" data-ic-size="18"></span> تفاصيل المسافر</h3>
+      <button class="adm-modal-x" onclick="closeModal()"><span data-ic="close" data-ic-size="16"></span></button>
     </div>
-    <div id="userModalContent"></div>
+    <div class="adm-modal-body" id="userModalContent"></div>
+  </div>
+</div>
+
+<!-- Edit Account Modal -->
+<div class="adm-modal" id="editAccountModal">
+  <div class="adm-modal-card">
+    <div class="adm-modal-head">
+      <h3><span data-ic="edit" data-ic-size="18"></span> تعديل بيانات الحساب</h3>
+      <button class="adm-modal-x" onclick="closeEditAccount()"><span data-ic="close" data-ic-size="16"></span></button>
+    </div>
+    <form id="editAccountForm" onsubmit="submitEditAccount(event)">
+      <div class="adm-modal-body">
+        <div class="adm-row2">
+          <div class="adm-field"><label>الاسم الأول</label><input class="adm-input" id="ea_first_name"></div>
+          <div class="adm-field"><label>الاسم الأخير</label><input class="adm-input" id="ea_last_name"></div>
+        </div>
+        <div class="adm-row2">
+          <div class="adm-field"><label>كود الهاتف</label><input class="adm-input" id="ea_phone_country_code" placeholder="+965"></div>
+          <div class="adm-field"><label>رقم الهاتف</label><input class="adm-input" id="ea_phone_number"></div>
+        </div>
+        <div class="adm-msg" id="ea_msg"></div>
+      </div>
+      <div class="adm-modal-foot">
+        <button type="button" class="adm-btn ghost" onclick="closeEditAccount()">إلغاء</button>
+        <button type="submit" class="adm-btn" id="ea_submit"><span data-ic="check" data-ic-size="15"></span> حفظ التغييرات</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Profile Modal -->
+<div class="adm-modal" id="editProfileModal">
+  <div class="adm-modal-card lg">
+    <div class="adm-modal-head">
+      <h3><span data-ic="edit" data-ic-size="18"></span> تعديل ملف المسافر</h3>
+      <button class="adm-modal-x" onclick="closeEditProfile()"><span data-ic="close" data-ic-size="16"></span></button>
+    </div>
+    <form id="editProfileForm" onsubmit="submitEditProfile(event)">
+      <div class="adm-modal-body">
+        <div class="adm-section" style="margin-top:0"><span data-ic="traveler" class="ai"></span> البيانات الشخصية</div>
+        <div class="adm-row3">
+          <div class="adm-field"><label>اللقب</label>
+            <select class="adm-select" id="ep_title">
+              <option value="mr">السيد</option>
+              <option value="ms">الآنسة</option>
+              <option value="mrs">السيدة</option>
+              <option value="miss">آنسة</option>
+              <option value="dr">الدكتور</option>
+            </select>
+          </div>
+          <div class="adm-field"><label>الجنس</label>
+            <select class="adm-select" id="ep_gender">
+              <option value="male">ذكر</option>
+              <option value="female">أنثى</option>
+            </select>
+          </div>
+          <div class="adm-field"><label>تاريخ الميلاد</label><input type="date" class="adm-input" id="ep_date_of_birth"></div>
+        </div>
+        <div class="adm-row3">
+          <div class="adm-field"><label>الاسم الأول</label><input class="adm-input" id="ep_first_name"></div>
+          <div class="adm-field"><label>الاسم الأوسط</label><input class="adm-input" id="ep_middle_name"></div>
+          <div class="adm-field"><label>الاسم الأخير</label><input class="adm-input" id="ep_last_name"></div>
+        </div>
+        <div class="adm-row2">
+          <div class="adm-field"><label>الجنسية</label><input class="adm-input" id="ep_nationality"></div>
+          <div class="adm-field"><label>الدولة</label><input class="adm-input" id="ep_country"></div>
+        </div>
+
+        <div class="adm-section"><span data-ic="key" class="ai"></span> وثيقة السفر</div>
+        <div class="adm-row2">
+          <div class="adm-field"><label>نوع الوثيقة</label>
+            <select class="adm-select" id="ep_document_type">
+              <option value="passport">جواز سفر</option>
+              <option value="civil_id">بطاقة مدنية</option>
+              <option value="national_id">بطاقة وطنية</option>
+            </select>
+          </div>
+          <div class="adm-field"><label>رقم الوثيقة</label><input class="adm-input" id="ep_document_number"></div>
+        </div>
+        <div class="adm-row3">
+          <div class="adm-field"><label>تاريخ الإصدار</label><input type="date" class="adm-input" id="ep_issue_date"></div>
+          <div class="adm-field"><label>تاريخ الانتهاء</label><input type="date" class="adm-input" id="ep_expiry_date"></div>
+          <div class="adm-field"><label>دولة الإصدار</label><input class="adm-input" id="ep_document_country"></div>
+        </div>
+
+        <div class="adm-section"><span data-ic="support" class="ai"></span> بيانات الاتصال</div>
+        <div class="adm-row3">
+          <div class="adm-field"><label>كود الهاتف</label><input class="adm-input" id="ep_phone_country_code" placeholder="+965"></div>
+          <div class="adm-field"><label>رقم الهاتف</label><input class="adm-input" id="ep_phone_number"></div>
+          <div class="adm-field"><label>البريد الإلكتروني</label><input type="email" class="adm-input" id="ep_email"></div>
+        </div>
+        <div class="adm-msg" id="ep_msg"></div>
+      </div>
+      <div class="adm-modal-foot">
+        <button type="button" class="adm-btn ghost" onclick="closeEditProfile()">إلغاء</button>
+        <button type="submit" class="adm-btn" id="ep_submit"><span data-ic="check" data-ic-size="15"></span> حفظ الملف</button>
+      </div>
+    </form>
   </div>
 </div>
 
@@ -85,8 +186,9 @@
 
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070204"></script>
-<script src="../js/admin-sidebar.js?v=2026070204"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
 <script>
   const user = Auth.getUser();
   if (!Auth.isLoggedIn() || !user || (user.role !== 'admin' && user.role !== 'super_admin')) {
@@ -95,10 +197,25 @@
 
   let currentPage = 1;
   let searchTimer;
+  let travelersList = [];        // current page rows (for account edit prefill)
+  let detailUserId = null;       // user id currently shown in details modal
+  let detailProfiles = [];       // profiles currently shown in details modal
+  let editAccountUserId = null;
+
+  const gv = id => (document.getElementById(id).value || '').trim();
+  const sv = (id, v) => { const el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); };
+  const dISO = v => v ? String(v).slice(0, 10) : '';
 
   function debouncedSearch() {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => { currentPage = 1; loadTravelers(); }, 400);
+  }
+
+  function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('statusFilter').value = '';
+    currentPage = 1;
+    loadTravelers();
   }
 
   async function loadTravelers() {
@@ -109,62 +226,67 @@
     document.getElementById('emptyState').style.display = 'none';
 
     try {
-      const params = new URLSearchParams({ page: currentPage, limit: 20, search, status });
+      const params = new URLSearchParams({ page: currentPage, per_page: 20, search, status });
       const res = await Api.get(`/api/admin/travelers?${params}`, true);
       const list = res.data || res.users || (Array.isArray(res) ? res : []);
       const total = (res.meta && res.meta.total) || res.total || res.count || list.length;
+      travelersList = list;
 
       document.getElementById('totalCount').textContent = `${total} مسافر`;
 
       if (!list.length) {
-        document.getElementById('emptyState').style.display = 'block';
+        const es = document.getElementById('emptyState');
+        es.style.display = 'block';
       } else {
         document.getElementById('tableWrapper').style.display = 'block';
-        document.getElementById('travelersTable').innerHTML = list.map((u, i) => `
+        document.getElementById('travelersTable').innerHTML = list.map((u, i) => {
+          const active = u.is_active == 1;
+          return `
         <tr>
-          <td style="color:var(--text-muted)">${(currentPage-1)*20 + i + 1}</td>
+          <td style="color:var(--adm-muted)">${(currentPage-1)*20 + i + 1}</td>
           <td>
             <div style="display:flex;align-items:center;gap:8px">
               <div class="user-avatar" style="width:32px;height:32px;font-size:.75rem">${(u.first_name || u.email || '?')[0].toUpperCase()}</div>
-              <div>
-                <div style="font-weight:600;font-size:.9rem">${u.first_name || ''} ${u.last_name || ''}</div>
-              </div>
+              <div style="font-weight:600;font-size:.9rem">${u.first_name || ''} ${u.last_name || ''}</div>
             </div>
           </td>
-          <td>${u.email || '—'}</td>
+          <td style="direction:ltr;text-align:right">${u.email || '—'}</td>
           <td>${u.phone_country_code && u.phone_number ? u.phone_country_code + ' ' + u.phone_number : (u.phone || '—')}</td>
-          <td style="color:var(--text-muted);font-size:.85rem">${u.created_at ? new Date(u.created_at).toLocaleDateString('ar-SA') : '—'}</td>
+          <td style="color:var(--adm-muted);font-size:.85rem">${u.created_at ? new Date(u.created_at).toLocaleDateString('ar-SA') : '—'}</td>
           <td style="text-align:center">${u.bookings_count || u.bookings || '—'}</td>
-          <td>${Admin.renderStatusBadge(u.is_active == 1 ? 'active' : 'inactive')}</td>
+          <td>${Admin.renderStatusBadge(active ? 'active' : 'inactive')}</td>
           <td>
             <div class="table-actions">
-              <button class="btn btn-ghost btn-sm" onclick="viewUser('${u.id}')">عرض</button>
-              <button class="btn btn-sm ${u.is_active == 1 ? 'btn-danger' : 'btn-success'}"
-                onclick="toggleStatus('${u.id}', ${u.is_active == 1 ? 0 : 1}, this)">
-                ${u.is_active == 1 ? 'إيقاف' : 'تفعيل'}
+              <button class="adm-act" onclick="viewUser('${u.id}')">${Admin.icon('eye',15)} عرض</button>
+              <button class="adm-act" onclick="openEditAccount('${u.id}')">${Admin.icon('edit',15)} تعديل</button>
+              <button class="adm-act ${active ? 'danger' : 'success'}" onclick="toggleStatus('${u.id}', ${active ? 0 : 1}, this)">
+                ${Admin.icon('power',15)} ${active ? 'إيقاف' : 'تفعيل'}
               </button>
             </div>
           </td>
-        </tr>`).join('');
+        </tr>`;
+        }).join('');
 
         // Pagination
         const pages = Math.ceil(total / 20);
         const pc = document.getElementById('paginationContainer');
         if (pages > 1) {
           let html = '<div class="pagination">';
-          if (currentPage > 1) html += `<button class="btn btn-ghost btn-sm" onclick="goPage(${currentPage-1})">السابق</button>`;
+          if (currentPage > 1) html += `<button class="adm-btn ghost sm" onclick="goPage(${currentPage-1})">${Admin.icon('chevronL',14)} السابق</button>`;
           for (let i = Math.max(1,currentPage-2); i <= Math.min(pages,currentPage+2); i++) {
-            html += `<button class="btn btn-sm ${i===currentPage?'btn-primary':'btn-ghost'}" onclick="goPage(${i})">${i}</button>`;
+            html += `<button class="adm-btn ${i===currentPage?'sm':'ghost sm'}" onclick="goPage(${i})">${i}</button>`;
           }
-          if (currentPage < pages) html += `<button class="btn btn-ghost btn-sm" onclick="goPage(${currentPage+1})">التالي</button>`;
+          if (currentPage < pages) html += `<button class="adm-btn ghost sm" onclick="goPage(${currentPage+1})">التالي</button>`;
           html += '</div>';
           pc.innerHTML = html;
         } else { pc.innerHTML = ''; }
       }
     } catch (err) {
       showToast(err.message || 'تعذر تحميل البيانات', 'error');
-      document.getElementById('emptyState').style.display = 'block';
-      document.getElementById('emptyState').innerHTML = '<div class="empty-icon">❌</div><h3>خطأ في تحميل البيانات</h3><p>' + (err.message || '') + '</p>';
+      const es = document.getElementById('emptyState');
+      es.style.display = 'block';
+      es.innerHTML = `<span data-ic="cancel" data-ic-size="40"></span><h4>خطأ في تحميل البيانات</h4><p>${err.message || ''}</p>`;
+      Admin.hydrateIcons(es);
     } finally {
       document.getElementById('tableLoading').style.display = 'none';
     }
@@ -184,58 +306,184 @@
     }
   }
 
-  async function viewUser(userId) {
-    const el = document.getElementById('userModalContent');
-    el.innerHTML = '<div class="loading-state" style="padding:32px"><div class="spinner"></div></div>';
-    document.getElementById('userModal').classList.add('active');
+  /* ---------- Edit account ---------- */
+  function openEditAccount(userId) {
+    editAccountUserId = userId;
+    const u = travelersList.find(x => String(x.id) === String(userId)) || {};
+    sv('ea_first_name', u.first_name);
+    sv('ea_last_name', u.last_name);
+    sv('ea_phone_country_code', u.phone_country_code);
+    sv('ea_phone_number', u.phone_number || u.phone);
+    const msg = document.getElementById('ea_msg'); msg.className = 'adm-msg'; msg.textContent = '';
+    document.getElementById('ea_submit').disabled = false;
+    document.getElementById('editAccountModal').classList.add('open');
+  }
+  function closeEditAccount() { document.getElementById('editAccountModal').classList.remove('open'); }
+
+  async function submitEditAccount(e) {
+    e.preventDefault();
+    const btn = document.getElementById('ea_submit');
+    const msg = document.getElementById('ea_msg');
+    btn.disabled = true;
+    const payload = {
+      first_name: gv('ea_first_name'),
+      last_name: gv('ea_last_name'),
+      phone_country_code: gv('ea_phone_country_code'),
+      phone_number: gv('ea_phone_number')
+    };
     try {
-      const res = await Api.get(`/api/admin/travelers/${userId}`, true);
-      const u = res.data || res.user || res;
-      const travelers = res.travelers || [];
-      const travelerRows = travelers.length ? travelers.map(t => `
-        <div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:10px">
-          <div style="font-weight:700;margin-bottom:8px;color:var(--primary)">${t.first_name||''} ${t.middle_name||''} ${t.last_name||''}</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:.82rem">
-            <div><span style="color:var(--text-muted)">الجنس:</span> ${t.gender==='male'?'ذكر':t.gender==='female'?'أنثى':'—'}</div>
-            <div><span style="color:var(--text-muted)">الجنسية:</span> ${t.nationality||'—'}</div>
-            <div><span style="color:var(--text-muted)">تاريخ الميلاد:</span> ${t.date_of_birth||'—'}</div>
-            <div><span style="color:var(--text-muted)">الدولة:</span> ${t.country||'—'}</div>
-            <div><span style="color:var(--text-muted)">كود الهاتف:</span> ${t.phone_country_code||'—'}</div>
-            <div><span style="color:var(--text-muted)">رقم الهاتف:</span> ${t.phone_number||t.phone||'—'}</div>
-            <div><span style="color:var(--text-muted)">البريد:</span> ${t.email||'—'}</div>
-            <div><span style="color:var(--text-muted)">نوع الوثيقة:</span> ${t.document_type||'—'}</div>
-            <div><span style="color:var(--text-muted)">رقم الوثيقة:</span> ${t.document_number||'—'}</div>
-            <div><span style="color:var(--text-muted)">تاريخ الإصدار:</span> ${t.issue_date||t.document_issue||'—'}</div>
-            <div><span style="color:var(--text-muted)">تاريخ الانتهاء:</span> ${t.expiry_date||t.document_expiry||'—'}</div>
-          </div>
-        </div>`).join('') : '<p style="color:var(--text-muted);font-size:.85rem">لا توجد بيانات مسافر مرتبطة</p>';
-      el.innerHTML = `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الاسم الأول</div><div style="font-weight:600">${u.first_name || '—'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الاسم الأخير</div><div style="font-weight:600">${u.last_name || '—'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">البريد الإلكتروني</div><div style="font-weight:600">${u.email || '—'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الهاتف</div><div style="font-weight:600">${(u.phone_country_code||'')+' '+(u.phone_number||u.phone||'—')}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الحجوزات</div><div style="font-weight:600">${u.bookings_count || 0}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">إجمالي الإنفاق</div><div style="font-weight:700;color:var(--primary)">${u.total_spent ? Number(u.total_spent).toLocaleString('ar') + ' £' : '—'}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">الحالة</div><div>${Admin.renderStatusBadge(u.is_active ? 'active' : 'inactive')}</div></div>
-          <div><div style="font-size:.75rem;color:var(--text-muted);margin-bottom:4px">تاريخ التسجيل</div><div style="font-weight:600">${u.created_at ? new Date(u.created_at).toLocaleDateString('ar-SA') : '—'}</div></div>
-        </div>
-        ${(res.flight_bookings||[]).length || (res.hotel_bookings||[]).length ? `
-        <div style="border-top:1px solid #f0f2f5;padding-top:14px;margin-bottom:14px">
-          <div style="font-weight:700;margin-bottom:10px;font-size:.9rem">آخر الحجوزات</div>
-          ${[...(res.flight_bookings||[]).map(b=>`<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:6px 0;border-bottom:1px solid #f5f5f5"><span>✈️ ${b.booking_reference||b.id} — ${b.origin_airport||''} → ${b.destination_airport||''}</span><span>${Admin.renderStatusBadge(b.status)}</span></div>`),
-            ...(res.hotel_bookings||[]).map(b=>`<div style="display:flex;justify-content:space-between;font-size:.82rem;padding:6px 0;border-bottom:1px solid #f5f5f5"><span>🏨 ${b.booking_reference||b.id}</span><span>${Admin.renderStatusBadge(b.status)}</span></div>`)].join('')}
-        </div>` : ''}
-        <div style="border-top:1px solid #f0f2f5;padding-top:14px">
-          <div style="font-weight:700;margin-bottom:10px;font-size:.9rem">بيانات المسافرين المرفقة</div>
-          ${travelerRows}
-        </div>`;
-    } catch {
-      el.innerHTML = '<div class="alert alert-error">تعذر تحميل بيانات المستخدم</div>';
+      await Api.put(`/api/admin/travelers/${editAccountUserId}`, payload, true);
+      showToast('تم تحديث بيانات الحساب', 'success');
+      closeEditAccount();
+      loadTravelers();
+    } catch (err) {
+      msg.className = 'adm-msg show err';
+      msg.textContent = err.message || 'فشل تحديث الحساب';
+      btn.disabled = false;
     }
   }
 
-  function closeModal() { document.getElementById('userModal').classList.remove('active'); }
+  /* ---------- View user details ---------- */
+  async function viewUser(userId) {
+    detailUserId = userId;
+    const el = document.getElementById('userModalContent');
+    el.innerHTML = '<div class="loading-state" style="padding:32px"><div class="spinner"></div></div>';
+    document.getElementById('userModal').classList.add('open');
+    try {
+      const res = await Api.get(`/api/admin/travelers/${userId}`, true);
+      const u = res.user || res.data || res;
+      const travelers = res.travelers || [];
+      detailProfiles = travelers;
+
+      const genderTxt = g => g === 'male' ? 'ذكر' : g === 'female' ? 'أنثى' : '—';
+
+      const travelerRows = travelers.length ? travelers.map(t => {
+        const full = [t.first_name, t.middle_name, t.last_name].filter(Boolean).join(' ') || '—';
+        return `
+        <div style="background:var(--adm-soft);border:1px solid var(--adm-line);border-radius:12px;padding:14px;margin-bottom:12px">
+          <div style="font-weight:800;color:var(--adm-1);margin-bottom:10px">${full}</div>
+          <div class="adm-dl">
+            <div class="adm-dl-item"><span class="k">الجنس</span><span class="v">${genderTxt(t.gender)}</span></div>
+            <div class="adm-dl-item"><span class="k">الجنسية</span><span class="v">${t.nationality || '—'}</span></div>
+            <div class="adm-dl-item"><span class="k">تاريخ الميلاد</span><span class="v">${t.date_of_birth || '—'}</span></div>
+            <div class="adm-dl-item"><span class="k">الوثيقة</span><span class="v">${(t.document_type || '—')}${t.document_number ? ' — ' + t.document_number : ''}</span></div>
+            <div class="adm-dl-item"><span class="k">تاريخ الانتهاء</span><span class="v">${t.expiry_date || t.document_expiry || '—'}</span></div>
+          </div>
+          <div class="table-actions" style="margin-top:12px">
+            <button class="adm-act" onclick="openEditProfile('${t.id}')">${Admin.icon('edit',15)} تعديل الملف</button>
+            <button class="adm-act danger" onclick="deleteProfile('${t.id}')">${Admin.icon('trash',15)} حذف الملف</button>
+          </div>
+        </div>`;
+      }).join('') : '<p style="color:var(--adm-muted);font-size:.85rem">لا توجد ملفات مسافرين محفوظة</p>';
+
+      const bookings = [...(res.flight_bookings || []), ...(res.hotel_bookings || [])];
+      const bookingsHtml = (res.flight_bookings || []).length || (res.hotel_bookings || []).length ? `
+        <div class="adm-section"><span data-ic="bookings" class="ai"></span> آخر الحجوزات</div>
+        <div>
+          ${[
+            ...(res.flight_bookings || []).map(b => `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:8px 0;border-bottom:1px solid var(--adm-line)"><span style="display:inline-flex;align-items:center;gap:6px">${Admin.icon('flight',16)} ${b.booking_reference || b.id} — ${b.origin_airport || ''} ${b.destination_airport ? '→ ' + b.destination_airport : ''}</span><span>${Admin.renderStatusBadge(b.status)}</span></div>`),
+            ...(res.hotel_bookings || []).map(b => `<div style="display:flex;justify-content:space-between;align-items:center;font-size:.82rem;padding:8px 0;border-bottom:1px solid var(--adm-line)"><span style="display:inline-flex;align-items:center;gap:6px">${Admin.icon('hotel',16)} ${b.booking_reference || b.id}</span><span>${Admin.renderStatusBadge(b.status)}</span></div>`)
+          ].join('')}
+        </div>` : '';
+
+      el.innerHTML = `
+        <div class="adm-dl">
+          <div class="adm-dl-item"><span class="k">الاسم الأول</span><span class="v">${u.first_name || '—'}</span></div>
+          <div class="adm-dl-item"><span class="k">الاسم الأخير</span><span class="v">${u.last_name || '—'}</span></div>
+          <div class="adm-dl-item"><span class="k">البريد الإلكتروني</span><span class="v" style="direction:ltr;text-align:right">${u.email || '—'}</span></div>
+          <div class="adm-dl-item"><span class="k">الهاتف</span><span class="v">${(u.phone_country_code || '') + ' ' + (u.phone_number || u.phone || '—')}</span></div>
+          <div class="adm-dl-item"><span class="k">الحجوزات</span><span class="v">${u.bookings_count || 0}</span></div>
+          <div class="adm-dl-item"><span class="k">إجمالي الإنفاق</span><span class="v" style="color:var(--adm-1)">${res.total_spent || u.total_spent ? Number(res.total_spent || u.total_spent).toLocaleString('ar') + ' £' : '—'}</span></div>
+          <div class="adm-dl-item"><span class="k">الحالة</span><span class="v">${Admin.renderStatusBadge(u.is_active ? 'active' : 'inactive')}</span></div>
+          <div class="adm-dl-item"><span class="k">تاريخ التسجيل</span><span class="v">${u.created_at ? new Date(u.created_at).toLocaleDateString('ar-SA') : '—'}</span></div>
+        </div>
+        <div class="adm-modal-foot" style="padding:14px 0;justify-content:flex-start;border-top:none">
+          <button class="adm-btn sm" onclick="openEditAccount('${u.id}')">${Admin.icon('edit',15)} تعديل الحساب</button>
+        </div>
+        ${bookingsHtml}
+        <div class="adm-section"><span data-ic="traveler" class="ai"></span> ملفات المسافرين المحفوظة</div>
+        ${travelerRows}`;
+      Admin.hydrateIcons(el);
+    } catch (err) {
+      el.innerHTML = `<div class="adm-msg show err">تعذر تحميل بيانات المستخدم${err && err.message ? ' — ' + err.message : ''}</div>`;
+    }
+  }
+
+  function closeModal() { document.getElementById('userModal').classList.remove('open'); }
+
+  /* ---------- Edit profile ---------- */
+  function openEditProfile(profileId) {
+    const t = detailProfiles.find(x => String(x.id) === String(profileId));
+    if (!t) { showToast('تعذر إيجاد الملف', 'error'); return; }
+    document.getElementById('editProfileForm').dataset.profileId = profileId;
+    sv('ep_title', t.title || 'mr');
+    sv('ep_gender', t.gender || 'male');
+    sv('ep_date_of_birth', dISO(t.date_of_birth));
+    sv('ep_first_name', t.first_name);
+    sv('ep_middle_name', t.middle_name);
+    sv('ep_last_name', t.last_name);
+    sv('ep_nationality', t.nationality);
+    sv('ep_country', t.country);
+    sv('ep_document_type', t.document_type || 'passport');
+    sv('ep_document_number', t.document_number);
+    sv('ep_issue_date', dISO(t.issue_date || t.document_issue));
+    sv('ep_expiry_date', dISO(t.expiry_date || t.document_expiry));
+    sv('ep_document_country', t.document_country);
+    sv('ep_phone_country_code', t.phone_country_code);
+    sv('ep_phone_number', t.phone_number || t.phone);
+    sv('ep_email', t.email);
+    const msg = document.getElementById('ep_msg'); msg.className = 'adm-msg'; msg.textContent = '';
+    document.getElementById('ep_submit').disabled = false;
+    document.getElementById('editProfileModal').classList.add('open');
+  }
+  function closeEditProfile() { document.getElementById('editProfileModal').classList.remove('open'); }
+
+  async function submitEditProfile(e) {
+    e.preventDefault();
+    const profileId = document.getElementById('editProfileForm').dataset.profileId;
+    const btn = document.getElementById('ep_submit');
+    const msg = document.getElementById('ep_msg');
+    btn.disabled = true;
+    const payload = {
+      title: gv('ep_title'),
+      first_name: gv('ep_first_name'),
+      middle_name: gv('ep_middle_name'),
+      last_name: gv('ep_last_name'),
+      gender: gv('ep_gender'),
+      date_of_birth: gv('ep_date_of_birth'),
+      nationality: gv('ep_nationality'),
+      country: gv('ep_country'),
+      document_type: gv('ep_document_type'),
+      document_number: gv('ep_document_number'),
+      issue_date: gv('ep_issue_date'),
+      expiry_date: gv('ep_expiry_date'),
+      document_country: gv('ep_document_country'),
+      phone_country_code: gv('ep_phone_country_code'),
+      phone_number: gv('ep_phone_number'),
+      email: gv('ep_email')
+    };
+    try {
+      await Api.put(`/api/admin/travelers/${detailUserId}/profiles/${profileId}`, payload, true);
+      showToast('تم تحديث ملف المسافر', 'success');
+      closeEditProfile();
+      viewUser(detailUserId);
+    } catch (err) {
+      msg.className = 'adm-msg show err';
+      msg.textContent = err.message || 'فشل تحديث الملف';
+      btn.disabled = false;
+    }
+  }
+
+  async function deleteProfile(profileId) {
+    if (!confirm('هل أنت متأكد من حذف هذا الملف؟ سيتم أرشفته.')) return;
+    try {
+      await Api.delete(`/api/admin/travelers/${detailUserId}/profiles/${profileId}`, true);
+      showToast('تم حذف الملف', 'success');
+      viewUser(detailUserId);
+    } catch (err) {
+      showToast(err.message || 'فشل حذف الملف', 'error');
+    }
+  }
 
   function showToast(msg, type='info') {
     let c = document.getElementById('toastContainer');

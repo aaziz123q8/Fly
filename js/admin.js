@@ -97,6 +97,21 @@ const Admin = {
     }
 };
 
+// Inline SVG icon helpers (backed by AdminIcon from admin-icons.js).
+Admin.icon = function (name, size, cls) {
+    return (typeof AdminIcon === 'function') ? AdminIcon(name, size, cls) : '';
+};
+// Replace any element carrying data-ic="name" with the matching SVG icon.
+Admin.hydrateIcons = function (root) {
+    (root || document).querySelectorAll('[data-ic]').forEach(function (el) {
+        if (el.dataset.icDone) return;
+        var s = parseInt(el.getAttribute('data-ic-size'), 10) || 18;
+        el.innerHTML = Admin.icon(el.getAttribute('data-ic'), s);
+        el.dataset.icDone = '1';
+    });
+};
+document.addEventListener('DOMContentLoaded', function () { Admin.hydrateIcons(); });
+
 // Global toast function used across pages
 function showToast(message, type = 'info') {
     const toast = document.createElement('div');

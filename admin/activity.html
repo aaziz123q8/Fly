@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سجل النشاط — لوحة الإدارة</title>
+  <link rel="stylesheet" href="../css/app.css">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070301">
+</head>
+<body>
+<div class="admin-layout">
+  <aside class="sidebar" id="adminSidebar"></aside>
+
+  <main class="admin-main">
+    <div class="admin-topbar">
+      <h1><span data-ic="activity" data-ic-size="22"></span> سجل النشاط</h1>
+      <div class="topbar-actions">
+        <button class="adm-btn ghost sm" onclick="loadActivity()"><span data-ic="refresh" data-ic-size="15"></span> تحديث</button>
+      </div>
+    </div>
+
+    <div class="admin-content">
+      <div class="adm-note">
+        <span data-ic="shield"></span>
+        <div>سجل تدقيق لكل العمليات الإدارية الحساسة — من قام بها، وعلى أي عنصر، ومن أي عنوان IP، ومتى. يساعدك على مراقبة نشاط المشرفين وحماية الموقع.</div>
+      </div>
+
+      <div class="adm-toolbar">
+        <div class="adm-search">
+          <span data-ic="search"></span>
+          <input type="search" id="searchInput" placeholder="بحث في العمليات أو الوصف أو المشرف..." oninput="debouncedSearch()">
+        </div>
+        <select class="adm-select" style="max-width:200px" id="moduleFilter" onchange="loadActivity()">
+          <option value="">كل الأقسام</option>
+        </select>
+        <button class="adm-btn ghost sm" onclick="clearFilters()">مسح</button>
+      </div>
+
+      <div class="table-card">
+        <div id="tableLoading" class="loading-state" style="padding:44px"><div class="spinner"></div></div>
+        <div id="tableWrapper" style="display:none;overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>المشرف</th>
+                <th>العملية</th>
+                <th>القسم</th>
+                <th>الوصف</th>
+                <th>العنصر</th>
+                <th>IP</th>
+                <th>التاريخ</th>
+              </tr>
+            </thead>
+            <tbody id="activityTable"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="adm-empty" style="display:none">
+          <span data-ic="activity" data-ic-size="40"></span>
+          <h4>لا يوجد نشاط بعد</h4>
+          <p>ستظهر هنا كل العمليات الإدارية فور تنفيذها.</p>
+        </div>
+        <div id="paginationContainer" style="padding:12px 18px"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<script src="../js/auth.js"></script>
+<script src="../js/api.js"></script>
+<script src="../js/admin.js?v=2026070301"></script>
+<script src="../js/admin-icons.js?v=2026070301"></script>
+<script src="../js/admin-sidebar.js?v=2026070301"></script>
+<script>
+  let currentPage = 1, searchTimer, modulesLoaded = false;
+
+  const MODULE_LABELS = {
+    users: 'المستخدمون', travelers: 'المسافرون', bookings: 'الحجوزات',
+    notifications: 'الإشعارات', site_settings: 'إعدادات الموقع',
+    payments: 'المدفوعات', commissions: 'التسعير', coupons: 'القسائم', cms: 'المحتوى',
+  };
+  const ACTION_LABELS = {
+    create: 'إنشاء', update: 'تعديل', deactivate: 'تعطيل', reset_password: 'كلمة مرور',
+    wallet_credit: 'إضافة رصيد', wallet_debit: 'خصم رصيد', broadcast: 'إشعار جماعي',
+    update_profile: 'تعديل ملف', delete_profile: 'حذف ملف',
+    status_cancelled: 'إلغاء حجز', status_confirmed: 'تأكيد حجز',
+    status_completed: 'إكمال حجز', status_pending: 'تعليق حجز',
+  };
+  function actionBadge(action) {
+    let cls = 'badge-info';
+    if (/credit|confirmed|completed|create/.test(action)) cls = 'badge-success';
+    else if (/debit|cancel|delete|deactivate/.test(action)) cls = 'badge-error';
+    else if (/pending|reset|broadcast/.test(action)) cls = 'badge-warning';
+    return '<span class="badge ' + cls + '">' + (ACTION_LABELS[action] || action) + '</span>';
+  }
+
+  function debouncedSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () { currentPage = 1; loadActivity(); }, 400);
+  }
+  function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('moduleFilter').value = '';
+    currentPage = 1; loadActivity();
+  }
+  function goPage(p) { currentPage = p; loadActivity(); }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c])); }
+
+  async function loadActivity() {
+    document.getElementById('tableLoading').style.display = 'block';
+    document.getElementById('tableWrapper').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+
+    const params = new URLSearchParams({
+      page: currentPage, per_page: 30,
+      search: document.getElementById('searchInput').value,
+      module: document.getElementById('moduleFilter').value,
+    });
+
+    try {
+      const res = await Api.get(`/api/admin/activity?${params}`, true);
+      const list = res.data || [];
+      const total = (res.meta && res.meta.total) || list.length;
+
+      if (!modulesLoaded && Array.isArray(res.modules)) {
+        const sel = document.getElementById('moduleFilter');
+        res.modules.forEach(function (m) {
+          const o = document.createElement('option');
+          o.value = m; o.textContent = MODULE_LABELS[m] || m;
+          sel.appendChild(o);
+        });
+        modulesLoaded = true;
+      }
+
+      document.getElementById('tableLoading').style.display = 'none';
+      if (!list.length) {
+        const es = document.getElementById('emptyState');
+        es.style.display = 'block'; Admin.hydrateIcons(es);
+        document.getElementById('paginationContainer').innerHTML = '';
+        return;
+      }
+      document.getElementById('tableWrapper').style.display = 'block';
+
+      document.getElementById('activityTable').innerHTML = list.map(function (a) {
+        const name = (a.first_name || a.last_name)
+          ? esc(((a.first_name || '') + ' ' + (a.last_name || '')).trim())
+          : (a.email ? esc(a.email) : '—');
+        const entity = a.entity_type ? esc(a.entity_type) + (a.entity_id ? ' #' + a.entity_id : '') : '—';
+        return `<tr>
+          <td><div style="font-weight:600">${name}</div>${a.email ? `<div style="font-size:.76rem;color:var(--adm-faint);direction:ltr;text-align:right">${esc(a.email)}</div>` : ''}</td>
+          <td>${actionBadge(a.action)}</td>
+          <td style="font-size:.85rem">${MODULE_LABELS[a.module] || esc(a.module)}</td>
+          <td style="font-size:.85rem;color:var(--adm-muted);max-width:320px">${esc(a.description) || '—'}</td>
+          <td style="font-size:.82rem;color:var(--adm-muted)">${entity}</td>
+          <td style="font-size:.78rem;color:var(--adm-faint);direction:ltr;text-align:right">${esc(a.ip_address) || '—'}</td>
+          <td style="font-size:.8rem;color:var(--adm-muted);white-space:nowrap">${a.created_at ? new Date(a.created_at.replace(' ', 'T')).toLocaleString('ar-SA') : '—'}</td>
+        </tr>`;
+      }).join('');
+
+      const pages = Math.ceil(total / 30);
+      const pc = document.getElementById('paginationContainer');
+      if (pages > 1) {
+        let html = '<div class="pagination">';
+        if (currentPage > 1) html += `<button class="adm-btn ghost sm" onclick="goPage(${currentPage - 1})">السابق</button>`;
+        for (let i = Math.max(1, currentPage - 2); i <= Math.min(pages, currentPage + 2); i++)
+          html += `<button class="adm-btn sm ${i === currentPage ? '' : 'ghost'}" onclick="goPage(${i})">${i}</button>`;
+        if (currentPage < pages) html += `<button class="adm-btn ghost sm" onclick="goPage(${currentPage + 1})">التالي</button>`;
+        html += '</div>';
+        pc.innerHTML = html;
+      } else pc.innerHTML = '';
+    } catch (err) {
+      document.getElementById('tableLoading').style.display = 'none';
+      const es = document.getElementById('emptyState');
+      es.style.display = 'block'; Admin.hydrateIcons(es);
+      showToast('تعذر تحميل سجل النشاط', 'error');
+    }
+  }
+
+  loadActivity();
+</script>
+</body>
+</html>

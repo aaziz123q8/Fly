@@ -9,6 +9,7 @@ use App\Core\Response;
 use App\Helpers\Database;
 use App\Middleware\AdminMiddleware;
 use App\Services\WalletService;
+use App\Services\AdminActivityLog;
 
 class AdminUsersController
 {
@@ -130,6 +131,7 @@ class AdminUsersController
         }
 
         $db->prepare('UPDATE users SET is_active = 0 WHERE id = ?')->execute([$id]);
+        AdminActivityLog::record('deactivate', 'users', 'user', $id, 'تعطيل حساب المستخدم');
         Response::noContent();
     }
 
@@ -163,6 +165,7 @@ class AdminUsersController
         )->execute([$email, $hash, $first, $last, $cc, $phone, $role]);
 
         $id = (int) $db->lastInsertId();
+        AdminActivityLog::record('create', 'users', 'user', $id, "إنشاء مستخدم جديد {$email} (" . self::fuNumber($id) . ")");
         Response::created([
             'user' => [
                 'id' => $id, 'email' => $email, 'first_name' => $first, 'last_name' => $last,
@@ -202,6 +205,12 @@ class AdminUsersController
             Response::error($e->getMessage() ?: 'تعذّرت العملية.', ((int) $e->getCode()) ?: 422, 'wallet_error');
         }
 
+        AdminActivityLog::record(
+            $type === 'credit' ? 'wallet_credit' : 'wallet_debit',
+            'users', 'user', $id,
+            ($type === 'credit' ? 'إضافة' : 'خصم') . " رصيد {$amount} GBP — {$reason}"
+        );
+
         Response::json([
             'message'  => ($type === 'credit' ? 'تمت إضافة الرصيد بنجاح.' : 'تم خصم الرصيد بنجاح.'),
             'balance'  => number_format((float) ($w['balance'] ?? 0), 2, '.', ''),
@@ -223,6 +232,7 @@ class AdminUsersController
 
         $hash = password_hash($pass, PASSWORD_ARGON2ID);
         $db->prepare('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?')->execute([$hash, $id]);
+        AdminActivityLog::record('reset_password', 'users', 'user', $id, 'إعادة تعيين كلمة المرور');
         Response::json(['message' => 'تم تعيين كلمة المرور الجديدة بنجاح.']);
     }
 }
