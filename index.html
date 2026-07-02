@@ -405,7 +405,20 @@ select.fi{cursor:pointer}
 </section>
 
 <!-- Mobile search back-bar (phones, search state only) -->
-<div class="msearch-bar"><button type="button" class="msb-back" onclick="mGo('home')" aria-label="رجوع"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button><span class="msb-title" id="msbTitle">بحث الرحلات</span></div>
+<div class="msearch-bar">
+  <button type="button" class="msb-back" onclick="mGo('home')" aria-label="رجوع"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+  <span class="msb-title" id="msbTitle">بحث الرحلات</span>
+  <button type="button" class="msb-offers" id="msbOffers" onclick="openOffersSheet()">🎟️ عروض<span class="msb-offers-badge" id="msbOffersBadge" style="display:none">0</span></button>
+</div>
+
+<!-- Offers sheet (opened from the عروض header button) -->
+<div class="offers-ov" id="offersOv" onclick="closeOffersSheet()"></div>
+<div class="offers-sheet" id="offersSheet" aria-hidden="true">
+  <div class="offers-grip"></div>
+  <div class="offers-head"><span>🎟️ عروض وأكواد خصم</span><button type="button" class="offers-x" onclick="closeOffersSheet()" aria-label="إغلاق">✕</button></div>
+  <div class="mo-coupons" id="offersSheetList"></div>
+  <div class="offers-empty" id="offersEmpty" style="display:none">لا توجد عروض متاحة حالياً — تابعنا لأحدث أكواد الخصم.</div>
+</div>
 
 <!-- SEARCH BOX (functional) -->
 <div class="search-wrap">
@@ -498,11 +511,7 @@ select.fi{cursor:pointer}
           <span id="fSpin" class="spin hidden"></span>
         </button>
 
-        <!-- Mobile extras: offers + recent searches (flights) -->
-        <div class="mo-sec" id="flOffers" style="display:none">
-          <div class="mo-head"><span>🎟️ عروض وأكواد خصم</span></div>
-          <div class="mo-coupons" id="flOffersList"></div>
-        </div>
+        <!-- Mobile: recent searches (flights) -->
         <div class="mo-sec" id="flRecent" style="display:none">
           <div class="mo-head"><span>🕘 آخر عمليات البحث</span><button type="button" class="mo-clear" onclick="clearRecent('flights')">مسح</button></div>
           <div class="mo-recents" id="flRecentList"></div>
@@ -552,11 +561,7 @@ select.fi{cursor:pointer}
         </div>
         <button class="btn-search" onclick="searchHotels()" data-i18n="btn_hotels">🔍 بحث عن فنادق</button>
 
-        <!-- Mobile extras: offers + recent searches (hotels) -->
-        <div class="mo-sec" id="htOffers" style="display:none">
-          <div class="mo-head"><span>🎟️ عروض وأكواد خصم</span></div>
-          <div class="mo-coupons" id="htOffersList"></div>
-        </div>
+        <!-- Mobile: recent searches (hotels) -->
         <div class="mo-sec" id="htRecent" style="display:none">
           <div class="mo-head"><span>🕘 آخر عمليات البحث</span><button type="button" class="mo-clear" onclick="clearRecent('hotels')">مسح</button></div>
           <div class="mo-recents" id="htRecentList"></div>
@@ -1204,6 +1209,19 @@ function closeDrawer() {
   .msb-back{width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.16);border:0;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
   .msb-back svg{width:22px;height:22px}
   .msb-title{font-weight:800;font-size:1.15rem}
+  .msb-offers{margin-inline-start:auto;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.18);border:1.5px solid rgba(255,255,255,.4);color:#fff;border-radius:40px;padding:8px 15px;font:inherit;font-weight:800;font-size:.9rem;cursor:pointer;position:relative}
+  .msb-offers:active{transform:scale(.97)}
+  .msb-offers-badge{min-width:19px;height:19px;padding:0 5px;border-radius:20px;background:#FDE68A;color:#7C3AED;font-size:.7rem;font-weight:800;display:inline-flex;align-items:center;justify-content:center}
+
+  /* Offers bottom sheet (opened from the عروض header button) */
+  .offers-ov{display:none;position:fixed;inset:0;background:rgba(20,8,45,.55);z-index:1290}
+  .offers-ov.open{display:block}
+  .offers-sheet{position:fixed;left:0;right:0;bottom:0;z-index:1300;background:#fff;border-radius:24px 24px 0 0;padding:8px 16px calc(22px + env(safe-area-inset-bottom,0));transform:translateY(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);max-height:82vh;overflow:auto;box-shadow:0 -20px 50px -18px rgba(46,16,101,.5)}
+  .offers-sheet.open{transform:translateY(0)}
+  .offers-grip{width:44px;height:5px;border-radius:5px;background:#ECE8F4;margin:6px auto 12px}
+  .offers-head{display:flex;align-items:center;justify-content:space-between;font-weight:800;color:#4C1D95;font-size:1.08rem;margin-bottom:14px}
+  .offers-x{width:34px;height:34px;border-radius:50%;border:0;background:#F4EEFE;color:#7C3AED;font-size:1rem;font-weight:800;cursor:pointer}
+  .offers-empty{text-align:center;color:#9a93ad;font-size:.9rem;padding:26px 10px}
 
   /* ── Mobile search extras: offers (coupons) + recent searches ── */
   .mo-sec{margin-top:20px}
@@ -1368,24 +1386,28 @@ function closeDrawer() {
   function couponVal(c){ return c.discount_type==='percentage' ? (parseFloat(c.discount_value)+'%') : (parseFloat(c.discount_value).toFixed(0)+' '+(c.currency||'£')); }
   window.copyCoupon=function(code,btn){ try{ if(navigator.clipboard) navigator.clipboard.writeText(code); }catch(e){} if(btn){ var o=btn.textContent; btn.textContent='✓ نُسخ'; btn.classList.add('done'); setTimeout(function(){btn.textContent=o;btn.classList.remove('done');},1600);} };
 
-  var offersCache={};
-  function loadOffers(scope){
-    var listId=scope==='flight'?'flOffersList':'htOffersList', secId=scope==='flight'?'flOffers':'htOffers';
-    var el=document.getElementById(listId), sec=document.getElementById(secId);
-    if(!el||!sec) return;
-    function render(list){
-      if(!list||!list.length){ sec.style.display='none'; return; }
-      el.innerHTML=list.map(function(c){
-        var d=[]; if(c.max_discount_amount) d.push('حتى '+parseFloat(c.max_discount_amount).toFixed(0)+' '+(c.currency||'£')); if(c.min_booking_amount) d.push('حد أدنى '+parseFloat(c.min_booking_amount).toFixed(0)+' '+(c.currency||'£'));
-        return '<div class="mo-coupon"><div class="mo-coupon-l"><div class="mo-coupon-val">'+couponVal(c)+'</div><div class="mo-coupon-scope">'+scopeLabel(c.applies_to)+'</div></div>'
-          +'<div class="mo-coupon-r"><div class="mo-coupon-code">'+c.code+'</div><div class="mo-coupon-desc">'+(d.join(' · ')||'خصم فوري على حجزك')+'</div></div>'
-          +'<button type="button" class="mo-coupon-copy" onclick="copyCoupon(\''+c.code+'\',this)">نسخ</button></div>';
-      }).join('');
-      sec.style.display='block';
-    }
-    if(offersCache[scope]){ render(offersCache[scope]); return; }
-    fetch('/api/coupons/public?scope='+scope).then(function(r){return r.json();}).then(function(res){ var l=(res&&res.data)||[]; offersCache[scope]=l; render(l); }).catch(function(){ sec.style.display='none'; });
+  var offersCache={}, currentScope='flight';
+  function offerCardHtml(c){
+    var d=[]; if(c.max_discount_amount) d.push('حتى '+parseFloat(c.max_discount_amount).toFixed(0)+' '+(c.currency||'£')); if(c.min_booking_amount) d.push('حد أدنى '+parseFloat(c.min_booking_amount).toFixed(0)+' '+(c.currency||'£'));
+    return '<div class="mo-coupon"><div class="mo-coupon-l"><div class="mo-coupon-val">'+couponVal(c)+'</div><div class="mo-coupon-scope">'+scopeLabel(c.applies_to)+'</div></div>'
+      +'<div class="mo-coupon-r"><div class="mo-coupon-code">'+c.code+'</div><div class="mo-coupon-desc">'+(d.join(' · ')||'خصم فوري على حجزك')+'</div></div>'
+      +'<button type="button" class="mo-coupon-copy" onclick="copyCoupon(\''+c.code+'\',this)">نسخ</button></div>';
   }
+  function updateOffersBadge(list){ var badge=document.getElementById('msbOffersBadge'); if(!badge) return; if(list&&list.length){ badge.textContent=list.length; badge.style.display='inline-flex'; } else badge.style.display='none'; }
+  function fetchOffers(scope, cb){
+    if(offersCache[scope]){ cb(offersCache[scope]); return; }
+    fetch('/api/coupons/public?scope='+scope).then(function(r){return r.json();}).then(function(res){ var l=(res&&res.data)||[]; offersCache[scope]=l; cb(l); }).catch(function(){ cb([]); });
+  }
+  window.openOffersSheet=function(){
+    fetchOffers(currentScope, function(list){
+      var el=document.getElementById('offersSheetList'), empty=document.getElementById('offersEmpty');
+      if(!list.length){ if(el) el.innerHTML=''; if(empty) empty.style.display='block'; }
+      else { if(empty) empty.style.display='none'; if(el) el.innerHTML=list.map(offerCardHtml).join(''); }
+      var s=document.getElementById('offersSheet'), o=document.getElementById('offersOv');
+      if(s){ s.classList.add('open'); s.setAttribute('aria-hidden','false'); } if(o) o.classList.add('open');
+    });
+  };
+  window.closeOffersSheet=function(){ var s=document.getElementById('offersSheet'), o=document.getElementById('offersOv'); if(s){ s.classList.remove('open'); s.setAttribute('aria-hidden','true'); } if(o) o.classList.remove('open'); };
 
   function renderRecents(kind){
     var listId=kind==='flights'?'flRecentList':'htRecentList', secId=kind==='flights'?'flRecent':'htRecent';
@@ -1404,8 +1426,9 @@ function closeDrawer() {
 
   window.mobileExtras=function(view){
     if(window.innerWidth>768) return; // mobile only
-    if(view==='hotels'){ loadOffers('hotel'); renderRecents('hotels'); }
-    else { loadOffers('flight'); renderRecents('flights'); }
+    currentScope = (view==='hotels') ? 'hotel' : 'flight';
+    renderRecents(view==='hotels'?'hotels':'flights');
+    fetchOffers(currentScope, updateOffersBadge);   // prefetch → set the عروض badge count
   };
 })();
 </script>
