@@ -1,6 +1,30 @@
 Options -Indexes
 ErrorDocument 404 /404.html
 RewriteEngine On
+
+# ── Clean URLs ───────────────────────────────────────────────────────────────
+# Show pages without the ".html" extension (e.g. /flights instead of
+# /flights.html). Any real ".html" request is 301-redirected to the clean URL,
+# and clean URLs are internally served from the matching ".html" file.
+
+# 1) index.html  →  /   (home lives at the root)
+RewriteCond %{THE_REQUEST} \s/+index\.html[\s?] [NC]
+RewriteRule ^ / [R=301,L]
+
+# 2) any other  page.html  →  /page   (preserve the query string automatically)
+RewriteCond %{THE_REQUEST} \s/+([^\s?]+?)\.html[\s?] [NC]
+RewriteRule ^ /%1 [R=301,L]
+
+# 3) /index (bare) → /
+RewriteRule ^index/?$ / [R=301,L]
+
+# 4) Serve the extensionless URL from its .html file (internal rewrite, no redirect)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}/$1.html -f
+RewriteRule ^(.+?)/?$ /$1.html [L]
+
+# ── API / router fallback ────────────────────────────────────────────────────
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^ index.php [QSA,L]

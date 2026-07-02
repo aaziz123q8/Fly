@@ -17,7 +17,11 @@
   var CFG = window.FLY_CHROME || {};
 
   var path = (location.pathname || '').toLowerCase();
-  var here = (path.split('/').pop() || 'index.html'); if (!here) here = 'index.html';
+  // Canonical page id — always "<name>.html" so clean URLs (/flights) match the
+  // legacy .html keys below.
+  var here = (path.split('/').pop() || '').replace(/\.html$/, '');
+  if (!here) here = 'index';
+  here += '.html';
   var active = CFG.active || ({
     'index.html': 'home', '': 'home',
     'flights.html': 'flights',
@@ -146,7 +150,7 @@
 
   function ensureMobileApp(){
     if (document.getElementById('mappTabs') || document.getElementById('sc-mapp')) return;
-    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070112'; document.body.appendChild(s);
+    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070202'; document.body.appendChild(s);
   }
 
   function ensurePwa(){

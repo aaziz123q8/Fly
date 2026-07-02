@@ -22,6 +22,10 @@
   };
 
   const path = window.location.pathname;
+  // Canonical page id — always "<name>.html" so clean URLs (/flights) match.
+  let here = (path.split('/').pop() || '').replace(/\.html$/, '');
+  if (!here) here = 'index';
+  here += '.html';
   const links = [
     { href: 'index.html', icon: ICON.home, label: 'الرئيسية' },
     { href: 'flights.html', icon: ICON.flight, label: 'رحلات' },
@@ -33,7 +37,7 @@
   nav.className = 'bottom-nav';
   nav.innerHTML = links.map(function(l) {
     // Active if path ends with the href, or for index if we're at root
-    var active = path.endsWith(l.href) || (l.href === 'index.html' && (path === '/' || path.endsWith('/'))) ? ' active' : '';
+    var active = (here === l.href || (l.href === 'index.html' && (path === '/' || path.endsWith('/')))) ? ' active' : '';
     return '<a href="' + l.href + '" class="bnav-item' + active + '"><span class="bnav-icon">' + l.icon + '</span><span>' + l.label + '</span></a>';
   }).join('');
   document.body.appendChild(nav);

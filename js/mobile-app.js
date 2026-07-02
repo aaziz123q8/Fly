@@ -44,8 +44,12 @@
   } catch (e) {}
 
   var path = (location.pathname || '').toLowerCase();
-  var here = (path.split('/').pop() || 'index.html'); if (!here) here = 'index.html';
-  var isHome = (here === 'index.html' || here === '');
+  // Canonical page id — always "<name>.html" so clean URLs (/flights) and the
+  // legacy .html URLs resolve to the same key used by NO_TABS / TABS / TITLES.
+  var here = (path.split('/').pop() || '').replace(/\.html$/, '');
+  if (!here) here = 'index';
+  here += '.html';
+  var isHome = (here === 'index.html');
 
   var I = {
     home:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>',
