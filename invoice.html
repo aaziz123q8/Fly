@@ -120,39 +120,49 @@
        sections, totals box) so it reads clearly differently from the
        boarding-pass-style e-ticket. */
     #invoicePrint { display:none; }
-    .iv-doc { font-family:'Tajawal','IBM Plex Sans Arabic',Arial,sans-serif; color:#1B172B; font-size:8.6pt; line-height:1.35; }
-    .iv-head { background:#3A1078; color:#fff; display:flex; justify-content:space-between; align-items:flex-start; padding:12px 16px; border-radius:6px; }
-    .iv-head .lg { font-size:15pt; font-weight:900; } .iv-head .lg span { color:#F5A623; }
-    .iv-head .lg small { display:block; font-size:7pt; font-weight:400; color:rgba(255,255,255,.7); margin-top:2px; }
-    .iv-head .meta { text-align:left; font-size:7.6pt; line-height:1.6; color:rgba(255,255,255,.85); }
-    .iv-head .meta .num { font-size:11pt; font-weight:900; color:#fff; }
-    .iv-titlebar { display:flex; align-items:center; justify-content:center; gap:10px; margin:8px 0 9px; }
-    .iv-titlebar .t { font-size:12pt; font-weight:800; color:#3A1078; }
-    .iv-st { padding:2px 14px; border-radius:4px; font-size:8pt; font-weight:800; color:#fff; background:#16a34a; }
+    .iv-doc { font-family:'Tajawal','IBM Plex Sans Arabic',Arial,sans-serif; color:#1B172B; font-size:10pt; line-height:1.35; }
+    .iv-page { min-height:250mm; display:flex; flex-direction:column; }
+    .iv-page + .iv-page { page-break-before:always; }
+    .iv-ltr { direction:ltr; }
+    .iv-ltr .iv-head .meta { text-align:right; }
+    .iv-head { background:#3A1078; color:#fff; display:flex; justify-content:space-between; align-items:flex-start; padding:12px 18px; border-radius:8px; margin-bottom:9px; }
+    .iv-head .lg { font-size:19pt; font-weight:900; } .iv-head .lg span { color:#F5A623; }
+    .iv-head .lg small { display:block; font-size:9pt; font-weight:400; color:rgba(255,255,255,.7); margin-top:2px; }
+    .iv-head .meta { text-align:left; font-size:9pt; line-height:1.5; color:rgba(255,255,255,.85); }
+    .iv-head .meta .num { font-size:13pt; font-weight:900; color:#fff; }
+    .iv-titlebar { display:flex; align-items:center; justify-content:center; gap:12px; margin:2px 0 9px; }
+    .iv-titlebar .t { font-size:15pt; font-weight:800; color:#3A1078; }
+    .iv-st { padding:3px 16px; border-radius:5px; font-size:10.5pt; font-weight:800; color:#fff; background:#16a34a; }
     .iv-st.c { background:#dc2626; } .iv-st.p { background:#d97706; }
     .iv-sec { margin-bottom:8px; }
-    .iv-sec-t { font-size:7.6pt; font-weight:800; color:#3A1078; letter-spacing:.4px; border-bottom:1.6px solid #3A1078; padding-bottom:2px; margin-bottom:4px; }
-    .iv-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-    .iv-kv { display:flex; justify-content:space-between; gap:8px; padding:2px 0; border-bottom:1px dotted #e5e0f0; }
+    .iv-sec-t { font-size:10.5pt; font-weight:800; color:#3A1078; letter-spacing:.3px; border-bottom:2px solid #3A1078; padding-bottom:3px; margin-bottom:5px; }
+    .iv-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .iv-kv { display:flex; justify-content:space-between; gap:10px; padding:2.5px 0; border-bottom:1px dotted #e5e0f0; font-size:10pt; }
     .iv-kv .k { color:#777; } .iv-kv .v { font-weight:700; color:#3A1078; }
-    .iv-route { display:flex; align-items:center; justify-content:space-between; border:1.3px solid #e7ddf7; border-radius:6px; padding:7px 12px; }
-    .iv-ap { text-align:center; } .iv-ap .i { font-size:15pt; font-weight:900; color:#3A1078; line-height:1; } .iv-ap .t { font-size:9pt; font-weight:800; color:#6d28d9; } .iv-ap .d { font-size:6.8pt; color:#888; }
-    .iv-mid { flex:1; text-align:center; color:#6d28d9; } .iv-mid .dur { font-size:7pt; color:#888; }
-    table.iv-tbl { width:100%; border-collapse:collapse; font-size:7.6pt; }
-    table.iv-tbl th { background:#efeaFB; color:#4b3d7a; font-weight:800; padding:4px 6px; text-align:right; font-size:6.9pt; border:1px solid #e0d8f2; }
-    table.iv-tbl td { padding:3px 6px; border:1px solid #efeaf8; color:#333; }
+    .iv-route { display:flex; align-items:center; justify-content:space-between; border:1.6px solid #e7ddf7; border-radius:10px; padding:10px 20px; }
+    .iv-ap { text-align:center; } .iv-ap .i { font-size:23pt; font-weight:900; color:#3A1078; line-height:1; } .iv-ap .t { font-size:12pt; font-weight:800; color:#6d28d9; margin-top:4px; } .iv-ap .d { font-size:9pt; color:#888; }
+    .iv-mid { flex:1; text-align:center; color:#6d28d9; font-size:14pt; } .iv-mid .dur { font-size:9pt; color:#888; }
+    table.iv-tbl { width:100%; border-collapse:collapse; font-size:9.5pt; }
+    table.iv-tbl th { background:#efeafb; color:#4b3d7a; font-weight:800; padding:5px 8px; text-align:right; font-size:9pt; border:1px solid #e0d8f2; }
+    .iv-ltr table.iv-tbl th { text-align:left; }
+    table.iv-tbl td { padding:5px 8px; border:1px solid #efeaf8; color:#333; }
     table.iv-tbl tbody tr:nth-child(even) td { background:#faf8ff; }
-    .iv-totbox { width:56%; margin-right:auto; border:1.4px solid #3A1078; border-radius:6px; overflow:hidden; }
-    .iv-totbox .r { display:flex; justify-content:space-between; padding:4px 10px; font-size:8pt; border-bottom:1px solid #ece8f6; }
-    .iv-totbox .r.g { background:#3A1078; color:#fff; font-weight:900; font-size:9.5pt; border:0; }
-    .iv-instr { font-size:7pt; color:#555; line-height:1.5; }
-    .iv-legal { font-size:6.6pt; color:#999; border-top:1px solid #eee; padding-top:5px; margin-top:6px; text-align:center; }
+    .iv-totbox { width:60%; margin-right:auto; border:1.6px solid #3A1078; border-radius:8px; overflow:hidden; }
+    .iv-ltr .iv-totbox { margin-right:0; margin-left:auto; }
+    .iv-totbox .r { display:flex; justify-content:space-between; padding:4px 12px; font-size:10pt; border-bottom:1px solid #ece8f6; }
+    .iv-totbox .r.g { background:#3A1078; color:#fff; font-weight:900; font-size:12.5pt; border:0; }
+    .iv-instr { font-size:9.5pt; color:#555; line-height:1.7; }
+    .iv-foot { display:flex; align-items:center; gap:16px; border-top:2px solid #3A1078; padding-top:9px; margin-top:auto; }
+    .iv-qr img { width:92px; height:92px; display:block; }
+    .iv-foot .qtxt { font-size:9.5pt; color:#555; line-height:1.55; }
+    .iv-foot .qtxt b { color:#3A1078; }
 
     @media print {
       * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
       html, body { background:#fff !important; padding:0; margin:0; }
       body > *:not(#invoicePrint) { display:none !important; }
       #invoicePrint { display:block !important; position:static; width:100%; }
+      .iv-sec, .iv-route, .iv-grid2, .iv-foot { break-inside:avoid; }
       a { text-decoration:none !important; color:inherit !important; }
       @page { margin:9mm 10mm; size:A4 portrait; }
     }
@@ -313,6 +323,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
+<script src="js/qrcode.js?v=2026070203"></script>
 <script src="js/i18n.js"></script>
 <script>
 const urlP     = new URLSearchParams(window.location.search);
@@ -496,11 +507,23 @@ function checkedBag(cabin) {
   return cabin === 'premium_economy' ? '2 × 23kg'
        : (cabin === 'business' || cabin === 'first') ? '2 × 32kg' : '23kg';
 }
+function invStatusEn(s) {
+  return { confirmed:'Confirmed', pending:'Processing', awaiting_payment:'Awaiting payment',
+    cancelled:'Cancelled', cancellation_pending_refund:'Cancelled — refund processing',
+    cancellation_pending_manual_refund:'Cancelled — manual refund', completed:'Completed',
+    changed:'Changed', failed:'Failed' }[s] || s;
+}
+function invType(t, lang) { return lang === 'ar' ? paxTypeAr(t) : ({adult:'Adult',child:'Child',infant:'Infant'}[t] || t); }
+function ilocDate(s, lang) { if (!s) return '—'; try { return new Date(s).toLocaleDateString(lang==='ar'?'ar-KW':'en-GB',{day:'numeric',month:'short',year:'numeric'}); } catch(e){ return s; } }
+function ilocTime(s, lang) { if (!s) return ''; try { return new Date(s).toLocaleTimeString(lang==='ar'?'ar-KW':'en-GB',{hour:'2-digit',minute:'2-digit',hour12:true}); } catch(e){ return ''; } }
+function ilocDT(s, lang) { if (!s) return '—'; try { return new Date(s).toLocaleString(lang==='ar'?'ar-KW':'en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}); } catch(e){ return s; } }
+function ilocDur(dep, arr, lang) { try { const mn = Math.round((new Date(arr)-new Date(dep))/60000); if (mn<=0) return ''; const h=Math.floor(mn/60), mm=mn%60; return lang==='ar' ? `${h}س ${mm}د` : `${h}h ${mm}m`; } catch(e){ return ''; } }
+
 function buildPrintInvoice(b) {
   const cur = b.currency || 'GBP';
   const m = (v) => parseFloat(v || 0).toFixed(2) + ' ' + cur;
   const st = b.status || 'confirmed';
-  const [sIcon, sText, sCls] = statusMap[st] || ['ℹ️', st, 'pending'];
+  const [sIcon, , sCls] = statusMap[st] || ['ℹ️', st, 'pending'];
   const stClass = sCls === 'cancelled' ? 'c' : sCls === 'pending' ? 'p' : '';
   const fmRef = b.booking_reference || '—';
   const pnr = b.duffel_booking_reference
@@ -523,87 +546,101 @@ function buildPrintInvoice(b) {
     if (t.includes('seat')) { const k = s.passenger_id || s.passenger_index; if (k != null) seatByPax[k] = s.designator || s.seat || '✓'; }
     if (t.includes('bag')) extraBags += parseInt(s.quantity || 1) || 1;
   });
-  const paxRows = pax.map((p, i) => {
-    const seat = p.seat_designator || p.seat || seatByPax[p.duffel_passenger_id] || seatByPax[i] || '—';
-    const passport = p.document_number || p.passport_number || p.document_no || '—';
-    return `<tr><td>${i+1}</td><td><b>${(p.first_name||'')} ${(p.last_name||'')}</b> <span style="color:#999">(${paxTypeAr(p.passenger_type)})</span></td><td>${passport}</td><td>${p.date_of_birth||'—'}</td><td>${p.nationality||'—'}</td><td style="text-align:center">${seat}</td><td>${checkedBag(cabin)}</td></tr>`;
-  }).join('');
+  const seatOf = (p, i) => p.seat_designator || p.seat || seatByPax[p.duffel_passenger_id] || seatByPax[i] || '—';
+  const passportOf = (p) => p.document_number || p.passport_number || p.document_no || '—';
 
-  // Booker
   const bookerName = (pax[0] ? ((pax[0].first_name||'')+' '+(pax[0].last_name||'')).trim() : '') || b.user_name || b.user_email || '—';
   const bookerPhone = b.contact_phone || (pax[0] && (pax[0].phone_number || pax[0].phone)) || '—';
-
-  // Conditions
   const refOk = b.refund_conditions ? (b.refund_conditions.allowed !== false) : null;
   const chgOk = b.change_conditions ? (b.change_conditions.allowed !== false) : null;
-  const cbadge = (ok) => ok === null ? '<span style="color:#888">حسب الناقل</span>'
-    : ok ? '<span style="color:#15803d;font-weight:800">مسموح ✓</span>' : '<span style="color:#b91c1c;font-weight:800">غير مسموح ✗</span>';
-
   const changeFee = parseFloat(b.change_fee_paid || 0);
   const baseFare = parseFloat(b.total_amount || 0) - changeFee;
-  const issueDate = new Date().toLocaleDateString('ar-KW', { day:'numeric', month:'long', year:'numeric' });
 
-  const html = `<div class="iv-doc">
-    <div class="iv-head">
-      <div class="lg">✈️ <span>فلاي</span> مسار<small>وكيل سفر معتمد · flymasar.com</small></div>
-      <div class="meta">
-        <div class="num">فاتورة ${fmRef}</div>
-        <div>تاريخ الإصدار: ${issueDate}</div>
-        <div>flymasar.com</div>
-        <div>واتساب: +965 6500 2080</div>
+  // QR → link that opens this invoice (guest-accessible via ref + last name)
+  const ln = (pax[0] && pax[0].last_name) || '';
+  const invUrl = location.origin + '/invoice?ref=' + encodeURIComponent(fmRef) + (ln ? '&last_name=' + encodeURIComponent(ln) : '');
+  let qrHtml = '';
+  try { const q = qrcode(0, 'M'); q.addData(invUrl); q.make(); qrHtml = '<img src="' + q.createDataURL(5, 4) + '" alt="QR">'; } catch (e) {}
+
+  const L = {
+    ar: { agent:'وكيل سفر معتمد', inv:'فاتورة', issue:'تاريخ الإصدار', wa:'واتساب', title:'فاتورة الحجز',
+      status: (statusMap[st] || ['', st])[1], booker:'بيانات الحاجز', name:'الاسم', phone:'رقم الهاتف', email:'البريد',
+      refs:'مراجع الحجز', fm:'رقم حجز فلاي مسار', pnr:'رقم الناقل (PNR)', bookedAt:'تاريخ الحجز',
+      flight:'تفاصيل الرحلة', segCols:['الرحلة','من','إلى','المغادرة','الوصول','المدة'],
+      pax:'المسافرون', paxCols:['#','الاسم','الجواز/الوثيقة','الميلاد','الجنسية','المقعد','الأمتعة'],
+      cabinBag:`أمتعة المقصورة: 7kg لكل مسافر${extraBags?` · أمتعة مضافة: ${extraBags}`:''}`,
+      cond:'شروط التذكرة', refund:'الاسترداد قبل السفر', change:'تغيير الرحلة', pay:'ملخص الدفع', price:'سعر التذكرة', chgfee:'رسوم التغيير', total:'الإجمالي المدفوع',
+      instrT:'تعليمات السفر', instr:'• الحضور إلى المطار قبل <b>3 ساعات</b> على الأقل للرحلات الدولية.&nbsp;&nbsp; • جواز ساري <b>6 أشهر+</b> بعد تاريخ السفر.&nbsp;&nbsp; • الالتزام بحدود الأمتعة المسموحة للناقل.',
+      qr:'<b>امسح الرمز</b> بكاميرا هاتفك للوصول إلى فاتورتك في أي وقت.<br>فاتورة إلكترونية معتمدة صادرة من فلاي مسار — وكيل سفر. التذكرة تخضع لشروط الناقل الجوي.',
+      okT:'مسموح ✓', noT:'غير مسموح ✗', perC:'حسب الناقل' },
+    en: { agent:'Licensed travel agent', inv:'Invoice', issue:'Issue date', wa:'WhatsApp', title:'Booking Invoice',
+      status: invStatusEn(st), booker:'Booker details', name:'Name', phone:'Phone', email:'Email',
+      refs:'Booking references', fm:'FlyMasar Booking Ref', pnr:'Airline Ref (PNR)', bookedAt:'Booked on',
+      flight:'Flight details', segCols:['Flight','From','To','Departure','Arrival','Duration'],
+      pax:'Passengers', paxCols:['#','Name','Passport/Doc','Date of birth','Nationality','Seat','Baggage'],
+      cabinBag:`Cabin baggage: 7kg per passenger${extraBags?` · Extra baggage: ${extraBags}`:''}`,
+      cond:'Ticket conditions', refund:'Refund before travel', change:'Flight change', pay:'Payment summary', price:'Ticket price', chgfee:'Change fee', total:'Total paid',
+      instrT:'Travel instructions', instr:'• Arrive at least <b>3 hours</b> before international flights.&nbsp;&nbsp; • Passport valid <b>6+ months</b> after travel.&nbsp;&nbsp; • Comply with the carrier’s baggage allowance.',
+      qr:'<b>Scan the code</b> with your phone camera to open your invoice anytime.<br>A certified e-invoice issued by FlyMasar — travel agent. Subject to the carrier’s conditions.',
+      okT:'Allowed ✓', noT:'Not allowed ✗', perC:'Per carrier' }
+  };
+
+  const brand = (lang) => lang === 'ar' ? '✈️ <span>فلاي</span> مسار' : '✈️ Fly<span>Masar</span>';
+  const cbadge = (lang, ok) => ok === null ? `<span style="color:#888">${L[lang].perC}</span>`
+    : ok ? `<span style="color:#15803d;font-weight:800">${L[lang].okT}</span>` : `<span style="color:#b91c1c;font-weight:800">${L[lang].noT}</span>`;
+
+  const renderPage = (lang) => {
+    const t = L[lang];
+    const paxRows = pax.map((p, i) => `<tr><td>${i+1}</td><td><b>${(p.first_name||'')} ${(p.last_name||'')}</b> <span style="color:#999">(${invType(p.passenger_type, lang)})</span></td><td>${passportOf(p)}</td><td>${p.date_of_birth||'—'}</td><td>${p.nationality||'—'}</td><td style="text-align:center;font-weight:800;color:#6d28d9">${seatOf(p, i)}</td><td>${checkedBag(cabin)}</td></tr>`).join('');
+    return `<div class="iv-page${lang === 'en' ? ' iv-ltr' : ''}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}">
+      <div class="iv-head">
+        <div class="lg">${brand(lang)}<small>${t.agent} · flymasar.com</small></div>
+        <div class="meta"><div class="num">${t.inv} ${fmRef}</div><div>${t.issue}: ${new Date().toLocaleDateString(lang==='ar'?'ar-KW':'en-GB',{day:'numeric',month:'long',year:'numeric'})}</div><div>flymasar.com</div><div>${t.wa}: +965 6500 2080</div></div>
       </div>
-    </div>
-
-    <div class="iv-titlebar"><span class="t">فاتورة الحجز</span><span class="iv-st ${stClass}">${sIcon} ${sText}</span></div>
-
-    <div class="iv-grid2">
-      <div class="iv-sec"><div class="iv-sec-t">بيانات الحاجز</div>
-        <div class="iv-kv"><span class="k">الاسم</span><span class="v">${bookerName}</span></div>
-        <div class="iv-kv"><span class="k">رقم الهاتف</span><span class="v" style="direction:ltr">${bookerPhone}</span></div>
-        ${b.user_email ? `<div class="iv-kv"><span class="k">البريد</span><span class="v" style="direction:ltr">${b.user_email}</span></div>` : ''}
-      </div>
-      <div class="iv-sec"><div class="iv-sec-t">مراجع الحجز</div>
-        <div class="iv-kv"><span class="k">رقم حجز فلاي مسار</span><span class="v" style="letter-spacing:1px">${fmRef}</span></div>
-        <div class="iv-kv"><span class="k">رقم الناقل (PNR)</span><span class="v" style="letter-spacing:1px;color:#92400e">${pnr || '—'}</span></div>
-        ${b.created_at ? `<div class="iv-kv"><span class="k">تاريخ الحجز</span><span class="v">${fmtDT(b.created_at)}</span></div>` : ''}
-      </div>
-    </div>
-
-    <div class="iv-sec"><div class="iv-sec-t">تفاصيل الرحلة</div>
-      <div class="iv-route">
-        <div class="iv-ap"><div class="i">${depAp||'—'}</div><div class="t">${fmtTime(depAt)}</div><div class="d">${fmt(depAt)}</div></div>
-        <div class="iv-mid"><div class="dur">${dur(depAt, arrAt)||''}</div>✈<div style="font-size:6.6pt;color:#888">${cabinAr(cabin)}</div></div>
-        <div class="iv-ap"><div class="i">${arrAp||'—'}</div><div class="t">${fmtTime(arrAt)}</div><div class="d">${fmt(arrAt)}</div></div>
-      </div>
-      ${segs.length ? `<table class="iv-tbl" style="margin-top:5px"><thead><tr><th>الرحلة</th><th>من</th><th>إلى</th><th>المغادرة</th><th>الوصول</th><th>المدة</th></tr></thead><tbody>${segs.map(s=>`<tr><td><b>${s.flight_number||'—'}</b></td><td>${s.origin_airport||'—'}</td><td>${s.destination_airport||'—'}</td><td>${fmtDT(s.departure_at)}</td><td>${fmtDT(s.arrival_at)}</td><td>${dur(s.departure_at,s.arrival_at)||'—'}</td></tr>`).join('')}</tbody></table>` : ''}
-    </div>
-
-    <div class="iv-sec"><div class="iv-sec-t">المسافرون (${pax.length}) — البيانات والأمتعة والمقاعد</div>
-      <table class="iv-tbl"><thead><tr><th>#</th><th>الاسم</th><th>الجواز/الوثيقة</th><th>الميلاد</th><th>الجنسية</th><th>المقعد</th><th>الأمتعة</th></tr></thead><tbody>${paxRows || '<tr><td colspan="7" style="text-align:center;color:#999">—</td></tr>'}</tbody></table>
-      <div style="font-size:6.8pt;color:#777;margin-top:2px">أمتعة المقصورة: 7kg لكل مسافر${extraBags ? ` · أمتعة مضافة: ${extraBags}` : ''}</div>
-    </div>
-
-    <div class="iv-grid2">
-      <div class="iv-sec"><div class="iv-sec-t">شروط التذكرة</div>
-        <div class="iv-kv"><span class="k">الاسترداد قبل السفر</span>${cbadge(refOk)}</div>
-        <div class="iv-kv"><span class="k">تغيير الرحلة</span>${cbadge(chgOk)}</div>
-      </div>
-      <div class="iv-sec"><div class="iv-sec-t">ملخص الدفع</div>
-        <div class="iv-totbox">
-          <div class="r"><span>سعر التذكرة</span><span>${m(baseFare > 0 ? baseFare : b.total_amount)}</span></div>
-          ${changeFee > 0 ? `<div class="r"><span>رسوم التغيير</span><span>+ ${m(changeFee)}</span></div>` : ''}
-          <div class="r g"><span>الإجمالي المدفوع</span><span>${m(b.total_amount)}</span></div>
+      <div class="iv-titlebar"><span class="t">${t.title}</span><span class="iv-st ${stClass}">${sIcon} ${t.status}</span></div>
+      <div class="iv-grid2">
+        <div class="iv-sec"><div class="iv-sec-t">${t.booker}</div>
+          <div class="iv-kv"><span class="k">${t.name}</span><span class="v">${bookerName}</span></div>
+          <div class="iv-kv"><span class="k">${t.phone}</span><span class="v" style="direction:ltr">${bookerPhone}</span></div>
+          ${b.user_email ? `<div class="iv-kv"><span class="k">${t.email}</span><span class="v" style="direction:ltr">${b.user_email}</span></div>` : ''}
+        </div>
+        <div class="iv-sec"><div class="iv-sec-t">${t.refs}</div>
+          <div class="iv-kv"><span class="k">${t.fm}</span><span class="v" style="letter-spacing:1px">${fmRef}</span></div>
+          <div class="iv-kv"><span class="k">${t.pnr}</span><span class="v" style="letter-spacing:1px;color:#92400e">${pnr || '—'}</span></div>
+          ${b.created_at ? `<div class="iv-kv"><span class="k">${t.bookedAt}</span><span class="v">${ilocDT(b.created_at, lang)}</span></div>` : ''}
         </div>
       </div>
-    </div>
+      <div class="iv-sec"><div class="iv-sec-t">${t.flight}</div>
+        <div class="iv-route">
+          <div class="iv-ap"><div class="i">${depAp||'—'}</div><div class="t">${ilocTime(depAt, lang)}</div><div class="d">${ilocDate(depAt, lang)}</div></div>
+          <div class="iv-mid"><div class="dur">${ilocDur(depAt, arrAt, lang)||''}</div>✈<div style="font-size:9pt;color:#888">${(cabin||'').toString().toUpperCase()}</div></div>
+          <div class="iv-ap"><div class="i">${arrAp||'—'}</div><div class="t">${ilocTime(arrAt, lang)}</div><div class="d">${ilocDate(arrAt, lang)}</div></div>
+        </div>
+        ${segs.length ? `<table class="iv-tbl" style="margin-top:7px"><thead><tr>${t.segCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${segs.map(s=>`<tr><td><b>${s.flight_number||'—'}</b></td><td>${s.origin_airport||'—'}</td><td>${s.destination_airport||'—'}</td><td>${ilocDT(s.departure_at, lang)}</td><td>${ilocDT(s.arrival_at, lang)}</td><td>${ilocDur(s.departure_at,s.arrival_at, lang)||'—'}</td></tr>`).join('')}</tbody></table>` : ''}
+      </div>
+      <div class="iv-sec"><div class="iv-sec-t">${t.pax} (${pax.length})</div>
+        <table class="iv-tbl"><thead><tr>${t.paxCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${paxRows || `<tr><td colspan="7" style="text-align:center;color:#999">—</td></tr>`}</tbody></table>
+        <div style="font-size:9.5pt;color:#777;margin-top:4px">${t.cabinBag}</div>
+      </div>
+      <div class="iv-grid2">
+        <div class="iv-sec"><div class="iv-sec-t">${t.cond}</div>
+          <div class="iv-kv"><span class="k">${t.refund}</span>${cbadge(lang, refOk)}</div>
+          <div class="iv-kv"><span class="k">${t.change}</span>${cbadge(lang, chgOk)}</div>
+        </div>
+        <div class="iv-sec"><div class="iv-sec-t">${t.pay}</div>
+          <div class="iv-totbox">
+            <div class="r"><span>${t.price}</span><span>${m(baseFare > 0 ? baseFare : b.total_amount)}</span></div>
+            ${changeFee > 0 ? `<div class="r"><span>${t.chgfee}</span><span>+ ${m(changeFee)}</span></div>` : ''}
+            <div class="r g"><span>${t.total}</span><span>${m(b.total_amount)}</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="iv-sec"><div class="iv-sec-t">${t.instrT}</div><div class="iv-instr">${t.instr}</div></div>
+      <div class="iv-foot"><div class="iv-qr">${qrHtml}</div><div class="qtxt">${t.qr}</div></div>
+    </div>`;
+  };
 
-    <div class="iv-sec"><div class="iv-sec-t">تعليمات السفر</div>
-      <div class="iv-instr">• الحضور إلى المطار قبل <b>3 ساعات</b> على الأقل للرحلات الدولية.&nbsp;&nbsp; • جواز السفر ساري المفعول <b>6 أشهر+</b> بعد تاريخ السفر.&nbsp;&nbsp; • الالتزام بحدود الأمتعة المسموحة للناقل الجوي.</div>
-    </div>
-
-    <div class="iv-legal">هذه فاتورة إلكترونية معتمدة صادرة من فلاي مسار بصفتها وكيل سفر. التذكرة تخضع لشروط الناقل الجوي · flymasar.com · واتساب +965 6500 2080</div>
-  </div>`;
-  document.getElementById('invoicePrint').innerHTML = html;
+  document.getElementById('invoicePrint').innerHTML = `<div class="iv-doc">${renderPage('ar')}${renderPage('en')}</div>`;
 }
 
 // Load booking

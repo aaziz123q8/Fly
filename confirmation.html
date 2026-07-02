@@ -171,53 +171,62 @@
     /* The compact print document lives in #ticketPrint; hidden on screen. */
     #ticketPrint { display:none; }
 
-    .tp-doc { font-family:'Tajawal','IBM Plex Sans Arabic',Arial,sans-serif; color:#1B172B; font-size:8.6pt; line-height:1.35; }
-    .tp-top { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #7C3AED; padding-bottom:6px; margin-bottom:7px; }
-    .tp-logo { font-size:14pt; font-weight:900; color:#4C1D95; }
+    /* One full A4 page per language (Arabic then English) — large & readable,
+       calibrated so each language fits exactly one page. */
+    .tp-doc { font-family:'Tajawal','IBM Plex Sans Arabic',Arial,sans-serif; color:#1B172B; font-size:10.5pt; line-height:1.4; }
+    .tp-page { min-height:252mm; display:flex; flex-direction:column; }
+    .tp-page + .tp-page { page-break-before:always; }
+    .tp-ltr { direction:ltr; }
+    .tp-ltr .tp-top-meta { text-align:right; }
+    .tp-top { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2.5px solid #7C3AED; padding-bottom:7px; margin-bottom:10px; }
+    .tp-logo { font-size:19pt; font-weight:900; color:#4C1D95; }
     .tp-logo span { color:#F5A623; }
-    .tp-top-meta { text-align:left; font-size:7.4pt; color:#555; line-height:1.5; }
+    .tp-logo small { display:block; font-size:9pt; font-weight:500; color:#888; margin-top:2px; }
+    .tp-top-meta { text-align:left; font-size:9.5pt; color:#555; line-height:1.55; }
     .tp-top-meta b { color:#1B172B; }
-    .tp-heading { text-align:center; margin-bottom:8px; }
-    .tp-heading .tp-h1 { font-size:12pt; font-weight:800; color:#4C1D95; letter-spacing:.5px; }
-    .tp-status { display:inline-block; margin-top:3px; padding:2px 14px; border-radius:20px; font-size:8pt; font-weight:800; color:#fff; background:#22c55e; }
+    .tp-heading { text-align:center; margin-bottom:11px; }
+    .tp-heading .tp-h1 { font-size:17pt; font-weight:800; color:#4C1D95; letter-spacing:.5px; }
+    .tp-status { display:inline-block; margin-top:5px; padding:4px 22px; border-radius:30px; font-size:11pt; font-weight:800; color:#fff; background:#22c55e; }
     .tp-status.tp-cancel { background:#ef4444; } .tp-status.tp-pend { background:#f59e0b; }
-    .tp-refs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
-    .tp-ref { border:1.4px solid #ece8f4; border-radius:8px; padding:6px 10px; text-align:center; }
-    .tp-ref .l { font-size:6.8pt; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
-    .tp-ref .v { font-size:13pt; font-weight:900; letter-spacing:1.5px; color:#7C3AED; }
+    .tp-refs { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; }
+    .tp-ref { border:1.8px solid #ece8f4; border-radius:12px; padding:9px 16px; text-align:center; }
+    .tp-ref .l { font-size:9pt; color:#888; font-weight:700; margin-bottom:2px; }
+    .tp-ref .v { font-size:19pt; font-weight:900; letter-spacing:1.5px; color:#7C3AED; }
     .tp-ref.pnr .v { color:#92400e; }
-    .tp-sec { margin-bottom:7px; }
-    .tp-sec-t { font-size:7.6pt; font-weight:800; color:#7C3AED; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid #eee; padding-bottom:2px; margin-bottom:4px; }
-    .tp-route { display:flex; align-items:center; justify-content:space-between; background:#faf8ff; border-radius:8px; padding:8px 12px; }
-    .tp-ap { text-align:center; } .tp-ap .i { font-size:16pt; font-weight:900; color:#2E1065; line-height:1; }
-    .tp-ap .c { font-size:7pt; color:#888; } .tp-ap .t { font-size:9pt; font-weight:800; color:#7C3AED; margin-top:2px; } .tp-ap .d { font-size:6.8pt; color:#888; }
-    .tp-mid { flex:1; text-align:center; padding:0 10px; color:#7C3AED; }
-    .tp-mid .dur { font-size:7pt; color:#888; }
-    .tp-mid hr { border:none; border-top:1.4px dashed #cbd5e1; margin:3px 0; }
-    table.tp-tbl { width:100%; border-collapse:collapse; font-size:7.6pt; }
-    table.tp-tbl th { background:#f4eefe; color:#555; font-weight:800; padding:3px 5px; text-align:right; font-size:6.9pt; border-bottom:1px solid #e7ddf7; }
-    table.tp-tbl td { padding:3px 5px; border-bottom:1px solid #f2f2f6; color:#333; }
+    .tp-sec { margin-bottom:11px; }
+    .tp-sec-t { font-size:11pt; font-weight:800; color:#7C3AED; border-bottom:1.5px solid #eee; padding-bottom:4px; margin-bottom:7px; }
+    .tp-route { display:flex; align-items:center; justify-content:space-between; background:#faf8ff; border:1.5px solid #efe9fb; border-radius:12px; padding:13px 22px; }
+    .tp-ap { text-align:center; } .tp-ap .i { font-size:26pt; font-weight:900; color:#2E1065; line-height:1; }
+    .tp-ap .t { font-size:12.5pt; font-weight:800; color:#7C3AED; margin-top:5px; } .tp-ap .d { font-size:9.5pt; color:#888; margin-top:2px; }
+    .tp-mid { flex:1; text-align:center; padding:0 16px; color:#7C3AED; font-size:15pt; }
+    .tp-mid .dur { font-size:9.5pt; color:#888; }
+    .tp-mid hr { border:none; border-top:2px dashed #cbd5e1; margin:5px 0; }
+    table.tp-tbl { width:100%; border-collapse:collapse; font-size:10pt; }
+    table.tp-tbl th { background:#f4eefe; color:#555; font-weight:800; padding:6px 9px; text-align:right; font-size:9pt; border-bottom:1.5px solid #e7ddf7; }
+    .tp-ltr table.tp-tbl th { text-align:left; }
+    table.tp-tbl td { padding:6px 9px; border-bottom:1px solid #f2f2f6; color:#333; }
     table.tp-tbl tr:last-child td { border-bottom:none; }
-    .tp-2col { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-    .tp-box { border:1.2px solid #ece8f4; border-radius:8px; padding:6px 9px; }
-    .tp-kv { display:flex; justify-content:space-between; gap:8px; padding:1.5px 0; }
+    .tp-2col { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .tp-box { border:1.5px solid #ece8f4; border-radius:12px; padding:10px 15px; }
+    .tp-kv { display:flex; justify-content:space-between; gap:10px; padding:3px 0; font-size:10.5pt; }
     .tp-kv .k { color:#777; } .tp-kv .v { font-weight:700; color:#2E1065; }
-    .tp-badge { padding:1px 7px; border-radius:10px; font-size:6.8pt; font-weight:800; }
+    .tp-badge { padding:2px 12px; border-radius:14px; font-size:9pt; font-weight:800; }
     .tp-ok { background:#dcfce7; color:#15803d; } .tp-no { background:#fee2e2; color:#b91c1c; }
-    .tp-pay .tot { display:flex; justify-content:space-between; border-top:1.6px solid #7C3AED; margin-top:2px; padding-top:3px; font-weight:900; color:#4C1D95; font-size:9.5pt; }
-    .tp-instr { font-size:7pt; color:#555; line-height:1.5; }
+    .tp-pay .tot { display:flex; justify-content:space-between; border-top:2px solid #7C3AED; margin-top:5px; padding-top:6px; font-weight:900; color:#4C1D95; font-size:13pt; }
+    .tp-instr { font-size:10pt; color:#444; line-height:1.75; }
     .tp-instr b { color:#7C3AED; }
-    .tp-foot { display:flex; align-items:center; gap:12px; border-top:1.4px solid #7C3AED; padding-top:6px; margin-top:6px; }
-    .tp-qr img { width:74px; height:74px; display:block; }
-    .tp-foot .qtxt { font-size:7pt; color:#555; }
+    .tp-foot { display:flex; align-items:center; gap:18px; border-top:2px solid #7C3AED; padding-top:11px; margin-top:auto; }
+    .tp-qr img { width:104px; height:104px; display:block; }
+    .tp-foot .qtxt { font-size:10pt; color:#555; line-height:1.6; }
     .tp-foot .qtxt b { color:#4C1D95; }
 
     @media print {
       * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
       html, body { margin:0; padding:0; background:#fff !important; }
-      /* Hide the entire on-screen experience; render only the compact document. */
+      /* Hide the entire on-screen experience; render only the document. */
       body > *:not(#ticketPrint) { display:none !important; }
       #ticketPrint { display:block !important; position:static; width:100%; }
+      .tp-sec, .tp-refs, .tp-route, .tp-2col, .tp-foot { break-inside:avoid; }
       a { text-decoration:none !important; color:inherit !important; }
       @page { margin:9mm 10mm; size:A4 portrait; }
     }
@@ -701,6 +710,18 @@ function checkedBag(cabin) {
   return cabin === 'premium_economy' ? '2 × 23kg'
        : (cabin === 'business' || cabin === 'first') ? '2 × 32kg' : '23kg';
 }
+function tkStatusEn(s) {
+  return { confirmed:'Confirmed', pending:'Processing', awaiting_payment:'Awaiting payment',
+    cancelled:'Cancelled', cancellation_pending_refund:'Cancelled — refund processing',
+    cancellation_pending_manual_refund:'Cancelled — manual refund', completed:'Completed',
+    changed:'Changed', failed:'Failed' }[s] || s;
+}
+function paxTypeEn(t) { return { adult:'Adult', child:'Child', infant:'Infant' }[t] || t; }
+function locDate(s, lang) { if (!s) return ''; try { return new Date(s).toLocaleDateString(lang==='ar'?'ar-KW':'en-GB', {day:'numeric',month:'short',year:'numeric'}); } catch(e){ return s; } }
+function locTime(s, lang) { if (!s) return ''; try { return new Date(s).toLocaleTimeString(lang==='ar'?'ar-KW':'en-GB', {hour:'2-digit',minute:'2-digit',hour12:true}); } catch(e){ return ''; } }
+function locDT(s, lang) { if (!s) return '—'; try { return new Date(s).toLocaleString(lang==='ar'?'ar-KW':'en-GB', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}); } catch(e){ return s; } }
+function locDur(dep, arr, lang) { try { const m = Math.round((new Date(arr)-new Date(dep))/60000); if (m<=0) return ''; const h=Math.floor(m/60), mm=m%60; return lang==='ar' ? `${h}س ${mm}د` : `${h}h ${mm}m`; } catch(e){ return ''; } }
+
 function buildPrintTicket(b) {
   const st   = b.status || 'confirmed';
   const stCls = statusClass(st) === 'badge-cancelled' ? 'tp-cancel'
@@ -736,31 +757,13 @@ function buildPrintTicket(b) {
     if (t.includes('seat')) { const k = s.passenger_id || s.passenger_index; if (k != null) seatByPax[k] = s.designator || s.seat || s.value || '✓'; }
     if (t.includes('bag')) extraBags += parseInt(s.quantity || 1) || 1;
   });
+  const seatOf = (p, i) => p.seat_designator || p.seat || seatByPax[p.duffel_passenger_id] || seatByPax[i] || '—';
+  const passportOf = (p) => p.document_number || p.passport_number || p.document_no || '—';
 
-  const paxRows = pax.map((p, i) => {
-    const seat = p.seat_designator || p.seat || seatByPax[p.duffel_passenger_id] || seatByPax[i] || '—';
-    const passport = p.document_number || p.passport_number || p.document_no || '—';
-    return `<tr>
-      <td><b>${(p.first_name||'')} ${(p.last_name||'')}</b><div style="color:#999;font-size:6.6pt">${paxTypeLabel(p.passenger_type)}</div></td>
-      <td>${passport}</td>
-      <td>${p.date_of_birth || '—'}</td>
-      <td>${p.nationality || '—'}</td>
-      <td style="text-align:center">${seat}</td>
-      <td>${checkedBag(cabin)}${p.ticket_number ? `<div style="color:#7C3AED;font-size:6.6pt">🎫 ${p.ticket_number}</div>` : ''}</td>
-    </tr>`;
-  }).join('');
-
-  // Contact info
   const email = b.user_email || b.contact_email || (pax[0] && pax[0].email) || '';
   const phone = b.contact_phone || (pax[0] && (pax[0].phone_number || pax[0].phone)) || '';
-
-  // Conditions
   const refOk = b.refund_conditions ? (b.refund_conditions.allowed !== false) : null;
   const chgOk = b.change_conditions ? (b.change_conditions.allowed !== false) : null;
-  const condBadge = (ok) => ok === null ? '<span class="tp-badge" style="background:#f3f4f6;color:#888">حسب الناقل</span>'
-    : ok ? '<span class="tp-badge tp-ok">مسموح</span>' : '<span class="tp-badge tp-no">غير مسموح</span>';
-
-  // Pricing
   const changeFee = parseFloat(b.change_fee_paid || 0);
   const baseFare = parseFloat(b.total_amount || 0) - changeFee;
 
@@ -768,79 +771,89 @@ function buildPrintTicket(b) {
   const ln = (pax[0] && pax[0].last_name) || '';
   const ticketUrl = location.origin + '/confirmation?ref=' + encodeURIComponent(fmRef) + (ln ? '&last_name=' + encodeURIComponent(ln) : '');
   let qrHtml = '';
-  try { const q = qrcode(0, 'M'); q.addData(ticketUrl); q.make(); qrHtml = '<img src="' + q.createDataURL(4, 4) + '" alt="QR">'; } catch (e) {}
+  try { const q = qrcode(0, 'M'); q.addData(ticketUrl); q.make(); qrHtml = '<img src="' + q.createDataURL(5, 4) + '" alt="QR">'; } catch (e) {}
 
-  const issueDate = new Date().toLocaleDateString('ar-KW', { day: 'numeric', month: 'long', year: 'numeric' });
+  const T = {
+    ar: { title:'التذكرة الإلكترونية', agent:'وكيل سفر معتمد', issue:'تاريخ الإصدار', wa:'واتساب',
+      fm:'رقم حجز فلاي مسار', pnr:'رقم الحجز لدى الناقل (PNR)', flight:'تفاصيل الرحلة',
+      cols:['الرحلة','من','إلى','المغادرة','الوصول'], pax:'المسافرون', paxCols:['الاسم','الجواز/الوثيقة','الميلاد','الجنسية','المقعد','الأمتعة المسجّلة'],
+      cabinBag:(n)=>`أمتعة المقصورة: 7kg لكل مسافر${extraBags?` · أمتعة مضافة: ${extraBags}`:''}`,
+      contact:'معلومات تواصل المسافر', mail:'البريد', ph:'الهاتف', cond:'شروط التذكرة',
+      refund:'الاسترداد قبل السفر', change:'تغيير الرحلة', pay:'ملخص الدفع', price:'سعر التذكرة', chgfee:'رسوم التغيير', total:'الإجمالي المدفوع',
+      instrT:'تعليمات السفر', instr:'• الحضور للمطار قبل <b>3 ساعات</b> للرحلات الدولية.<br>• جواز ساري <b>6 أشهر+</b> بعد تاريخ السفر.<br>• الالتزام بحدود الأمتعة المسموحة للناقل.',
+      qr:'<b>امسح الرمز</b> بكاميرا هاتفك للوصول إلى تذكرتك في أي وقت.<br>تذكرة إلكترونية معتمدة صادرة من فلاي مسار — وكيل سفر. التذكرة تخضع لشروط الناقل الجوي.',
+      status: statusLabel(st), okT:'مسموح', noT:'غير مسموح', perC:'حسب الناقل' },
+    en: { title:'E-Ticket', agent:'Licensed travel agent', issue:'Issue date', wa:'WhatsApp',
+      fm:'FlyMasar Booking Ref', pnr:'Airline Booking Ref (PNR)', flight:'Flight details',
+      cols:['Flight','From','To','Departure','Arrival'], pax:'Passengers', paxCols:['Name','Passport/Doc','Date of birth','Nationality','Seat','Checked baggage'],
+      cabinBag:(n)=>`Cabin baggage: 7kg per passenger${extraBags?` · Extra baggage: ${extraBags}`:''}`,
+      contact:'Passenger contact', mail:'Email', ph:'Phone', cond:'Ticket conditions',
+      refund:'Refund before travel', change:'Flight change', pay:'Payment summary', price:'Ticket price', chgfee:'Change fee', total:'Total paid',
+      instrT:'Travel instructions', instr:'• Arrive at the airport at least <b>3 hours</b> before international flights.<br>• Passport valid for <b>6+ months</b> after travel.<br>• Comply with the carrier’s baggage allowance.',
+      qr:'<b>Scan the code</b> with your phone camera to open your ticket anytime.<br>A certified e-ticket issued by FlyMasar — travel agent. Subject to the carrier’s conditions.',
+      status: tkStatusEn(st), okT:'Allowed', noT:'Not allowed', perC:'Per carrier' }
+  };
 
-  const html = `<div class="tp-doc">
-    <div class="tp-top">
-      <div class="tp-logo">✈️ <span>فلاي</span> مسار</div>
-      <div class="tp-top-meta">
-        <div>تاريخ الإصدار: <b>${issueDate}</b></div>
-        <div>flymasar.com</div>
-        <div>واتساب: <b>+965 6500 2080</b></div>
+  const brand = (lang) => lang === 'ar' ? '✈️ <span>فلاي</span> مسار' : '✈️ Fly<span>Masar</span>';
+  const paxType = (lang, t) => lang === 'ar' ? paxTypeLabel(t) : paxTypeEn(t);
+  const condBadge = (lang, ok) => ok === null ? `<span class="tp-badge" style="background:#f3f4f6;color:#888">${T[lang].perC}</span>`
+    : ok ? `<span class="tp-badge tp-ok">${T[lang].okT}</span>` : `<span class="tp-badge tp-no">${T[lang].noT}</span>`;
+
+  const renderPage = (lang) => {
+    const t = T[lang];
+    const paxRows = pax.map((p, i) => `<tr>
+        <td><b>${(p.first_name||'')} ${(p.last_name||'')}</b><div style="color:#999;font-size:9pt">${paxType(lang, p.passenger_type)}</div></td>
+        <td>${passportOf(p)}</td><td>${p.date_of_birth || '—'}</td><td>${p.nationality || '—'}</td>
+        <td style="text-align:center;font-weight:800;color:#7C3AED">${seatOf(p, i)}</td>
+        <td>${checkedBag(cabin)}${p.ticket_number ? `<div style="color:#7C3AED;font-size:9pt">🎫 ${p.ticket_number}</div>` : ''}</td>
+      </tr>`).join('');
+    return `<div class="tp-page${lang === 'en' ? ' tp-ltr' : ''}" dir="${lang === 'ar' ? 'rtl' : 'ltr'}">
+      <div class="tp-top">
+        <div class="tp-logo">${brand(lang)}<small>${t.agent} · flymasar.com</small></div>
+        <div class="tp-top-meta"><div>${t.issue}: <b>${new Date().toLocaleDateString(lang==='ar'?'ar-KW':'en-GB',{day:'numeric',month:'long',year:'numeric'})}</b></div><div>flymasar.com</div><div>${t.wa}: <b>+965 6500 2080</b></div></div>
       </div>
-    </div>
-
-    <div class="tp-heading">
-      <div class="tp-h1">التذكرة الإلكترونية</div>
-      <div class="tp-status ${stCls}">${statusLabel(st)}</div>
-    </div>
-
-    <div class="tp-refs">
-      <div class="tp-ref"><div class="l">رقم حجز فلاي مسار</div><div class="v">${fmRef}</div></div>
-      <div class="tp-ref pnr"><div class="l">رقم الحجز لدى الناقل (PNR)</div><div class="v">${pnr || '—'}</div></div>
-    </div>
-
-    <div class="tp-sec">
-      <div class="tp-sec-t">تفاصيل الرحلة</div>
-      <div class="tp-route">
-        <div class="tp-ap"><div class="i">${depAp || '—'}</div><div class="t">${fmtTime(depAt)}</div><div class="d">${fmtDate(depAt)}</div></div>
-        <div class="tp-mid"><div class="dur">${durationMins(depAt, arrAt) || ''}</div><hr>✈<div style="font-size:6.6pt;color:#888">${(b.cabin_class||'').toString().toUpperCase()||''}</div></div>
-        <div class="tp-ap"><div class="i">${arrAp || '—'}</div><div class="t">${fmtTime(arrAt)}</div><div class="d">${fmtDate(arrAt)}</div></div>
+      <div class="tp-heading"><div class="tp-h1">${t.title}</div><div class="tp-status ${stCls}">${t.status}</div></div>
+      <div class="tp-refs">
+        <div class="tp-ref"><div class="l">${t.fm}</div><div class="v">${fmRef}</div></div>
+        <div class="tp-ref pnr"><div class="l">${t.pnr}</div><div class="v">${pnr || '—'}</div></div>
       </div>
-      ${segs.length > 1 ? `<table class="tp-tbl" style="margin-top:5px"><thead><tr><th>الرحلة</th><th>من</th><th>إلى</th><th>المغادرة</th><th>الوصول</th></tr></thead><tbody>${segs.map(s => `<tr><td><b>${s.fn||'—'}</b></td><td>${s.o}</td><td>${s.d}</td><td>${fmtDateTime(s.dep)}</td><td>${fmtDateTime(s.arr)}</td></tr>`).join('')}</tbody></table>` : ''}
-    </div>
-
-    <div class="tp-sec">
-      <div class="tp-sec-t">المسافرون (${pax.length}) — بياناتهم والأمتعة والمقاعد</div>
-      <table class="tp-tbl"><thead><tr><th>الاسم</th><th>الجواز/الوثيقة</th><th>الميلاد</th><th>الجنسية</th><th>المقعد</th><th>الأمتعة المسجّلة</th></tr></thead><tbody>${paxRows || '<tr><td colspan="6" style="text-align:center;color:#999">—</td></tr>'}</tbody></table>
-      <div style="font-size:6.8pt;color:#777;margin-top:2px">أمتعة المقصورة: 7kg لكل مسافر${extraBags ? ` · أمتعة مضافة: ${extraBags}` : ''}</div>
-    </div>
-
-    <div class="tp-2col">
-      <div class="tp-box">
-        <div class="tp-sec-t" style="border:0;margin:0 0 3px">معلومات تواصل المسافر</div>
-        <div class="tp-kv"><span class="k">البريد</span><span class="v" style="direction:ltr">${email || '—'}</span></div>
-        <div class="tp-kv"><span class="k">الهاتف</span><span class="v" style="direction:ltr">${phone || '—'}</span></div>
+      <div class="tp-sec">
+        <div class="tp-sec-t">${t.flight}</div>
+        <div class="tp-route">
+          <div class="tp-ap"><div class="i">${depAp || '—'}</div><div class="t">${locTime(depAt, lang)}</div><div class="d">${locDate(depAt, lang)}</div></div>
+          <div class="tp-mid"><div class="dur">${locDur(depAt, arrAt, lang) || ''}</div><hr>✈<div style="font-size:9pt;color:#888">${(cabin||'').toString().toUpperCase()}</div></div>
+          <div class="tp-ap"><div class="i">${arrAp || '—'}</div><div class="t">${locTime(arrAt, lang)}</div><div class="d">${locDate(arrAt, lang)}</div></div>
+        </div>
+        ${segs.length > 1 ? `<table class="tp-tbl" style="margin-top:8px"><thead><tr>${t.cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${segs.map(s => `<tr><td><b>${s.fn||'—'}</b></td><td>${s.o}</td><td>${s.d}</td><td>${locDT(s.dep, lang)}</td><td>${locDT(s.arr, lang)}</td></tr>`).join('')}</tbody></table>` : ''}
       </div>
-      <div class="tp-box">
-        <div class="tp-sec-t" style="border:0;margin:0 0 3px">شروط التذكرة</div>
-        <div class="tp-kv"><span class="k">الاسترداد قبل السفر</span>${condBadge(refOk)}</div>
-        <div class="tp-kv"><span class="k">تغيير الرحلة</span>${condBadge(chgOk)}</div>
+      <div class="tp-sec">
+        <div class="tp-sec-t">${t.pax} (${pax.length})</div>
+        <table class="tp-tbl"><thead><tr>${t.paxCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${paxRows || `<tr><td colspan="6" style="text-align:center;color:#999">—</td></tr>`}</tbody></table>
+        <div style="font-size:9.5pt;color:#777;margin-top:5px">${t.cabinBag()}</div>
       </div>
-    </div>
-
-    <div class="tp-2col" style="margin-top:7px">
-      <div class="tp-box tp-pay">
-        <div class="tp-sec-t" style="border:0;margin:0 0 3px">ملخص الدفع</div>
-        <div class="tp-kv"><span class="k">سعر التذكرة</span><span class="v">${money(baseFare > 0 ? baseFare : b.total_amount)}</span></div>
-        ${changeFee > 0 ? `<div class="tp-kv"><span class="k">رسوم التغيير</span><span class="v" style="color:#d97706">+ ${money(changeFee)}</span></div>` : ''}
-        <div class="tot"><span>الإجمالي المدفوع</span><span>${money(b.total_amount)}</span></div>
+      <div class="tp-2col">
+        <div class="tp-box"><div class="tp-sec-t" style="border:0;margin:0 0 5px">${t.contact}</div>
+          <div class="tp-kv"><span class="k">${t.mail}</span><span class="v" style="direction:ltr">${email || '—'}</span></div>
+          <div class="tp-kv"><span class="k">${t.ph}</span><span class="v" style="direction:ltr">${phone || '—'}</span></div>
+        </div>
+        <div class="tp-box"><div class="tp-sec-t" style="border:0;margin:0 0 5px">${t.cond}</div>
+          <div class="tp-kv"><span class="k">${t.refund}</span>${condBadge(lang, refOk)}</div>
+          <div class="tp-kv"><span class="k">${t.change}</span>${condBadge(lang, chgOk)}</div>
+        </div>
       </div>
-      <div class="tp-box">
-        <div class="tp-sec-t" style="border:0;margin:0 0 3px">تعليمات السفر</div>
-        <div class="tp-instr">• الحضور للمطار قبل <b>3 ساعات</b> للرحلات الدولية.<br>• جواز ساري <b>6 أشهر+</b> على الأقل.<br>• التزم بحدود الأمتعة المسموحة للناقل.</div>
+      <div class="tp-2col" style="margin-top:15px">
+        <div class="tp-box tp-pay"><div class="tp-sec-t" style="border:0;margin:0 0 5px">${t.pay}</div>
+          <div class="tp-kv"><span class="k">${t.price}</span><span class="v">${money(baseFare > 0 ? baseFare : b.total_amount)}</span></div>
+          ${changeFee > 0 ? `<div class="tp-kv"><span class="k">${t.chgfee}</span><span class="v" style="color:#d97706">+ ${money(changeFee)}</span></div>` : ''}
+          <div class="tot"><span>${t.total}</span><span>${money(b.total_amount)}</span></div>
+        </div>
+        <div class="tp-box"><div class="tp-sec-t" style="border:0;margin:0 0 5px">${t.instrT}</div><div class="tp-instr">${t.instr}</div></div>
       </div>
-    </div>
+      <div class="tp-foot"><div class="tp-qr">${qrHtml}</div><div class="qtxt">${t.qr}</div></div>
+    </div>`;
+  };
 
-    <div class="tp-foot">
-      <div class="tp-qr">${qrHtml}</div>
-      <div class="qtxt"><b>امسح الرمز</b> بكاميرا هاتفك للوصول إلى تذكرتك في أي وقت.<br>هذه تذكرة إلكترونية معتمدة صادرة من فلاي مسار — وكيل سفر. التذكرة تخضع لشروط الناقل الجوي.</div>
-    </div>
-  </div>`;
-
-  document.getElementById('ticketPrint').innerHTML = html;
+  document.getElementById('ticketPrint').innerHTML = `<div class="tp-doc">${renderPage('ar')}${renderPage('en')}</div>`;
 }
 
 // ── Load booking ─────────────────────────────────────────────────
