@@ -139,12 +139,23 @@
 
       <!-- Right: Order Summary -->
       <div class="price-summary">
+        <!-- Coupon (moved here from the guest-data page): under secure-pay, before summary -->
+        <div class="pay-card">
+          <h2><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg> كود الخصم <small style="color:var(--text-muted);font-weight:400">(اختياري)</small></h2>
+          <div style="display:flex;gap:8px">
+            <input type="text" class="form-control" id="couponInput" placeholder="أدخل كود الخصم" style="flex:1">
+            <button type="button" class="btn btn-primary" onclick="applyCoupon()">تطبيق</button>
+          </div>
+          <div id="couponMsg" style="font-size:0.82rem;margin-top:8px"></div>
+        </div>
+
         <div class="pay-card">
           <h2><svg class="ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg> ملخص الحجز</h2>
           <div id="hotelName" style="font-weight:700;margin-bottom:12px;color:var(--primary)"></div>
           <div class="summary-row"><span>عدد الليالي</span><span id="sumNights">—</span></div>
           <div class="summary-row"><span>سعر الإقامة</span><span id="sumBase">—</span></div>
           <div class="summary-row" id="feeRow" style="display:none"><span>رسوم الخدمة</span><span id="sumFee">—</span></div>
+          <div class="summary-row" id="discRow" style="display:none"><span style="color:#16a34a">الخصم</span><span id="sumDisc" style="color:#16a34a">—</span></div>
           <div class="price-total"><span>الإجمالي</span><span id="sumTotal">—</span></div>
           <p id="gbpNote" style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;text-align:center"></p>
         </div>
@@ -195,7 +206,8 @@
   const commissionGBP = parseFloat(p.get('commission') || '0');
   const hotelLabel    = p.get('hotel')  || 'فندق';
   const nights        = parseInt(p.get('nights') || '1');
-  const couponCode    = p.get('coupon') || '';
+  let couponCode      = p.get('coupon') || '';
+  let discountGBP     = 0;
 
   let gw            = null;     // unified checkout gateway controller
   let walletBalance = 0;
@@ -203,7 +215,31 @@
   let mixedWalletAmt = 0;
 
   function round2(n){ return Math.round(n * 100) / 100; }
-  function getNetTotal(){ return amountGBP; }
+  function getNetTotal(){ return Math.max(0, round2(amountGBP - discountGBP)); }
+
+  // Coupon is now applied here (moved from the guest-data page).
+  async function applyCoupon() {
+    const code = document.getElementById('couponInput').value.trim();
+    const msg  = document.getElementById('couponMsg');
+    if (!code) return;
+    msg.style.color = ''; msg.textContent = '⏳ جاري التحقق…';
+    try {
+      const res = await Api.post('/api/coupons/validate', { code, booking_type: 'hotel', amount: amountGBP });
+      if (res.valid === false) throw new Error(res.message || 'كود الخصم غير صالح');
+      discountGBP = parseFloat(res.discount_amount || res.discount || 0);
+      couponCode  = code;
+      msg.style.color = '#16a34a';
+      msg.textContent = '✅ تم تطبيق الخصم: ' + formatPrice(discountGBP);
+      loadSummary();
+      updateWalletUI();   // refresh pay-button amount, footer, wallet math
+    } catch (e) {
+      discountGBP = 0; couponCode = '';
+      msg.style.color = 'var(--error)';
+      msg.textContent = '⚠️ ' + (e.message || 'تعذر التحقق من الكود');
+      loadSummary();
+      updateWalletUI();
+    }
+  }
 
   function showError(msg) {
     const el = document.getElementById('payError');
@@ -219,9 +255,12 @@
       document.getElementById('feeRow').style.display = 'flex';
       document.getElementById('sumFee').textContent = formatPrice(commissionGBP);
     }
-    document.getElementById('sumTotal').textContent = formatPrice(amountGBP);
+    const discRow = document.getElementById('discRow');
+    if (discountGBP > 0) { discRow.style.display = 'flex'; document.getElementById('sumDisc').textContent = '−' + formatPrice(discountGBP); }
+    else if (discRow) { discRow.style.display = 'none'; }
+    document.getElementById('sumTotal').textContent = formatPrice(getNetTotal());
     const hpFooter = document.getElementById('hpFooterAmount');
-    if (hpFooter) hpFooter.textContent = formatPrice(amountGBP);
+    if (hpFooter) hpFooter.textContent = formatPrice(getNetTotal());
     document.getElementById('gbpNote').textContent = (typeof gbpChargeNote === 'function') ? gbpChargeNote() : '';
   }
 

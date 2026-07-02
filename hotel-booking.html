@@ -125,12 +125,8 @@
             <div class="price-row" id="priceDiscountRow" style="display:none"><span style="color:#16a34a">الخصم</span><span id="priceDiscount" style="color:#16a34a">—</span></div>
             <div class="price-total"><span>الإجمالي</span><span id="priceTotal">—</span></div>
           </div>
-          <div style="margin-top:16px">
-            <div class="coupon-row" style="display:flex;gap:8px">
-              <input type="text" class="form-control" id="couponInput" placeholder="كود الخصم">
-              <button class="btn btn-outline btn-sm" onclick="applyCoupon()">تطبيق</button>
-            </div>
-            <div id="couponMsg" style="font-size:0.82rem;margin-top:6px"></div>
+          <div style="margin-top:14px;font-size:0.8rem;color:var(--text-muted);text-align:center">
+            🎟️ لديك كود خصم؟ يمكنك تطبيقه في صفحة الدفع.
           </div>
         </div>
 
@@ -498,8 +494,8 @@
         + '&net='      + encodeURIComponent(netPriceGBP   || totalAmount)
         + '&commission=' + encodeURIComponent(commissionGBP || 0)
         + '&hotel='    + encodeURIComponent(hotelName)
-        + '&nights='   + encodeURIComponent(calcNights())
-        + '&coupon='   + encodeURIComponent(document.getElementById('couponInput').value.trim() || '');
+        + '&nights='   + encodeURIComponent(calcNights());
+        // coupon is applied on the payment page now
 
     } catch(err) {
       btn.disabled = false; sp.classList.add('hidden'); tx.classList.remove('hidden');
