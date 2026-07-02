@@ -328,6 +328,18 @@ function updatePriceSummary() {
   document.getElementById('nightsCount').textContent   = nights + ' ليلة';
   document.getElementById('totalPrice').textContent    = formatPrice(price * nights);
   document.getElementById('priceSummary').style.display = 'block';
+
+  // Mobile fixed price bar: total stay + التفاصيل + متابعة (→ حجز الغرفة).
+  if (window.innerWidth <= 768 && window.PriceBar) {
+    var stay = price * nights;
+    PriceBar.update({
+      items: [{ label: 'الإقامة', sub: nights + ' ليلة × ' + formatPrice(price), amount: stay }],
+      total: stay,
+      actionText: 'متابعة',
+      note: 'الأسعار تشمل الضرائب حسب سياسة الفندق',
+      onAction: function(){ bookRoom(); }
+    });
+  }
 }
 
 function bookRoom() {
@@ -368,6 +380,8 @@ document.getElementById('checkOut').addEventListener('change', updatePriceSummar
 
 initPage();
 </script>
-<script src="js/site-chrome.js?v=2026070110"></script>
+<style>@media(max-width:768px){#mappTabs{display:none!important}#priceSummary,#bookBtn{display:none!important}}</style>
+<script src="js/pricebar.js?v=2026070109"></script>
+<script src="js/site-chrome.js?v=2026070111"></script>
 </body>
 </html>

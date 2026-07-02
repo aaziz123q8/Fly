@@ -276,6 +276,15 @@
 
     const grand = Math.max(0, totalAmount + fee - discountAmt);
     document.getElementById('priceTotal').textContent = formatPrice(grand);
+
+    // Mobile fixed price bar: الإقامة + الرسوم − الخصم = الإجمالي, المتابعة للدفع.
+    if (window.innerWidth <= 768 && window.PriceBar) {
+      const items = [{ label: 'الإقامة', sub: nights + ' ليلة', amount: totalAmount }];
+      if (fee > 0) items.push({ label: 'رسوم الخدمة', amount: fee });
+      const cfg = { items: items, actionText: 'المتابعة للدفع', note: 'يمكنك تطبيق كود الخصم قبل الدفع', onAction: function(){ submitBooking(); } };
+      if (discountAmt > 0) cfg.discount = { label: 'الخصم', amount: discountAmt };
+      PriceBar.update(cfg);
+    }
   }
 
   // Build extra guest forms for additional guests beyond 1
@@ -334,7 +343,8 @@
     if (!code) return;
     const msg = document.getElementById('couponMsg');
     try {
-      const res = await Api.post('/api/coupons/validate', { code, amount: totalAmount });
+      const res = await Api.post('/api/coupons/validate', { code, booking_type: 'hotel', amount: totalAmount });
+      if (res.valid === false) throw new Error(res.message || 'كوبون غير صالح');
       discountAmt = parseFloat(res.discount_amount || res.discount || 0);
       msg.style.color = '#16a34a';
       msg.textContent = '✅ تم تطبيق الكوبون — خصم ' + formatPrice(discountAmt);
@@ -511,6 +521,8 @@
   buildExtraGuestForms();
 </script>
 <script src="js/bottom-nav.js"></script>
-<script src="js/site-chrome.js?v=2026070110"></script>
+<style>@media(max-width:768px){#mappTabs{display:none!important}#bookBtn{display:none!important}#priceSummaryContent{display:none!important}}</style>
+<script src="js/pricebar.js?v=2026070109"></script>
+<script src="js/site-chrome.js?v=2026070111"></script>
 </body>
 </html>
