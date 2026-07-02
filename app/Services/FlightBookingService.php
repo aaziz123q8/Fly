@@ -3194,6 +3194,10 @@ class FlightBookingService
     {
         // Strip spaces and dashes, ensure leading +
         $phone = preg_replace('/[\s\-()]/', '', $phone);
+        // "00" is the international access prefix — convert it to "+".
+        if (str_starts_with($phone, '00')) {
+            $phone = '+' . substr($phone, 2);
+        }
         if ($phone !== '' && $phone[0] !== '+') {
             $phone = '+' . $phone;
         }

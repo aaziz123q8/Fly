@@ -367,13 +367,20 @@
     const firstName = document.getElementById('guestFirst').value.trim();
     const lastName  = document.getElementById('guestLast').value.trim();
     const email     = document.getElementById('contactEmail').value.trim();
-    const phone     = document.getElementById('contactPhone').value.trim();
+    // Phone must be a full international number (E.164, with country code) —
+    // a bare local number would be rejected by the supplier.
+    let phone = (document.getElementById('contactPhone').value || '').trim().replace(/[\s\-()]/g, '');
+    if (phone.startsWith('00')) phone = '+' + phone.slice(2);
     if (!firstName || !lastName) { showError('يرجى إدخال اسم الضيف الرئيسي'); return; }
     if (!/^[a-zA-Z\s\-]+$/.test(firstName) || !/^[a-zA-Z\s\-]+$/.test(lastName)) {
       showError('يجب إدخال الاسم بالحروف الإنجليزية فقط'); return;
     }
     if (!email) { showError('يرجى إدخال البريد الإلكتروني'); return; }
-    if (!phone) { showError('يرجى إدخال رقم الهاتف'); return; }
+    const _hpDigits = phone.replace(/\D/g, '');
+    if (!phone.startsWith('+') || _hpDigits.length < 8 || _hpDigits.length > 15) {
+      showError('يرجى إدخال رقم الهاتف بصيغة دولية كاملة مع رمز الدولة، مثال: +96599123456'); return;
+    }
+    document.getElementById('contactPhone').value = phone;
 
     const btn = document.getElementById('bookBtn');
     const sp  = document.getElementById('bookSpinner');

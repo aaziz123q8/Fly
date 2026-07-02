@@ -911,13 +911,19 @@
       document.getElementById('contactEmail')?.focus();
       alert('يرجى إدخال بريد إلكتروني صحيح في قسم معلومات التواصل'); return;
     }
-    // Validate the single contact phone (used for the whole booking)
-    const _cphone = document.getElementById('contactPhone')?.value?.trim() || '';
-    const _cdigits = _cphone.replace(/\D/g,'');
-    if (!_cphone || _cdigits.length < 8 || _cphone.length > 20) {
+    // Validate the single contact phone (used for the whole booking). It MUST be
+    // a full international number with a country code (E.164), e.g. +96599123456 —
+    // Duffel rejects local numbers, and the server would otherwise turn a bare
+    // local number into an invalid "+<local>" and fail at payment.
+    let _cphone = (document.getElementById('contactPhone')?.value || '').trim().replace(/[\s\-()]/g, '');
+    if (_cphone.startsWith('00')) _cphone = '+' + _cphone.slice(2);
+    const _cdigits = _cphone.replace(/\D/g, '');
+    if (!_cphone.startsWith('+') || _cdigits.length < 8 || _cdigits.length > 15) {
       document.getElementById('contactPhone')?.focus();
-      alert('يرجى إدخال رقم هاتف صحيح بصيغة دولية في قسم معلومات التواصل (مثال: +96599123456)'); return;
+      alert('يرجى إدخال رقم الهاتف بصيغة دولية كاملة مع رمز الدولة في قسم معلومات التواصل، مثال: +96599123456'); return;
     }
+    // Write the normalised value back so it flows to the backend / Duffel as E.164.
+    const _cpEl = document.getElementById('contactPhone'); if (_cpEl) _cpEl.value = _cphone;
     const passengers = collectPassengers();
     for (let i=0;i<passengers.length;i++) {
       const p = passengers[i];
