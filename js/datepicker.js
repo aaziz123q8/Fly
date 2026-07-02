@@ -7,6 +7,7 @@ class DatePicker {
     this.minDate = options.minDate || new Date();
     this.minDate.setHours(0,0,0,0);
     this.onSelect = options.onSelect || function(){};
+    this.showNights = options.showNights !== false; // range: show "X nights" (hotels) unless disabled
     this.lang = options.lang || (window.currentLang || 'ar');
     this.startDate = null;
     this.endDate = null;
@@ -25,7 +26,7 @@ class DatePicker {
         <div class="dp-month-block" id="dpM1_${this._id()}"></div>
         ${this.mode === 'range' ? `<div class="dp-month-block" id="dpM2_${this._id()}"></div>` : ''}
       </div>
-      ${this.mode === 'range' ? '<div class="dp-nights"></div>' : ''}
+      ${this.mode === 'range' && this.showNights ? '<div class="dp-nights"></div>' : ''}
     `;
     document.body.appendChild(this.popup);
     this._render();
@@ -49,6 +50,24 @@ class DatePicker {
   setMinDate(date) {
     this.minDate = new Date(date);
     this.minDate.setHours(0, 0, 0, 0);
+    this._render();
+  }
+
+  // Switch between 'single' and 'range' at runtime (rebuilds the popup body).
+  setMode(mode) {
+    if ((mode !== 'single' && mode !== 'range') || mode === this.mode) return;
+    this.mode = mode;
+    this.startDate = null;
+    this.endDate = null;
+    this.selecting = false;
+    this.viewDate2 = new Date(this.viewDate.getFullYear(), this.viewDate.getMonth() + 1, 1);
+    this.popup.innerHTML = `
+      <div class="dp-wrap">
+        <div class="dp-month-block" id="dpM1_${this._id()}"></div>
+        ${this.mode === 'range' ? `<div class="dp-month-block" id="dpM2_${this._id()}"></div>` : ''}
+      </div>
+      ${this.mode === 'range' && this.showNights ? '<div class="dp-nights"></div>' : ''}
+    `;
     this._render();
   }
 

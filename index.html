@@ -182,26 +182,29 @@ select.fi{cursor:pointer}
 .aname{font-size:.88rem;font-weight:700}
 .acountry{font-size:.75rem;color:var(--muted)}
 
-/* DatePicker */
-.dp-popup{display:none;position:fixed;background:#fff;border-radius:18px;box-shadow:var(--shadow);z-index:2000;padding:16px;user-select:none;border:1px solid var(--line)}
-@media(max-width:600px){.dp-popup{left:8px!important;right:8px!important;width:calc(100vw - 16px)!important;top:auto!important;bottom:80px!important;border-radius:20px 20px 0 0}}
-.dp-wrap{display:flex;gap:16px;flex-wrap:wrap}
-.dp-month-block{min-width:260px}
-.dp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.dp-title{font-weight:700;font-size:.93rem}
-.dp-nav{background:none;border:1px solid var(--line);border-radius:9px;width:30px;height:30px;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center}
-.dp-nav:hover{background:var(--grad);color:#fff;border-color:transparent}
-.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.dp-dname{text-align:center;font-size:.7rem;font-weight:600;color:var(--muted);padding:4px 0}
-.dp-day{text-align:center;padding:7px 2px;border-radius:9px;cursor:pointer;font-size:.86rem;transition:.15s}
-.dp-day:hover:not(.dp-dis){background:#F4EEFE}
-.dp-dis{color:#d1cbe0;cursor:not-allowed}
-.dp-today{font-weight:700;color:var(--v2)}
-.dp-sel{background:var(--v1)!important;color:#fff!important;font-weight:700}
-.dp-range{background:#EDE4FC;border-radius:0}
-.dp-start{border-radius:9px 0 0 9px}
-.dp-end{border-radius:0 9px 9px 0}
-.dp-nights{text-align:center;margin-top:8px;font-weight:700;color:var(--v2)}
+/* DatePicker — professional, clear (class names match js/datepicker.js) */
+.dp-popup{display:none;position:fixed;background:#fff;border-radius:20px;box-shadow:0 30px 70px -25px rgba(76,29,149,.55);z-index:2000;padding:16px 16px 14px;user-select:none;border:1px solid var(--line,#ECE8F4)}
+.dp-wrap{display:flex;gap:20px;flex-wrap:wrap}
+.dp-month-block{min-width:266px;flex:1}
+.dp-month-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:8px}
+.dp-month-title{font-weight:800;font-size:1.02rem;color:var(--v3,#4C1D95)}
+.dp-nav{background:#F4EEFE;border:0;border-radius:11px;width:38px;height:38px;cursor:pointer;font-size:1.25rem;line-height:1;color:var(--v2,#9333EA);display:flex;align-items:center;justify-content:center;transition:.15s}
+.dp-nav:hover{background:var(--grad,linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3));color:#fff}
+.dp-nav:active{transform:scale(.92)}
+.dp-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.dp-day-name{text-align:center;font-size:.72rem;font-weight:700;color:var(--muted,#6B6880);padding:6px 0}
+.dp-day{position:relative;text-align:center;padding:11px 2px;border-radius:11px;cursor:pointer;font-size:.92rem;font-weight:600;color:var(--ink,#1B172B);transition:.12s}
+.dp-day:hover:not(.dp-disabled){background:#F4EEFE;color:var(--v2,#9333EA)}
+.dp-disabled{color:#cfc8de;cursor:default;font-weight:400}
+.dp-today{color:var(--v2,#9333EA);font-weight:800}
+.dp-today::after{content:'';position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:var(--v2,#9333EA)}
+.dp-in-range{background:#EDE4FC;border-radius:0;color:var(--v3,#4C1D95)}
+.dp-selected{background:var(--grad,linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3))!important;color:#fff!important;font-weight:800;box-shadow:0 8px 18px -8px rgba(124,58,237,.85)}
+.dp-selected.dp-today::after{background:#fff}
+.dp-start{border-radius:11px 0 0 11px}
+.dp-end{border-radius:0 11px 11px 0}
+.dp-start.dp-end{border-radius:11px}
+.dp-nights{text-align:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line,#ECE8F4);font-weight:800;color:var(--v2,#9333EA);font-size:.96rem}
 
 /* RESULTS */
 .results{padding:32px 22px;max-width:1200px;margin:0 auto;display:none}
@@ -643,7 +646,7 @@ select.fi{cursor:pointer}
 <script src="js/auth.js?v=2026062101"></script>
 <script src="js/currency.js?v=2026070106"></script>
 <script src="js/i18n.js?v=2026070106"></script>
-<script src="js/datepicker.js?v=2026062101"></script>
+<script src="js/datepicker.js?v=2026070108"></script>
 <script>
 /* ── AIRPORTS ── */
 const AIRPORTS = [
@@ -773,13 +776,13 @@ function applyLang(l) {
   document.querySelectorAll('[data-i18n-ph]').forEach(el => {
     const v = T[el.dataset.i18nPh]; if (v !== undefined) el.placeholder = v;
   });
-  // update datepickers
-  if (window.DatePickerInstances) window.DatePickerInstances.forEach(dp => {
-    dp.lang = l;
-    window.I18N = window.I18N || {};
-    window.I18N[l] = { months: T.months, days: T.days, nights: T.nights };
-    dp._render();
-  });
+  // expose month/day names for the DatePicker (must run even before any picker
+  // exists, so pickers created later render Arabic instead of falling back to EN)
+  window.I18N = window.I18N || {};
+  window.I18N[l] = { months: T.months, days: T.days, nights: T.nights };
+  window.currentLang = l;
+  // update any existing datepickers
+  if (window.DatePickerInstances) window.DatePickerInstances.forEach(dp => { dp.lang = l; dp._render(); });
   // update navAuth text (guarded — element may not exist)
   const nav = document.getElementById('navAuth');
   if (nav) {
@@ -830,6 +833,13 @@ function setTrip(t) {
   const row = document.getElementById('datesRow');
   if (ret) ret.style.display = t==='round' ? '' : 'none';
   if (row) row.className = t==='round' ? 'row4' : 'row3';
+  // Switch the flight date picker between single ↔ range and clear stale dates.
+  const wantMode = (t==='round') ? 'range' : 'single';
+  if (window.dpFlight && dpFlight.mode !== wantMode) {
+    dpFlight.setMode(wantMode);
+    ['fDep','fRet'].forEach(id => { const el=document.getElementById(id); if (el) { el.value=''; el.classList.remove('ok'); } });
+    ['fDepISO','fRetISO'].forEach(id => { const el=document.getElementById(id); if (el) el.value=''; });
+  }
 }
 
 /* ── SWAP ── */
@@ -946,10 +956,9 @@ function pickAirport(inputId, dropId, code, label) {
 }
 
 /* ── DATEPICKERS ── */
-var dpDep, dpRet, dpHotel;
+var dpFlight, dpHotel;
 function openDp(which) {
-  if (which==='dep'   && dpDep)   dpDep.toggle();
-  if (which==='ret'   && dpRet)   dpRet.toggle();
+  if ((which==='dep' || which==='ret') && dpFlight) dpFlight.toggle();
   if (which==='hotel' && dpHotel) dpHotel.toggle();
 }
 document.addEventListener('DOMContentLoaded', () => {
@@ -960,25 +969,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const today = new Date();
   if (typeof DatePicker !== 'undefined') {
+    const isoOf = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const fDep = document.getElementById('fDep');
-    if (fDep) dpDep = new DatePicker(fDep, {
-      mode:'single', minDate:today,
-      onSelect(d) {
-        document.getElementById('fDep').classList.add('ok');
-        const y = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0');
-        document.getElementById('fDepISO').value = `${y}-${mo}-${dy}`;
-        if (dpRet) { const next = new Date(d); next.setDate(next.getDate() + 1); dpRet.setMinDate(next); }
-      }
-    });
     const fRet = document.getElementById('fRet');
-    if (fRet) dpRet = new DatePicker(fRet, {
-      mode:'single', minDate:today,
-      onSelect(d) {
-        document.getElementById('fRet').classList.add('ok');
-        const y = d.getFullYear(), mo = String(d.getMonth()+1).padStart(2,'0'), dy = String(d.getDate()).padStart(2,'0');
-        document.getElementById('fRetISO').value = `${y}-${mo}-${dy}`;
-      }
-    });
+    if (fDep) {
+      // One picker for both flight dates: single (ذهاب فقط) or range (ذهاب وعودة).
+      dpFlight = new DatePicker(fDep, {
+        mode: (tripType === 'round') ? 'range' : 'single', minDate: today, showNights: false,
+        onSelect(s, e, dp) {
+          if (s) { fDep.value = dp._fmt(s); fDep.classList.add('ok'); document.getElementById('fDepISO').value = isoOf(s); }
+          if (dp.mode === 'range') {
+            if (e) { fRet.value = dp._fmt(e); fRet.classList.add('ok'); document.getElementById('fRetISO').value = isoOf(e); }
+          } else {
+            fRet.value = ''; fRet.classList.remove('ok'); document.getElementById('fRetISO').value = '';
+          }
+        }
+      });
+      window.dpFlight = dpFlight;
+    }
+    // Tapping the return field opens the same range picker.
+    if (fRet) fRet.addEventListener('click', (ev) => { ev.stopPropagation(); if (dpFlight && dpFlight.mode === 'range') dpFlight.show(); });
     const hIn = document.getElementById('hIn');
     if (hIn) dpHotel = new DatePicker(hIn, {
       mode:'range', minDate:today,
