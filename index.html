@@ -248,30 +248,81 @@ select.fi{cursor:pointer}
     <span class="ml-orb ml-orb1"></span><span class="ml-orb ml-orb2"></span><span class="ml-orb ml-orb3"></span>
     <span class="ml-plane"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>
   </div>
-  <div class="ml-eyebrow">✦ منصّة السفر الأولى في الخليج</div>
-  <div class="ml-logo">
-    <span class="ml-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>
-    <div class="ml-name">فلاي<b> مسار</b></div>
-  </div>
-  <div class="ml-btns">
-    <button type="button" class="ml-btn" onclick="mGo('flights')">
-      <span class="ml-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>
-      <span class="ml-txt"><b>طيران</b><small>ابحث واحجز رحلتك</small></span>
-      <span class="ml-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>
+
+  <!-- Top utility row: currency + language -->
+  <div class="ml-top">
+    <button type="button" class="ml-chip" onclick="mlOpenCur()" aria-label="العملة">
+      <span class="ml-chip-ic">💱</span><b id="mlCurLabel">KWD</b>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
     </button>
-    <button type="button" class="ml-btn" onclick="mGo('hotels')">
-      <span class="ml-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg></span>
-      <span class="ml-txt"><b>فنادق</b><small>أفضل الإقامات بأفضل سعر</small></span>
-      <span class="ml-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>
-    </button>
-    <button type="button" class="ml-btn ml-btn-pkg" onclick="mGo('package')">
-      <span class="ml-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
-      <span class="ml-txt"><b>باقة</b><small>طيران + فندق بسعر واحد موفّر</small></span>
-      <span class="ml-badge">حصري</span>
-      <span class="ml-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>
+    <button type="button" class="ml-chip" onclick="mlOpenLang()" aria-label="اللغة">
+      <span class="ml-chip-ic">🌐</span><b id="mlLangLabel">العربية</b>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
     </button>
   </div>
-  <p class="ml-slogan">كل رحلتك في مكان واحد — طيران وفنادق و<b>باقات حصريّة</b> لا تجدها إلا في فلاي مسار.</p>
+
+  <div class="ml-hero">
+    <div class="ml-eyebrow">✦ منصّة السفر الأولى في الخليج</div>
+    <div class="ml-logo">
+      <span class="ml-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>
+      <div class="ml-name">فلاي<b> مسار</b></div>
+    </div>
+    <div class="ml-btns">
+      <button type="button" class="ml-btn" onclick="mGo('flights')">
+        <span class="ml-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>
+        <span class="ml-txt"><b>طيران</b><small>ابحث واحجز رحلتك</small></span>
+        <span class="ml-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>
+      </button>
+      <button type="button" class="ml-btn" onclick="mGo('hotels')">
+        <span class="ml-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg></span>
+        <span class="ml-txt"><b>فنادق</b><small>أفضل الإقامات بأفضل سعر</small></span>
+        <span class="ml-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>
+      </button>
+      <button type="button" class="ml-btn ml-btn-pkg" onclick="mGo('package')">
+        <span class="ml-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></span>
+        <span class="ml-txt"><b>باقة</b><small>طيران + فندق بسعر واحد موفّر</small></span>
+        <span class="ml-badge">حصري</span>
+        <span class="ml-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></span>
+      </button>
+    </div>
+    <p class="ml-slogan">كل رحلتك في مكان واحد — طيران وفنادق و<b>باقات حصريّة</b> لا تجدها إلا في فلاي مسار.</p>
+
+    <!-- Account + booking lookup -->
+    <div class="ml-actions">
+      <a class="ml-act" id="mlAccount" href="register.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>
+        <span id="mlAccountTxt">إنشاء حساب جديد</span>
+      </a>
+      <a class="ml-act" href="lookup.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M3 11h18M8 4v3M16 4v3"/></svg>
+        <span>الاستعلام عن حجز</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer: install app (fixed here, home only) + links + copyright -->
+  <div class="ml-foot">
+    <button type="button" class="ml-install" id="mlInstall" onclick="mlInstall()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 11l4 4 4-4M5 21h14"/></svg>
+      <span>حمّل تطبيق فلاي مسار</span>
+    </button>
+    <div class="ml-links">
+      <a href="about.html">من نحن</a><i>·</i>
+      <a href="privacy.html">سياسة الخصوصية</a><i>·</i>
+      <a href="terms.html">الشروط والأحكام</a>
+    </div>
+    <div class="ml-copy">© 2026 فلاي مسار — جميع الحقوق محفوظة</div>
+  </div>
+</div>
+
+<!-- Currency / Language picker (mobile launcher) -->
+<div class="ml-pop" id="mlPop" aria-hidden="true">
+  <div class="ml-pop-ov" onclick="mlClosePop()"></div>
+  <div class="ml-sheet">
+    <div class="ml-sheet-grip"></div>
+    <div class="ml-sheet-title" id="mlPopTitle">اختر العملة</div>
+    <div class="ml-opts" id="mlOpts"></div>
+  </div>
 </div>
 
 <!-- NAV -->
@@ -565,6 +616,8 @@ select.fi{cursor:pointer}
 
 <script src="js/api.js?v=2026062101"></script>
 <script src="js/auth.js?v=2026062101"></script>
+<script src="js/currency.js?v=2026070106"></script>
+<script src="js/i18n.js?v=2026070106"></script>
 <script src="js/datepicker.js?v=2026062101"></script>
 <script>
 /* ── AIRPORTS ── */
@@ -1025,11 +1078,21 @@ function closeDrawer() {
   /* LAUNCHER (fixed, non-scroll, non-zoom, no bottom bar) */
   body.m-launch{overflow:hidden;position:fixed;inset:0;width:100%;height:100%}
   body.m-launch .search-wrap,body.m-launch .msearch-bar{display:none!important}
-  .mlaunch{display:flex;position:fixed;inset:0;z-index:1000;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:32px 24px calc(32px + env(safe-area-inset-bottom,0));text-align:center;touch-action:none;-webkit-user-select:none;user-select:none;background:radial-gradient(120% 80% at 50% -10%,#7C3AED 0%,#4C1D95 45%,#2E1065 100%)}
-  .ml-logo{display:flex;flex-direction:column;align-items:center;gap:14px;margin-bottom:4px}
-  .ml-mark{width:96px;height:96px;border-radius:28px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px -20px rgba(0,0,0,.6)}
-  .ml-mark svg{width:52px;height:52px}
-  .ml-name{color:#fff;font-size:2.2rem;font-weight:800;letter-spacing:-.5px}
+  .mlaunch{display:flex;position:fixed;inset:0;z-index:1000;flex-direction:column;align-items:center;justify-content:space-between;gap:10px;padding:calc(14px + env(safe-area-inset-top,0)) 20px calc(16px + env(safe-area-inset-bottom,0));text-align:center;touch-action:none;-webkit-user-select:none;user-select:none;background:radial-gradient(120% 80% at 50% -10%,#7C3AED 0%,#4C1D95 45%,#2E1065 100%)}
+
+  /* top utility row */
+  .ml-top{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;max-width:430px;flex-shrink:0}
+  .ml-chip{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.26);color:#fff;border-radius:40px;padding:8px 14px;font:inherit;font-size:.86rem;font-weight:700;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  .ml-chip b{font-weight:800}
+  .ml-chip .ml-chip-ic{font-size:1rem}
+  .ml-chip svg{width:15px;height:15px;opacity:.85}
+
+  /* centered hero */
+  .ml-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;width:100%;min-height:0}
+  .ml-logo{display:flex;flex-direction:column;align-items:center;gap:12px}
+  .ml-mark{width:84px;height:84px;border-radius:26px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;box-shadow:0 20px 50px -20px rgba(0,0,0,.6)}
+  .ml-mark svg{width:46px;height:46px}
+  .ml-name{color:#fff;font-size:2rem;font-weight:800;letter-spacing:-.5px}
   .ml-name b{color:#FDE68A;font-weight:800}
   .ml-btns{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:430px}
   .ml-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;aspect-ratio:1;background:rgba(255,255,255,.97);border:0;border-radius:22px;padding:14px 8px;cursor:pointer;position:relative;box-shadow:0 16px 34px -20px rgba(0,0,0,.7);transition:transform .12s}
@@ -1042,8 +1105,42 @@ function closeDrawer() {
   .ml-txt small{display:none}
   .ml-arrow{display:none}
   .ml-badge{position:absolute;top:8px;inset-inline-start:8px;background:#FB7185;color:#fff;font-size:.58rem;font-weight:800;padding:2px 7px;border-radius:20px}
-  .ml-slogan{color:#e7ddff;font-size:1rem;line-height:1.7;max-width:360px;margin-top:2px}
+  .ml-slogan{color:#e7ddff;font-size:.92rem;line-height:1.65;max-width:360px;margin-top:0}
   .ml-slogan b{color:#FDE68A}
+
+  /* account + lookup actions */
+  .ml-actions{display:flex;gap:10px;width:100%;max-width:430px;margin-top:2px}
+  .ml-act{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.28);color:#fff;border-radius:15px;padding:12px 8px;font-size:.9rem;font-weight:700;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+  .ml-act:active{transform:scale(.97)}
+  .ml-act svg{width:19px;height:19px;flex-shrink:0}
+  #mlAccount{background:rgba(253,230,138,.16);border-color:rgba(253,230,138,.5)}
+
+  /* footer: install (fixed here, home only) + links + copyright */
+  .ml-foot{display:flex;flex-direction:column;align-items:center;gap:11px;width:100%;max-width:430px;flex-shrink:0}
+  .ml-install{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;background:#fff;color:#6D28D9;border:0;border-radius:16px;padding:14px 18px;font:inherit;font-size:1rem;font-weight:800;cursor:pointer;box-shadow:0 16px 34px -14px rgba(0,0,0,.7)}
+  .ml-install:active{transform:scale(.98)}
+  .ml-install svg{width:21px;height:21px}
+  .ml-links{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;font-size:.8rem}
+  .ml-links a{color:rgba(255,255,255,.82);font-weight:600}
+  .ml-links i{color:rgba(255,255,255,.4);font-style:normal}
+  .ml-copy{color:rgba(255,255,255,.5);font-size:.72rem}
+
+  /* currency / language picker sheet */
+  .ml-pop{display:none;position:fixed;inset:0;z-index:1100}
+  .ml-pop.open{display:block}
+  .ml-pop-ov{position:absolute;inset:0;background:rgba(20,8,45,.55)}
+  .ml-sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:24px 24px 0 0;padding:10px 18px calc(22px + env(safe-area-inset-bottom,0));transform:translateY(100%);transition:transform .26s cubic-bezier(.4,0,.2,1);max-height:78vh;overflow:auto;box-shadow:0 -20px 50px -18px rgba(46,16,101,.5)}
+  .ml-pop.open .ml-sheet{transform:translateY(0)}
+  .ml-sheet-grip{width:44px;height:5px;border-radius:5px;background:#ECE8F4;margin:6px auto 12px}
+  .ml-sheet-title{font-weight:800;color:#4C1D95;font-size:1.05rem;text-align:center;margin-bottom:12px}
+  .ml-opts{display:flex;flex-direction:column;gap:8px}
+  .ml-opt{display:flex;align-items:center;gap:12px;width:100%;background:#fff;border:1.5px solid #ECE8F4;border-radius:14px;padding:13px 14px;font:inherit;font-size:.95rem;font-weight:600;color:#1B172B;cursor:pointer;text-align:start}
+  .ml-opt:active{background:#F6F1FE}
+  .ml-opt.on{border-color:#7C3AED;background:#F6F1FE;color:#4C1D95}
+  .ml-opt .ml-opt-code{margin-inline-start:auto;font-weight:800;color:#7C3AED;font-size:.85rem}
+  .ml-opt .ml-opt-flag{font-size:1.3rem}
+  .ml-opt .ml-opt-check{margin-inline-start:auto;color:#7C3AED;font-weight:800}
+  .ml-note{font-size:.76rem;color:#6B6880;text-align:center;margin-top:12px;line-height:1.6}
 
   /* ---- animated background + motion (strong, continuous) ---- */
   .mlaunch>*:not(.ml-bg){position:relative;z-index:1}
@@ -1101,6 +1198,103 @@ function closeDrawer() {
   };
   function init(){ if(mq.matches) document.body.classList.add('m-launch'); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init); else init();
+})();
+</script>
+<script>
+/* ── Mobile launcher controls: account, currency, language, install ── */
+(function(){
+  var FLAGS = { KWD:'🇰🇼', SAR:'🇸🇦', EUR:'🇪🇺', USD:'🇺🇸', GBP:'🇬🇧' };
+
+  function ready(fn){ if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', fn); else fn(); }
+
+  ready(function(){
+    // Account button: logged in → "حسابي" (dashboard); else "إنشاء حساب" (register)
+    try{
+      var acc = document.getElementById('mlAccount'), accTxt = document.getElementById('mlAccountTxt');
+      if(acc && typeof Auth!=='undefined' && Auth.isLoggedIn && Auth.isLoggedIn()){
+        acc.setAttribute('href','dashboard.html');
+        if(accTxt) accTxt.textContent = 'حسابي';
+      }
+    }catch(e){}
+
+    // Currency label from saved preference
+    try{
+      var cur = (typeof currentCurrency!=='undefined' && currentCurrency)
+        || localStorage.getItem('fly_cur') || localStorage.getItem('flymasar_currency') || 'KWD';
+      var cl = document.getElementById('mlCurLabel'); if(cl) cl.textContent = cur;
+    }catch(e){}
+
+    // Language label from saved preference
+    try{
+      var lang = localStorage.getItem('flymasar_lang') || 'ar';
+      var ll = document.getElementById('mlLangLabel'); if(ll) ll.textContent = (lang==='en') ? 'English' : 'العربية';
+    }catch(e){}
+
+    // Install button: hide only if already running as an installed app
+    try{
+      if(window.__flyStandalone){ var ib=document.getElementById('mlInstall'); if(ib) ib.style.display='none'; }
+      window.addEventListener('fly-installed', function(){ var ib=document.getElementById('mlInstall'); if(ib) ib.style.display='none'; });
+    }catch(e){}
+  });
+
+  // ── Picker sheet (shared for currency + language) ──
+  var pop = function(){ return document.getElementById('mlPop'); };
+  window.mlClosePop = function(){ var p=pop(); if(p){ p.classList.remove('open'); p.setAttribute('aria-hidden','true'); } };
+
+  window.mlOpenCur = function(){
+    var opts = document.getElementById('mlOpts');
+    var title = document.getElementById('mlPopTitle');
+    if(title) title.textContent = 'اختر العملة';
+    var list = (typeof CURRENCY!=='undefined') ? CURRENCY : { KWD:{ar:'الدينار الكويتي'},SAR:{ar:'الريال السعودي'},EUR:{ar:'اليورو'},USD:{ar:'الدولار الأمريكي'},GBP:{ar:'الجنيه الإسترليني'} };
+    var active = (typeof currentCurrency!=='undefined' && currentCurrency) || localStorage.getItem('fly_cur') || 'KWD';
+    var html = '';
+    Object.keys(list).forEach(function(code){
+      var on = code===active ? ' on' : '';
+      html += '<button type="button" class="ml-opt'+on+'" onclick="mlPickCur(\''+code+'\')">'
+        + '<span class="ml-opt-flag">'+(FLAGS[code]||'💱')+'</span>'
+        + '<span>'+(list[code].ar||code)+'</span>'
+        + (on ? '<span class="ml-opt-check">✓</span>' : '<span class="ml-opt-code">'+code+'</span>')
+        + '</button>';
+    });
+    html += '<div class="ml-note">عملة التحصيل هي الجنيه الإسترليني (GBP). أي عملة أخرى للعرض فقط حسب تفضيلك.</div>';
+    if(opts) opts.innerHTML = html;
+    var p=pop(); if(p){ p.classList.add('open'); p.setAttribute('aria-hidden','false'); }
+  };
+
+  window.mlPickCur = function(code){
+    try{ if(window.setCurrency) setCurrency(code); else { localStorage.setItem('fly_cur',code); localStorage.setItem('flymasar_currency',code); } }catch(e){}
+    var cl = document.getElementById('mlCurLabel'); if(cl) cl.textContent = code;
+    mlClosePop();
+  };
+
+  window.mlOpenLang = function(){
+    var opts = document.getElementById('mlOpts');
+    var title = document.getElementById('mlPopTitle');
+    if(title) title.textContent = 'اختر اللغة';
+    var active = localStorage.getItem('flymasar_lang') || 'ar';
+    var LANGS = [ {code:'ar', flag:'🇸🇦', name:'العربية'}, {code:'en', flag:'🇬🇧', name:'English'} ];
+    var html = '';
+    LANGS.forEach(function(l){
+      var on = l.code===active ? ' on' : '';
+      html += '<button type="button" class="ml-opt'+on+'" onclick="mlPickLang(\''+l.code+'\')">'
+        + '<span class="ml-opt-flag">'+l.flag+'</span><span>'+l.name+'</span>'
+        + (on ? '<span class="ml-opt-check">✓</span>' : '') + '</button>';
+    });
+    if(opts) opts.innerHTML = html;
+    var p=pop(); if(p){ p.classList.add('open'); p.setAttribute('aria-hidden','false'); }
+  };
+
+  window.mlPickLang = function(code){
+    var ll = document.getElementById('mlLangLabel'); if(ll) ll.textContent = (code==='en') ? 'English' : 'العربية';
+    try{
+      if(window.setLang){ setLang(code); }
+      else { localStorage.setItem('flymasar_lang', code); }
+    }catch(e){ try{ localStorage.setItem('flymasar_lang', code); }catch(_){} }
+    mlClosePop();
+  };
+
+  // Install button → PWA install hook (provided by pwa.js)
+  window.mlInstall = function(){ if(window.flyInstall) window.flyInstall(); };
 })();
 </script>
 <script src="js/mobile-app.js?v=2026070105"></script>

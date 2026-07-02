@@ -1,8 +1,13 @@
+// Base (collection) currency is GBP (rate 1). Every other currency is cosmetic
+// — used only to DISPLAY the price in the customer's preferred currency.
+// Order here is the order shown in the launcher currency picker. More
+// currencies can be added from the admin panel (they extend this map).
 const CURRENCY = {
-  GBP: { symbol: '£',    name: 'GBP', rate: 1    },
-  KWD: { symbol: 'د.ك', name: 'KWD', rate: 0.40  },
-  SAR: { symbol: 'ر.س', name: 'SAR', rate: 4.75  },
-  USD: { symbol: '$',    name: 'USD', rate: 1.27  },
+  KWD: { symbol: 'د.ك', name: 'KWD', ar: 'الدينار الكويتي',   rate: 0.40 },
+  SAR: { symbol: 'ر.س', name: 'SAR', ar: 'الريال السعودي',    rate: 4.75 },
+  EUR: { symbol: '€',    name: 'EUR', ar: 'اليورو',            rate: 1.17 },
+  USD: { symbol: '$',    name: 'USD', ar: 'الدولار الأمريكي',  rate: 1.27 },
+  GBP: { symbol: '£',    name: 'GBP', ar: 'الجنيه الإسترليني', rate: 1    },
 };
 
 // Unified key — read from either key for backwards compat, write to both
