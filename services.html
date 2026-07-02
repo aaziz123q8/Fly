@@ -45,13 +45,17 @@
     .svc-qty span{min-width:24px;text-align:center;font-weight:700}
 
     /* Seat map */
-    .seat-map-wrap{overflow-x:auto}
+    .seat-map-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    /* Inner keeps rows aligned and lets the wrap scroll from the start when the
+       cabin is wider than the screen (centering alone hides the left columns). */
+    .seat-map-inner{width:max-content;min-width:100%;margin:0 auto}
     .seat-legend{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:14px;font-size:.8rem}
     .legend-item{display:flex;align-items:center;gap:5px}
     .legend-box{width:18px;height:18px;border-radius:4px;border:1px solid #ccc}
     .seat-row{display:flex;align-items:center;gap:4px;margin-bottom:4px;justify-content:center}
     .seat-row-num{width:28px;text-align:center;font-size:.72rem;color:#9ca3af;flex-shrink:0}
     .aisle{width:20px;flex-shrink:0}
+    .seat-blank{width:34px;height:34px;flex-shrink:0}
     .seat{width:34px;height:34px;border-radius:6px;border:1.5px solid #d1d5db;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;cursor:pointer;transition:.15s;flex-shrink:0}
     .seat.available{background:#fff;color:#374151;border-color:#d1d5db}
     .seat.available:hover{background:#EDE4FE;border-color:#7C3AED}
@@ -86,6 +90,27 @@
     .err-msg{background:#fef2f2;color:#dc2626;border-radius:10px;padding:14px;margin-bottom:16px;font-size:.9rem}
     .section-divider{border:none;border-top:1px solid #f0f2f5;margin:20px 0}
     .badge-pax{display:inline-block;background:#F4EEFE;color:#4C1D95;border-radius:20px;padding:2px 8px;font-size:.73rem;font-weight:700;margin-right:4px}
+
+    /* Prominent "skip services" button — visible on phones (top of the page) */
+    .skip-top{display:none}
+    .skip-hint{font-size:.72rem;color:#9a93ad;text-align:center;margin:8px 0 2px}
+
+    /* Phone layout: shrink the seat grid so a full row fits comfortably, hide the
+       redundant summary sidebar (the fixed price bar already shows the total),
+       and surface a clear skip button at the top. */
+    @media(max-width:768px){
+      .seat{width:28px;height:28px;font-size:.6rem;border-radius:5px}
+      .seat-blank{width:28px;height:28px}
+      .aisle{width:10px}
+      .seat-row{gap:3px}
+      .seat-row-num{width:15px;min-width:15px!important;font-size:.56rem}
+      .sticky-sidebar{display:none}
+      .skip-top{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+        padding:13px;margin-bottom:14px;background:#fff;color:#7C3AED;border:1.5px solid #E4D8FB;
+        border-radius:14px;font:inherit;font-weight:800;font-size:.94rem;box-shadow:0 8px 22px -16px rgba(124,58,237,.7)}
+      .skip-top:active{transform:scale(.99)}
+      .skip-top svg{width:18px;height:18px;flex-shrink:0}
+    }
   </style>
 </head>
 <body>
@@ -113,6 +138,10 @@
 
 <div class="container">
   <div id="errBanner" class="err-msg hidden"></div>
+  <button type="button" class="skip-top" onclick="skipServices()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 17l-5-5 5-5"/><path d="M18 17l-5-5 5-5"/></svg>
+    تخطي — المتابعة للدفع بدون خدمات إضافية
+  </button>
   <div class="layout">
     <div>
       <!-- Baggage Section -->
@@ -138,6 +167,7 @@
           <div class="legend-item"><div class="legend-box" style="background:#f3f4f6;border-color:#e5e7eb"></div> محجوز</div>
           <div class="legend-item"><div class="legend-box" style="background:#ecfdf5;border-color:#10b981"></div> مساحة أرجل إضافية</div>
         </div>
+        <div class="skip-hint">💡 اضغط على المقعد المحدَّد مرة أخرى لإلغاء اختياره</div>
         <div class="seat-map-wrap" id="seatMapContent"><div class="loading-msg">جاري تحميل خريطة المقاعد…</div></div>
       </div>
     </div>
@@ -522,12 +552,12 @@ function renderSeatMap() {
         const elements = section.elements || [];
         elements.forEach(elem => {
           if (!elem || elem.type === 'empty') {
-            html += `<div style="width:34px;height:34px;flex-shrink:0"></div>`;
+            html += `<div class="seat-blank"></div>`;
             return;
           }
           const seat = elem;
           const designator = seat.designator || '';
-          if (!designator) { html += `<div style="width:34px;height:34px;flex-shrink:0"></div>`; return; }
+          if (!designator) { html += `<div class="seat-blank"></div>`; return; }
           const key = `${currentPaxIdx}_${currentSegIdx}_${designator}`;
           const isSelected = !!selectedSeats[key];
           const isAvailable = seat.available_services && seat.available_services.length > 0;
@@ -553,7 +583,7 @@ function renderSeatMap() {
     });
   });
 
-  el.innerHTML = html;
+  el.innerHTML = `<div class="seat-map-inner">${html}</div>`;
 }
 
 function selectSeat(designator, isAvailable, svcJson) {
@@ -561,17 +591,19 @@ function selectSeat(designator, isAvailable, svcJson) {
   // Sanitize to prevent any injection from onclick attribute
   const safeDesig = String(designator).replace(/[^A-Z0-9]/gi, '');
   const key = `${currentPaxIdx}_${currentSegIdx}_${safeDesig}`;
-  // Deselect any previously selected seat for this pax+seg
+  const wasSelected = !!selectedSeats[key];
+  // Only one seat per passenger/segment — clear the current one first.
   Object.keys(selectedSeats).forEach(k => {
     if (k.startsWith(`${currentPaxIdx}_${currentSegIdx}_`)) delete selectedSeats[k];
   });
-  let svc = null;
-  try {
-    const decoded = svcJson ? decodeURIComponent(svcJson) : 'null';
-    svc = JSON.parse(decoded);
-  } catch(e) {}
-  if (svc) {
-    selectedSeats[key] = { svc, designator: safeDesig };
+  // Toggle: tapping the already-selected seat deselects it (no seat chosen).
+  if (!wasSelected) {
+    let svc = null;
+    try {
+      const decoded = svcJson ? decodeURIComponent(svcJson) : 'null';
+      svc = JSON.parse(decoded);
+    } catch(e) {}
+    if (svc) selectedSeats[key] = { svc, designator: safeDesig };
   }
   renderSeatMap();
   updateSummary();
