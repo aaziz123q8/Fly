@@ -3,7 +3,7 @@
      falling back to cache, then a minimal offline page.
    - Static assets (css/js/img/icons/fonts): cache-first (fast, offline-ready).
    - API / webhooks: network-only with a JSON offline fallback. */
-const CACHE_NAME = 'flymasar-v2';
+const CACHE_NAME = 'flymasar-v3';
 const STATIC_ASSETS = [
   '/index.html',
   '/manifest.json',

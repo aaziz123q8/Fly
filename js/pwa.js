@@ -78,25 +78,41 @@
   });
 
   var ua = navigator.userAgent || '';
-  var isIOS = /iphone|ipad|ipod/i.test(ua);
+  var isIOS = /iphone|ipad|ipod/i.test(ua) || (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+  var isAndroid = /android/i.test(ua);
 
-  var iosOv, iosSheet;
-  function openIosSheet() {
-    if (!iosSheet) {
-      iosOv = document.createElement('div'); iosOv.className = 'pwa-sheet-ov';
-      iosSheet = document.createElement('div'); iosSheet.className = 'pwa-sheet';
-      iosSheet.innerHTML =
-        '<div class="pwa-sheet-grip"></div>' +
-        '<h3>ثبّت تطبيق فلاي مسار</h3>' +
-        '<p>أضف فلاي مسار إلى شاشتك الرئيسية ليعمل كتطبيق كامل.</p>' +
-        '<div class="pwa-step"><span>①</span><span>اضغط زر المشاركة في شريط المتصفح</span></div>' +
+  // Platform-aware "how to install" sheet (used whenever the native prompt
+  // isn't available — iOS always, Android/desktop when the browser hasn't
+  // offered the prompt yet or doesn't support it).
+  var helpOv, helpSheet;
+  function stepsFor() {
+    if (isIOS) {
+      return '<p>أضف فلاي مسار إلى شاشتك الرئيسية ليعمل كتطبيق كامل:</p>' +
+        '<div class="pwa-step"><span>①</span><span>اضغط زر <b>المشاركة</b> في أسفل متصفح Safari</span></div>' +
         '<div class="pwa-step"><span>②</span><span>اختر <b>«أضف إلى الشاشة الرئيسية»</b></span></div>' +
-        '<div class="pwa-step"><span>③</span><span>اضغط <b>«إضافة»</b> — وسيظهر التطبيق على جهازك</span></div>';
-      document.body.appendChild(iosOv); document.body.appendChild(iosSheet);
-      iosOv.addEventListener('click', function () { iosSheet.classList.remove('open'); iosOv.style.display = 'none'; });
+        '<div class="pwa-step"><span>③</span><span>اضغط <b>«إضافة»</b> — وسيظهر أيقونة التطبيق على جهازك</span></div>';
     }
-    iosOv.style.display = 'block';
-    requestAnimationFrame(function () { iosSheet.classList.add('open'); });
+    if (isAndroid) {
+      return '<p>ثبّت فلاي مسار كتطبيق على هاتفك:</p>' +
+        '<div class="pwa-step"><span>①</span><span>افتح قائمة المتصفح <b>⋮</b> أعلى الشاشة</span></div>' +
+        '<div class="pwa-step"><span>②</span><span>اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b></span></div>' +
+        '<div class="pwa-step"><span>③</span><span>اضغط <b>«تثبيت»</b> — وسيظهر التطبيق على جهازك</span></div>' +
+        '<p style="margin-top:12px;font-size:.82rem">إن لم تجد الخيار، افتح الموقع في <b>Chrome</b> مباشرةً (وليس داخل تطبيق آخر).</p>';
+    }
+    return '<p>ثبّت فلاي مسار كتطبيق:</p>' +
+      '<div class="pwa-step"><span>①</span><span>افتح قائمة المتصفح</span></div>' +
+      '<div class="pwa-step"><span>②</span><span>اختر <b>«تثبيت التطبيق»</b> (Install app)</span></div>';
+  }
+  function openHelpSheet() {
+    if (!helpSheet) {
+      helpOv = document.createElement('div'); helpOv.className = 'pwa-sheet-ov';
+      helpSheet = document.createElement('div'); helpSheet.className = 'pwa-sheet';
+      document.body.appendChild(helpOv); document.body.appendChild(helpSheet);
+      helpOv.addEventListener('click', function () { helpSheet.classList.remove('open'); helpOv.style.display = 'none'; });
+    }
+    helpSheet.innerHTML = '<div class="pwa-sheet-grip"></div><h3>📲 ثبّت تطبيق فلاي مسار</h3>' + stepsFor();
+    helpOv.style.display = 'block';
+    requestAnimationFrame(function () { helpSheet.classList.add('open'); });
   }
 
   // Public API used by the home launcher install button.
@@ -106,8 +122,6 @@
       deferredPrompt.userChoice.then(function () { deferredPrompt = null; });
       return;
     }
-    if (isIOS) { openIosSheet(); return; }
-    if (window.showToast) showToast('للتثبيت: افتح قائمة المتصفح واختر «تثبيت التطبيق»', 'info');
-    else openIosSheet();
+    openHelpSheet();
   };
 })();

@@ -151,7 +151,7 @@
 
   function ensurePwa(){
     if (document.getElementById('sc-pwa')) return;
-    var s=document.createElement('script'); s.id='sc-pwa'; s.src='js/pwa.js?v=2026070105'; document.body.appendChild(s);
+    var s=document.createElement('script'); s.id='sc-pwa'; s.src='js/pwa.js?v=2026070107'; document.body.appendChild(s);
   }
 
   function mount(){
