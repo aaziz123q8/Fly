@@ -61,7 +61,7 @@
 
   // Checkout-funnel pages hand the bottom of the screen to the price/pay bar,
   // so the app tab bar is suppressed there.
-  var NO_TABS = ['flights.html', 'booking.html', 'payment.html'];
+  var NO_TABS = ['flights.html', 'booking.html', 'services.html', 'payment.html'];
   var hideTabs = NO_TABS.indexOf(here) >= 0;
 
   var TABS = [

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>التأكيد والدفع — فلاي مسار</title>
   <link rel="stylesheet" href="css/app.css">
-  <link rel="stylesheet" href="css/checkout-gateway.css">
+  <link rel="stylesheet" href="css/checkout-gateway.css?v=2026070110">
   <script src="js/dark-mode.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
@@ -1086,9 +1086,9 @@ async function applyCoupon() {
   res.textContent = '⏳ جاري التحقق…';
   res.className   = 'coupon-result';
   try {
-    const data = await Api.post('/api/coupons/validate', { code, amount: amountGBP });
+    const data = await Api.post('/api/coupons/validate', { code, booking_type: 'flight', amount: amountGBP });
     if (data.valid) {
-      discountGBP     = parseFloat(data.discount_gbp || 0);
+      discountGBP     = parseFloat(data.discount_amount || data.discount_gbp || 0);
       res.textContent = '✅ تم تطبيق الخصم: ' + fmt(discountGBP);
       res.className   = 'coupon-result coupon-ok';
       renderPriceRows();
@@ -1293,6 +1293,6 @@ loadFlightSummary();
 loadWalletBalance();
 </script>
 <script src="js/i18n.js"></script>
-<script src="js/site-chrome.js?v=2026070109"></script>
+<script src="js/site-chrome.js?v=2026070110"></script>
 </body>
 </html>

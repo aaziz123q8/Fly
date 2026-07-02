@@ -523,9 +523,11 @@ $router->get('api/commissions/quote', function (Request $req): void {
 // Routes — Public Coupon Validation (traveler auth)
 // ---------------------------------------------------------------------------
 
+// Public — coupon validation works for guests too (read-only; user-locked
+// coupons are still rejected for anonymous users inside the controller).
 $router->post('api/coupons/validate', function (Request $req): void {
     (new AdminCouponsController())->validate($req);
-}, [AuthMiddleware::handle()]);
+});
 
 // Public list of active promo coupons for the storefront (no auth).
 $router->get('api/coupons/public', function (Request $req): void {

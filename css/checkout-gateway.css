@@ -7,8 +7,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap');
 
 .fmco-card{
-  --fmco-brand:#1E3A63; --fmco-brand-2:#2E4B7D; --fmco-gold:#C19A4F;
-  --fmco-ink:#1A2A44; --fmco-muted:#6B7A90; --fmco-card:#FFFFFF;
+  --fmco-brand:#7C3AED; --fmco-brand-2:#9333EA; --fmco-gold:#C19A4F;
+  --fmco-ink:#1B172B; --fmco-muted:#6B6880; --fmco-card:#FFFFFF;
   --fmco-line:#E4E9F1; --fmco-field:#F7F9FC; --fmco-danger:#E2574C;
   --fmco-radius:18px; --fmco-radius-sm:12px;
   width:100%; background:var(--fmco-card); border-radius:var(--fmco-radius);
@@ -60,7 +60,7 @@
   border:1.5px solid var(--fmco-line); border-radius:var(--fmco-radius-sm); padding:0 12px; min-height:50px;
   transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
 }
-.fmco-box.fmco-focus, .fmco-box:focus-within{ border-color:var(--fmco-brand); background:#fff; box-shadow:0 0 0 4px rgba(30,58,99,.16); }
+.fmco-box.fmco-focus, .fmco-box:focus-within{ border-color:var(--fmco-brand); background:#fff; box-shadow:0 0 0 4px rgba(124,58,237,.16); }
 .fmco-box.fmco-invalid{ border-color:var(--fmco-danger); }
 .fmco-box input{ border:0; outline:0; background:transparent; width:100%; height:50px;
   font-family:inherit; font-size:15.5px; font-weight:500; color:var(--fmco-ink); }
@@ -96,7 +96,7 @@
    the unified design *in place* (we recolor it, we never move it). Uses literal
    colours so it works outside the .fmco-card variable scope. */
 .fmco-paybtn{
-  background:linear-gradient(135deg,#1E3A63 0%,#2E4B7D 100%)!important;
+  background:linear-gradient(120deg,#7C3AED 0%,#9333EA 55%,#C026D3 100%)!important;
   color:#fff!important; border:0!important;
   box-shadow:0 12px 24px -12px rgba(30,58,99,.55)!important;
 }
