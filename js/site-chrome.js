@@ -150,7 +150,7 @@
 
   function ensureMobileApp(){
     if (document.getElementById('mappTabs') || document.getElementById('sc-mapp')) return;
-    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070202'; document.body.appendChild(s);
+    var s=document.createElement('script'); s.id='sc-mapp'; s.src='js/mobile-app.js?v=2026070203'; document.body.appendChild(s);
   }
 
   function ensurePwa(){

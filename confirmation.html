@@ -166,40 +166,68 @@
     .sync-btn:hover { background:#f0f5ff; color:#7C3AED; border-color:#7C3AED; }
 
 
-    /* ── Print / PDF styles ──────────────────────────────────────── */
+    /* ── Print / PDF — dedicated single-page e-ticket document ─────── */
     .print-invoice-header { display:none; }
+    /* The compact print document lives in #ticketPrint; hidden on screen. */
+    #ticketPrint { display:none; }
+
+    .tp-doc { font-family:'Tajawal','IBM Plex Sans Arabic',Arial,sans-serif; color:#1B172B; font-size:8.6pt; line-height:1.35; }
+    .tp-top { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #7C3AED; padding-bottom:6px; margin-bottom:7px; }
+    .tp-logo { font-size:14pt; font-weight:900; color:#4C1D95; }
+    .tp-logo span { color:#F5A623; }
+    .tp-top-meta { text-align:left; font-size:7.4pt; color:#555; line-height:1.5; }
+    .tp-top-meta b { color:#1B172B; }
+    .tp-heading { text-align:center; margin-bottom:8px; }
+    .tp-heading .tp-h1 { font-size:12pt; font-weight:800; color:#4C1D95; letter-spacing:.5px; }
+    .tp-status { display:inline-block; margin-top:3px; padding:2px 14px; border-radius:20px; font-size:8pt; font-weight:800; color:#fff; background:#22c55e; }
+    .tp-status.tp-cancel { background:#ef4444; } .tp-status.tp-pend { background:#f59e0b; }
+    .tp-refs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px; }
+    .tp-ref { border:1.4px solid #ece8f4; border-radius:8px; padding:6px 10px; text-align:center; }
+    .tp-ref .l { font-size:6.8pt; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:.4px; }
+    .tp-ref .v { font-size:13pt; font-weight:900; letter-spacing:1.5px; color:#7C3AED; }
+    .tp-ref.pnr .v { color:#92400e; }
+    .tp-sec { margin-bottom:7px; }
+    .tp-sec-t { font-size:7.6pt; font-weight:800; color:#7C3AED; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid #eee; padding-bottom:2px; margin-bottom:4px; }
+    .tp-route { display:flex; align-items:center; justify-content:space-between; background:#faf8ff; border-radius:8px; padding:8px 12px; }
+    .tp-ap { text-align:center; } .tp-ap .i { font-size:16pt; font-weight:900; color:#2E1065; line-height:1; }
+    .tp-ap .c { font-size:7pt; color:#888; } .tp-ap .t { font-size:9pt; font-weight:800; color:#7C3AED; margin-top:2px; } .tp-ap .d { font-size:6.8pt; color:#888; }
+    .tp-mid { flex:1; text-align:center; padding:0 10px; color:#7C3AED; }
+    .tp-mid .dur { font-size:7pt; color:#888; }
+    .tp-mid hr { border:none; border-top:1.4px dashed #cbd5e1; margin:3px 0; }
+    table.tp-tbl { width:100%; border-collapse:collapse; font-size:7.6pt; }
+    table.tp-tbl th { background:#f4eefe; color:#555; font-weight:800; padding:3px 5px; text-align:right; font-size:6.9pt; border-bottom:1px solid #e7ddf7; }
+    table.tp-tbl td { padding:3px 5px; border-bottom:1px solid #f2f2f6; color:#333; }
+    table.tp-tbl tr:last-child td { border-bottom:none; }
+    .tp-2col { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .tp-box { border:1.2px solid #ece8f4; border-radius:8px; padding:6px 9px; }
+    .tp-kv { display:flex; justify-content:space-between; gap:8px; padding:1.5px 0; }
+    .tp-kv .k { color:#777; } .tp-kv .v { font-weight:700; color:#2E1065; }
+    .tp-badge { padding:1px 7px; border-radius:10px; font-size:6.8pt; font-weight:800; }
+    .tp-ok { background:#dcfce7; color:#15803d; } .tp-no { background:#fee2e2; color:#b91c1c; }
+    .tp-pay .tot { display:flex; justify-content:space-between; border-top:1.6px solid #7C3AED; margin-top:2px; padding-top:3px; font-weight:900; color:#4C1D95; font-size:9.5pt; }
+    .tp-instr { font-size:7pt; color:#555; line-height:1.5; }
+    .tp-instr b { color:#7C3AED; }
+    .tp-foot { display:flex; align-items:center; gap:12px; border-top:1.4px solid #7C3AED; padding-top:6px; margin-top:6px; }
+    .tp-qr img { width:74px; height:74px; display:block; }
+    .tp-foot .qtxt { font-size:7pt; color:#555; }
+    .tp-foot .qtxt b { color:#4C1D95; }
+
     @media print {
       * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-      body, html { margin:0; padding:0; background:#fff !important; }
-      .navbar, .bottom-nav, .action-bar, .sync-btn, .success-hero, .print-hide { display:none !important; }
-      .confirm-page { padding:0 !important; background:#fff !important; }
-      .confirm-wrap { max-width:100% !important; }
-      #ticketCard { box-shadow:none !important; border-radius:0 !important; border:1px solid #ddd; }
-      .tk-header { background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3) !important; -webkit-print-color-adjust:exact; }
-      .badge-confirmed { background:#22c55e !important; }
-      .badge-cancelled { background:#ef4444 !important; }
-      .tk-footer { background:#2E1065 !important; }
-      .bag-item { background:#f0f5ff !important; }
-      .cond-allowed { background:#f0fdf4 !important; }
-      .cond-forbidden { background:#fff1f2 !important; }
-      .tk-route { background:#fafbff !important; }
-      #refundSection { background:#fff8f8 !important; border:1px solid #fca5a5 !important; }
-      a { text-decoration:none !important; }
-      .print-invoice-header {
-        display:flex !important;
-        justify-content:space-between; align-items:center;
-        padding:12px 0 10px; border-bottom:2px solid #2E1065; margin-bottom:10px;
-        font-size:.8rem; color:#555;
-      }
-      .print-invoice-header .inv-logo { font-size:1.1rem; font-weight:900; color:#2E1065; }
-      .print-invoice-header .inv-logo span { color:#F5A623; }
-      .print-invoice-header .inv-meta { text-align:left; }
-      @page { margin:12mm; size:A4 portrait; }
+      html, body { margin:0; padding:0; background:#fff !important; }
+      /* Hide the entire on-screen experience; render only the compact document. */
+      body > *:not(#ticketPrint) { display:none !important; }
+      #ticketPrint { display:block !important; position:static; width:100%; }
+      a { text-decoration:none !important; color:inherit !important; }
+      @page { margin:9mm 10mm; size:A4 portrait; }
     }
   </style>
 </head>
 <body>
 <!-- Duplicate top navbar removed — global violet header injected by js/site-chrome.js -->
+
+<!-- Compact single-page e-ticket, rendered only when printing / saving as PDF -->
+<div id="ticketPrint"></div>
 
 <div class="confirm-page">
   <div class="container">
@@ -366,6 +394,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
+<script src="js/qrcode.js?v=2026070203"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 const urlP       = new URLSearchParams(window.location.search);
@@ -662,6 +691,156 @@ function renderBooking(b) {
   if (b.id) {
     document.getElementById('syncBtn').style.display = 'inline-flex';
   }
+
+  // Build the compact single-page print/PDF document.
+  try { buildPrintTicket(b); } catch (e) {}
+}
+
+// ── Compact single-page e-ticket (print / PDF only) ──────────────
+function checkedBag(cabin) {
+  return cabin === 'premium_economy' ? '2 × 23kg'
+       : (cabin === 'business' || cabin === 'first') ? '2 × 32kg' : '23kg';
+}
+function buildPrintTicket(b) {
+  const st   = b.status || 'confirmed';
+  const stCls = statusClass(st) === 'badge-cancelled' ? 'tp-cancel'
+              : statusClass(st) === 'badge-pending' ? 'tp-pend' : '';
+  const fmRef = b.booking_reference || document.getElementById('refFm').textContent || '—';
+  const pnr = b.duffel_booking_reference
+    || (Array.isArray(b.booking_references) && b.booking_references[0])
+    || (typeof b.booking_references === 'string' && b.booking_references) || '';
+
+  const segs = (b.segments || []).filter(Boolean).map(s => ({
+    o: s.origin_airport || s.origin || '',
+    d: s.destination_airport || s.destination || '',
+    dep: s.departure_at || s.departing_at || '',
+    arr: s.arrival_at || s.arriving_at || '',
+    fn: s.flight_number || '', ac: s.airline_code || s.carrier || '',
+  }));
+  const f = segs[0], l = segs[segs.length - 1];
+  const depAp = (f ? f.o : '') || b.origin_airport || '';
+  const arrAp = (l ? l.d : '') || b.destination_airport || '';
+  const depAt = (f ? f.dep : '') || b.departure_at || '';
+  const arrAt = (l ? l.arr : '') || b.return_at || '';
+
+  const money = (v) => { try { return formatPrice(parseFloat(v || 0)); } catch (e) { return (parseFloat(v||0)).toFixed(2); } };
+  const pax = b.passengers || [];
+  const cabin = b.cabin_class || 'economy';
+
+  // Seats / extra baggage from services when present.
+  const services = b.services || b.ancillaries || [];
+  const seatByPax = {};
+  let extraBags = 0;
+  (Array.isArray(services) ? services : []).forEach(s => {
+    const t = (s.type || s.service_type || '').toLowerCase();
+    if (t.includes('seat')) { const k = s.passenger_id || s.passenger_index; if (k != null) seatByPax[k] = s.designator || s.seat || s.value || '✓'; }
+    if (t.includes('bag')) extraBags += parseInt(s.quantity || 1) || 1;
+  });
+
+  const paxRows = pax.map((p, i) => {
+    const seat = p.seat_designator || p.seat || seatByPax[p.duffel_passenger_id] || seatByPax[i] || '—';
+    const passport = p.document_number || p.passport_number || p.document_no || '—';
+    return `<tr>
+      <td><b>${(p.first_name||'')} ${(p.last_name||'')}</b><div style="color:#999;font-size:6.6pt">${paxTypeLabel(p.passenger_type)}</div></td>
+      <td>${passport}</td>
+      <td>${p.date_of_birth || '—'}</td>
+      <td>${p.nationality || '—'}</td>
+      <td style="text-align:center">${seat}</td>
+      <td>${checkedBag(cabin)}${p.ticket_number ? `<div style="color:#7C3AED;font-size:6.6pt">🎫 ${p.ticket_number}</div>` : ''}</td>
+    </tr>`;
+  }).join('');
+
+  // Contact info
+  const email = b.user_email || b.contact_email || (pax[0] && pax[0].email) || '';
+  const phone = b.contact_phone || (pax[0] && (pax[0].phone_number || pax[0].phone)) || '';
+
+  // Conditions
+  const refOk = b.refund_conditions ? (b.refund_conditions.allowed !== false) : null;
+  const chgOk = b.change_conditions ? (b.change_conditions.allowed !== false) : null;
+  const condBadge = (ok) => ok === null ? '<span class="tp-badge" style="background:#f3f4f6;color:#888">حسب الناقل</span>'
+    : ok ? '<span class="tp-badge tp-ok">مسموح</span>' : '<span class="tp-badge tp-no">غير مسموح</span>';
+
+  // Pricing
+  const changeFee = parseFloat(b.change_fee_paid || 0);
+  const baseFare = parseFloat(b.total_amount || 0) - changeFee;
+
+  // QR → link that opens this ticket (guest-accessible via ref + last name)
+  const ln = (pax[0] && pax[0].last_name) || '';
+  const ticketUrl = location.origin + '/confirmation?ref=' + encodeURIComponent(fmRef) + (ln ? '&last_name=' + encodeURIComponent(ln) : '');
+  let qrHtml = '';
+  try { const q = qrcode(0, 'M'); q.addData(ticketUrl); q.make(); qrHtml = '<img src="' + q.createDataURL(4, 4) + '" alt="QR">'; } catch (e) {}
+
+  const issueDate = new Date().toLocaleDateString('ar-KW', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const html = `<div class="tp-doc">
+    <div class="tp-top">
+      <div class="tp-logo">✈️ <span>فلاي</span> مسار</div>
+      <div class="tp-top-meta">
+        <div>تاريخ الإصدار: <b>${issueDate}</b></div>
+        <div>flymasar.com</div>
+        <div>واتساب: <b>+965 6500 2080</b></div>
+      </div>
+    </div>
+
+    <div class="tp-heading">
+      <div class="tp-h1">التذكرة الإلكترونية</div>
+      <div class="tp-status ${stCls}">${statusLabel(st)}</div>
+    </div>
+
+    <div class="tp-refs">
+      <div class="tp-ref"><div class="l">رقم حجز فلاي مسار</div><div class="v">${fmRef}</div></div>
+      <div class="tp-ref pnr"><div class="l">رقم الحجز لدى الناقل (PNR)</div><div class="v">${pnr || '—'}</div></div>
+    </div>
+
+    <div class="tp-sec">
+      <div class="tp-sec-t">تفاصيل الرحلة</div>
+      <div class="tp-route">
+        <div class="tp-ap"><div class="i">${depAp || '—'}</div><div class="t">${fmtTime(depAt)}</div><div class="d">${fmtDate(depAt)}</div></div>
+        <div class="tp-mid"><div class="dur">${durationMins(depAt, arrAt) || ''}</div><hr>✈<div style="font-size:6.6pt;color:#888">${(b.cabin_class||'').toString().toUpperCase()||''}</div></div>
+        <div class="tp-ap"><div class="i">${arrAp || '—'}</div><div class="t">${fmtTime(arrAt)}</div><div class="d">${fmtDate(arrAt)}</div></div>
+      </div>
+      ${segs.length > 1 ? `<table class="tp-tbl" style="margin-top:5px"><thead><tr><th>الرحلة</th><th>من</th><th>إلى</th><th>المغادرة</th><th>الوصول</th></tr></thead><tbody>${segs.map(s => `<tr><td><b>${s.fn||'—'}</b></td><td>${s.o}</td><td>${s.d}</td><td>${fmtDateTime(s.dep)}</td><td>${fmtDateTime(s.arr)}</td></tr>`).join('')}</tbody></table>` : ''}
+    </div>
+
+    <div class="tp-sec">
+      <div class="tp-sec-t">المسافرون (${pax.length}) — بياناتهم والأمتعة والمقاعد</div>
+      <table class="tp-tbl"><thead><tr><th>الاسم</th><th>الجواز/الوثيقة</th><th>الميلاد</th><th>الجنسية</th><th>المقعد</th><th>الأمتعة المسجّلة</th></tr></thead><tbody>${paxRows || '<tr><td colspan="6" style="text-align:center;color:#999">—</td></tr>'}</tbody></table>
+      <div style="font-size:6.8pt;color:#777;margin-top:2px">أمتعة المقصورة: 7kg لكل مسافر${extraBags ? ` · أمتعة مضافة: ${extraBags}` : ''}</div>
+    </div>
+
+    <div class="tp-2col">
+      <div class="tp-box">
+        <div class="tp-sec-t" style="border:0;margin:0 0 3px">معلومات تواصل المسافر</div>
+        <div class="tp-kv"><span class="k">البريد</span><span class="v" style="direction:ltr">${email || '—'}</span></div>
+        <div class="tp-kv"><span class="k">الهاتف</span><span class="v" style="direction:ltr">${phone || '—'}</span></div>
+      </div>
+      <div class="tp-box">
+        <div class="tp-sec-t" style="border:0;margin:0 0 3px">شروط التذكرة</div>
+        <div class="tp-kv"><span class="k">الاسترداد قبل السفر</span>${condBadge(refOk)}</div>
+        <div class="tp-kv"><span class="k">تغيير الرحلة</span>${condBadge(chgOk)}</div>
+      </div>
+    </div>
+
+    <div class="tp-2col" style="margin-top:7px">
+      <div class="tp-box tp-pay">
+        <div class="tp-sec-t" style="border:0;margin:0 0 3px">ملخص الدفع</div>
+        <div class="tp-kv"><span class="k">سعر التذكرة</span><span class="v">${money(baseFare > 0 ? baseFare : b.total_amount)}</span></div>
+        ${changeFee > 0 ? `<div class="tp-kv"><span class="k">رسوم التغيير</span><span class="v" style="color:#d97706">+ ${money(changeFee)}</span></div>` : ''}
+        <div class="tot"><span>الإجمالي المدفوع</span><span>${money(b.total_amount)}</span></div>
+      </div>
+      <div class="tp-box">
+        <div class="tp-sec-t" style="border:0;margin:0 0 3px">تعليمات السفر</div>
+        <div class="tp-instr">• الحضور للمطار قبل <b>3 ساعات</b> للرحلات الدولية.<br>• جواز ساري <b>6 أشهر+</b> على الأقل.<br>• التزم بحدود الأمتعة المسموحة للناقل.</div>
+      </div>
+    </div>
+
+    <div class="tp-foot">
+      <div class="tp-qr">${qrHtml}</div>
+      <div class="qtxt"><b>امسح الرمز</b> بكاميرا هاتفك للوصول إلى تذكرتك في أي وقت.<br>هذه تذكرة إلكترونية معتمدة صادرة من فلاي مسار — وكيل سفر. التذكرة تخضع لشروط الناقل الجوي.</div>
+    </div>
+  </div>`;
+
+  document.getElementById('ticketPrint').innerHTML = html;
 }
 
 // ── Load booking ─────────────────────────────────────────────────
@@ -789,6 +968,6 @@ async function shareWhatsApp() {
 loadBooking();
 </script>
 <script src="js/i18n.js"></script>
-<script src="js/site-chrome.js?v=2026070202"></script>
+<script src="js/site-chrome.js?v=2026070203"></script>
 </body>
 </html>

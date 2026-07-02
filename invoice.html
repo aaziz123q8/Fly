@@ -115,18 +115,46 @@
 
     /* ── Bottom Nav ── */
 
-    /* ── Print ── */
+    /* ── Print / PDF — dedicated single-page invoice document ────────
+       Styled as a formal financial document (solid dark header, ruled
+       sections, totals box) so it reads clearly differently from the
+       boarding-pass-style e-ticket. */
+    #invoicePrint { display:none; }
+    .iv-doc { font-family:'Tajawal','IBM Plex Sans Arabic',Arial,sans-serif; color:#1B172B; font-size:8.6pt; line-height:1.35; }
+    .iv-head { background:#3A1078; color:#fff; display:flex; justify-content:space-between; align-items:flex-start; padding:12px 16px; border-radius:6px; }
+    .iv-head .lg { font-size:15pt; font-weight:900; } .iv-head .lg span { color:#F5A623; }
+    .iv-head .lg small { display:block; font-size:7pt; font-weight:400; color:rgba(255,255,255,.7); margin-top:2px; }
+    .iv-head .meta { text-align:left; font-size:7.6pt; line-height:1.6; color:rgba(255,255,255,.85); }
+    .iv-head .meta .num { font-size:11pt; font-weight:900; color:#fff; }
+    .iv-titlebar { display:flex; align-items:center; justify-content:center; gap:10px; margin:8px 0 9px; }
+    .iv-titlebar .t { font-size:12pt; font-weight:800; color:#3A1078; }
+    .iv-st { padding:2px 14px; border-radius:4px; font-size:8pt; font-weight:800; color:#fff; background:#16a34a; }
+    .iv-st.c { background:#dc2626; } .iv-st.p { background:#d97706; }
+    .iv-sec { margin-bottom:8px; }
+    .iv-sec-t { font-size:7.6pt; font-weight:800; color:#3A1078; letter-spacing:.4px; border-bottom:1.6px solid #3A1078; padding-bottom:2px; margin-bottom:4px; }
+    .iv-grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .iv-kv { display:flex; justify-content:space-between; gap:8px; padding:2px 0; border-bottom:1px dotted #e5e0f0; }
+    .iv-kv .k { color:#777; } .iv-kv .v { font-weight:700; color:#3A1078; }
+    .iv-route { display:flex; align-items:center; justify-content:space-between; border:1.3px solid #e7ddf7; border-radius:6px; padding:7px 12px; }
+    .iv-ap { text-align:center; } .iv-ap .i { font-size:15pt; font-weight:900; color:#3A1078; line-height:1; } .iv-ap .t { font-size:9pt; font-weight:800; color:#6d28d9; } .iv-ap .d { font-size:6.8pt; color:#888; }
+    .iv-mid { flex:1; text-align:center; color:#6d28d9; } .iv-mid .dur { font-size:7pt; color:#888; }
+    table.iv-tbl { width:100%; border-collapse:collapse; font-size:7.6pt; }
+    table.iv-tbl th { background:#efeaFB; color:#4b3d7a; font-weight:800; padding:4px 6px; text-align:right; font-size:6.9pt; border:1px solid #e0d8f2; }
+    table.iv-tbl td { padding:3px 6px; border:1px solid #efeaf8; color:#333; }
+    table.iv-tbl tbody tr:nth-child(even) td { background:#faf8ff; }
+    .iv-totbox { width:56%; margin-right:auto; border:1.4px solid #3A1078; border-radius:6px; overflow:hidden; }
+    .iv-totbox .r { display:flex; justify-content:space-between; padding:4px 10px; font-size:8pt; border-bottom:1px solid #ece8f6; }
+    .iv-totbox .r.g { background:#3A1078; color:#fff; font-weight:900; font-size:9.5pt; border:0; }
+    .iv-instr { font-size:7pt; color:#555; line-height:1.5; }
+    .iv-legal { font-size:6.6pt; color:#999; border-top:1px solid #eee; padding-top:5px; margin-top:6px; text-align:center; }
+
     @media print {
       * { -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
-      body { background:#fff !important; padding:0; }
-      .action-bar, .navbar, .sc-nav, .sc-footer, .bottom-nav, .print-hide { display:none !important; }
-      .inv-page { max-width:100% !important; padding:0; }
-      .inv-card { box-shadow:none !important; border-radius:0 !important; border:1px solid #ddd; }
-      .inv-header { background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3) !important; }
-      .inv-footer { background:#4C1D95 !important; }
-      .inv-route { background:#FAF8FF !important; }
-      .refund-box { background:#fff8f8 !important; }
-      @page { margin:12mm; size:A4 portrait; }
+      html, body { background:#fff !important; padding:0; margin:0; }
+      body > *:not(#invoicePrint) { display:none !important; }
+      #invoicePrint { display:block !important; position:static; width:100%; }
+      a { text-decoration:none !important; color:inherit !important; }
+      @page { margin:9mm 10mm; size:A4 portrait; }
     }
     @media(max-width:600px) {
       .inv-header { flex-direction:column; gap:12px; }
@@ -138,6 +166,9 @@
 </head>
 <body>
 <!-- Own navbar removed — shared violet header injected by js/site-chrome.js -->
+
+<!-- Compact single-page invoice, rendered only when printing / saving as PDF -->
+<div id="invoicePrint"></div>
 
 <div class="inv-page">
 
@@ -455,6 +486,124 @@ function render(b) {
     document.getElementById('condRows').innerHTML =
       condRow('الاسترداد قبل السفر', refCond) + condRow('تغيير الرحلة قبل السفر', chgCond);
   }
+
+  // Build the compact single-page print/PDF invoice document.
+  try { buildPrintInvoice(b); } catch (e) {}
+}
+
+// ── Compact single-page invoice (print / PDF only) ───────────────
+function checkedBag(cabin) {
+  return cabin === 'premium_economy' ? '2 × 23kg'
+       : (cabin === 'business' || cabin === 'first') ? '2 × 32kg' : '23kg';
+}
+function buildPrintInvoice(b) {
+  const cur = b.currency || 'GBP';
+  const m = (v) => parseFloat(v || 0).toFixed(2) + ' ' + cur;
+  const st = b.status || 'confirmed';
+  const [sIcon, sText, sCls] = statusMap[st] || ['ℹ️', st, 'pending'];
+  const stClass = sCls === 'cancelled' ? 'c' : sCls === 'pending' ? 'p' : '';
+  const fmRef = b.booking_reference || '—';
+  const pnr = b.duffel_booking_reference
+    || (Array.isArray(b.booking_references) && b.booking_references[0])
+    || (typeof b.booking_references === 'string' && b.booking_references) || '';
+
+  const segs = b.segments || [];
+  const f = segs[0], l = segs[segs.length - 1];
+  const depAp = (f && f.origin_airport) || b.origin_airport || '';
+  const arrAp = (l && l.destination_airport) || b.destination_airport || '';
+  const depAt = (f && f.departure_at) || b.departure_at || '';
+  const arrAt = (l && l.arrival_at) || '';
+
+  const pax = b.passengers || [];
+  const cabin = b.cabin_class || 'economy';
+  const services = b.services || b.ancillaries || [];
+  const seatByPax = {}; let extraBags = 0;
+  (Array.isArray(services) ? services : []).forEach(s => {
+    const t = (s.type || s.service_type || '').toLowerCase();
+    if (t.includes('seat')) { const k = s.passenger_id || s.passenger_index; if (k != null) seatByPax[k] = s.designator || s.seat || '✓'; }
+    if (t.includes('bag')) extraBags += parseInt(s.quantity || 1) || 1;
+  });
+  const paxRows = pax.map((p, i) => {
+    const seat = p.seat_designator || p.seat || seatByPax[p.duffel_passenger_id] || seatByPax[i] || '—';
+    const passport = p.document_number || p.passport_number || p.document_no || '—';
+    return `<tr><td>${i+1}</td><td><b>${(p.first_name||'')} ${(p.last_name||'')}</b> <span style="color:#999">(${paxTypeAr(p.passenger_type)})</span></td><td>${passport}</td><td>${p.date_of_birth||'—'}</td><td>${p.nationality||'—'}</td><td style="text-align:center">${seat}</td><td>${checkedBag(cabin)}</td></tr>`;
+  }).join('');
+
+  // Booker
+  const bookerName = (pax[0] ? ((pax[0].first_name||'')+' '+(pax[0].last_name||'')).trim() : '') || b.user_name || b.user_email || '—';
+  const bookerPhone = b.contact_phone || (pax[0] && (pax[0].phone_number || pax[0].phone)) || '—';
+
+  // Conditions
+  const refOk = b.refund_conditions ? (b.refund_conditions.allowed !== false) : null;
+  const chgOk = b.change_conditions ? (b.change_conditions.allowed !== false) : null;
+  const cbadge = (ok) => ok === null ? '<span style="color:#888">حسب الناقل</span>'
+    : ok ? '<span style="color:#15803d;font-weight:800">مسموح ✓</span>' : '<span style="color:#b91c1c;font-weight:800">غير مسموح ✗</span>';
+
+  const changeFee = parseFloat(b.change_fee_paid || 0);
+  const baseFare = parseFloat(b.total_amount || 0) - changeFee;
+  const issueDate = new Date().toLocaleDateString('ar-KW', { day:'numeric', month:'long', year:'numeric' });
+
+  const html = `<div class="iv-doc">
+    <div class="iv-head">
+      <div class="lg">✈️ <span>فلاي</span> مسار<small>وكيل سفر معتمد · flymasar.com</small></div>
+      <div class="meta">
+        <div class="num">فاتورة ${fmRef}</div>
+        <div>تاريخ الإصدار: ${issueDate}</div>
+        <div>flymasar.com</div>
+        <div>واتساب: +965 6500 2080</div>
+      </div>
+    </div>
+
+    <div class="iv-titlebar"><span class="t">فاتورة الحجز</span><span class="iv-st ${stClass}">${sIcon} ${sText}</span></div>
+
+    <div class="iv-grid2">
+      <div class="iv-sec"><div class="iv-sec-t">بيانات الحاجز</div>
+        <div class="iv-kv"><span class="k">الاسم</span><span class="v">${bookerName}</span></div>
+        <div class="iv-kv"><span class="k">رقم الهاتف</span><span class="v" style="direction:ltr">${bookerPhone}</span></div>
+        ${b.user_email ? `<div class="iv-kv"><span class="k">البريد</span><span class="v" style="direction:ltr">${b.user_email}</span></div>` : ''}
+      </div>
+      <div class="iv-sec"><div class="iv-sec-t">مراجع الحجز</div>
+        <div class="iv-kv"><span class="k">رقم حجز فلاي مسار</span><span class="v" style="letter-spacing:1px">${fmRef}</span></div>
+        <div class="iv-kv"><span class="k">رقم الناقل (PNR)</span><span class="v" style="letter-spacing:1px;color:#92400e">${pnr || '—'}</span></div>
+        ${b.created_at ? `<div class="iv-kv"><span class="k">تاريخ الحجز</span><span class="v">${fmtDT(b.created_at)}</span></div>` : ''}
+      </div>
+    </div>
+
+    <div class="iv-sec"><div class="iv-sec-t">تفاصيل الرحلة</div>
+      <div class="iv-route">
+        <div class="iv-ap"><div class="i">${depAp||'—'}</div><div class="t">${fmtTime(depAt)}</div><div class="d">${fmt(depAt)}</div></div>
+        <div class="iv-mid"><div class="dur">${dur(depAt, arrAt)||''}</div>✈<div style="font-size:6.6pt;color:#888">${cabinAr(cabin)}</div></div>
+        <div class="iv-ap"><div class="i">${arrAp||'—'}</div><div class="t">${fmtTime(arrAt)}</div><div class="d">${fmt(arrAt)}</div></div>
+      </div>
+      ${segs.length ? `<table class="iv-tbl" style="margin-top:5px"><thead><tr><th>الرحلة</th><th>من</th><th>إلى</th><th>المغادرة</th><th>الوصول</th><th>المدة</th></tr></thead><tbody>${segs.map(s=>`<tr><td><b>${s.flight_number||'—'}</b></td><td>${s.origin_airport||'—'}</td><td>${s.destination_airport||'—'}</td><td>${fmtDT(s.departure_at)}</td><td>${fmtDT(s.arrival_at)}</td><td>${dur(s.departure_at,s.arrival_at)||'—'}</td></tr>`).join('')}</tbody></table>` : ''}
+    </div>
+
+    <div class="iv-sec"><div class="iv-sec-t">المسافرون (${pax.length}) — البيانات والأمتعة والمقاعد</div>
+      <table class="iv-tbl"><thead><tr><th>#</th><th>الاسم</th><th>الجواز/الوثيقة</th><th>الميلاد</th><th>الجنسية</th><th>المقعد</th><th>الأمتعة</th></tr></thead><tbody>${paxRows || '<tr><td colspan="7" style="text-align:center;color:#999">—</td></tr>'}</tbody></table>
+      <div style="font-size:6.8pt;color:#777;margin-top:2px">أمتعة المقصورة: 7kg لكل مسافر${extraBags ? ` · أمتعة مضافة: ${extraBags}` : ''}</div>
+    </div>
+
+    <div class="iv-grid2">
+      <div class="iv-sec"><div class="iv-sec-t">شروط التذكرة</div>
+        <div class="iv-kv"><span class="k">الاسترداد قبل السفر</span>${cbadge(refOk)}</div>
+        <div class="iv-kv"><span class="k">تغيير الرحلة</span>${cbadge(chgOk)}</div>
+      </div>
+      <div class="iv-sec"><div class="iv-sec-t">ملخص الدفع</div>
+        <div class="iv-totbox">
+          <div class="r"><span>سعر التذكرة</span><span>${m(baseFare > 0 ? baseFare : b.total_amount)}</span></div>
+          ${changeFee > 0 ? `<div class="r"><span>رسوم التغيير</span><span>+ ${m(changeFee)}</span></div>` : ''}
+          <div class="r g"><span>الإجمالي المدفوع</span><span>${m(b.total_amount)}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="iv-sec"><div class="iv-sec-t">تعليمات السفر</div>
+      <div class="iv-instr">• الحضور إلى المطار قبل <b>3 ساعات</b> على الأقل للرحلات الدولية.&nbsp;&nbsp; • جواز السفر ساري المفعول <b>6 أشهر+</b> بعد تاريخ السفر.&nbsp;&nbsp; • الالتزام بحدود الأمتعة المسموحة للناقل الجوي.</div>
+    </div>
+
+    <div class="iv-legal">هذه فاتورة إلكترونية معتمدة صادرة من فلاي مسار بصفتها وكيل سفر. التذكرة تخضع لشروط الناقل الجوي · flymasar.com · واتساب +965 6500 2080</div>
+  </div>`;
+  document.getElementById('invoicePrint').innerHTML = html;
 }
 
 // Load booking
@@ -562,6 +711,6 @@ async function load() {
 load();
 </script>
 <script src="js/bottom-nav.js?v=2026070202"></script>
-<script src="js/site-chrome.js?v=2026070202"></script>
+<script src="js/site-chrome.js?v=2026070203"></script>
 </body>
 </html>
