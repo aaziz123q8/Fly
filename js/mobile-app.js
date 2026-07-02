@@ -59,6 +59,11 @@
 
   var loggedIn = (window.Auth && Auth.isLoggedIn && Auth.isLoggedIn());
 
+  // Checkout-funnel pages hand the bottom of the screen to the price/pay bar,
+  // so the app tab bar is suppressed there.
+  var NO_TABS = ['flights.html', 'booking.html', 'payment.html'];
+  var hideTabs = NO_TABS.indexOf(here) >= 0;
+
   var TABS = [
     { k:'home',    href:'index.html',     icon:I.home,   label:'الرئيسية', match:['index.html',''] },
     { k:'flights', href:'flights.html',   icon:I.flight, label:'رحلات',    match:['flights.html'] },
@@ -134,12 +139,19 @@
   }
 
   function mount(){
-    if (document.getElementById('mappTabs')) return;
+    if (document.getElementById('mappTabs') || document.getElementById('mappTop')) return;
     var s=document.createElement('style'); s.textContent=css; document.head.appendChild(s);
-    var top=document.createElement('div'); top.className='mapp'; top.innerHTML=topHtml();
+    var top=document.createElement('div'); top.className='mapp'; top.id='mappTop'; top.innerHTML=topHtml();
     document.body.insertBefore(top, document.body.firstChild);
-    var wrap=document.createElement('div'); wrap.className='mapp'; wrap.id='mappTabs'; wrap.innerHTML=tabsHtml();
-    document.body.appendChild(wrap);
+    // Checkout-funnel pages: no bottom tab bar (price/pay bar takes over).
+    if (!hideTabs) {
+      var wrap=document.createElement('div'); wrap.className='mapp'; wrap.id='mappTabs'; wrap.innerHTML=tabsHtml();
+      document.body.appendChild(wrap);
+    } else {
+      var ps=document.createElement('style');
+      ps.textContent='@media(max-width:768px){body{padding-bottom:0 !important}}';
+      document.head.appendChild(ps);
+    }
     document.addEventListener('click', function(e){
       var t=e.target.closest('[data-mapp="back"]'); if(!t) return;
       if (history.length > 1) history.back(); else location.href='index.html';
