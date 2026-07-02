@@ -196,11 +196,16 @@ class AdminNotificationsController
 
         $db   = Database::getInstance();
         $stmt = $db->prepare(
-            'SELECT id, channel, title_en, title_ar, body_en, body_ar, is_read, read_at, created_at
+            "SELECT id, channel,
+                    COALESCE(NULLIF(title_ar, ''), NULLIF(title_en, ''), 'إشعار') AS title,
+                    COALESCE(NULLIF(body_ar, ''), NULLIF(body_en, ''), '')        AS body,
+                    COALESCE(NULLIF(body_ar, ''), NULLIF(body_en, ''), '')        AS message,
+                    title_en, title_ar, body_en, body_ar,
+                    is_read, read_at, created_at
              FROM user_notifications
              WHERE user_id = ?
              ORDER BY created_at DESC
-             LIMIT 50'
+             LIMIT 50"
         );
         $stmt->execute([$user['id']]);
         $notifications = $stmt->fetchAll(\PDO::FETCH_ASSOC);

@@ -1290,8 +1290,8 @@
       if(!list.length){ el.innerHTML='<div style="text-align:center;color:#9ca3af;padding:30px">لا توجد إشعارات حالياً</div>'; return; }
       el.innerHTML=list.map(n=>{ const date=n.created_at?new Date(n.created_at).toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'}):''; const isOffer=(n.type==='offer'||n.type==='promotion');
         return `<div style="background:#fff;border:1px solid ${isOffer?'#FBBF24':'#f0ecf9'};border-radius:14px;padding:14px 16px;margin-bottom:10px;${n.read_at?'':'border-right:4px solid #7C3AED'}">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span style="font-size:1.1rem">${isOffer?'🎁':'🔔'}</span><div style="font-weight:800;color:#2E1065">${escapeHtml(n.title||n.subject||'إشعار')}</div></div>
-          <div style="font-size:.86rem;color:#555;line-height:1.6">${escapeHtml(n.message||n.body||'')}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span style="font-size:1.1rem">${isOffer?'🎁':'🔔'}</span><div style="font-weight:800;color:#2E1065">${escapeHtml(n.title||n.title_ar||n.title_en||n.subject||'إشعار')}</div></div>
+          <div style="font-size:.86rem;color:#555;line-height:1.6">${escapeHtml(n.message||n.body||n.body_ar||n.body_en||'')}</div>
           <div style="font-size:.7rem;color:#9ca3af;margin-top:5px">${date}</div></div>`; }).join('');
     }catch(e){ el.innerHTML='<div style="text-align:center;color:#9ca3af;padding:30px">لا توجد إشعارات</div>'; }
   }
@@ -1303,7 +1303,7 @@
       // Prominent offers banner
       const offers=list.filter(n=>n.type==='offer'||n.type==='promotion').slice(0,2);
       if(offers.length){ const b=document.getElementById('offerBanner'); b.style.display='block';
-        b.innerHTML=offers.map(o=>`<div class="offer-item"><span class="oi-ic">🎁</span><div><div class="oi-t">${escapeHtml(o.title||'عرض خاص')}</div><div class="oi-b">${escapeHtml(o.message||o.body||'')}</div></div></div>`).join('');
+        b.innerHTML=offers.map(o=>`<div class="offer-item"><span class="oi-ic">🎁</span><div><div class="oi-t">${escapeHtml(o.title||o.title_ar||'عرض خاص')}</div><div class="oi-b">${escapeHtml(o.message||o.body||o.body_ar||'')}</div></div></div>`).join('');
       }
     }catch(e){}
   }

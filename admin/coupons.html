@@ -20,122 +20,132 @@
     </div>
 
     <div class="admin-content">
-      <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start">
-        <!-- Coupons Table -->
-        <div class="table-card">
-          <div class="card-header">
-            <span style="display:flex;align-items:center;gap:8px;font-weight:700"><span data-ic="coupons"></span> قائمة القسائم</span>
-            <div class="adm-search" style="min-width:220px">
-              <span data-ic="search"></span>
-              <input type="search" id="searchInput" placeholder="البحث برمز القسيمة..." oninput="filterCoupons()">
-            </div>
-          </div>
+      <div class="adm-note">
+        <span data-ic="coupons"></span>
+        <div>أنشئ أكواد الخصم وتحكّم بها من هنا — تعديل، تفعيل/تعطيل، وحذف. القسائم المفعّلة تظهر للعملاء عند الدفع.</div>
+      </div>
 
-          <div id="tableLoading" class="loading-state" style="padding:48px">
-            <div class="spinner"></div><p>جاري التحميل...</p>
-          </div>
+      <div class="adm-toolbar">
+        <div class="adm-search">
+          <span data-ic="search"></span>
+          <input type="search" id="searchInput" placeholder="البحث برمز القسيمة..." oninput="filterCoupons()">
+        </div>
+        <button class="adm-btn sm" onclick="openCreateModal()"><span data-ic="plus" data-ic-size="15"></span> إنشاء قسيمة جديدة</button>
+      </div>
 
-          <div id="tableWrapper" style="display:none;overflow-x:auto">
-            <table>
-              <thead>
-                <tr>
-                  <th>الرمز</th>
-                  <th>الخصم</th>
-                  <th>النوع</th>
-                  <th>الحد الأدنى</th>
-                  <th>الاستخدامات</th>
-                  <th>الانتهاء</th>
-                  <th>الحالة</th>
-                  <th>الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody id="couponsTable"></tbody>
-            </table>
-          </div>
-
-          <div id="emptyState" class="adm-empty" style="display:none">
-            <span data-ic="coupons" data-ic-size="40"></span>
-            <h4>لا توجد قسائم</h4>
-            <p>أنشئ أول قسيمة خصم الآن</p>
-            <button class="adm-btn sm" style="margin-top:14px" onclick="openCreateModal()"><span data-ic="plus" data-ic-size="15"></span> إنشاء قسيمة</button>
-          </div>
+      <!-- Coupons Table (full width) -->
+      <div class="table-card">
+        <div id="tableLoading" class="loading-state" style="padding:48px">
+          <div class="spinner"></div><p>جاري التحميل...</p>
         </div>
 
-        <!-- Create/Edit Form -->
-        <div class="table-card" id="couponFormCard">
-          <div class="card-header">
-            <span style="display:flex;align-items:center;gap:8px;font-weight:700" id="formTitle"><span data-ic="plus"></span> إنشاء قسيمة جديدة</span>
-          </div>
-          <div style="padding:18px">
-            <form id="couponForm" onsubmit="saveCoupon(event)">
-              <input type="hidden" id="couponId">
-              <div class="adm-field">
-                <label>رمز القسيمة</label>
-                <div style="display:flex;gap:8px">
-                  <input type="text" class="adm-input" id="couponCode" placeholder="SUMMER20" required style="text-transform:uppercase">
-                  <button type="button" class="adm-btn ghost sm" onclick="generateCode()" title="توليد تلقائي" style="flex:0 0 auto"><span data-ic="refresh" data-ic-size="15"></span></button>
-                </div>
-                <div class="adm-hint">يجب أن يكون فريداً، يُفضل بالأحرف اللاتينية</div>
-              </div>
-              <div class="adm-field">
-                <label>نوع الخصم</label>
-                <select class="adm-select" id="discountType" onchange="updateDiscountLabel()">
-                  <option value="percentage">نسبة مئوية (%)</option>
-                  <option value="fixed">مبلغ ثابت (£)</option>
-                </select>
-              </div>
-              <div class="adm-field">
-                <label id="discountLabel">نسبة الخصم (%)</label>
-                <input type="number" class="adm-input" id="discountValue" placeholder="20" min="1" step="0.01" required>
-              </div>
-              <div class="adm-field">
-                <label>أقصى مبلغ خصم (£) — اختياري</label>
-                <input type="number" class="adm-input" id="maxDiscount" placeholder="بدون حد" min="0" step="0.01">
-                <div class="adm-hint">يُستخدم مع النسبة المئوية لتحديد سقف الخصم</div>
-              </div>
-              <div class="adm-field">
-                <label>الحد الأدنى للطلب (£)</label>
-                <input type="number" class="adm-input" id="minOrder" placeholder="100" min="0" step="0.01">
-              </div>
-              <div class="adm-field">
-                <label>أقصى عدد استخدامات</label>
-                <input type="number" class="adm-input" id="maxUses" placeholder="بدون حد" min="1">
-              </div>
-              <div class="adm-row2">
-                <div class="adm-field">
-                  <label>تاريخ البداية</label>
-                  <input type="date" class="adm-input" id="startDate">
-                  <div class="adm-hint">فارغ = يبدأ اليوم</div>
-                </div>
-                <div class="adm-field">
-                  <label>تاريخ الانتهاء</label>
-                  <input type="date" class="adm-input" id="expiryDate">
-                  <div class="adm-hint">فارغ = بلا انتهاء</div>
-                </div>
-              </div>
-              <div class="adm-field">
-                <label>ينطبق على</label>
-                <select class="adm-select" id="applicableTo">
-                  <option value="both">الكل (رحلات وفنادق)</option>
-                  <option value="flight">رحلات جوية فقط</option>
-                  <option value="hotel">فنادق فقط</option>
-                </select>
-              </div>
-              <div id="couponMsg" class="adm-msg"></div>
-              <div style="display:flex;gap:8px;margin-top:6px">
-                <button type="submit" class="adm-btn" style="flex:1" id="saveBtn">
-                  <span data-ic="check" data-ic-size="15"></span>
-                  <span id="saveBtnTxt">حفظ القسيمة</span>
-                  <div class="spinner spinner-sm" id="saveSpinner" style="display:none;border-top-color:white"></div>
-                </button>
-                <button type="button" class="adm-btn ghost" onclick="resetForm()">إلغاء</button>
-              </div>
-            </form>
-          </div>
+        <div id="tableWrapper" style="display:none;overflow-x:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>الرمز</th>
+                <th>الخصم</th>
+                <th>النوع</th>
+                <th>الحد الأدنى</th>
+                <th>الاستخدامات</th>
+                <th>الانتهاء</th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="couponsTable"></tbody>
+          </table>
+        </div>
+
+        <div id="emptyState" class="adm-empty" style="display:none">
+          <span data-ic="coupons" data-ic-size="40"></span>
+          <h4>لا توجد قسائم</h4>
+          <p>أنشئ أول قسيمة خصم الآن</p>
+          <button class="adm-btn sm" style="margin-top:14px" onclick="openCreateModal()"><span data-ic="plus" data-ic-size="15"></span> إنشاء قسيمة</button>
         </div>
       </div>
     </div>
   </main>
+</div>
+
+<!-- Create / Edit Coupon Modal -->
+<div id="couponModal" class="adm-modal">
+  <div class="adm-modal-card">
+    <div class="adm-modal-head">
+      <h3 id="formTitle"><span data-ic="plus"></span> إنشاء قسيمة جديدة</h3>
+      <button class="adm-modal-x" onclick="closeCouponModal()"><span data-ic="close" data-ic-size="16"></span></button>
+    </div>
+    <div class="adm-modal-body">
+      <form id="couponForm" onsubmit="saveCoupon(event)">
+        <input type="hidden" id="couponId">
+        <div class="adm-field">
+          <label>رمز القسيمة</label>
+          <div style="display:flex;gap:8px">
+            <input type="text" class="adm-input" id="couponCode" placeholder="SUMMER20" required style="text-transform:uppercase">
+            <button type="button" class="adm-btn ghost sm" onclick="generateCode()" title="توليد تلقائي" style="flex:0 0 auto"><span data-ic="refresh" data-ic-size="15"></span></button>
+          </div>
+          <div class="adm-hint">يجب أن يكون فريداً، يُفضل بالأحرف اللاتينية</div>
+        </div>
+        <div class="adm-row2">
+          <div class="adm-field">
+            <label>نوع الخصم</label>
+            <select class="adm-select" id="discountType" onchange="updateDiscountLabel()">
+              <option value="percentage">نسبة مئوية (%)</option>
+              <option value="fixed">مبلغ ثابت (£)</option>
+            </select>
+          </div>
+          <div class="adm-field">
+            <label id="discountLabel">نسبة الخصم (%)</label>
+            <input type="number" class="adm-input" id="discountValue" placeholder="20" min="1" step="0.01" required>
+          </div>
+        </div>
+        <div class="adm-field">
+          <label>أقصى مبلغ خصم (£) — اختياري</label>
+          <input type="number" class="adm-input" id="maxDiscount" placeholder="بدون حد" min="0" step="0.01">
+          <div class="adm-hint">يُستخدم مع النسبة المئوية لتحديد سقف الخصم</div>
+        </div>
+        <div class="adm-row2">
+          <div class="adm-field">
+            <label>الحد الأدنى للطلب (£)</label>
+            <input type="number" class="adm-input" id="minOrder" placeholder="100" min="0" step="0.01">
+          </div>
+          <div class="adm-field">
+            <label>أقصى عدد استخدامات</label>
+            <input type="number" class="adm-input" id="maxUses" placeholder="بدون حد" min="1">
+          </div>
+        </div>
+        <div class="adm-row2">
+          <div class="adm-field">
+            <label>تاريخ البداية</label>
+            <input type="date" class="adm-input" id="startDate">
+            <div class="adm-hint">فارغ = يبدأ اليوم</div>
+          </div>
+          <div class="adm-field">
+            <label>تاريخ الانتهاء</label>
+            <input type="date" class="adm-input" id="expiryDate">
+            <div class="adm-hint">فارغ = بلا انتهاء</div>
+          </div>
+        </div>
+        <div class="adm-field">
+          <label>ينطبق على</label>
+          <select class="adm-select" id="applicableTo">
+            <option value="both">الكل (رحلات وفنادق)</option>
+            <option value="flight">رحلات جوية فقط</option>
+            <option value="hotel">فنادق فقط</option>
+          </select>
+        </div>
+        <div id="couponMsg" class="adm-msg"></div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button type="submit" class="adm-btn" style="flex:1" id="saveBtn">
+            <span data-ic="check" data-ic-size="15"></span>
+            <span id="saveBtnTxt">حفظ القسيمة</span>
+            <div class="spinner spinner-sm" id="saveSpinner" style="display:none;border-top-color:white"></div>
+          </button>
+          <button type="button" class="adm-btn ghost" onclick="closeCouponModal()">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
@@ -221,9 +231,12 @@
     }
   }
 
-  function openCreateModal() { resetForm(); document.getElementById('couponFormCard').scrollIntoView({behavior:'smooth'}); }
+  function openCouponModal() { document.getElementById('couponModal').classList.add('open'); }
+  function closeCouponModal() { document.getElementById('couponModal').classList.remove('open'); }
+  function openCreateModal() { resetForm(); openCouponModal(); }
 
   function editCoupon(c) {
+    resetForm();
     const dOnly = (v) => v ? String(v).replace(' ', 'T').split('T')[0] : '';
     document.getElementById('couponId').value = c.id;
     document.getElementById('couponCode').value = c.code;
@@ -239,7 +252,7 @@
     document.getElementById('applicableTo').value = c.applies_to || 'both';
     document.getElementById('formTitle').innerHTML = Admin.icon('edit', 18) + ' تعديل القسيمة';
     document.getElementById('saveBtnTxt').textContent = 'حفظ التعديلات';
-    document.getElementById('couponFormCard').scrollIntoView({behavior:'smooth'});
+    openCouponModal();
   }
 
   function resetForm() {
@@ -284,9 +297,13 @@
         await Api.post('/api/admin/coupons', data, true);
         showToast('تم إنشاء القسيمة بنجاح', 'success');
       }
+      closeCouponModal();
       resetForm();
       loadCoupons();
     } catch (err) {
+      const m = document.getElementById('couponMsg');
+      m.textContent = err.message || 'فشل حفظ القسيمة — تحقق من صحة الحقول.';
+      m.className = 'adm-msg show err';
       showToast(err.message || 'فشل حفظ القسيمة', 'error');
     } finally {
       btn.disabled = false; txt.style.display = 'inline'; sp.style.display = 'none';
