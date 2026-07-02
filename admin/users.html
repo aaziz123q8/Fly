@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>المستخدمون — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070105">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
 </head>
 <body>
 <div class="admin-layout">
@@ -14,7 +14,10 @@
   <main class="admin-main">
     <div class="admin-topbar">
       <h1>👤 إدارة المستخدمين</h1>
-      <span id="totalCount" style="font-size:.85rem;color:var(--text-muted)"></span>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span id="totalCount" style="font-size:.85rem;color:var(--text-muted)"></span>
+        <button class="adm-btn sm" onclick="openCreate()">+ مستخدم جديد</button>
+      </div>
     </div>
 
     <div class="admin-content">
@@ -129,12 +132,72 @@
   </div>
 </div>
 
+<!-- Create user modal -->
+<div id="createModal" class="adm-modal">
+  <div class="adm-modal-card">
+    <div class="adm-modal-head"><h3>➕ إنشاء مستخدم جديد</h3><button class="adm-modal-x" onclick="closeCreate()">✕</button></div>
+    <div class="adm-modal-body">
+      <div class="adm-row2">
+        <div class="adm-field"><label>الاسم الأول</label><input class="adm-input" id="cuFirst"></div>
+        <div class="adm-field"><label>اسم العائلة</label><input class="adm-input" id="cuLast"></div>
+      </div>
+      <div class="adm-field"><label>البريد الإلكتروني</label><input class="adm-input" id="cuEmail" type="email" dir="ltr"></div>
+      <div class="adm-row2">
+        <div class="adm-field"><label>رمز الدولة</label><input class="adm-input" id="cuCC" dir="ltr" placeholder="+965"></div>
+        <div class="adm-field"><label>رقم الهاتف</label><input class="adm-input" id="cuPhone" dir="ltr" placeholder="99123456"></div>
+      </div>
+      <div class="adm-row2">
+        <div class="adm-field"><label>كلمة المرور</label><input class="adm-input" id="cuPass" type="text" placeholder="8 أحرف على الأقل"></div>
+        <div class="adm-field"><label>الدور</label><select class="adm-select" id="cuRole"><option value="user">مستخدم</option><option value="admin">مشرف</option><option value="super_admin">مشرف رئيسي</option></select></div>
+      </div>
+      <div id="cuMsg" class="adm-msg"></div>
+      <button class="adm-btn" style="width:100%;margin-top:6px" id="cuBtn" onclick="submitCreate()">إنشاء المستخدم</button>
+    </div>
+  </div>
+</div>
+
+<!-- Wallet adjust modal -->
+<div id="walletModal" class="adm-modal">
+  <div class="adm-modal-card">
+    <div class="adm-modal-head"><h3>💰 محفظة المستخدم</h3><button class="adm-modal-x" onclick="closeWallet()">✕</button></div>
+    <div class="adm-modal-body">
+      <div style="text-align:center;background:var(--adm-grad);color:#fff;border-radius:14px;padding:16px;margin-bottom:16px">
+        <div style="font-size:.78rem;opacity:.85" id="wmName">—</div>
+        <div style="font-size:.72rem;opacity:.7;margin:2px 0 6px">الرصيد الحالي</div>
+        <div style="font-size:1.8rem;font-weight:900" id="wmBalance">—</div>
+      </div>
+      <div class="adm-field"><label>نوع العملية</label>
+        <div class="adm-seg" id="wmSeg">
+          <button type="button" class="on credit" data-t="credit" onclick="wmType('credit')">＋ إضافة رصيد</button>
+          <button type="button" data-t="debit" onclick="wmType('debit')">－ خصم رصيد</button>
+        </div>
+      </div>
+      <div class="adm-field"><label>المبلغ (GBP)</label><input class="adm-input" id="wmAmount" type="number" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="adm-field"><label>السبب</label><input class="adm-input" id="wmReason" placeholder="مثال: تعويض / استرداد يدوي"></div>
+      <div id="wmMsg" class="adm-msg"></div>
+      <button class="adm-btn" style="width:100%;margin-top:6px" id="wmBtn" onclick="submitWallet()">تنفيذ العملية</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset password modal -->
+<div id="resetModal" class="adm-modal">
+  <div class="adm-modal-card" style="max-width:420px">
+    <div class="adm-modal-head"><h3>🔑 تعيين كلمة مرور</h3><button class="adm-modal-x" onclick="closeResetPwd()">✕</button></div>
+    <div class="adm-modal-body">
+      <div class="adm-field"><label>كلمة المرور الجديدة</label><input class="adm-input" id="rpPass" type="text" placeholder="8 أحرف على الأقل"></div>
+      <div id="rpMsg" class="adm-msg"></div>
+      <button class="adm-btn" style="width:100%" id="rpBtn" onclick="submitResetPwd()">حفظ كلمة المرور</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070105"></script>
-<script src="../js/admin-sidebar.js?v=2026070105"></script>
+<script src="../js/admin.js?v=2026070204"></script>
+<script src="../js/admin-sidebar.js?v=2026070204"></script>
 <script>
 var currentPage = 1;
 var searchTimer;
@@ -187,7 +250,8 @@ function loadUsers() {
       var userData = JSON.stringify(u).replace(/"/g, '&quot;');
       html += '<tr style="cursor:pointer" onclick="showDetails(' + userData + ')" onmouseenter="this.style.background=\'var(--bg)\'" onmouseleave="this.style.background=\'\'">' +
         '<td style="color:var(--text-muted);font-size:.8rem">' + u.id + '</td>' +
-        '<td><strong>' + (u.first_name || '') + ' ' + (u.last_name || '') + '</strong></td>' +
+        '<td><strong>' + (u.first_name || '') + ' ' + (u.last_name || '') + '</strong>' +
+          '<div class="adm-fu" style="font-size:.72rem">' + (u.fu_number || '') + '</div></td>' +
         '<td style="direction:ltr;text-align:right;font-size:.85rem">' + u.email + '</td>' +
         '<td style="direction:ltr;text-align:right;font-size:.85rem">' + phone + '</td>' +
         '<td>' + roleLabel + '</td>' +
@@ -197,6 +261,8 @@ function loadUsers() {
         '<td onclick="event.stopPropagation()">' +
           '<div class="table-actions">' +
           '<button class="btn btn-ghost btn-sm" onclick="openEdit(' + userData + ')">✏️ تعديل</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="openWallet(' + u.id + ',&quot;' + ((u.first_name||'')+' '+(u.last_name||'')).replace(/"/g,'') + '&quot;)">💰 المحفظة</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="openResetPwd(' + u.id + ')">🔑 كلمة المرور</button>' +
           '<button class="btn btn-ghost btn-sm" onclick="toggleStatus(' + u.id + ',' + (isActive?0:1) + ')">' + toggleLabel + '</button>' +
           '</div>' +
         '</td>' +
@@ -283,6 +349,70 @@ function showDetails(u) {
 }
 
 function closeDetailsModal() { document.getElementById('detailsModal').style.display = 'none'; }
+
+// ── Create user ──────────────────────────────────────────────
+function openCreate() {
+  ['cuFirst','cuLast','cuEmail','cuCC','cuPhone','cuPass'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('cuRole').value='user';
+  document.getElementById('cuMsg').textContent='';
+  document.getElementById('createModal').classList.add('open');
+}
+function closeCreate(){ document.getElementById('createModal').classList.remove('open'); }
+function submitCreate(){
+  var msg=document.getElementById('cuMsg'); msg.className='adm-msg'; msg.textContent='';
+  var btn=document.getElementById('cuBtn'); btn.disabled=true;
+  Api.post('/api/admin/users', {
+    first_name:document.getElementById('cuFirst').value.trim(), last_name:document.getElementById('cuLast').value.trim(),
+    email:document.getElementById('cuEmail').value.trim(), phone_country_code:document.getElementById('cuCC').value.trim(),
+    phone_number:document.getElementById('cuPhone').value.trim(), password:document.getElementById('cuPass').value,
+    role:document.getElementById('cuRole').value
+  }, true).then(function(res){
+    showToast(res.message||'تم إنشاء المستخدم', 'success'); closeCreate(); loadUsers();
+  }).catch(function(e){ msg.className='adm-msg err'; msg.textContent=e.message||'تعذّر إنشاء المستخدم'; btn.disabled=false; });
+}
+
+// ── Wallet adjust ────────────────────────────────────────────
+var _wmUserId=null, _wmType='credit';
+function openWallet(id, name){
+  _wmUserId=id; _wmType='credit';
+  document.getElementById('wmName').textContent=name||('مستخدم #'+id);
+  document.getElementById('wmBalance').textContent='…';
+  document.getElementById('wmAmount').value=''; document.getElementById('wmReason').value='';
+  document.getElementById('wmMsg').textContent='';
+  wmType('credit');
+  document.getElementById('walletModal').classList.add('open');
+  Api.get('/api/admin/users/'+id, true).then(function(res){
+    var u=res.user||{}; document.getElementById('wmBalance').textContent=(u.wallet_balance||'0.00')+' '+(u.wallet_currency||'GBP');
+  }).catch(function(){ document.getElementById('wmBalance').textContent='—'; });
+}
+function closeWallet(){ document.getElementById('walletModal').classList.remove('open'); }
+function wmType(t){ _wmType=t; document.querySelectorAll('#wmSeg button').forEach(function(b){ b.classList.toggle('on', b.dataset.t===t); b.classList.toggle(b.dataset.t, b.dataset.t===t); }); }
+function submitWallet(){
+  var msg=document.getElementById('wmMsg'); msg.className='adm-msg'; msg.textContent='';
+  var amount=parseFloat(document.getElementById('wmAmount').value||0), reason=document.getElementById('wmReason').value.trim();
+  if(!(amount>0)){ msg.className='adm-msg err'; msg.textContent='أدخل مبلغاً صحيحاً'; return; }
+  if(!reason){ msg.className='adm-msg err'; msg.textContent='أدخل سبب العملية'; return; }
+  var btn=document.getElementById('wmBtn'); btn.disabled=true;
+  Api.post('/api/admin/users/'+_wmUserId+'/wallet', { type:_wmType, amount:amount, reason:reason }, true).then(function(res){
+    msg.className='adm-msg ok'; msg.textContent=res.message||'تم';
+    document.getElementById('wmBalance').textContent=(res.balance||'')+' '+(res.currency||'GBP');
+    document.getElementById('wmAmount').value=''; document.getElementById('wmReason').value=''; btn.disabled=false;
+    showToast(res.message||'تمت العملية','success');
+  }).catch(function(e){ msg.className='adm-msg err'; msg.textContent=e.message||'تعذّرت العملية'; btn.disabled=false; });
+}
+
+// ── Reset password ───────────────────────────────────────────
+var _rpUserId=null;
+function openResetPwd(id){ _rpUserId=id; document.getElementById('rpPass').value=''; document.getElementById('rpMsg').textContent=''; document.getElementById('resetModal').classList.add('open'); }
+function closeResetPwd(){ document.getElementById('resetModal').classList.remove('open'); }
+function submitResetPwd(){
+  var msg=document.getElementById('rpMsg'); msg.className='adm-msg'; var pass=document.getElementById('rpPass').value;
+  if((pass||'').length<8){ msg.className='adm-msg err'; msg.textContent='كلمة المرور 8 أحرف على الأقل'; return; }
+  var btn=document.getElementById('rpBtn'); btn.disabled=true;
+  Api.post('/api/admin/users/'+_rpUserId+'/reset-password', { password:pass }, true).then(function(res){
+    showToast(res.message||'تم تعيين كلمة المرور','success'); closeResetPwd(); btn.disabled=false;
+  }).catch(function(e){ msg.className='adm-msg err'; msg.textContent=e.message||'تعذّر التعيين'; btn.disabled=false; });
+}
 
 loadUsers();
 </script>

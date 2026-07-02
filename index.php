@@ -679,10 +679,23 @@ $router->get('api/cms/pages/:slug', fn(Request $req) => (new AdminCmsController(
 
 $router->group('api/admin/users', function (Router $r): void {
     $r->get('/', fn(Request $req) => (new AdminUsersController())->index($req), [AdminMiddleware::handle()]);
+    $r->post('/', fn(Request $req) => (new AdminUsersController())->store($req), [AdminMiddleware::handle()]);
     $r->get('/:id', fn(Request $req) => (new AdminUsersController())->show($req), [AdminMiddleware::handle()]);
     $r->put('/:id', fn(Request $req) => (new AdminUsersController())->update($req), [AdminMiddleware::handle()]);
     $r->delete('/:id', fn(Request $req) => (new AdminUsersController())->destroy($req), [AdminMiddleware::handle()]);
+    $r->post('/:id/wallet', fn(Request $req) => (new AdminUsersController())->adjustWallet($req), [AdminMiddleware::handle()]);
+    $r->post('/:id/reset-password', fn(Request $req) => (new AdminUsersController())->resetPassword($req), [AdminMiddleware::handle()]);
 });
+
+// ---------------------------------------------------------------------------
+// Routes — Admin: Site settings (brand email / phone / logo) + public read
+// ---------------------------------------------------------------------------
+
+$router->group('api/admin/site-settings', function (Router $r): void {
+    $r->get('/', fn(Request $req) => (new \App\Controllers\Admin\AdminSiteSettingsController())->index($req), [AdminMiddleware::handle()]);
+    $r->put('/', fn(Request $req) => (new \App\Controllers\Admin\AdminSiteSettingsController())->update($req), [AdminMiddleware::handle()]);
+});
+$router->get('api/site-settings', fn(Request $req) => (new \App\Controllers\Admin\AdminSiteSettingsController())->index($req));
 
 // ---------------------------------------------------------------------------
 // Routes — Admin: Payments

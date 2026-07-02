@@ -8,9 +8,16 @@ use App\Core\Request;
 use App\Core\Response;
 use App\Helpers\Database;
 use App\Middleware\AdminMiddleware;
+use App\Services\WalletService;
 
 class AdminUsersController
 {
+    /** Public FlyMasar member number derived from the account id (FU-000123). */
+    public static function fuNumber(int $id): string
+    {
+        return 'FU-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+    }
+
     public function index(Request $request): void
     {
         $db      = Database::getInstance();
@@ -46,6 +53,7 @@ class AdminUsersController
         );
         $stmt->execute(array_merge($params, [$perPage, $offset]));
         $data = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        foreach ($data as &$u) { $u['fu_number'] = self::fuNumber((int) $u['id']); } unset($u);
 
         Response::json([
             'data' => $data,
@@ -66,6 +74,12 @@ class AdminUsersController
         $stmt->execute([$id]);
         $user = $stmt->fetch(\PDO::FETCH_ASSOC);
         if (!$user) { Response::notFound('User not found.'); }
+        $user['fu_number'] = self::fuNumber((int) $user['id']);
+        try {
+            $w = (new WalletService())->getWallet($id);
+            $user['wallet_balance']  = number_format((float) ($w['balance'] ?? 0), 2, '.', '');
+            $user['wallet_currency'] = $w['currency'] ?? 'GBP';
+        } catch (\Throwable) {}
         Response::json(['user' => $user]);
     }
 
@@ -117,5 +131,98 @@ class AdminUsersController
 
         $db->prepare('UPDATE users SET is_active = 0 WHERE id = ?')->execute([$id]);
         Response::noContent();
+    }
+
+    // POST /api/admin/users — create a new user account.
+    public function store(Request $request): void
+    {
+        $db    = Database::getInstance();
+        $email = strtolower(trim((string) $request->input('email')));
+        $first = trim((string) $request->input('first_name'));
+        $last  = trim((string) $request->input('last_name'));
+        $phone = trim((string) $request->input('phone_number'));
+        $cc    = trim((string) $request->input('phone_country_code', ''));
+        $role  = in_array($request->input('role'), ['user', 'admin', 'super_admin'], true) ? (string) $request->input('role') : 'user';
+        $pass  = (string) $request->input('password');
+
+        $errors = [];
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) $errors['email'] = 'بريد إلكتروني غير صحيح';
+        if ($first === '') $errors['first_name'] = 'الاسم الأول مطلوب';
+        if ($last === '')  $errors['last_name']  = 'اسم العائلة مطلوب';
+        if (strlen($pass) < 8) $errors['password'] = 'كلمة المرور 8 أحرف على الأقل';
+        if (!empty($errors)) Response::validationError($errors);
+
+        $exists = $db->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
+        $exists->execute([$email]);
+        if ($exists->fetch()) Response::error('هذا البريد مسجّل بالفعل.', 409, 'email_taken');
+
+        $hash = password_hash($pass, PASSWORD_ARGON2ID);
+        $db->prepare(
+            'INSERT INTO users (email, password, first_name, last_name, phone_country_code, phone_number, role, is_active, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+        )->execute([$email, $hash, $first, $last, $cc, $phone, $role]);
+
+        $id = (int) $db->lastInsertId();
+        Response::created([
+            'user' => [
+                'id' => $id, 'email' => $email, 'first_name' => $first, 'last_name' => $last,
+                'phone_number' => $phone, 'role' => $role, 'is_active' => 1,
+                'fu_number' => self::fuNumber($id),
+            ],
+            'message' => 'تم إنشاء المستخدم بنجاح — رقمه: ' . self::fuNumber($id),
+        ]);
+    }
+
+    // POST /api/admin/users/:id/wallet — add or deduct wallet balance with a reason.
+    public function adjustWallet(Request $request): void
+    {
+        $id     = (int) $request->param('id');
+        $type   = $request->input('type') === 'debit' ? 'debit' : 'credit';
+        $amount = round((float) $request->input('amount', 0), 2);
+        $reason = trim((string) $request->input('reason'));
+
+        if ($amount <= 0)   Response::error('المبلغ غير صحيح.', 422, 'invalid_amount');
+        if ($reason === '') Response::error('يرجى إدخال سبب العملية.', 422, 'reason_required');
+
+        $db   = Database::getInstance();
+        $stmt = $db->prepare('SELECT id, first_name FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        if (!$stmt->fetch()) Response::error('المستخدم غير موجود.', 404, 'not_found');
+
+        $admin  = AdminMiddleware::currentAdmin();
+        $byName = $admin['first_name'] ?? $admin['email'] ?? 'الإدارة';
+        $desc   = ($type === 'credit' ? 'إضافة رصيد من الإدارة' : 'خصم رصيد من الإدارة') . ' — ' . $reason;
+        $wallet = new WalletService();
+
+        try {
+            $w = ($type === 'credit')
+                ? $wallet->credit($id, $amount, 'GBP', $desc, 'admin_adjust:' . $byName)
+                : $wallet->debit($id, $amount, 'GBP', $desc, 'admin_adjust:' . $byName);
+        } catch (\RuntimeException $e) {
+            Response::error($e->getMessage() ?: 'تعذّرت العملية.', ((int) $e->getCode()) ?: 422, 'wallet_error');
+        }
+
+        Response::json([
+            'message'  => ($type === 'credit' ? 'تمت إضافة الرصيد بنجاح.' : 'تم خصم الرصيد بنجاح.'),
+            'balance'  => number_format((float) ($w['balance'] ?? 0), 2, '.', ''),
+            'currency' => $w['currency'] ?? 'GBP',
+        ]);
+    }
+
+    // POST /api/admin/users/:id/reset-password — set a new password for a user.
+    public function resetPassword(Request $request): void
+    {
+        $id   = (int) $request->param('id');
+        $pass = (string) $request->input('password');
+        if (strlen($pass) < 8) Response::error('كلمة المرور 8 أحرف على الأقل.', 422, 'weak_password');
+
+        $db   = Database::getInstance();
+        $stmt = $db->prepare('SELECT id FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([$id]);
+        if (!$stmt->fetch()) Response::error('المستخدم غير موجود.', 404, 'not_found');
+
+        $hash = password_hash($pass, PASSWORD_ARGON2ID);
+        $db->prepare('UPDATE users SET password = ?, updated_at = NOW() WHERE id = ?')->execute([$hash, $id]);
+        Response::json(['message' => 'تم تعيين كلمة المرور الجديدة بنجاح.']);
     }
 }

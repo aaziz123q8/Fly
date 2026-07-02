@@ -8,70 +8,55 @@
   <style>
     .admin-login-bg {
       min-height: 100vh;
-      background: linear-gradient(135deg, #0d2d5e 0%, #1B4F8E 60%, #0d2d5e 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
+      background:
+        radial-gradient(70% 55% at 15% 0%, rgba(192,38,211,.45), transparent 60%),
+        radial-gradient(80% 60% at 100% 100%, rgba(124,58,237,.5), transparent 55%),
+        linear-gradient(135deg, #2E1065 0%, #4C1D95 55%, #2E1065 100%);
+      display: flex; align-items: center; justify-content: center; padding: 24px;
     }
     .admin-login-card {
-      background: #fff;
-      border-radius: 20px;
-      box-shadow: 0 24px 80px rgba(0,0,0,.25);
-      width: 100%;
-      max-width: 420px;
-      overflow: hidden;
+      background: #fff; border-radius: 24px;
+      box-shadow: 0 30px 90px -20px rgba(20,8,45,.6);
+      width: 100%; max-width: 430px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,.12);
     }
     .admin-login-header {
-      background: linear-gradient(135deg, #0d2d5e, #1B4F8E);
-      padding: 32px 32px 28px;
-      text-align: center;
+      background: linear-gradient(120deg, #7C3AED, #9333EA 55%, #C026D3);
+      padding: 34px 32px 30px; text-align: center; position: relative;
     }
     .admin-login-logo {
-      font-size: 2.8rem;
-      margin-bottom: 8px;
+      width: 66px; height: 66px; margin: 0 auto 12px; border-radius: 20px;
+      background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.28);
+      display: flex; align-items: center; justify-content: center; font-size: 2rem;
     }
-    .admin-login-brand {
-      color: white;
-      font-size: 1.5rem;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-    }
-    .admin-login-brand span { color: #60a5fa; }
+    .admin-login-brand { color: #fff; font-size: 1.55rem; font-weight: 900; letter-spacing: -.5px; }
+    .admin-login-brand span { color: #FDE68A; }
     .admin-login-sub {
-      color: rgba(255,255,255,.55);
-      font-size: .82rem;
-      margin-top: 4px;
+      display:inline-block; margin-top: 10px; color: #fff; font-size: .74rem; font-weight: 700;
+      background: rgba(255,255,255,.16); border: 1px solid rgba(255,255,255,.28);
+      border-radius: 30px; padding: 4px 14px;
     }
-    .admin-login-body {
-      padding: 32px;
-    }
-    .admin-login-title {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 4px;
-    }
-    .admin-login-desc {
-      font-size: .84rem;
-      color: var(--text-muted);
-      margin-bottom: 24px;
+    .admin-login-body { padding: 30px 32px; }
+    .admin-login-title { font-size: 1.2rem; font-weight: 800; color: #2E1065; margin-bottom: 4px; }
+    .admin-login-desc { font-size: .84rem; color: var(--text-muted); margin-bottom: 24px; }
+    .admin-login-body .form-control:focus { border-color: #7C3AED; box-shadow: 0 0 0 3px rgba(124,58,237,.14); }
+    .admin-login-body .btn-primary {
+      background: linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3) !important;
+      border: 0 !important; box-shadow: 0 14px 28px -12px rgba(124,58,237,.8);
     }
     .admin-login-footer {
-      padding: 16px 32px;
-      background: var(--bg);
-      border-top: 1px solid var(--border);
-      text-align: center;
+      padding: 16px 32px; background: #FAF8FF; border-top: 1px solid var(--border); text-align: center;
     }
+    .admin-login-footer a { color: #7C3AED; }
   </style>
 </head>
 <body>
 <div class="admin-login-bg">
   <div class="admin-login-card">
     <div class="admin-login-header">
-      <div class="admin-login-logo">⚙️</div>
+      <div class="admin-login-logo">✈️</div>
       <div class="admin-login-brand">Fly<span>Masar</span></div>
-      <div class="admin-login-sub">Admin Panel — لوحة الإدارة</div>
+      <div class="admin-login-sub">🛡️ لوحة الإدارة — للمشرفين فقط</div>
     </div>
 
     <div class="admin-login-body">

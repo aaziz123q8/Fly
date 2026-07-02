@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
   <title>مركز التحكم — لوحة الإدارة</title>
   <link rel="stylesheet" href="../css/app.css">
-  <link rel="stylesheet" href="../css/admin.css?v=2026070105">
+  <link rel="stylesheet" href="../css/admin.css?v=2026070204">
 </head>
 <body>
 <div class="admin-layout">
@@ -50,6 +50,48 @@
         <a class="adm-hub-card" href="analytics.html"><span class="adm-hub-ic">📈</span><h3>التحليلات</h3><span>الإيرادات والمسارات الأكثر بحثاً</span></a>
       </div>
 
+      <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">إعدادات الموقع</h4>
+      <div class="card" style="padding:22px;margin-bottom:26px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+          <span style="font-size:1.4rem">🌐</span>
+          <div>
+            <strong style="color:var(--adm-3,#4C1D95);font-size:1.02rem">بيانات الموقع الأساسية</strong>
+            <div style="font-size:.82rem;color:var(--text-muted)">البريد ورقم الهاتف والواتساب وشعار الموقع — تظهر في تذييل الموقع وصفحات التواصل.</div>
+          </div>
+        </div>
+
+        <div id="siteSettingsMsg" class="adm-msg" style="display:none"></div>
+
+        <form id="siteSettingsForm" onsubmit="saveSiteSettings(event)" style="margin-top:14px">
+          <div class="adm-row2">
+            <div class="adm-field">
+              <label>📧 بريد الموقع</label>
+              <input type="email" class="adm-input" id="ss_email" placeholder="info@flymasar.com" dir="ltr">
+            </div>
+            <div class="adm-field">
+              <label>📞 رقم هاتف الموقع</label>
+              <input type="tel" class="adm-input" id="ss_phone" placeholder="+966500000000" dir="ltr">
+            </div>
+          </div>
+          <div class="adm-row2">
+            <div class="adm-field">
+              <label>💬 واتساب الموقع</label>
+              <input type="tel" class="adm-input" id="ss_whatsapp" placeholder="+966500000000" dir="ltr">
+            </div>
+            <div class="adm-field">
+              <label>🖼️ رابط شعار الموقع</label>
+              <input type="url" class="adm-input" id="ss_logo" placeholder="https://flymasar.com/logo.png" dir="ltr">
+            </div>
+          </div>
+          <div id="ss_logo_preview" style="display:none;margin:2px 0 12px">
+            <img id="ss_logo_img" alt="شعار الموقع" style="max-height:56px;max-width:200px;border-radius:10px;border:1px solid var(--border);padding:6px;background:#fff">
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button type="submit" class="adm-btn" id="ss_saveBtn">💾 حفظ الإعدادات</button>
+          </div>
+        </form>
+      </div>
+
       <h4 style="font-size:.8rem;color:var(--adm-muted,#6B6880);text-transform:uppercase;letter-spacing:.06em;margin:0 4px 12px">أدوات النظام</h4>
       <div class="card" style="padding:18px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
@@ -67,9 +109,60 @@
 <div class="toast-container" id="toastContainer"></div>
 <script src="../js/auth.js"></script>
 <script src="../js/api.js"></script>
-<script src="../js/admin.js?v=2026070105"></script>
-<script src="../js/admin-sidebar.js?v=2026070105"></script>
+<script src="../js/admin.js?v=2026070204"></script>
+<script src="../js/admin-sidebar.js?v=2026070204"></script>
 <script>
+function ssMsg(text, ok) {
+  var el = document.getElementById('siteSettingsMsg');
+  el.textContent = text;
+  el.className = 'adm-msg ' + (ok ? 'ok' : 'err');
+  el.style.display = 'block';
+}
+
+function ssLogoPreview() {
+  var url = document.getElementById('ss_logo').value.trim();
+  var box = document.getElementById('ss_logo_preview');
+  var img = document.getElementById('ss_logo_img');
+  if (url) { img.src = url; box.style.display = 'block'; }
+  else { box.style.display = 'none'; }
+}
+
+function loadSiteSettings() {
+  Api.get('/api/admin/site-settings', true).then(function(res) {
+    var s = (res && res.settings) || {};
+    document.getElementById('ss_email').value    = s.site_email    || '';
+    document.getElementById('ss_phone').value    = s.site_phone    || '';
+    document.getElementById('ss_whatsapp').value = s.site_whatsapp || '';
+    document.getElementById('ss_logo').value     = s.site_logo     || '';
+    ssLogoPreview();
+  }).catch(function() {});
+}
+
+function saveSiteSettings(e) {
+  e.preventDefault();
+  var btn = document.getElementById('ss_saveBtn');
+  btn.disabled = true; btn.textContent = '... جاري الحفظ';
+  Api.put('/api/admin/site-settings', {
+    site_email:    document.getElementById('ss_email').value.trim(),
+    site_phone:    document.getElementById('ss_phone').value.trim(),
+    site_whatsapp: document.getElementById('ss_whatsapp').value.trim(),
+    site_logo:     document.getElementById('ss_logo').value.trim(),
+  }, true).then(function(res) {
+    ssMsg((res && res.message) || 'تم حفظ إعدادات الموقع بنجاح.', true);
+    if (window.showToast) showToast('تم حفظ إعدادات الموقع','success');
+  }).catch(function(ex) {
+    ssMsg((ex && ex.message) || 'تعذر حفظ الإعدادات. حاول مجدداً.', false);
+  }).finally(function() {
+    btn.disabled = false; btn.textContent = '💾 حفظ الإعدادات';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadSiteSettings();
+  var logoInput = document.getElementById('ss_logo');
+  if (logoInput) logoInput.addEventListener('blur', ssLogoPreview);
+});
+
 function refreshRates() {
   var btn = document.getElementById('refreshRatesBtn');
   btn.disabled = true; btn.textContent = '... جاري التحديث';
