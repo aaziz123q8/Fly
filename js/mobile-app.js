@@ -61,7 +61,7 @@
 
   // Checkout-funnel pages hand the bottom of the screen to the price/pay bar,
   // so the app tab bar is suppressed there.
-  var NO_TABS = ['flights.html', 'booking.html', 'services.html', 'payment.html',
+  var NO_TABS = ['flights.html', 'hotels.html', 'booking.html', 'services.html', 'payment.html',
                  'hotel-detail.html', 'hotel-booking.html', 'hotel-payment.html'];
   var hideTabs = NO_TABS.indexOf(here) >= 0;
 
@@ -115,7 +115,7 @@
     var right = loggedIn
       ? '<a class="mapp-av" href="dashboard.html">'+ ((Auth.getUser()&&(Auth.getUser().name||Auth.getUser().first_name||'م'))[0]) +'</a>'
       : '<a class="mapp-ic" href="login.html" aria-label="حسابي">'+I.user+'</a>';
-    return '<div class="mapp-actions"><a class="mapp-ic" href="dashboard.html" aria-label="الإشعارات">'+I.bell+'</a>'+right+'</div>';
+    return '<div class="mapp-actions"><a class="mapp-ic" href="index.html" aria-label="الرئيسية">'+I.home+'</a>'+right+'</div>';
   }
 
   function topHtml(){

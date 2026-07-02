@@ -36,12 +36,8 @@
 </head>
 <body>
 
-<!-- Shared violet header injected by js/site-chrome.js. This page-specific bar is
-     kept (recolored to violet) because #navAuth is populated by initPage() JS. -->
-<div style="background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);padding:12px 20px;display:flex;align-items:center;justify-content:space-between">
-  <a href="hotels.html" style="color:#fff;font-size:1.1rem;font-weight:700;text-decoration:none">✈️ FlyMasar</a>
-  <div id="navAuth" style="display:flex;gap:8px"></div>
-</div>
+<!-- Header/app-shell is injected by js/site-chrome.js + js/mobile-app.js.
+     (The old page-specific FlyMasar/حسابي bar was removed per request.) -->
 
 <!-- Hero -->
 <div class="hotel-hero" id="heroSection">
@@ -156,11 +152,12 @@ function initPage() {
   document.getElementById('children').value = children;
   showChildAges();
 
-  // Nav
-  if (Auth.isLoggedIn()) {
-    document.getElementById('navAuth').innerHTML = '<a href="dashboard.html" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">حسابي</a>';
-  } else {
-    document.getElementById('navAuth').innerHTML = '<a href="login.html" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">دخول</a>';
+  // Nav (page-specific bar removed; site-chrome/app-shell handles auth links).
+  var navAuthEl = document.getElementById('navAuth');
+  if (navAuthEl) {
+    navAuthEl.innerHTML = Auth.isLoggedIn()
+      ? '<a href="dashboard.html" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">حسابي</a>'
+      : '<a href="login.html" class="btn btn-ghost btn-sm" style="color:#fff;border-color:rgba(255,255,255,.3)">دخول</a>';
   }
 
   if (!id) {
@@ -382,6 +379,6 @@ initPage();
 </script>
 <style>@media(max-width:768px){#mappTabs{display:none!important}#priceSummary,#bookBtn{display:none!important}}</style>
 <script src="js/pricebar.js?v=2026070109"></script>
-<script src="js/site-chrome.js?v=2026070111"></script>
+<script src="js/site-chrome.js?v=2026070112"></script>
 </body>
 </html>
