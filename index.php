@@ -194,6 +194,10 @@ $router->group('api/auth', function (Router $r): void {
         (new AuthController())->me($req);
     }, [AuthMiddleware::handle()]);
 
+    $r->post('/profile', function (Request $req): void {
+        (new AuthController())->updateProfile($req);
+    }, [AuthMiddleware::handle()]);
+
     $r->post('/password/forgot', function (Request $req): void {
         (new AuthController())->forgotPassword($req);
     });
@@ -756,6 +760,19 @@ $router->group('api/admin/cms/pages', function (Router $r): void {
 $router->group('api/wallet', function (Router $r): void {
     $r->get('/balance',      fn(Request $req) => (new \App\Controllers\Api\WalletController())->getBalance($req));
     $r->get('/transactions', fn(Request $req) => (new \App\Controllers\Api\WalletController())->getTransactions($req));
+    $r->get('/lookup',       fn(Request $req) => (new \App\Controllers\Api\WalletController())->lookup($req));
+    $r->post('/transfer',    fn(Request $req) => (new \App\Controllers\Api\WalletController())->transfer($req));
+}, [AuthMiddleware::handle()]);
+
+// ---------------------------------------------------------------------------
+// Routes — Support (user-facing tickets)
+// ---------------------------------------------------------------------------
+
+$router->group('api/support', function (Router $r): void {
+    $r->get('/',           fn(Request $req) => (new \App\Controllers\Api\SupportController())->list($req));
+    $r->post('/',          fn(Request $req) => (new \App\Controllers\Api\SupportController())->create($req));
+    $r->get('/:id',        fn(Request $req) => (new \App\Controllers\Api\SupportController())->show($req));
+    $r->post('/:id/reply', fn(Request $req) => (new \App\Controllers\Api\SupportController())->reply($req));
 }, [AuthMiddleware::handle()]);
 
 // ---------------------------------------------------------------------------

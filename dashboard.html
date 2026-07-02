@@ -41,6 +41,61 @@
     .tabs{display:flex!important;overflow-x:auto!important;-webkit-overflow-scrolling:touch;scrollbar-width:none;flex-wrap:nowrap!important;gap:4px;padding:12px 0 8px}
     .tabs::-webkit-scrollbar{display:none}
     .tab{white-space:nowrap!important;flex-shrink:0!important;font-size:.82rem!important;padding:8px 12px!important}
+
+    /* ── Redesigned dashboard ──────────────────────────────────────── */
+    .dash-hero{background:linear-gradient(120deg,#4C1D95,#7C3AED 55%,#9333EA);color:#fff;padding:22px 0 24px}
+    .dh-top{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+    .dh-hi{font-size:1.5rem;font-weight:800;line-height:1.2}
+    .dh-hi span{color:#FDE68A}
+    .dh-fu{display:inline-flex;align-items:center;gap:6px;margin-top:7px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:30px;padding:4px 14px;font-size:.82rem;font-weight:700;letter-spacing:.5px;cursor:pointer}
+    .dh-actions{display:flex;align-items:center;gap:10px}
+    .dh-bell{position:relative;width:46px;height:46px;border-radius:14px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .dh-bell svg{width:22px;height:22px}
+    .dh-bell-dot{position:absolute;top:9px;right:11px;min-width:16px;height:16px;padding:0 4px;border-radius:9px;background:#F43F5E;color:#fff;font-size:.62rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #6d28d9}
+    .dh-wallet{display:flex;flex-direction:column;align-items:flex-end;gap:1px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:14px;padding:7px 16px;color:#fff;cursor:pointer}
+    .dh-wallet span{font-size:.66rem;opacity:.85}
+    .dh-wallet b{font-size:1.05rem;font-weight:900}
+
+    .offer-banner{margin:18px 0 4px;border-radius:16px;overflow:hidden}
+    .offer-item{display:flex;align-items:flex-start;gap:12px;background:linear-gradient(120deg,#FEF3C7,#FDE68A);border:1px solid #FBBF24;border-radius:16px;padding:14px 16px;margin-bottom:8px}
+    .offer-item .oi-ic{font-size:1.4rem;flex-shrink:0}
+    .offer-item .oi-t{font-weight:800;color:#92400e;font-size:.95rem}
+    .offer-item .oi-b{font-size:.84rem;color:#a16207;margin-top:2px}
+
+    .feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;padding:22px 0 10px}
+    @media(max-width:768px){.feat-grid{grid-template-columns:repeat(2,1fr);gap:12px}}
+    .feat{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:120px;background:#fff;border:1px solid #eee;border-radius:20px;box-shadow:0 4px 18px rgba(76,29,149,.07);cursor:pointer;text-decoration:none;color:#1B172B;font-weight:800;font-size:.95rem;transition:transform .15s,box-shadow .15s;padding:16px}
+    .feat:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(76,29,149,.16)}
+    .feat .feat-ic{width:52px;height:52px;border-radius:16px;background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c);display:flex;align-items:center;justify-content:center}
+    .feat .feat-ic svg{width:26px;height:26px}
+    .feat .feat-badge{position:absolute;top:12px;left:12px;min-width:22px;height:22px;padding:0 7px;border-radius:12px;background:var(--c);color:#fff;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+    .panel-back{display:inline-flex;align-items:center;gap:6px;background:#F4EEFE;color:#7C3AED;border:0;border-radius:12px;padding:9px 16px;font:inherit;font-weight:800;font-size:.9rem;cursor:pointer;margin:20px 0 14px}
+    .panel-title{font-size:1.3rem;font-weight:800;color:#4C1D95;margin:0 0 4px}
+
+    .subtabs{display:flex;gap:8px;margin:8px 0 16px}
+    .subtab{flex:1;text-align:center;padding:11px;border-radius:13px;border:1.5px solid #ece8f4;background:#fff;font:inherit;font-weight:800;font-size:.9rem;color:#6b7280;cursor:pointer}
+    .subtab.on{background:linear-gradient(120deg,#7C3AED,#9333EA);color:#fff;border-color:transparent}
+    .subtab b{display:block;font-size:1.15rem}
+
+    /* Help center */
+    .help-tabs{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;margin-bottom:14px}
+    .help-tabs::-webkit-scrollbar{display:none}
+    .help-tab{white-space:nowrap;flex-shrink:0;padding:9px 16px;border-radius:30px;border:1.5px solid #ece8f4;background:#fff;font:inherit;font-weight:700;font-size:.88rem;color:#6b7280;cursor:pointer}
+    .help-tab.on{background:#4C1D95;color:#fff;border-color:transparent}
+    .faq{background:#fff;border:1px solid #f0ecf9;border-radius:14px;margin-bottom:8px;overflow:hidden}
+    .faq-q{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;cursor:pointer;font-weight:700;color:#2E1065;font-size:.92rem}
+    .faq-q .fq-chev{color:#9b8fc7;transition:transform .2s;flex-shrink:0}
+    .faq.open .fq-chev{transform:rotate(180deg)}
+    .faq-a{max-height:0;overflow:hidden;transition:max-height .25s ease;color:#555;font-size:.88rem;line-height:1.8}
+    .faq.open .faq-a{max-height:400px}
+    .faq-a div{padding:0 16px 14px}
+
+    .fm-input{width:100%;padding:12px 14px;border:1.5px solid #ece8f4;border-radius:12px;font:inherit;font-size:.95rem;background:#faf8ff;box-sizing:border-box}
+    .fm-input:focus{outline:none;border-color:#7C3AED;background:#fff}
+    .fm-btn{background:linear-gradient(120deg,#7C3AED,#9333EA 60%,#C026D3);color:#fff;border:0;border-radius:13px;padding:13px 22px;font:inherit;font-weight:800;font-size:1rem;cursor:pointer}
+    .fm-btn:disabled{opacity:.6;cursor:not-allowed}
+    .fm-label{font-size:.8rem;font-weight:700;color:#6b7280;margin-bottom:5px;display:block}
   </style>
 </head>
 <body>
@@ -79,135 +134,181 @@
   <div class="app-drawer-footer-copy">© ٢٠٢٦ فلاي مسار — جميع الحقوق محفوظة</div>
 </div>
 
-<!-- Dashboard Header -->
-<div class="dashboard-header">
+<!-- Hero -->
+<div class="dash-hero">
   <div class="container">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+    <div class="dh-top">
       <div>
-        <h1 id="greetingMsg">مرحباً 👋</h1>
-        <p>إدارة حجوزاتك ومتابعة رحلاتك في مكان واحد</p>
+        <div class="dh-hi">أهلاً، <span id="greetingMsg">—</span> 👋</div>
+        <div class="dh-fu" id="fuChip" onclick="copyFu()" title="رقمك المميز — اضغط للنسخ"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> <span id="fuNumber">FU-000000</span></div>
       </div>
-      <div id="walletCard" onclick="openWalletModal()" style="display:none;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);border-radius:12px;padding:10px 18px;cursor:pointer;text-align:center;backdrop-filter:blur(4px);min-width:130px">
-        <div style="font-size:.72rem;color:rgba(255,255,255,.8);margin-bottom:2px"><svg class="ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg> رصيد المحفظة</div>
-        <div id="walletBalanceDisplay" style="font-size:1.2rem;font-weight:900;color:#fff">—</div>
+      <div class="dh-actions">
+        <button class="dh-bell" onclick="showFeature('notifications')" aria-label="الإشعارات والعروض">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="dh-bell-dot" id="notifDot" style="display:none">0</span>
+        </button>
+        <button class="dh-wallet" id="walletCard" onclick="openWalletModal()">
+          <span>المحفظة</span><b id="walletBalanceDisplay">—</b>
+        </button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Quick Stats -->
-<div style="background:#fff;border-bottom:1px solid #e5e7eb;padding:0">
-  <div class="container">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr)" class="stats-row">
-      <div style="text-align:center;padding:14px 8px;border-left:1px solid #ECE8F4;position:relative">
-        <div style="font-size:1.5rem;margin-bottom:2px"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></div>
-        <div style="font-size:1.4rem;font-weight:800;color:#7C3AED;line-height:1" id="statFlights">—</div>
-        <div style="font-size:.72rem;color:#6b7280;margin-top:3px">رحلات</div>
-      </div>
-      <div style="text-align:center;padding:14px 8px;border-left:1px solid #ECE8F4">
-        <div style="font-size:1.5rem;margin-bottom:2px"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg></div>
-        <div style="font-size:1.4rem;font-weight:800;color:#E8A020;line-height:1" id="statHotels">—</div>
-        <div style="font-size:.72rem;color:#6b7280;margin-top:3px">فنادق</div>
-      </div>
-      <div style="text-align:center;padding:14px 8px;border-left:1px solid #ECE8F4">
-        <div style="font-size:1.5rem;margin-bottom:2px"><svg class="ico" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
-        <div style="font-size:1.4rem;font-weight:800;color:#16a34a;line-height:1" id="statUpcoming">—</div>
-        <div style="font-size:.72rem;color:#6b7280;margin-top:3px">قادمة</div>
-      </div>
-      <div style="text-align:center;padding:14px 8px">
-        <div style="font-size:1.5rem;margin-bottom:2px">✅</div>
-        <div style="font-size:1.4rem;font-weight:800;color:#6b7280;line-height:1" id="statCompleted">—</div>
-        <div style="font-size:.72rem;color:#6b7280;margin-top:3px">مكتملة</div>
-      </div>
-    </div>
-  </div>
+<!-- Hidden legacy stat holders (kept so existing loaders never null-error) -->
+<div style="display:none">
+  <span id="statFlights"></span><span id="statHotels"></span><span id="statUpcoming"></span><span id="statCompleted"></span>
 </div>
 
 <!-- Main Content -->
 <div class="dashboard-page">
   <div class="container">
 
-    <!-- Quick Actions -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:20px;padding-top:20px">
-      <a href="index.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(76,29,149,.07);text-decoration:none;color:#7C3AED;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-        <span style="font-size:1.6rem"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>حجز رحلة
-      </a>
-      <a href="hotels.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(76,29,149,.07);text-decoration:none;color:#E8A020;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-        <span style="font-size:1.6rem"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg></span>حجز فندق
-      </a>
-      <a href="travelers.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(76,29,149,.07);text-decoration:none;color:#7c3aed;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-        <span style="font-size:1.6rem"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>مسافروني
-      </a>
-      <a href="lookup.html" style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(76,29,149,.07);text-decoration:none;color:#0369a1;font-size:.8rem;font-weight:600;transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-        <span style="font-size:1.6rem"><svg class="ico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg></span>استعلام
-      </a>
-    </div>
+    <!-- Offers / notifications banner (read-only, prominent) -->
+    <div id="offerBanner" class="offer-banner" style="display:none"></div>
 
-    <div class="tabs">
-      <button class="tab active" onclick="switchTab('flights', this)"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg> رحلاتي</button>
-      <button class="tab" onclick="switchTab('hotels', this)"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg> فنادقي</button>
-      <button class="tab" onclick="switchTab('profile', this)"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ملفي</button>
-    </div>
-
-    <!-- Flights Tab -->
-    <div id="tab-flights" class="tab-panel active">
-      <div id="flightsLoading" class="loading-state">
-        <div class="spinner"></div>
-        <p>جاري تحميل الرحلات...</p>
+    <!-- HOME: feature grid -->
+    <div id="homeGrid">
+      <div class="feat-grid">
+        <button class="feat" style="--c:#7C3AED" onclick="showFeature('profile')">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>الملف الشخصي
+        </button>
+        <button class="feat" style="--c:#9333EA" onclick="openWalletModal()">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg></span>المحفظة
+        </button>
+        <a class="feat" style="--c:#0369a1" href="travelers.html">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>المسافرون
+        </a>
+        <button class="feat" style="--c:#2563eb" onclick="showFeature('flights')">
+          <span class="feat-badge" id="featFlights" style="display:none">0</span>
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>رحلاتي
+        </button>
+        <button class="feat" style="--c:#E8A020" onclick="showFeature('hotels')">
+          <span class="feat-badge" id="featHotels" style="display:none">0</span>
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg></span>الفنادق
+        </button>
+        <button class="feat" style="--c:#0891b2" onclick="showFeature('support')">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>تذاكر الدعم
+        </button>
+        <button class="feat" style="--c:#16a34a" onclick="showFeature('help')">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg></span>المساعدة
+        </button>
+        <button class="feat" style="--c:#dc2626" onclick="Auth.logout()">
+          <span class="feat-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg></span>تسجيل الخروج
+        </button>
       </div>
+    </div>
+
+    <!-- Feature panels host -->
+    <button class="panel-back" id="panelBack" style="display:none" onclick="backHome()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg> رجوع للوحة</button>
+
+    <!-- Flights panel -->
+    <div id="tab-flights" class="tab-panel">
+      <h2 class="panel-title">✈️ رحلاتي</h2>
+      <p style="color:#6b7280;margin:0 0 12px;font-size:.86rem">تحكّم في حجوزاتك حسب شروط التذكرة من الناقل (Duffel).</p>
+      <div class="subtabs">
+        <button class="subtab on" id="fsub-upcoming" onclick="filterFlights('upcoming')"><b id="cntFlightsUpcoming">0</b>القادمة (المؤكدة)</button>
+        <button class="subtab" id="fsub-past" onclick="filterFlights('past')"><b id="cntFlightsPast">0</b>السابقة (كل الحالات)</button>
+      </div>
+      <div id="flightsLoading" class="loading-state"><div class="spinner"></div><p>جاري تحميل الرحلات...</p></div>
       <div id="flightsList" style="display:none"></div>
     </div>
 
-    <!-- Hotels Tab -->
+    <!-- Hotels panel -->
     <div id="tab-hotels" class="tab-panel">
-      <div id="hotelsLoading" class="loading-state">
-        <div class="spinner"></div>
-        <p>جاري تحميل الفنادق...</p>
+      <h2 class="panel-title">🏨 الفنادق</h2>
+      <p style="color:#6b7280;margin:0 0 12px;font-size:.86rem">تحكّم في حجوزاتك حسب شروط الحجز من المزوّد (RateHawk).</p>
+      <div class="subtabs">
+        <button class="subtab on" id="hsub-upcoming" onclick="filterHotels('upcoming')"><b id="cntHotelsUpcoming">0</b>القادمة (المؤكدة)</button>
+        <button class="subtab" id="hsub-past" onclick="filterHotels('past')"><b id="cntHotelsPast">0</b>السابقة (كل الحالات)</button>
       </div>
+      <div id="hotelsLoading" class="loading-state"><div class="spinner"></div><p>جاري تحميل الفنادق...</p></div>
       <div id="hotelsList" style="display:none"></div>
     </div>
 
-    <!-- Profile Tab -->
+    <!-- Profile panel -->
     <div id="tab-profile" class="tab-panel">
-      <div style="max-width:580px">
+      <h2 class="panel-title">👤 الملف الشخصي</h2>
+      <div style="max-width:600px">
 
         <!-- Profile Card -->
         <div style="background:#fff;border-radius:18px;box-shadow:0 2px 14px rgba(76,29,149,.08);overflow:hidden;margin-bottom:16px">
           <div style="background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);padding:20px 24px;display:flex;align-items:center;gap:14px">
             <div style="width:54px;height:54px;border-radius:50%;background:rgba(255,255,255,.2);border:2.5px solid rgba(255,255,255,.5);display:flex;align-items:center;justify-content:center;font-size:1.4rem;font-weight:800;color:#fff;flex-shrink:0" id="profileAvatarLg">م</div>
-            <div>
+            <div style="flex:1">
               <div style="font-size:1.1rem;font-weight:700;color:#fff" id="profileNameLg">—</div>
               <div style="font-size:.8rem;color:rgba(255,255,255,.75)" id="profileEmailLg">—</div>
             </div>
+            <div style="text-align:left"><div style="font-size:.62rem;color:rgba(255,255,255,.7)">رقمك المميز</div><div style="font-weight:900;letter-spacing:.5px" id="profileFu">FU-000000</div></div>
           </div>
           <div style="padding:20px 24px">
-            <div id="profileInfo">
-              <div class="loading-state" style="padding:20px"><div class="spinner"></div></div>
-            </div>
+            <div id="profileInfo"><div class="loading-state" style="padding:20px"><div class="spinner"></div></div></div>
           </div>
+        </div>
+
+        <!-- Edit profile -->
+        <div style="background:#fff;border-radius:18px;box-shadow:0 2px 14px rgba(76,29,149,.08);padding:24px;margin-bottom:16px">
+          <div style="font-size:1rem;font-weight:700;color:#7C3AED;margin-bottom:16px">✏️ تعديل البيانات</div>
+          <form onsubmit="saveProfile(event)">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <div><label class="fm-label">الاسم الأول</label><input class="fm-input" id="pfFirst" required></div>
+              <div><label class="fm-label">اسم العائلة</label><input class="fm-input" id="pfLast" required></div>
+            </div>
+            <div style="margin-top:12px"><label class="fm-label">رقم الهاتف (دولي)</label><input class="fm-input" id="pfPhone" dir="ltr" placeholder="+96599123456"></div>
+            <div style="margin-top:12px"><label class="fm-label">البريد الإلكتروني (لا يمكن تغييره)</label><input class="fm-input" id="pfEmail" dir="ltr" disabled style="background:#f1f0f6;color:#9a93ad;cursor:not-allowed"></div>
+            <button type="submit" class="fm-btn" style="margin-top:16px" id="pfBtn">حفظ التعديلات</button>
+          </form>
         </div>
 
         <!-- Change Password -->
         <div style="background:#fff;border-radius:18px;box-shadow:0 2px 14px rgba(76,29,149,.08);padding:24px">
           <div style="font-size:1rem;font-weight:700;color:#7C3AED;margin-bottom:18px;display:flex;align-items:center;gap:8px"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> تغيير كلمة المرور</div>
           <form onsubmit="changePassword(event)">
-            <div class="form-group">
-              <label class="form-label">كلمة المرور الحالية</label>
-              <input type="password" class="form-control" id="currentPass" required>
-            </div>
-            <div class="form-group">
-              <label class="form-label">كلمة المرور الجديدة</label>
-              <input type="password" class="form-control" id="newPass" required minlength="8">
-            </div>
-            <div class="form-group">
-              <label class="form-label">تأكيد كلمة المرور</label>
-              <input type="password" class="form-control" id="confirmPass" required>
-            </div>
+            <div class="form-group"><label class="form-label">كلمة المرور الحالية</label><input type="password" class="form-control" id="currentPass" required></div>
+            <div class="form-group"><label class="form-label">كلمة المرور الجديدة</label><input type="password" class="form-control" id="newPass" required minlength="8"></div>
+            <div class="form-group"><label class="form-label">تأكيد كلمة المرور</label><input type="password" class="form-control" id="confirmPass" required></div>
             <button type="submit" class="btn btn-primary">حفظ التغييرات</button>
           </form>
         </div>
 
       </div>
+    </div>
+
+    <!-- Support panel -->
+    <div id="tab-support" class="tab-panel">
+      <h2 class="panel-title">🎧 تذاكر الدعم الفني</h2>
+      <button class="fm-btn" style="margin-bottom:14px" onclick="openNewTicket()">+ فتح تذكرة جديدة</button>
+      <div id="ticketForm" style="display:none;background:#fff;border-radius:16px;box-shadow:0 2px 14px rgba(76,29,149,.08);padding:20px;margin-bottom:14px">
+        <label class="fm-label">الموضوع</label>
+        <input class="fm-input" id="tkSubject" placeholder="مثال: استفسار عن استرداد رحلة">
+        <label class="fm-label" style="margin-top:12px">الرسالة</label>
+        <textarea class="fm-input" id="tkMessage" rows="4" placeholder="اشرح مشكلتك أو استفسارك بالتفصيل..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="fm-btn" onclick="submitTicket()" id="tkSendBtn">إرسال التذكرة</button>
+          <button onclick="closeNewTicket()" style="background:#f4eefe;color:#7C3AED;border:0;border-radius:13px;padding:13px 20px;font:inherit;font-weight:700;cursor:pointer">إلغاء</button>
+        </div>
+      </div>
+      <div id="ticketsList"><div class="loading-state"><div class="spinner"></div></div></div>
+      <div id="ticketThread" style="display:none"></div>
+    </div>
+
+    <!-- Help panel -->
+    <div id="tab-help" class="tab-panel">
+      <h2 class="panel-title">❓ مركز المساعدة</h2>
+      <div class="help-tabs">
+        <button class="help-tab on" onclick="showHelp('general',this)">عام</button>
+        <button class="help-tab" onclick="showHelp('flights',this)">الطيران</button>
+        <button class="help-tab" onclick="showHelp('hotels',this)">الفنادق</button>
+        <button class="help-tab" onclick="showHelp('package',this)">الباقة</button>
+      </div>
+      <div id="helpContent"></div>
+    </div>
+
+    <!-- Notifications panel -->
+    <div id="tab-notifications" class="tab-panel">
+      <h2 class="panel-title">🔔 الإشعارات والعروض</h2>
+      <p style="color:#6b7280;margin:0 0 12px;font-size:.86rem">آخر الإشعارات والعروض الخاصة بك (للاطّلاع فقط).</p>
+      <div id="notifList"><div class="loading-state"><div class="spinner"></div></div></div>
     </div>
   </div>
 </div>
@@ -216,11 +317,12 @@
 
 <div class="toast-container" id="toastContainer"></div>
 
-<script src="js/bottom-nav.js?v=2026070202"></script>
+<script src="js/bottom-nav.js?v=2026070203"></script>
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/help-faq.js?v=2026070203"></script>
 <script>
   // Require auth
   if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=dashboard.html';
@@ -228,10 +330,20 @@
 
   const user = Auth.getUser();
   if (user) {
-    document.getElementById('greetingMsg').textContent = `مرحباً، ${user.first_name || user.email} 👋`;
+    document.getElementById('greetingMsg').textContent = user.first_name || user.email;
     document.getElementById('userName').textContent = user.first_name || user.email;
     const initial = (user.first_name || user.email || '?')[0].toUpperCase();
     document.getElementById('userInitial').textContent = initial;
+    if (user.fu_number) setFu(user.fu_number);
+  }
+
+  function setFu(fu) {
+    var a = document.getElementById('fuNumber'); if (a) a.textContent = fu;
+    var b = document.getElementById('profileFu'); if (b) b.textContent = fu;
+  }
+  function copyFu() {
+    var fu = (document.getElementById('fuNumber')||{}).textContent || '';
+    if (navigator.clipboard && fu) { navigator.clipboard.writeText(fu).then(()=>showToast('تم نسخ رقمك: '+fu,'success')); }
   }
 
   // App Drawer
@@ -263,12 +375,32 @@
   }
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAppDrawer(); });
 
-  function switchTab(name, btn) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  // ── Feature panel navigation ──────────────────────────────────
+  function showFeature(name) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-' + name).classList.add('active');
+    const panel = document.getElementById('tab-' + name);
+    if (!panel) return;
+    document.getElementById('homeGrid').style.display = 'none';
+    document.getElementById('panelBack').style.display = 'inline-flex';
+    panel.classList.add('active');
+    window.scrollTo(0, 0);
+    if (name === 'support') loadTickets();
+    if (name === 'notifications') loadNotifications();
+    if (name === 'help' && !document.getElementById('helpContent').dataset.loaded) showHelp('general', document.querySelector('.help-tab'));
+    if (name === 'profile') fillProfileForm();
   }
+  function backHome() {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('panelBack').style.display = 'none';
+    document.getElementById('homeGrid').style.display = 'block';
+    document.getElementById('ticketThread').style.display = 'none';
+    document.getElementById('ticketsList').style.display = 'block';
+    window.scrollTo(0, 0);
+  }
+  window.showFeature = showFeature; window.backHome = backHome;
+
+  // legacy no-op kept for safety
+  function switchTab(name) { showFeature(name); }
 
   const statusLabels = {
     confirmed:                        ['مؤكد ✅',        'success'],
@@ -403,34 +535,60 @@
     }).join('');
   }
 
+  // Upcoming = confirmed AND travel date in the future. Past = everything else
+  // (all statuses: cancelled, completed, and confirmed with a past date).
+  let _flights = [], _hotels = [], _flightFilter = 'upcoming', _hotelFilter = 'upcoming';
+  const _now = new Date(); _now.setHours(0,0,0,0);
+  function isUpcomingFlight(b) {
+    if (b.status !== 'confirmed') return false;
+    const d = b.departure_at ? new Date(b.departure_at) : null;
+    return !d || d >= _now;
+  }
+  function isUpcomingHotel(b) {
+    if (b.status !== 'confirmed') return false;
+    const d = (b.check_in_date || b.check_in) ? new Date(b.check_in_date || b.check_in) : null;
+    return !d || d >= _now;
+  }
+  function setBadge(id, n) { const e = document.getElementById(id); if (!e) return; e.textContent = n; e.style.display = n > 0 ? 'flex' : 'none'; }
+
   async function loadFlightBookings() {
     try {
       const res = await Api.get('/api/bookings/flights', true);
-      const list = res.data || res.bookings || res.flights || (Array.isArray(res) ? res : []);
-      document.getElementById('statFlights').textContent = list.length;
-      document.getElementById('statUpcoming').textContent = list.filter(b => b.status === 'confirmed' || b.status === 'pending').length;
-      document.getElementById('statCompleted').textContent = list.filter(b => b.status === 'completed').length;
-      renderFlightBookings(list);
-    } catch (err) {
-      renderFlightBookings([]);
-    } finally {
-      document.getElementById('flightsLoading').style.display = 'none';
-    }
+      _flights = res.data || res.bookings || res.flights || (Array.isArray(res) ? res : []);
+    } catch (err) { _flights = []; }
+    const up = _flights.filter(isUpcomingFlight);
+    document.getElementById('cntFlightsUpcoming').textContent = up.length;
+    document.getElementById('cntFlightsPast').textContent = _flights.length - up.length;
+    setBadge('featFlights', up.length);
+    document.getElementById('flightsLoading').style.display = 'none';
+    filterFlights(_flightFilter);
+  }
+  function filterFlights(kind) {
+    _flightFilter = kind;
+    document.getElementById('fsub-upcoming').classList.toggle('on', kind === 'upcoming');
+    document.getElementById('fsub-past').classList.toggle('on', kind === 'past');
+    renderFlightBookings(_flights.filter(b => kind === 'upcoming' ? isUpcomingFlight(b) : !isUpcomingFlight(b)));
   }
 
   async function loadHotelBookings() {
     try {
       const res = await Api.get('/api/bookings/hotels', true);
-      const list = res.data || res.bookings || res.hotels || (Array.isArray(res) ? res : []);
-      document.getElementById('statHotels').textContent = list.length;
-      renderHotelBookings(list);
-    } catch (err) {
-      document.getElementById('statHotels').textContent = '0';
-      renderHotelBookings([]);
-    } finally {
-      document.getElementById('hotelsLoading').style.display = 'none';
-    }
+      _hotels = res.data || res.bookings || res.hotels || (Array.isArray(res) ? res : []);
+    } catch (err) { _hotels = []; }
+    const up = _hotels.filter(isUpcomingHotel);
+    document.getElementById('cntHotelsUpcoming').textContent = up.length;
+    document.getElementById('cntHotelsPast').textContent = _hotels.length - up.length;
+    setBadge('featHotels', up.length);
+    document.getElementById('hotelsLoading').style.display = 'none';
+    filterHotels(_hotelFilter);
   }
+  function filterHotels(kind) {
+    _hotelFilter = kind;
+    document.getElementById('hsub-upcoming').classList.toggle('on', kind === 'upcoming');
+    document.getElementById('hsub-past').classList.toggle('on', kind === 'past');
+    renderHotelBookings(_hotels.filter(b => kind === 'upcoming' ? isUpcomingHotel(b) : !isUpcomingHotel(b)));
+  }
+  window.filterFlights = filterFlights; window.filterHotels = filterHotels;
 
   function renderProfileFields(u) {
     const field = (label, val, icon='') => val
@@ -456,15 +614,47 @@
     `.replace(/border-bottom[^;]*;([^}]*}[^<]*<\/div>)(?=\s*$)/, '$1'); // remove last border
   }
 
+  let _profileUser = null;
   async function loadProfile() {
-    const el = document.getElementById('profileInfo');
     try {
       const res = await Api.get('/api/auth/me', true);
-      renderProfileFields(res.user || res);
+      _profileUser = res.user || res;
     } catch {
-      if (user) renderProfileFields(user);
+      _profileUser = user || {};
+    }
+    renderProfileFields(_profileUser);
+    if (_profileUser.fu_number) setFu(_profileUser.fu_number);
+    fillProfileForm();
+  }
+  function fillProfileForm() {
+    const u = _profileUser || user || {};
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.value = v || ''; };
+    set('pfFirst', u.first_name); set('pfLast', u.last_name);
+    set('pfPhone', u.phone_number || u.phone); set('pfEmail', u.email);
+  }
+  async function saveProfile(e) {
+    e.preventDefault();
+    const btn = document.getElementById('pfBtn'); btn.disabled = true; const t = btn.textContent; btn.textContent = 'جارٍ الحفظ…';
+    try {
+      const res = await Api.post('/api/auth/profile', {
+        first_name: document.getElementById('pfFirst').value.trim(),
+        last_name:  document.getElementById('pfLast').value.trim(),
+        phone_number: document.getElementById('pfPhone').value.trim(),
+      }, true);
+      const nu = res.user || {};
+      _profileUser = Object.assign(_profileUser || {}, nu);
+      // keep local session + greeting in sync
+      try { const s = Auth.getUser() || {}; Auth.setSession(Auth.getToken(), Object.assign(s, { first_name: nu.first_name, last_name: nu.last_name, phone_number: nu.phone_number })); } catch(_) {}
+      document.getElementById('greetingMsg').textContent = nu.first_name || (_profileUser.email || '');
+      renderProfileFields(_profileUser);
+      showToast(res.message || 'تم تحديث بياناتك بنجاح', 'success');
+    } catch (err) {
+      showToast(err.message || 'تعذّر حفظ التعديلات', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = t;
     }
   }
+  window.saveProfile = saveProfile;
 
   async function changePassword(e) {
     e.preventDefault();
@@ -926,11 +1116,30 @@
         Api.get('/api/wallet/transactions', true),
       ]);
       const txs = txRes.transactions || [];
+      _walletBalance = parseFloat(balRes.balance || 0);
       body.innerHTML = `
-        <div style="text-align:center;background:linear-gradient(135deg,#0f2444,#1B4F8E);color:#fff;border-radius:12px;padding:20px;margin-bottom:20px">
-          <div style="font-size:.8rem;opacity:.8;margin-bottom:4px">الرصيد المتاح</div>
+        <div style="text-align:center;background:linear-gradient(135deg,#4C1D95,#7C3AED 60%,#9333EA);color:#fff;border-radius:14px;padding:20px;margin-bottom:16px">
+          <div style="font-size:.8rem;opacity:.85;margin-bottom:4px">الرصيد المتاح</div>
           <div style="font-size:2rem;font-weight:900">${formatPrice(parseFloat(balRes.balance||0))}</div>
         </div>
+
+        <!-- Transfer -->
+        <div style="border:1.5px solid #ece8f4;border-radius:14px;padding:16px;margin-bottom:18px">
+          <div style="font-weight:800;color:#4C1D95;margin-bottom:10px">💸 تحويل رصيد لمستخدم آخر</div>
+          <label class="fm-label">رقم المستخدم المميز (FU)</label>
+          <div style="display:flex;gap:8px">
+            <input class="fm-input" id="wtFu" placeholder="FU-000123" dir="ltr" oninput="document.getElementById('wtConfirm').style.display='none';document.getElementById('wtName').textContent=''">
+            <button onclick="walletCheckRecipient()" id="wtCheckBtn" style="background:#f4eefe;color:#7C3AED;border:0;border-radius:12px;padding:0 16px;font:inherit;font-weight:800;cursor:pointer;white-space:nowrap">تحقق</button>
+          </div>
+          <div id="wtName" style="font-size:.85rem;font-weight:700;color:#15803d;margin-top:8px"></div>
+          <div id="wtConfirm" style="display:none;margin-top:10px">
+            <label class="fm-label">المبلغ</label>
+            <input class="fm-input" id="wtAmount" type="number" min="0" step="0.01" placeholder="0.00">
+            <button class="fm-btn" id="wtSendBtn" style="width:100%;margin-top:12px" onclick="walletDoTransfer()">تأكيد التحويل إلى <span id="wtNameBtn"></span></button>
+          </div>
+          <div id="wtErr" style="color:#dc2626;font-size:.82rem;margin-top:8px"></div>
+        </div>
+
         <div style="font-size:.85rem;font-weight:700;color:#555;margin-bottom:10px">آخر المعاملات</div>
         ${txs.length === 0 ? '<div style="color:#aaa;text-align:center;padding:16px">لا توجد معاملات حتى الآن</div>' : ''}
         ${txs.slice(0,20).map(t => {
@@ -954,11 +1163,141 @@
     document.getElementById('walletModal').style.display = 'none';
   }
 
+  // ── Wallet transfer ───────────────────────────────────────────
+  let _walletBalance = 0, _wtRecipient = null;
+  async function walletCheckRecipient() {
+    const fu = (document.getElementById('wtFu').value || '').trim();
+    const err = document.getElementById('wtErr'); err.textContent = '';
+    if (!fu) { err.textContent = 'أدخل رقم المستخدم'; return; }
+    const btn = document.getElementById('wtCheckBtn'); btn.disabled = true;
+    try {
+      const res = await Api.get('/api/wallet/lookup?fu=' + encodeURIComponent(fu), true);
+      _wtRecipient = res;
+      document.getElementById('wtName').textContent = '✅ المستلم: ' + res.name + ' (' + res.fu_number + ')';
+      document.getElementById('wtNameBtn').textContent = res.name;
+      document.getElementById('wtConfirm').style.display = 'block';
+    } catch (e) {
+      _wtRecipient = null;
+      document.getElementById('wtName').textContent = '';
+      document.getElementById('wtConfirm').style.display = 'none';
+      err.textContent = e.message || 'تعذّر العثور على المستخدم';
+    } finally { btn.disabled = false; }
+  }
+  async function walletDoTransfer() {
+    const err = document.getElementById('wtErr'); err.textContent = '';
+    if (!_wtRecipient) { err.textContent = 'تحقق من المستلم أولاً'; return; }
+    const amount = parseFloat(document.getElementById('wtAmount').value || 0);
+    if (!(amount > 0)) { err.textContent = 'أدخل مبلغاً صحيحاً'; return; }
+    if (amount > _walletBalance) { err.textContent = 'الرصيد غير كافٍ'; return; }
+    const btn = document.getElementById('wtSendBtn'); btn.disabled = true;
+    try {
+      const res = await Api.post('/api/wallet/transfer', { to_fu: _wtRecipient.fu_number, amount }, true);
+      showToast(res.message || 'تم التحويل بنجاح', 'success');
+      loadWalletBalance();
+      openWalletModal();
+    } catch (e) {
+      err.textContent = e.message || 'تعذّر إتمام التحويل';
+      btn.disabled = false;
+    }
+  }
+  window.walletCheckRecipient = walletCheckRecipient; window.walletDoTransfer = walletDoTransfer;
+
+  // ── Support tickets ───────────────────────────────────────────
+  const stStatus = { open:['مفتوحة','#dcfce7','#15803d'], in_progress:['قيد المعالجة','#fef3c7','#92400e'], pending:['بانتظار الرد','#fef3c7','#92400e'], resolved:['تم الحل','#e0e7ff','#4338ca'], closed:['مغلقة','#f3f4f6','#6b7280'] };
+  function openNewTicket(){ document.getElementById('ticketForm').style.display='block'; document.getElementById('tkSubject').value=''; document.getElementById('tkMessage').value=''; }
+  function closeNewTicket(){ document.getElementById('ticketForm').style.display='none'; }
+  async function submitTicket(){
+    const subject=document.getElementById('tkSubject').value.trim(), message=document.getElementById('tkMessage').value.trim();
+    if(!subject||!message){ showToast('يرجى إدخال الموضوع والرسالة','error'); return; }
+    const btn=document.getElementById('tkSendBtn'); btn.disabled=true;
+    try{ const res=await Api.post('/api/support',{subject,message},true); showToast(res.message||'تم إرسال التذكرة','success'); closeNewTicket(); loadTickets(); }
+    catch(e){ showToast(e.message||'تعذّر إرسال التذكرة','error'); } finally{ btn.disabled=false; }
+  }
+  async function loadTickets(){
+    const el=document.getElementById('ticketsList'); document.getElementById('ticketThread').style.display='none'; el.style.display='block';
+    el.innerHTML='<div class="loading-state"><div class="spinner"></div></div>';
+    try{
+      const res=await Api.get('/api/support',true); const list=res.tickets||[];
+      if(!list.length){ el.innerHTML='<div style="text-align:center;color:#9ca3af;padding:30px">لا توجد تذاكر دعم بعد. افتح تذكرة عند حاجتك للمساعدة.</div>'; return; }
+      el.innerHTML=list.map(t=>{ const s=stStatus[t.status]||[t.status,'#f3f4f6','#6b7280']; const date=t.created_at?new Date(t.created_at).toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'}):'';
+        return `<div onclick="openTicketThread(${t.id})" style="background:#fff;border:1px solid #f0ecf9;border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <div style="min-width:0"><div style="font-weight:700;color:#2E1065">${escapeHtml(t.subject)}</div><div style="font-size:.75rem;color:#9ca3af;margin-top:2px">#${t.id} · ${date} · ${t.reply_count||0} رد</div></div>
+          <span style="background:${s[1]};color:${s[2]};border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:800;white-space:nowrap">${s[0]}</span>
+        </div>`; }).join('');
+    }catch(e){ el.innerHTML='<div style="color:#dc2626;padding:16px">تعذّر تحميل التذاكر</div>'; }
+  }
+  async function openTicketThread(id){
+    const list=document.getElementById('ticketsList'), th=document.getElementById('ticketThread');
+    list.style.display='none'; th.style.display='block'; th.innerHTML='<div class="loading-state"><div class="spinner"></div></div>';
+    try{
+      const res=await Api.get('/api/support/'+id,true); const t=res.ticket||{}; const replies=res.replies||[];
+      const s=stStatus[t.status]||[t.status,'#f3f4f6','#6b7280'];
+      th.innerHTML=`<button class="panel-back" onclick="loadTickets()" style="margin:0 0 12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg> كل التذاكر</button>
+        <div style="background:#fff;border-radius:16px;box-shadow:0 2px 14px rgba(76,29,149,.08);padding:18px">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:14px">
+            <div style="font-weight:800;color:#2E1065">${escapeHtml(t.subject||'')}</div>
+            <span style="background:${s[1]};color:${s[2]};border-radius:20px;padding:3px 12px;font-size:.72rem;font-weight:800">${s[0]}</span>
+          </div>
+          <div id="thMsgs">${replies.map(r=>renderReply(r)).join('')}</div>
+          ${t.status==='closed'?'<div style="text-align:center;color:#9ca3af;font-size:.82rem;padding:10px">هذه التذكرة مغلقة</div>':
+          `<div style="display:flex;gap:8px;margin-top:14px"><input class="fm-input" id="thReply" placeholder="اكتب ردك..."><button class="fm-btn" onclick="replyTicket(${id})">إرسال</button></div>`}
+        </div>`;
+    }catch(e){ th.innerHTML='<div style="color:#dc2626;padding:16px">تعذّر تحميل التذكرة</div>'; }
+  }
+  function renderReply(r){ const admin=r.is_admin==1||r.is_admin===true; const date=r.created_at?new Date(r.created_at).toLocaleString('ar-KW',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+    return `<div style="display:flex;${admin?'':'flex-direction:row-reverse'};margin-bottom:10px"><div style="max-width:80%;background:${admin?'#f4eefe':'#ede9fe'};border-radius:14px;padding:10px 14px">
+      <div style="font-size:.7rem;font-weight:800;color:${admin?'#7C3AED':'#4338ca'};margin-bottom:3px">${admin?'فريق الدعم':'أنت'}</div>
+      <div style="font-size:.88rem;color:#333;line-height:1.6">${escapeHtml(r.message||'')}</div>
+      <div style="font-size:.66rem;color:#9ca3af;margin-top:4px">${date}</div></div></div>`; }
+  async function replyTicket(id){ const inp=document.getElementById('thReply'); const msg=(inp.value||'').trim(); if(!msg) return;
+    inp.disabled=true; try{ await Api.post('/api/support/'+id+'/reply',{message:msg},true); openTicketThread(id); }catch(e){ showToast(e.message||'تعذّر الإرسال','error'); inp.disabled=false; } }
+  window.openNewTicket=openNewTicket; window.closeNewTicket=closeNewTicket; window.submitTicket=submitTicket; window.loadTickets=loadTickets; window.openTicketThread=openTicketThread; window.replyTicket=replyTicket;
+
+  // ── Notifications & offers ────────────────────────────────────
+  async function loadNotifications(){
+    const el=document.getElementById('notifList'); el.innerHTML='<div class="loading-state"><div class="spinner"></div></div>';
+    try{
+      const res=await Api.get('/api/notifications',true); const list=res.data||res.notifications||(Array.isArray(res)?res:[]);
+      if(!list.length){ el.innerHTML='<div style="text-align:center;color:#9ca3af;padding:30px">لا توجد إشعارات حالياً</div>'; return; }
+      el.innerHTML=list.map(n=>{ const date=n.created_at?new Date(n.created_at).toLocaleDateString('ar-KW',{day:'numeric',month:'short',year:'numeric'}):''; const isOffer=(n.type==='offer'||n.type==='promotion');
+        return `<div style="background:#fff;border:1px solid ${isOffer?'#FBBF24':'#f0ecf9'};border-radius:14px;padding:14px 16px;margin-bottom:10px;${n.read_at?'':'border-right:4px solid #7C3AED'}">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px"><span style="font-size:1.1rem">${isOffer?'🎁':'🔔'}</span><div style="font-weight:800;color:#2E1065">${escapeHtml(n.title||n.subject||'إشعار')}</div></div>
+          <div style="font-size:.86rem;color:#555;line-height:1.6">${escapeHtml(n.message||n.body||'')}</div>
+          <div style="font-size:.7rem;color:#9ca3af;margin-top:5px">${date}</div></div>`; }).join('');
+    }catch(e){ el.innerHTML='<div style="text-align:center;color:#9ca3af;padding:30px">لا توجد إشعارات</div>'; }
+  }
+  async function loadNotifBadge(){
+    try{
+      const res=await Api.get('/api/notifications',true); const list=res.data||res.notifications||(Array.isArray(res)?res:[]);
+      const unread=list.filter(n=>!n.read_at).length;
+      const dot=document.getElementById('notifDot'); if(unread>0){ dot.textContent=unread>9?'9+':unread; dot.style.display='flex'; }
+      // Prominent offers banner
+      const offers=list.filter(n=>n.type==='offer'||n.type==='promotion').slice(0,2);
+      if(offers.length){ const b=document.getElementById('offerBanner'); b.style.display='block';
+        b.innerHTML=offers.map(o=>`<div class="offer-item"><span class="oi-ic">🎁</span><div><div class="oi-t">${escapeHtml(o.title||'عرض خاص')}</div><div class="oi-b">${escapeHtml(o.message||o.body||'')}</div></div></div>`).join('');
+      }
+    }catch(e){}
+  }
+  window.loadNotifications=loadNotifications;
+
+  function escapeHtml(s){ return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // ── Help center (4 tabs × comprehensive Q&A) ──────────────────
+  function showHelp(cat, btn){
+    document.querySelectorAll('.help-tab').forEach(t=>t.classList.remove('on'));
+    if(btn) btn.classList.add('on');
+    const list=HELP[cat]||[];
+    const c=document.getElementById('helpContent'); c.dataset.loaded='1';
+    c.innerHTML=list.map((qa,i)=>`<div class="faq" onclick="this.classList.toggle('open')"><div class="faq-q">${escapeHtml(qa.q)}<span class="fq-chev">▾</span></div><div class="faq-a"><div>${qa.a}</div></div></div>`).join('');
+  }
+  window.showHelp=showHelp;
+
   // Load data
   loadFlightBookings();
   loadHotelBookings();
   loadProfile();
   loadWalletBalance();
+  loadNotifBadge();
 </script>
 
 <!-- Change Flight Modal -->

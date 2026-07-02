@@ -155,7 +155,60 @@ class AuthController
             Response::unauthorized();
         }
 
+        $user['fu_number'] = self::fuNumber((int) ($user['id'] ?? 0));
+
         Response::json(['user' => $user]);
+    }
+
+    /** Public FlyMasar member number derived from the account id (e.g. FU-000123). */
+    public static function fuNumber(int $id): string
+    {
+        return 'FU-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+    }
+
+    // -------------------------------------------------------------------------
+    // POST /api/auth/profile   — update editable profile fields.
+    // The email address is immutable and is never changed here.
+    // -------------------------------------------------------------------------
+
+    public function updateProfile(Request $request): void
+    {
+        $user = AuthMiddleware::currentUser();
+        if ($user === null) {
+            Response::unauthorized();
+        }
+
+        $first = trim((string) $request->input('first_name'));
+        $last  = trim((string) $request->input('last_name'));
+        $phone = trim((string) $request->input('phone_number'));
+
+        $errors = [];
+        if ($first === '') $errors['first_name'] = 'الاسم الأول مطلوب';
+        if ($last === '')  $errors['last_name']  = 'اسم العائلة مطلوب';
+        if ($phone !== '') {
+            $digits = preg_replace('/\D/', '', $phone);
+            if (strlen($digits) < 8 || strlen($phone) > 20) {
+                $errors['phone_number'] = 'رقم الهاتف غير صحيح — بصيغة دولية';
+            }
+        }
+        if (!empty($errors)) {
+            Response::validationError($errors);
+        }
+
+        $pdo = Database::getInstance();
+        $pdo->prepare('UPDATE users SET first_name = ?, last_name = ?, phone_number = ?, updated_at = NOW() WHERE id = ?')
+            ->execute([$first, $last, $phone, (int) $user['id']]);
+
+        $stmt = $pdo->prepare(
+            'SELECT id, email, first_name, last_name, phone_country_code, phone_number FROM users WHERE id = ? LIMIT 1'
+        );
+        $stmt->execute([(int) $user['id']]);
+        $row = $stmt->fetch() ?: [];
+        if ($row) {
+            $row['fu_number'] = self::fuNumber((int) $user['id']);
+        }
+
+        Response::json(['user' => $row, 'message' => 'تم تحديث بياناتك بنجاح.']);
     }
 
     // -------------------------------------------------------------------------
