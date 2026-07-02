@@ -222,8 +222,7 @@
       </div>
     </div>
 
-    <!-- Feature panels host -->
-    <button class="panel-back" id="panelBack" style="display:none" onclick="backHome()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg> رجوع للوحة</button>
+    <!-- Feature panels host (returning to the grid is handled by the header back button) -->
 
     <!-- Flights panel -->
     <div id="tab-flights" class="tab-panel">
@@ -399,13 +398,18 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape') closeAppDrawer(); });
 
   // ── Feature panel navigation ──────────────────────────────────
+  // Opening a panel pushes a history entry so the site-wide header back button
+  // (which calls history.back) returns to the dashboard grid instead of leaving
+  // the page. No separate in-page back button is needed.
+  let _panelOpen = false;
   function showFeature(name) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     const panel = document.getElementById('tab-' + name);
     if (!panel) return;
     document.getElementById('homeGrid').style.display = 'none';
-    document.getElementById('panelBack').style.display = 'inline-flex';
     panel.classList.add('active');
+    if (!_panelOpen) { try { history.pushState({ fmPanel: name }, '', location.href); } catch (_) {} }
+    _panelOpen = true;
     window.scrollTo(0, 0);
     if (name === 'support') loadTickets();
     if (name === 'notifications') loadNotifications();
@@ -414,12 +418,14 @@
   }
   function backHome() {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    document.getElementById('panelBack').style.display = 'none';
     document.getElementById('homeGrid').style.display = 'block';
     document.getElementById('ticketThread').style.display = 'none';
     document.getElementById('ticketsList').style.display = 'block';
+    _panelOpen = false;
     window.scrollTo(0, 0);
   }
+  // Header back button (or device back) → close the open panel first.
+  window.addEventListener('popstate', function () { if (_panelOpen) backHome(); });
   window.showFeature = showFeature; window.backHome = backHome;
 
   // legacy no-op kept for safety
