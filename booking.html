@@ -134,6 +134,11 @@
             <div style="font-size:0.75rem;color:var(--text-muted);margin-top:3px">سيُستخدم لإرسال تأكيد الحجز وتذاكر السفر</div>
           </div>
           <div class="form-group" style="margin-top:12px">
+            <label class="form-label">رقم الهاتف <span style="color:red">*</span></label>
+            <input type="tel" class="form-control" id="contactPhone" placeholder="+96599123456" dir="ltr" autocomplete="tel">
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:3px">بصيغة دولية مع رمز الدولة (مثال: +965) — للتواصل بشأن الحجز</div>
+          </div>
+          <div class="form-group" style="margin-top:12px">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
               <input type="checkbox" id="agreeTerms" required>
               <span style="font-size:0.9rem">أوافق على <a href="terms.html" target="_blank" style="color:var(--primary)">الشروط والأحكام</a> و<a href="privacy.html" target="_blank" style="color:var(--primary)">سياسة الخصوصية</a></span>
@@ -177,6 +182,7 @@
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
+<script src="js/field-picker.js?v=2026070201"></script>
 <script>
   // Guest checkout: the customer can either log in (saved travelers appear) or
   // continue without an account (saved travelers hidden; an account is created
@@ -283,7 +289,7 @@
       for (let y=maxYear; y>=minYear; y--) yearOpts += `<option value="${y}">${y}</option>`;
       return `<div class="form-group" style="grid-column:1/-1">
         <label class="form-label">تاريخ الميلاد <span style="color:red">*</span> <small style="color:var(--text-muted)">(${hint})</small></label>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" data-fp-dmy data-fp-title="تاريخ الميلاد">
           <select class="form-control" id="p${i}_dob_d" onchange="updateDob(${i})" required><option value="">يوم</option>${dayOpts}</select>
           <select class="form-control" id="p${i}_dob_m" onchange="updateDob(${i})" required>${monOpts}</select>
           <select class="form-control" id="p${i}_dob_y" onchange="updateDob(${i})" required>${yearOpts}</select>
@@ -303,7 +309,7 @@
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
           <div class="form-group">
             <label class="form-label">اللقب <span style="color:red">*</span></label>
-            <select class="form-control" id="p${i}_title" required>
+            <select class="form-control" id="p${i}_title" data-fp required>
               <option value="">اختر</option>
               <option value="mr">Mr — السيد</option>
               <option value="ms">Ms — السيدة</option>
@@ -314,7 +320,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">الجنس <span style="color:red">*</span></label>
-            <select class="form-control" id="p${i}_gender" required>
+            <select class="form-control" id="p${i}_gender" data-fp required>
               <option value="">اختر</option>
               <option value="male">ذكر</option>
               <option value="female">أنثى</option>
@@ -322,7 +328,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">الجنسية <span style="color:red">*</span></label>
-            <select class="form-control" id="p${i}_nationality" required>${natOptions}</select>
+            <select class="form-control" id="p${i}_nationality" data-fp data-fp-search required>${natOptions}</select>
           </div>
         </div>
 
@@ -347,20 +353,13 @@
           ${dobFields(i, p.type)}
         </div>
 
-        <!-- Row 4: Phone -->
-        <div class="form-group" style="margin-bottom:14px">
-          <label class="form-label">رقم الهاتف${p.type!=='infant'?' <span style="color:red">*</span>':' <small style="color:var(--text-muted)">(اختياري)</small>'}</label>
-          <input type="tel" class="form-control" id="p${i}_phone" placeholder="+96599123456" dir="ltr" autocomplete="tel">
-          <div style="font-size:0.73rem;color:var(--text-muted);margin-top:3px">بصيغة دولية مع رمز الدولة (مثال: +965)</div>
-        </div>
-
         <!-- Travel document section -->
         <div style="border-top:1px solid #f0f2f5;margin:16px 0 0;padding-top:16px">
           <div style="font-size:0.85rem;font-weight:700;color:var(--primary);margin-bottom:12px">🪪 وثيقة السفر</div>
           <div class="form-row2" style="margin-bottom:12px">
             <div class="form-group">
               <label class="form-label">نوع الوثيقة <span style="color:red">*</span></label>
-              <select class="form-control" id="p${i}_doc_type" required>
+              <select class="form-control" id="p${i}_doc_type" data-fp required>
                 <option value="passport">جواز سفر</option>
                 <option value="id_card">بطاقة مدنية</option>
                 <option value="national_id">هوية وطنية</option>
@@ -373,14 +372,14 @@
           </div>
           <div class="form-group" style="margin-bottom:12px">
             <label class="form-label">تاريخ الإصدار <small style="color:var(--text-muted)">(اختياري)</small></label>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" data-fp-dmy data-fp-title="تاريخ الإصدار">
               ${(()=>{ const dy=['<option value="">يوم</option>',...Array.from({length:31},(_,k)=>`<option value="${String(k+1).padStart(2,'0')}">${k+1}</option>`)].join(''); const dm=['<option value="">شهر</option>','يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'].map((m,k)=>k===0?m:`<option value="${String(k).padStart(2,'0')}">${m}</option>`).join(''); let dyrs='<option value="">سنة</option>'; for(let y=thisYear;y>=thisYear-30;y--) dyrs+=`<option value="${y}">${y}</option>`; return `<select class="form-control" id="p${i}_issue_d" onchange="updateDocDate(${i},'issue')">${dy}</select><select class="form-control" id="p${i}_issue_m" onchange="updateDocDate(${i},'issue')">${dm}</select><select class="form-control" id="p${i}_issue_y" onchange="updateDocDate(${i},'issue')">${dyrs}</select>`; })()}
             </div>
             <input type="hidden" id="p${i}_doc_issue">
           </div>
           <div class="form-group">
             <label class="form-label">تاريخ الانتهاء <span style="color:red">*</span> <small style="color:var(--text-muted)">(ساري 6 أشهر بعد السفر)</small></label>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px" data-fp-dmy data-fp-title="تاريخ الانتهاء">
               ${(()=>{ const dy=['<option value="">يوم</option>',...Array.from({length:31},(_,k)=>`<option value="${String(k+1).padStart(2,'0')}">${k+1}</option>`)].join(''); const dm=['<option value="">شهر</option>','يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'].map((m,k)=>k===0?m:`<option value="${String(k).padStart(2,'0')}">${m}</option>`).join(''); let dyrs='<option value="">سنة</option>'; for(let y=thisYear;y<=thisYear+15;y++) dyrs+=`<option value="${y}">${y}</option>`; return `<select class="form-control" id="p${i}_exp_d" onchange="updateDocDate(${i},'exp')" required>${dy}</select><select class="form-control" id="p${i}_exp_m" onchange="updateDocDate(${i},'exp')" required>${dm}</select><select class="form-control" id="p${i}_exp_y" onchange="updateDocDate(${i},'exp')" required>${dyrs}</select>`; })()}
             </div>
             <input type="hidden" id="p${i}_doc_exp">
@@ -389,6 +388,8 @@
         </div>
         <div id="p${i}_ageError" style="color:var(--error,#ef4444);font-size:0.82rem;display:none;padding:6px 0"></div>
       </div>`).join('');
+    // Upgrade the selects/date groups into professional pop-up pickers
+    if (window.FieldPicker) FieldPicker.scan(forms);
   }
 
   function switchPax(idx, btn) {
@@ -807,7 +808,12 @@
     if (!fillPhone.startsWith('+') && (t.phone||'').startsWith('+')) {
       fillPhone = (t.phone||'').replace(/\s+/g,'');
     }
-    if (fillPhone) set(`p${formIdx}_phone`, fillPhone);
+    // Phone now lives once in the Contact Info section — fill it from the lead
+    // traveler (or if it's still empty) rather than per-passenger.
+    if (fillPhone) {
+      const cp = document.getElementById('contactPhone');
+      if (cp && (formIdx === 0 || !cp.value)) cp.value = fillPhone;
+    }
     // Fill DOB dropdowns
     if (t.date_of_birth) {
       const parts = t.date_of_birth.split('-');
@@ -831,6 +837,8 @@
     };
     fillDateSelects(t.document_expiry,  `p${formIdx}_exp`,   `p${formIdx}_doc_exp`);
     fillDateSelects(t.document_issue,   `p${formIdx}_issue`, `p${formIdx}_doc_issue`);
+    // refresh the pop-up triggers to reflect the values we just set
+    if (window.FieldPicker) FieldPicker.sync(document.getElementById(`paxForm${formIdx}`) || document);
   }
 
   function updateTotal() {
@@ -859,6 +867,7 @@
 
   function collectPassengers() {
     const contactEmail = document.getElementById('contactEmail')?.value?.trim() || '';
+    const contactPhone = document.getElementById('contactPhone')?.value?.trim() || '';
     return paxTypes.map((p,i)=>({
       type: p.type,
       title: document.getElementById(`p${i}_title`)?.value,
@@ -873,7 +882,7 @@
       document_number: document.getElementById(`p${i}_doc_num`)?.value?.trim(),
       document_expiry: document.getElementById(`p${i}_doc_exp`)?.value?.trim(),
       document_issue: document.getElementById(`p${i}_doc_issue`)?.value?.trim(),
-      phone_number: document.getElementById(`p${i}_phone`)?.value?.trim(),
+      phone_number: contactPhone,
     }));
   }
 
@@ -902,6 +911,13 @@
       document.getElementById('contactEmail')?.focus();
       alert('يرجى إدخال بريد إلكتروني صحيح في قسم معلومات التواصل'); return;
     }
+    // Validate the single contact phone (used for the whole booking)
+    const _cphone = document.getElementById('contactPhone')?.value?.trim() || '';
+    const _cdigits = _cphone.replace(/\D/g,'');
+    if (!_cphone || _cdigits.length < 8 || _cphone.length > 20) {
+      document.getElementById('contactPhone')?.focus();
+      alert('يرجى إدخال رقم هاتف صحيح بصيغة دولية في قسم معلومات التواصل (مثال: +96599123456)'); return;
+    }
     const passengers = collectPassengers();
     for (let i=0;i<passengers.length;i++) {
       const p = passengers[i];
@@ -927,19 +943,6 @@
         switchPax(i, document.querySelectorAll('.pax-tab')[i]);
         const errMsg = document.getElementById(`p${i}_expError`)?.textContent;
         alert(errMsg || 'يرجى التحقق من تاريخ انتهاء وثيقة ' + paxTypes[i].label); return;
-      }
-      // Phone number: required for adult/child, optional for infant
-      if (p.type !== 'infant') {
-        const ph = p.phone_number || '';
-        const digits = ph.replace(/\D/g,'');
-        if (!ph) {
-          switchPax(i, document.querySelectorAll('.pax-tab')[i]);
-          alert('يرجى إدخال رقم هاتف ' + paxTypes[i].label + ' بصيغة دولية (مثال: +96599123456)'); return;
-        }
-        if (digits.length < 8 || ph.length > 20) {
-          switchPax(i, document.querySelectorAll('.pax-tab')[i]);
-          alert('رقم هاتف ' + paxTypes[i].label + ' غير صحيح — يجب أن يحتوي على 8 أرقام على الأقل'); return;
-        }
       }
     }
     const dupErr = checkDuplicateNames(passengers);
@@ -1010,10 +1013,10 @@
     document.getElementById('contactEmail').value = user.email || '';
   }
   buildTabs();
-  // Pre-fill first passenger phone from user profile
+  // Pre-fill the contact phone from user profile
   if (user && user.phone) {
-    const _p0phone = document.getElementById('p0_phone');
-    if (_p0phone && !_p0phone.value) _p0phone.value = user.phone;
+    const _cp = document.getElementById('contactPhone');
+    if (_cp && !_cp.value) _cp.value = user.phone;
   }
   loadFlightInfo();
   if (Auth.isLoggedIn()) loadSavedTravelers();

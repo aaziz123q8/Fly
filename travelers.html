@@ -152,7 +152,7 @@
         <div class="form-row2">
           <div class="form-group">
             <label class="form-label">اللقب <span style="color:red">*</span></label>
-            <select class="form-control" id="tTitle" required>
+            <select class="form-control" id="tTitle" data-fp required>
               <option value="">اختر</option>
               <option value="mr">Mr — السيد</option>
               <option value="ms">Ms — السيدة</option>
@@ -163,7 +163,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">الجنس <span style="color:red">*</span></label>
-            <select class="form-control" id="tGender" required>
+            <select class="form-control" id="tGender" data-fp required>
               <option value="">اختر</option>
               <option value="male">ذكر</option>
               <option value="female">أنثى</option>
@@ -187,7 +187,7 @@
           </div>
           <div class="form-group">
             <label class="form-label">الجنسية <span style="color:red">*</span></label>
-            <select class="form-control" id="tNationality" required>
+            <select class="form-control" id="tNationality" data-fp data-fp-search required>
               <option value="">اختر</option>
               <option value="DZA">جزائري</option><option value="BHR">بحريني</option>
               <option value="EGY">مصري</option><option value="ARE">إماراتي</option>
@@ -218,7 +218,7 @@
         <div class="form-row2">
           <div class="form-group">
             <label class="form-label">تاريخ الميلاد <span style="color:red">*</span></label>
-            <input type="date" class="form-control" id="tDob" required>
+            <input type="date" class="form-control" id="tDob" data-fp-date data-fp-title="تاريخ الميلاد" data-fp-min-year="1925" required>
           </div>
           <div class="form-group">
             <label class="form-label">البريد الإلكتروني</label>
@@ -235,7 +235,7 @@
         <div class="form-row2">
           <div class="form-group">
             <label class="form-label">نوع الوثيقة <span style="color:red">*</span></label>
-            <select class="form-control" id="tDocType" required>
+            <select class="form-control" id="tDocType" data-fp required>
               <option value="passport">جواز سفر</option>
               <option value="id_card">بطاقة مدنية</option>
               <option value="national_id">هوية وطنية</option>
@@ -249,11 +249,11 @@
         <div class="form-row2">
           <div class="form-group">
             <label class="form-label">تاريخ الإصدار</label>
-            <input type="date" class="form-control" id="tDocIssue">
+            <input type="date" class="form-control" id="tDocIssue" data-fp-date data-fp-title="تاريخ الإصدار" data-fp-min-year="2000">
           </div>
           <div class="form-group">
             <label class="form-label">تاريخ الانتهاء <span style="color:red">*</span></label>
-            <input type="date" class="form-control" id="tDocExp" required>
+            <input type="date" class="form-control" id="tDocExp" data-fp-date data-fp-title="تاريخ الانتهاء" data-fp-min-year="2024" data-fp-max-year="2045" required>
           </div>
         </div>
         <div class="form-group">
@@ -276,6 +276,7 @@
 <script src="js/auth.js"></script>
 <script src="js/currency.js"></script>
 <script src="js/i18n.js"></script>
+<script src="js/field-picker.js?v=2026070201"></script>
 <script>
 if (!Auth.isLoggedIn()) window.location.href = 'login.html?redirect=travelers.html';
 Auth.checkTokenExpiry();
@@ -392,6 +393,9 @@ function openModal(traveler = null) {
   if (!ph.startsWith('+') && (traveler?.phone||'').startsWith('+'))
     ph = (traveler.phone||'').replace(/\s+/g,'');
   set('tPhone', ph);
+  // Upgrade selects/date fields to professional pop-up pickers, then refresh
+  // the triggers to reflect the values we just prefilled.
+  if (window.FieldPicker) { FieldPicker.scan(document); FieldPicker.sync(document); }
   document.getElementById('travelerModal').classList.add('active');
   document.body.style.overflow = 'hidden';
 }
@@ -407,6 +411,11 @@ function editTraveler(idx) { openModal(travelers[idx]); }
 /* ══════════════════════ Save / Delete ══════════════════════ */
 async function saveTraveler(e) {
   e.preventDefault();
+  // The pop-up pickers hide the native controls, so validate them in JS.
+  if (window.FieldPicker) {
+    const v = FieldPicker.validate(document.getElementById('travelerModal'));
+    if (!v.ok) { showToast('يرجى إكمال الحقل: ' + (v.label || ''), 'error'); return; }
+  }
   const id = document.getElementById('travelerId').value;
   let rawPhone = document.getElementById('tPhone').value.trim().replace(/[\s\-()]/g,'');
   if (rawPhone && !rawPhone.startsWith('+')) rawPhone = '+' + rawPhone;
