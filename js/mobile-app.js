@@ -63,12 +63,13 @@
 
   var loggedIn = (window.Auth && Auth.isLoggedIn && Auth.isLoggedIn());
 
-  // Checkout-funnel pages hand the bottom of the screen to the price/pay bar,
-  // so the app tab bar is suppressed there.
+  // The bottom app tab bar has been removed site-wide (owner request). The top
+  // app bar stays for navigation; pages keep their own fixed bottom bars
+  // (checkout price/pay bar, package "احجز الباقة" bar) without a tab bar behind.
   var NO_TABS = ['flights.html', 'hotels.html', 'booking.html', 'services.html', 'payment.html',
                  'hotel-detail.html', 'hotel-booking.html', 'hotel-payment.html',
                  'confirmation.html', 'hotel-confirmation.html', 'invoice.html', 'dashboard.html'];
-  var hideTabs = NO_TABS.indexOf(here) >= 0;
+  var hideTabs = true; // bottom tab bar removed everywhere (was: NO_TABS.indexOf(here) >= 0)
 
   var TABS = [
     { k:'home',    href:'index.html',     icon:I.home,   label:'الرئيسية', match:['index.html',''] },

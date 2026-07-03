@@ -9,7 +9,9 @@
 <style>
 :root{--v1:#7C3AED;--v2:#9333EA;--v3:#4C1D95;--deep:#2E1065;--coral:#FB7185;--amber:#F59E0B;--ok:#16a34a;--ink:#1B172B;--muted:#6B6880;--line:#ECE8F4;--bg:#FAF8FF;--soft:#F4EEFE;--grad:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);--shadow-sm:0 8px 24px -14px rgba(76,29,149,.4);--shadow:0 24px 60px -30px rgba(76,29,149,.45)}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;padding-bottom:120px}
+body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
+/* spacer keeps content clear of the fixed total bar (robust vs. app-shell body padding overrides) */
+.barspace{height:118px}
 a{text-decoration:none;color:inherit}
 .wrap{max-width:900px;margin:0 auto;padding:0 18px}
 /* summary bar */
@@ -117,6 +119,7 @@ a{text-decoration:none;color:inherit}
     <div id="htList"></div>
   </div>
 
+  <div class="barspace" aria-hidden="true"></div>
 </div>
 
 <!-- STICKY TOTAL -->
