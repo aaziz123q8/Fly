@@ -366,6 +366,8 @@
           <div class="tk-footer-site">flymasar.com</div>
         </div>
 
+        <!-- Package hotel (flight + hotel package) — inside the card so it shows on screen and in the WhatsApp image -->
+        <div id="pkgHotelBlock" style="display:none;margin-top:14px"></div>
       </div>
       <!-- ════ END TICKET CARD ════ -->
 
@@ -377,9 +379,6 @@
           <div style="font-size:.8rem;color:#92400e">سيصلك تأكيد الحجز مع التذكرة الإلكترونية. إذا لم تجده تحقق من مجلد البريد غير المرغوب فيه.</div>
         </div>
       </div>
-
-      <!-- Package hotel (shown when this booking is a flight + hotel package) -->
-      <div id="pkgHotelBlock" style="display:none;margin-bottom:16px"></div>
 
       <!-- Sync btn -->
       <div style="text-align:center;margin-bottom:12px" class="print-hide">
@@ -475,6 +474,9 @@ function isCancelledStatus(s) {
 // ── Render ───────────────────────────────────────────────────────
 function renderBooking(b) {
   _booking = b;
+
+  // Package hotel — authoritative server data (with the real booking refs).
+  if (b && b.package_hotel) renderPackageHotelServer(b.package_hotel);
 
   // FM reference
   if (b.booking_reference) document.getElementById('refFm').textContent = b.booking_reference;
@@ -802,6 +804,29 @@ function buildPrintTicket(b) {
   const condBadge = (lang, ok) => ok === null ? `<span class="tp-badge" style="background:#f3f4f6;color:#888">${T[lang].perC}</span>`
     : ok ? `<span class="tp-badge tp-ok">${T[lang].okT}</span>` : `<span class="tp-badge tp-no">${T[lang].noT}</span>`;
 
+  // Hotel section for the printed ticket (only for flight + hotel packages).
+  const hotelSec = (lang) => {
+    const h = b.package_hotel; if (!h) return '';
+    const L = lang === 'ar'
+      ? {t:'الفندق', ref:'رقم حجز الفندق', prov:'مرجع المزوّد', room:'الغرفة', board:'نظام الوجبات', ci:'تسجيل الوصول', co:'تسجيل المغادرة', dur:'المدة', total:'إجمالي الفندق', free:'إلغاء مجاني', u:(n,r)=>n+' ليالٍ × '+r+' غرفة'}
+      : {t:'Hotel', ref:'Hotel Booking Ref', prov:'Provider Ref', room:'Room', board:'Meal plan', ci:'Check-in', co:'Check-out', dur:'Duration', total:'Hotel total', free:'Free cancellation', u:(n,r)=>n+' nights × '+r+' room(s)'};
+    const d = (iso) => { if(!iso) return '—'; try { return new Date(iso).toLocaleDateString(lang==='ar'?'ar-KW':'en-GB',{day:'numeric',month:'long',year:'numeric'}); } catch(e){ return iso; } };
+    const kv = (k,v) => v ? `<div class="tp-kv"><span class="k">${k}</span><span class="v">${v}</span></div>` : '';
+    return `<div class="tp-sec">
+      <div class="tp-sec-t">🏨 ${L.t}</div>
+      <div style="font-weight:800;margin-bottom:5px">${h.hotel_name||'—'}</div>
+      <div class="tp-2col">
+        <div class="tp-box" style="border:0;padding:0;background:none">
+          ${kv(L.ref, h.booking_reference)}${kv(L.prov, h.provider_booking_id)}${kv(L.room, h.room_type)}${kv(L.board, h.meal_plan)}
+        </div>
+        <div class="tp-box" style="border:0;padding:0;background:none">
+          ${kv(L.ci, d(h.check_in))}${kv(L.co, d(h.check_out))}${kv(L.dur, L.u(h.nights||1, h.rooms||1))}${kv(L.total, money(h.total_amount))}
+        </div>
+      </div>
+      ${h.free_cancellation ? `<div style="color:#16a34a;font-weight:700;font-size:9.5pt;margin-top:4px">✓ ${L.free}</div>` : ''}
+    </div>`;
+  };
+
   const renderPage = (lang) => {
     const t = T[lang];
     const paxRows = pax.map((p, i) => `<tr>
@@ -829,6 +854,7 @@ function buildPrintTicket(b) {
         </div>
         ${segs.length > 1 ? `<table class="tp-tbl" style="margin-top:8px"><thead><tr>${t.cols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${segs.map(s => `<tr><td><b>${s.fn||'—'}</b></td><td>${s.o}</td><td>${s.d}</td><td>${locDT(s.dep, lang)}</td><td>${locDT(s.arr, lang)}</td></tr>`).join('')}</tbody></table>` : ''}
       </div>
+      ${hotelSec(lang)}
       <div class="tp-sec">
         <div class="tp-sec-t">${t.pax} (${pax.length})</div>
         <table class="tp-tbl"><thead><tr>${t.paxCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${paxRows || `<tr><td colspan="6" style="text-align:center;color:#999">—</td></tr>`}</tbody></table>
@@ -981,22 +1007,35 @@ async function shareWhatsApp() {
   btn.disabled = false; btn.textContent = '💬 مشاركة واتساب';
 }
 
-// Phase 2 hook: once the server records the package hotel booking (own ref +
-// provider ref), surface them here. Safe no-op until that endpoint exists.
-function fetchPackageHotelRefs() {
+// Authoritative package-hotel block from the server booking (includes the real
+// hotel booking reference + provider reference). Works even when the page is
+// reopened later (localStorage already cleared).
+function renderPackageHotelServer(h) {
   try {
-    const el = document.getElementById('pkgHotelRefs');
-    if (!el || !sessionKey) return;
-    Api.get('/api/hotels/package-booking?session_key=' + encodeURIComponent(sessionKey), true)
-      .then(function (r) {
-        const hb = (r && (r.hotel_booking || r.booking)) || null;
-        if (!hb) return;
-        let html = '';
-        if (hb.booking_reference)   html += 'رقم حجز الفندق: <b>' + hb.booking_reference + '</b><br>';
-        if (hb.provider_booking_id) html += 'مرجع المزود: <b>' + hb.provider_booking_id + '</b>';
-        if (html) el.innerHTML = html;
-      })
-      .catch(function () {});
+    const box = document.getElementById('pkgHotelBlock');
+    if (!box || !h) return;
+    const cur = (typeof currentCurrency !== 'undefined') ? currentCurrency : 'GBP';
+    const money = (gbp) => (typeof formatPrice === 'function') ? formatPrice(gbp) : ('£' + (Number(gbp)||0).toFixed(2));
+    const fmtD = (iso) => { if(!iso) return '—'; try { return new Date(iso).toLocaleDateString('ar-EG',{day:'numeric',month:'long',year:'numeric'}); } catch(e){ return iso; } };
+    const rowCss = 'display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:.86rem';
+    const detail = (lbl, val) => val ? ('<div style="'+rowCss+'"><span style="color:#6B6880">'+lbl+'</span><span style="font-weight:700;text-align:left">'+val+'</span></div>') : '';
+    box.innerHTML =
+      '<div style="border:1.5px solid #ECE8F4;border-radius:16px;padding:16px;background:#fff">'
+      + '<div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#4C1D95;margin-bottom:12px">'
+      +   '<span style="width:30px;height:30px;border-radius:9px;background:#F4EEFE;display:flex;align-items:center;justify-content:center">🏨</span> فندق الباقة</div>'
+      + '<div style="font-weight:800;font-size:1.05rem;margin-bottom:8px">' + (h.hotel_name || 'الفندق') + '</div>'
+      + detail('رقم حجز الفندق', h.booking_reference || '')
+      + detail('مرجع المزوّد', h.provider_booking_id || '')
+      + detail('الغرفة', h.room_type || '')
+      + detail('نظام الوجبات', h.meal_plan || '')
+      + detail('تسجيل الوصول', fmtD(h.check_in) + ' — 15:00')
+      + detail('تسجيل المغادرة', fmtD(h.check_out) + ' — 12:00')
+      + detail('المدة', (h.nights||1) + ' ليالٍ × ' + (h.rooms||1) + ' غرفة')
+      + (h.free_cancellation ? '<div style="'+rowCss+'"><span style="color:#6B6880">الإلغاء</span><span style="font-weight:700;color:#16a34a">إلغاء مجاني</span></div>' : '')
+      + '<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px dashed #ECE8F4;font-weight:800">'
+      +   '<span>إجمالي الفندق ضمن الباقة</span><span style="color:#7C3AED">' + money(h.total_amount) + '</span></div>'
+      + '</div>';
+    box.style.display = 'block';
   } catch (e) {}
 }
 
@@ -1039,8 +1078,8 @@ function renderPackageHotel() {
       + '<div style="font-size:.78rem;color:#92400e;background:#fef9c3;border-radius:8px;padding:8px 10px;margin-top:10px">تم دفع الفندق ضمن باقتك. رقم حجز الفندق ومرجع المزود سيظهران هنا فور إصدار تأكيد الإقامة.</div>'
       + '</div>';
     box.style.display = 'block';
-    // If the server has already recorded the package hotel booking, show its refs.
-    fetchPackageHotelRefs();
+    // The authoritative block (with real refs) is filled by renderBooking() once
+    // the flight booking loads; this localStorage view is the instant fallback.
     localStorage.removeItem('fly_package_selection');
   } catch (e) {}
 }

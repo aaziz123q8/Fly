@@ -589,6 +589,22 @@ function buildPrintInvoice(b) {
   const cbadge = (lang, ok) => ok === null ? `<span style="color:#888">${L[lang].perC}</span>`
     : ok ? `<span style="color:#15803d;font-weight:800">${L[lang].okT}</span>` : `<span style="color:#b91c1c;font-weight:800">${L[lang].noT}</span>`;
 
+  const hotelSecIv = (lang) => {
+    const h = b.package_hotel; if (!h) return '';
+    const T = lang === 'ar'
+      ? {t:'الفندق', ref:'رقم حجز الفندق', prov:'مرجع المزوّد', room:'الغرفة', board:'نظام الوجبات', ci:'تسجيل الوصول', co:'تسجيل المغادرة', dur:'المدة', amt:'قيمة الفندق', free:'إلغاء مجاني', u:(n,r)=>n+' ليالٍ × '+r+' غرفة'}
+      : {t:'Hotel', ref:'Hotel Booking Ref', prov:'Provider Ref', room:'Room', board:'Meal plan', ci:'Check-in', co:'Check-out', dur:'Duration', amt:'Hotel amount', free:'Free cancellation', u:(n,r)=>n+' nights × '+r+' room(s)'};
+    const d = (iso) => { if(!iso) return '—'; try { return new Date(iso).toLocaleDateString(lang==='ar'?'ar-KW':'en-GB',{day:'numeric',month:'long',year:'numeric'}); } catch(e){ return iso; } };
+    const kv = (k,v) => v ? `<div class="iv-kv"><span class="k">${k}</span><span class="v">${v}</span></div>` : '';
+    return `<div class="iv-sec"><div class="iv-sec-t">🏨 ${T.t} — ${h.hotel_name||'—'}</div>
+      <div class="iv-grid2">
+        <div>${kv(T.ref, h.booking_reference)}${kv(T.prov, h.provider_booking_id)}${kv(T.room, h.room_type)}${kv(T.board, h.meal_plan)}</div>
+        <div>${kv(T.ci, d(h.check_in))}${kv(T.co, d(h.check_out))}${kv(T.dur, T.u(h.nights||1, h.rooms||1))}${kv(T.amt, m(h.total_amount))}</div>
+      </div>
+      ${h.free_cancellation ? `<div style="color:#16a34a;font-weight:700;font-size:9.5pt;margin-top:3px">✓ ${T.free}</div>` : ''}
+    </div>`;
+  };
+
   const renderPage = (lang) => {
     const t = L[lang];
     const paxRows = pax.map((p, i) => `<tr><td>${i+1}</td><td><b>${(p.first_name||'')} ${(p.last_name||'')}</b> <span style="color:#999">(${invType(p.passenger_type, lang)})</span></td><td>${passportOf(p)}</td><td>${p.date_of_birth||'—'}</td><td>${p.nationality||'—'}</td><td style="text-align:center;font-weight:800;color:#6d28d9">${seatOf(p, i)}</td><td>${checkedBag(cabin)}</td></tr>`).join('');
@@ -618,6 +634,7 @@ function buildPrintInvoice(b) {
         </div>
         ${segs.length ? `<table class="iv-tbl" style="margin-top:7px"><thead><tr>${t.segCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${segs.map(s=>`<tr><td><b>${s.flight_number||'—'}</b></td><td>${s.origin_airport||'—'}</td><td>${s.destination_airport||'—'}</td><td>${ilocDT(s.departure_at, lang)}</td><td>${ilocDT(s.arrival_at, lang)}</td><td>${ilocDur(s.departure_at,s.arrival_at, lang)||'—'}</td></tr>`).join('')}</tbody></table>` : ''}
       </div>
+      ${hotelSecIv(lang)}
       <div class="iv-sec"><div class="iv-sec-t">${t.pax} (${pax.length})</div>
         <table class="iv-tbl"><thead><tr>${t.paxCols.map(c=>`<th>${c}</th>`).join('')}</tr></thead><tbody>${paxRows || `<tr><td colspan="7" style="text-align:center;color:#999">—</td></tr>`}</tbody></table>
         <div style="font-size:9.5pt;color:#777;margin-top:4px">${t.cabinBag}</div>

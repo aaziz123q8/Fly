@@ -695,13 +695,17 @@ function pkgSaving(subtotal) { return round2(subtotal * PKG_RATE); }
 // package payload sent to the server so it charges (and persists) the hotel too
 function pkgPayload() {
   if (!pkg || !pkg.hotel) return undefined;
+  const rm = pkg.hotel.room || {};
   return {
     hotel_id:   pkg.hotel.id   || '',
     hotel_name: pkg.hotel.name || '',
-    city:       (pkg.params && pkg.params.to) || '',
+    city:       pkg.hotel.city || (pkg.params && pkg.params.to) || '',
     nightly:    pkg.hotel.nightly || 0,
     nights:     pkg.hotel.nights  || 1,
     rooms:      pkg.hotel.rooms   || 1,
+    check_in:   pkg.hotel.check_in  || '',
+    check_out:  pkg.hotel.check_out || '',
+    room: { id: rm.id||'', name: rm.name||'', board: rm.board||'', free_cancellation: !!rm.free_cancellation },
   };
 }
 

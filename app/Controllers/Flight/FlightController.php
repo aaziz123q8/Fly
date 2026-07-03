@@ -437,6 +437,15 @@ class FlightController
 
         if ($booking === null) Response::notFound('Booking not found.');
 
+        // Attach the package hotel (if this flight was booked as a flight+hotel package).
+        try {
+            $ph = $this->bookingService->getPackageHotel(
+                (string) ($booking['booking_reference'] ?? ''),
+                (int) ($booking['user_id'] ?? $user['id'])
+            );
+            if ($ph) $booking['package_hotel'] = $ph;
+        } catch (\Throwable $e) { /* non-fatal */ }
+
         // Auto-sync with Duffel to get latest status on every view
         if (!empty($booking['provider_order_id'])) {
             try {

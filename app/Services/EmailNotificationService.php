@@ -113,8 +113,23 @@ class EmailNotificationService
             $docRows = $docs->fetchAll(PDO::FETCH_ASSOC);
         } catch (\Throwable) { /* table may not exist yet */ }
 
+        // Package hotel linked to this flight booking (flight + hotel package).
+        $pkgHotel = null;
+        try {
+            $ph = $this->db->prepare(
+                'SELECT hb.*,
+                        (SELECT room_type FROM hotel_booking_rooms WHERE booking_id = hb.id LIMIT 1) AS room_type,
+                        (SELECT meal_plan FROM hotel_booking_rooms WHERE booking_id = hb.id LIMIT 1) AS meal_plan
+                 FROM hotel_bookings hb
+                 WHERE hb.user_id = :u AND hb.special_requests LIKE :m
+                 ORDER BY hb.id DESC LIMIT 1'
+            );
+            $ph->execute([':u' => $row['user_id'], ':m' => '%"flight_ref":"' . $row['booking_reference'] . '"%']);
+            $pkgHotel = $ph->fetch(PDO::FETCH_ASSOC) ?: null;
+        } catch (\Throwable) { /* non-fatal */ }
+
         $subject = 'Your Flight Booking Confirmation — ' . $row['booking_reference'];
-        $body    = $this->buildFlightConfirmationHtml($row, $segRows, $pasRows, $docRows);
+        $body    = $this->buildFlightConfirmationHtml($row, $segRows, $pasRows, $docRows, $pkgHotel);
 
         $this->sendHtmlMail($row['email'], $subject, $body);
     }
@@ -419,7 +434,7 @@ HTML;
 HTML;
     }
 
-    private function buildFlightConfirmationHtml(array $booking, array $segments, array $passengers, array $documents = []): string
+    private function buildFlightConfirmationHtml(array $booking, array $segments, array $passengers, array $documents = [], ?array $pkgHotel = null): string
     {
         $year     = date('Y');
         $appName  = htmlspecialchars($this->fromName, ENT_QUOTES, 'UTF-8');
@@ -557,6 +572,30 @@ HTML;
             );
         }
 
+        // Package hotel block (flight + hotel package) — empty for flight-only bookings.
+        $hotelHtml = '';
+        if (is_array($pkgHotel) && !empty($pkgHotel)) {
+            $he   = static fn($v) => htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
+            $ci   = !empty($pkgHotel['check_in_date'])  ? date('d M Y', strtotime((string) $pkgHotel['check_in_date']))  : '—';
+            $co   = !empty($pkgHotel['check_out_date']) ? date('d M Y', strtotime((string) $pkgHotel['check_out_date'])) : '—';
+            $hRow = static fn($k, $v) => ($v !== '' && $v !== null)
+                ? '<tr><td style="padding:8px;color:#888;">' . $k . '</td><td style="padding:8px;text-align:right;font-weight:bold;color:#333;">' . $v . '</td></tr>'
+                : '';
+            $hotelHtml =
+                '<h3 style="color:#0057a8;border-bottom:2px solid #e0e8f4;padding-bottom:8px;margin-top:28px;">Hotel (Package)</h3>'
+              . '<p style="font-size:15px;font-weight:bold;color:#333;margin:6px 0;">' . $he($pkgHotel['hotel_name'] ?? '') . '</p>'
+              . '<table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#555;">'
+              . $hRow('Hotel Booking Ref', $he($pkgHotel['booking_reference']   ?? ''))
+              . $hRow('Provider Ref',      $he($pkgHotel['provider_booking_id'] ?? ''))
+              . $hRow('Room',              $he($pkgHotel['room_type'] ?? ''))
+              . $hRow('Meal plan',         $he($pkgHotel['meal_plan'] ?? ''))
+              . $hRow('Check-in',          $he($ci))
+              . $hRow('Check-out',         $he($co))
+              . $hRow('Nights',            $he(($pkgHotel['nights_count'] ?? 1) . ' x ' . ($pkgHotel['rooms_count'] ?? 1) . ' room(s)'))
+              . $hRow('Hotel amount',      $he(strtoupper((string) ($pkgHotel['currency'] ?? 'GBP')) . ' ' . number_format((float) ($pkgHotel['total_amount'] ?? 0), 2)))
+              . '</table>';
+        }
+
         return <<<HTML
 <!DOCTYPE html>
 <html lang="en">
@@ -608,6 +647,8 @@ HTML;
               </tr>
               {$pasHtml}
             </table>
+
+            {$hotelHtml}
 
             {$ticketHtml}
 

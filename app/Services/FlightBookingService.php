@@ -352,6 +352,7 @@ class FlightBookingService
         if ($package !== null && (float) ($package['nightly'] ?? 0) > 0) {
             $pkgNights = max(1, (int) ($package['nights'] ?? 1));
             $pkgRooms  = max(1, (int) ($package['rooms']  ?? 1));
+            $pkgRoom = (isset($package['room']) && is_array($package['room'])) ? $package['room'] : [];
             $pricingSnapshot['package'] = [
                 'hotel_id'      => (string) ($package['hotel_id']   ?? ''),
                 'hotel_name'    => (string) ($package['hotel_name'] ?? ''),
@@ -361,6 +362,14 @@ class FlightBookingService
                 'rooms'         => $pkgRooms,
                 'hotel_total'   => round((float) $package['nightly'] * $pkgNights * $pkgRooms, 2),
                 'discount_rate' => 0.05,
+                'check_in'      => (string) ($package['check_in']  ?? ''),
+                'check_out'     => (string) ($package['check_out'] ?? ''),
+                'room'          => [
+                    'id'                => (string) ($pkgRoom['id']    ?? ''),
+                    'name'              => (string) ($pkgRoom['name']  ?? ''),
+                    'board'             => (string) ($pkgRoom['board'] ?? ''),
+                    'free_cancellation' => !empty($pkgRoom['free_cancellation']),
+                ],
             ];
         }
         $pkgSnap = $pricingSnapshot['package'] ?? null;
@@ -1474,7 +1483,15 @@ class FlightBookingService
         // Payment confirmed — complete booking synchronously
         try {
             $this->completeBooking($sessionKey, $paymentIntentId);
-            return $this->fetchCompletedBookingResult($userId, $paymentIntentId);
+            $bookingResult = $this->fetchCompletedBookingResult($userId, $paymentIntentId);
+            // Package: record the attached hotel booking. Non-blocking — the flight
+            // is already booked and paid, so a hotel-record failure must never throw.
+            try {
+                $this->maybeCreatePackageHotel($sessionKey, $userId, (string) ($bookingResult['booking_reference'] ?? ''));
+            } catch (\Throwable $he) {
+                error_log('[PKG_HOTEL_RECORD_FAIL] ' . $he->getMessage());
+            }
+            return $bookingResult;
         } catch (\Throwable $e) {
             // Re-credit wallet portion if booking failed
             if ($walletDebited && $walletService !== null) {
@@ -1500,6 +1517,155 @@ class FlightBookingService
             // Throw with the exact mapped customer message (Arabic) + http code
             throw new \RuntimeException($e->getMessage(), (int)$e->getCode() ?: 500);
         }
+    }
+
+    /**
+     * Record the hotel that was booked as part of a flight+hotel package. The
+     * hotel rides on the flight checkout (Option 1), so we create a confirmed
+     * hotel_bookings row here — generating its own HM reference and a provider
+     * reference — linked to the flight booking via a marker in special_requests.
+     * Idempotent: skips if a hotel booking was already recorded for this session.
+     */
+    private function maybeCreatePackageHotel(string $sessionKey, int $userId, string $flightRef): void
+    {
+        $stmt = $this->db->prepare(
+            'SELECT pricing_snapshot, passengers_data FROM booking_sessions
+             WHERE session_key = :sk AND user_id = :uid LIMIT 1'
+        );
+        $stmt->execute([':sk' => $sessionKey, ':uid' => $userId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$row) return;
+
+        $snap = is_string($row['pricing_snapshot'])
+            ? json_decode($row['pricing_snapshot'], true)
+            : ($row['pricing_snapshot'] ?? []);
+        $pkg = $snap['package'] ?? null;
+        if (!is_array($pkg) || (float) ($pkg['hotel_total'] ?? 0) <= 0) return;
+        if (!empty($pkg['hotel_booking_reference'])) return; // already recorded
+
+        $pax  = is_string($row['passengers_data'])
+            ? json_decode($row['passengers_data'], true)
+            : ($row['passengers_data'] ?? []);
+        $lead = (is_array($pax) && !empty($pax)) ? $pax[0] : [];
+        $adults   = max(1, is_array($pax) ? count($pax) : 1);
+        $currency = strtoupper($snap['currency'] ?? 'GBP');
+
+        // Ensure the RateHawk provider row exists (hotel_bookings.provider_id = 2).
+        try { $this->db->prepare("INSERT IGNORE INTO providers (id, name, type, is_active) VALUES (2, 'RateHawk', 'hotel', 1)")->execute(); } catch (\Throwable) {}
+
+        $providerHotelId = (string) ($pkg['hotel_id'] ?? '');
+        $room   = is_array($pkg['room'] ?? null) ? $pkg['room'] : [];
+        $marker = json_encode(['pkg' => 1, 'flight_ref' => $flightRef], JSON_UNESCAPED_UNICODE);
+
+        $ins = $this->db->prepare(
+            'INSERT INTO hotel_bookings
+               (user_id, provider_id, booking_reference, provider_booking_id,
+                hotel_id, hotel_name, provider_hotel_id, check_in_date, check_out_date, nights_count,
+                rooms_count, adults_count, children_count,
+                total_amount, currency, status, cancellation_policy, special_requests)
+             VALUES
+               (:user_id, 2, :ref, :pbid, :hid, :hname, :phid, :ci, :co, :nights,
+                :rooms, :adults, 0, :amount, :currency, :status, :cxl, :sr)'
+        );
+        $ins->execute([
+            ':user_id' => $userId,
+            ':ref'     => 'HMTMP' . bin2hex(random_bytes(6)),
+            ':pbid'    => '',
+            ':hid'     => is_numeric($providerHotelId) ? (int) $providerHotelId : 0,
+            ':hname'   => ($pkg['hotel_name'] ?? '') !== '' ? $pkg['hotel_name'] : null,
+            ':phid'    => $providerHotelId,
+            ':ci'      => (string) ($pkg['check_in']  ?? ''),
+            ':co'      => (string) ($pkg['check_out'] ?? ''),
+            ':nights'  => max(1, (int) ($pkg['nights'] ?? 1)),
+            ':rooms'   => max(1, (int) ($pkg['rooms'] ?? 1)),
+            ':adults'  => $adults,
+            ':amount'  => number_format((float) $pkg['hotel_total'], 2, '.', ''),
+            ':currency'=> $currency,
+            ':status'  => 'confirmed',
+            ':cxl'     => json_encode(['free_cancellation' => !empty($room['free_cancellation'])], JSON_UNESCAPED_UNICODE),
+            ':sr'      => $marker,
+        ]);
+        $hbId        = (int) $this->db->lastInsertId();
+        $bookingRef  = 'HM' . str_pad((string) $hbId, 8, '0', STR_PAD_LEFT);
+        $providerRef = 'PKG-' . $bookingRef;
+        $this->db->prepare('UPDATE hotel_bookings SET booking_reference = :r, provider_booking_id = :p WHERE id = :id')
+            ->execute([':r' => $bookingRef, ':p' => $providerRef, ':id' => $hbId]);
+
+        try {
+            $this->db->prepare(
+                'INSERT INTO hotel_booking_rooms (booking_id, room_type, meal_plan, provider_room_id, amount, currency)
+                 VALUES (:b, :rt, :mp, :pr, :amt, :cur)'
+            )->execute([
+                ':b' => $hbId,
+                ':rt' => ($room['name'] ?? '') !== '' ? $room['name'] : 'Room',
+                ':mp' => ($room['board'] ?? '') !== '' ? $room['board'] : null,
+                ':pr' => ($room['id'] ?? '') !== '' ? $room['id'] : null,
+                ':amt' => number_format((float) $pkg['hotel_total'], 2, '.', ''),
+                ':cur' => $currency,
+            ]);
+        } catch (\Throwable) {}
+
+        try {
+            $this->db->prepare(
+                'INSERT INTO hotel_booking_guests (booking_id, is_lead, first_name, last_name, email, phone)
+                 VALUES (:b, 1, :f, :l, :e, :p)'
+            )->execute([
+                ':b' => $hbId,
+                ':f' => $lead['first_name'] ?? '',
+                ':l' => $lead['last_name']  ?? '',
+                ':e' => $lead['email'] ?? null,
+                ':p' => $lead['phone_number'] ?? ($lead['phone'] ?? null),
+            ]);
+        } catch (\Throwable) {}
+
+        // Persist the refs back on the session so the confirmation can show them.
+        $snap['package']['hotel_booking_id']        = $hbId;
+        $snap['package']['hotel_booking_reference'] = $bookingRef;
+        $snap['package']['provider_booking_id']     = $providerRef;
+        try {
+            $this->db->prepare('UPDATE booking_sessions SET pricing_snapshot = :ps WHERE session_key = :sk')
+                ->execute([':ps' => json_encode($snap, JSON_UNESCAPED_UNICODE), ':sk' => $sessionKey]);
+        } catch (\Throwable) {}
+    }
+
+    /**
+     * Fetch the package hotel booking linked to a flight booking reference, for
+     * the confirmation page / invoice / e-ticket. Returns null if none.
+     */
+    public function getPackageHotel(string $flightRef, int $userId): ?array
+    {
+        if ($flightRef === '') return null;
+        $stmt = $this->db->prepare(
+            "SELECT * FROM hotel_bookings
+             WHERE user_id = :u AND special_requests LIKE :m
+             ORDER BY id DESC LIMIT 1"
+        );
+        $stmt->execute([':u' => $userId, ':m' => '%"flight_ref":"' . $flightRef . '"%']);
+        $hb = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$hb) return null;
+
+        $room = [];
+        try {
+            $rs = $this->db->prepare('SELECT room_type, meal_plan FROM hotel_booking_rooms WHERE booking_id = :b LIMIT 1');
+            $rs->execute([':b' => $hb['id']]);
+            $room = $rs->fetch(PDO::FETCH_ASSOC) ?: [];
+        } catch (\Throwable) {}
+        $cxl = json_decode((string) ($hb['cancellation_policy'] ?? ''), true) ?: [];
+
+        return [
+            'booking_reference'   => $hb['booking_reference']   ?? '',
+            'provider_booking_id' => $hb['provider_booking_id'] ?? '',
+            'hotel_name'          => $hb['hotel_name']          ?? '',
+            'check_in'            => $hb['check_in_date']       ?? '',
+            'check_out'           => $hb['check_out_date']      ?? '',
+            'nights'              => (int) ($hb['nights_count'] ?? 1),
+            'rooms'               => (int) ($hb['rooms_count']  ?? 1),
+            'total_amount'        => (float) ($hb['total_amount'] ?? 0),
+            'currency'            => $hb['currency'] ?? 'GBP',
+            'room_type'           => $room['room_type'] ?? '',
+            'meal_plan'           => $room['meal_plan'] ?? '',
+            'free_cancellation'   => !empty($cxl['free_cancellation']),
+        ];
     }
 
     private function fetchCompletedBookingResult(int $userId, string $paymentIntentId = ''): array
