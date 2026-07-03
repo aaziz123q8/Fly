@@ -9,7 +9,8 @@
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
 <style>
 :root{
   --v1:#7C3AED; --v2:#9333EA; --v3:#4C1D95; --plum:#2E1065;
@@ -26,6 +27,10 @@ button{font-family:inherit;cursor:pointer}
 input,select{font-family:inherit}
 h1,h2,h3{line-height:1.22;letter-spacing:-.4px}
 img{display:block;max-width:100%}
+/* Anti-FOUC: the mobile launcher's full styling lives in a later <style> block.
+   Hide it up-front so it never paints unstyled (giant SVG) during first load;
+   the later block's @media(max-width:768px) rule reveals it once fully styled. */
+.mlaunch{display:none}
 .wrap{max-width:1200px;margin:0 auto;padding:0 22px}
 .gc{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
 
@@ -267,7 +272,7 @@ select.fi{cursor:pointer}
   <div class="ml-hero">
     <div class="ml-eyebrow">✦ منصّة السفر الأولى في الخليج</div>
     <div class="ml-logo">
-      <span class="ml-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>
+      <span class="ml-mark"><svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>
       <div class="ml-name">فلاي<b> مسار</b></div>
     </div>
     <div class="ml-btns">
