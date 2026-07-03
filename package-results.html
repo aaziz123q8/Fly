@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>نتائج الباقة — فلاي مسار</title>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
+<style>
+:root{--v1:#7C3AED;--v2:#9333EA;--v3:#4C1D95;--deep:#2E1065;--coral:#FB7185;--amber:#F59E0B;--ok:#16a34a;--ink:#1B172B;--muted:#6B6880;--line:#ECE8F4;--bg:#FAF8FF;--soft:#F4EEFE;--grad:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);--shadow-sm:0 8px 24px -14px rgba(76,29,149,.4);--shadow:0 24px 60px -30px rgba(76,29,149,.45)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;padding-bottom:120px}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:900px;margin:0 auto;padding:0 18px}
+/* summary bar */
+.psum{background:radial-gradient(120% 120% at 50% -30%,#7C3AED,#4C1D95 60%,#2E1065);color:#fff;padding:calc(16px + env(safe-area-inset-top,0)) 0 18px}
+.psum .route{display:flex;align-items:center;gap:10px;font-size:1.15rem;font-weight:800}
+.psum .route .arw{opacity:.7}
+.psum .meta{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:6px;font-size:.82rem;color:#e7ddff}
+.psum .edit{margin-top:10px;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:20px;padding:6px 14px;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer}
+/* sections */
+.sec{margin-top:22px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.sec-h h2{font-size:1.12rem;font-weight:800;display:flex;align-items:center;gap:8px}
+.sec-h .step{width:26px;height:26px;border-radius:50%;background:var(--grad);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:800}
+.linkbtn{background:none;border:0;color:var(--v2);font:inherit;font-weight:700;font-size:.86rem;cursor:pointer;display:flex;align-items:center;gap:4px}
+/* cards */
+.card{background:#fff;border:1.5px solid var(--line);border-radius:18px;box-shadow:var(--shadow-sm);padding:16px;margin-bottom:12px;transition:.18s}
+.card.sel{border-color:var(--v1);box-shadow:0 14px 34px -18px rgba(124,58,237,.6)}
+/* flight card */
+.fl-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.fl-air{display:flex;align-items:center;gap:9px;font-weight:700}
+.fl-air .plane{width:34px;height:34px;border-radius:10px;background:var(--soft);color:var(--v2);display:flex;align-items:center;justify-content:center}
+.fl-air .plane svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.fl-price{font-size:1.28rem;font-weight:800;color:var(--v2);white-space:nowrap}
+.fl-leg{display:flex;align-items:center;gap:12px;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.fl-leg .lbl{font-size:.72rem;color:var(--muted);font-weight:700;min-width:38px}
+.fl-pt{text-align:center}
+.fl-pt b{font-size:1.05rem;display:block}
+.fl-pt span{font-size:.72rem;color:var(--muted)}
+.fl-mid{flex:1;text-align:center;font-size:.72rem;color:var(--muted)}
+.fl-bar{height:2px;background:linear-gradient(to left,#7C3AED,#C026D3);position:relative;margin:5px 0}
+.fl-bar::after{content:'✈';position:absolute;top:-9px;left:50%;transform:translateX(-50%);font-size:.8rem}
+.tag{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:20px}
+.tag-green{background:#DCFCE7;color:#166534}.tag-gray{background:#EEF0F4;color:#475467}.tag-orange{background:#FEF3C7;color:#92400E}
+.alts{display:none}.alts.open{display:block}
+.pick{margin-top:12px;width:100%;border:1.5px solid var(--v1);background:#fff;color:var(--v1);border-radius:12px;padding:9px;font:inherit;font-weight:700;cursor:pointer}
+.card.sel .pick{background:var(--grad);color:#fff;border-color:transparent}
+/* hotel card */
+.ht{display:flex;gap:12px}
+.ht-img{width:96px;height:96px;border-radius:13px;object-fit:cover;background:var(--soft);flex-shrink:0}
+.ht-body{flex:1;min-width:0}
+.ht-name{font-size:1rem;font-weight:800}
+.ht-stars{color:var(--amber);font-size:.82rem;letter-spacing:1px}
+.ht-city{font-size:.8rem;color:var(--muted)}
+.ht-rev{display:inline-flex;align-items:center;gap:6px;margin-top:4px;font-size:.78rem}
+.ht-score{background:var(--grad);color:#fff;border-radius:7px;padding:2px 7px;font-weight:800;font-size:.76rem}
+.ht-foot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px;gap:8px;flex-wrap:wrap}
+.ht-price b{font-size:1.15rem;color:var(--v2)}
+.ht-price span{font-size:.72rem;color:var(--muted)}
+/* states */
+.state{background:#fff;border:1.5px dashed var(--line);border-radius:16px;padding:28px 18px;text-align:center;color:var(--muted)}
+.spinner{width:32px;height:32px;border:3px solid var(--soft);border-top-color:var(--v1);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* sticky total */
+.bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);box-shadow:0 -12px 34px -20px rgba(76,29,149,.5);z-index:900;padding:12px 0 calc(12px + env(safe-area-inset-bottom,0))}
+.bar .in{max-width:900px;margin:0 auto;padding:0 18px;display:flex;align-items:center;gap:14px}
+.bar .sum{flex:1;min-width:0}
+.bar .save{display:inline-block;background:#DCFCE7;color:#166534;font-size:.72rem;font-weight:800;border-radius:20px;padding:2px 9px;margin-bottom:2px}
+.bar .tot{font-size:1.4rem;font-weight:800;color:var(--v3);line-height:1.2}
+.bar .tot s{font-size:.85rem;color:var(--muted);font-weight:600;margin-inline-start:8px}
+.bar .sub{font-size:.72rem;color:var(--muted)}
+.bar .go{background:var(--grad);color:#fff;border:0;border-radius:14px;padding:14px 22px;font:inherit;font-size:1.02rem;font-weight:800;cursor:pointer;white-space:nowrap;box-shadow:0 12px 24px -12px rgba(124,58,237,.85)}
+.bar .go:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+@media(max-width:520px){.bar .go{padding:13px 16px;font-size:.95rem}.bar .tot{font-size:1.2rem}.ht-img{width:78px;height:78px}}
+</style>
+</head>
+<body>
+
+<!-- Global header/app-shell injected by js/site-chrome.js -->
+
+<section class="psum"><div class="wrap">
+  <div class="route"><span id="rFrom">—</span><span class="arw">→</span><span id="rTo">—</span></div>
+  <div class="meta">
+    <span id="rDates">—</span>
+    <span id="rNights">—</span>
+    <span id="rPax">—</span>
+    <span id="rRooms">—</span>
+  </div>
+  <button class="edit" onclick="location.href='package.html'">
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+    تعديل البحث
+  </button>
+</div></section>
+
+<div class="wrap">
+
+  <!-- FLIGHT -->
+  <div class="sec">
+    <div class="sec-h">
+      <h2><span class="step">١</span> رحلتك</h2>
+      <button class="linkbtn" id="fltToggle" style="display:none" onclick="toggleAlts()">تغيير الرحلة ▾</button>
+    </div>
+    <div id="fltLoading" class="state"><div class="spinner"></div>جاري البحث عن أفضل رحلة…</div>
+    <div id="fltError" class="state" style="display:none"></div>
+    <div id="fltPick"></div>
+    <div id="fltAlts" class="alts"></div>
+  </div>
+
+  <!-- HOTEL -->
+  <div class="sec">
+    <div class="sec-h">
+      <h2><span class="step">٢</span> اختر فندقك</h2>
+    </div>
+    <div id="htLoading" class="state"><div class="spinner"></div>جاري البحث عن الفنادق…</div>
+    <div id="htError" class="state" style="display:none"></div>
+    <div id="htList"></div>
+  </div>
+
+</div>
+
+<!-- STICKY TOTAL -->
+<div class="bar"><div class="in">
+  <div class="sum">
+    <span class="save" id="barSave" style="display:none"></span>
+    <div class="tot" id="barTotal">—</div>
+    <div class="sub" id="barSub">اختر رحلة وفندقاً لإتمام الباقة</div>
+  </div>
+  <button class="go" id="barGo" disabled onclick="bookPackage()">احجز الباقة</button>
+</div></div>
+
+<script src="js/api.js?v=2026062101"></script>
+<script src="js/auth.js?v=2026062101"></script>
+<script src="js/currency.js?v=2026070106"></script>
+<script>
+/* ── Package results: best flight + pick your hotel, unified 5% package price ── */
+var PKG_DISCOUNT = 0.05; // 5% package saving (business rule)
+
+var P = new URLSearchParams(location.search);
+var params = {
+  from: (P.get('from')||'').toUpperCase(),
+  to:   (P.get('to')||'').toUpperCase(),
+  dep:  P.get('dep')||'',
+  ret:  P.get('ret')||'',
+  adults:   parseInt(P.get('pax')||'1'),
+  children: parseInt(P.get('children')||'0'),
+  infants:  parseInt(P.get('infants')||'0'),
+  cabin:    P.get('cabin')||'economy',
+  rooms:    parseInt(P.get('rooms')||'1')
+};
+
+var state = { flight:null, flightPrice:0, hotel:null, hotelNightly:0, nights:1, offers:[] };
+
+/* ── helpers ── */
+function arNum(n){ return String(n).replace(/[0-9]/g,function(d){return '٠١٢٣٤٥٦٧٨٩'[d];}); }
+function money(gbp){ return (typeof formatPrice==='function') ? formatPrice(gbp) : ('£'+(gbp||0).toFixed(0)); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function nightsBetween(a,b){ if(!a||!b) return 1; var d=Math.round((new Date(b)-new Date(a))/86400000); return d>0?d:1; }
+function fmtDateAr(iso){ if(!iso) return ''; var m=['ينا','فبر','مار','أبر','ماي','يون','يول','أغس','سبت','أكت','نوف','ديس']; var d=new Date(iso); return arNum(d.getDate())+' '+m[d.getMonth()]; }
+function fmtTime(iso){ if(!iso) return '--:--'; var d=new Date(iso); return arNum(String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')); }
+
+/* defensive Duffel-offer getters */
+function offPrice(o){ return parseFloat(o.total_amount||o.total||o.amount||0); }
+function offId(o){ return o.offer_id||o.id||''; }
+function offAirline(o){
+  try{ if(o.owner&&o.owner.name) return o.owner.name;
+       var seg=o.slices[0].segments[0]; return (seg.marketing_carrier||seg.operating_carrier||{}).name||'شركة طيران'; }
+  catch(e){ return 'شركة طيران'; }
+}
+function sliceOf(o,i){
+  var s=(o.slices||[])[i]; if(!s) return null;
+  var segs=s.segments||[]; var f=segs[0]||{}, l=segs[segs.length-1]||{};
+  return {
+    origin:(s.origin&&s.origin.iata_code)||(f.origin&&f.origin.iata_code)||params.from,
+    dest:(s.destination&&s.destination.iata_code)||(l.destination&&l.destination.iata_code)||params.to,
+    dep:f.departing_at||'', arr:l.arriving_at||'', stops:Math.max(0,segs.length-1)
+  };
+}
+function stopTag(n){ return n===0?'<span class="tag tag-green">مباشر</span>':n===1?'<span class="tag tag-gray">توقف</span>':'<span class="tag tag-orange">'+arNum(n)+' توقفات</span>'; }
+
+/* ── render summary bar (route/dates/pax) ── */
+function renderSummary(){
+  state.nights = nightsBetween(params.dep, params.ret);
+  document.getElementById('rFrom').textContent = params.from||'—';
+  document.getElementById('rTo').textContent   = params.to||'—';
+  document.getElementById('rDates').textContent = '🗓 '+fmtDateAr(params.dep)+' — '+fmtDateAr(params.ret);
+  document.getElementById('rNights').textContent = '🌙 '+arNum(state.nights)+' ليالٍ';
+  var pax = params.adults+params.children+params.infants;
+  document.getElementById('rPax').textContent = '👤 '+arNum(pax)+' مسافر';
+  document.getElementById('rRooms').textContent = '🚪 '+arNum(params.rooms)+' غرفة';
+}
+
+/* ── flights ── */
+function flightCard(o, isAlt){
+  var out=sliceOf(o,0), back=sliceOf(o,1);
+  var sel = state.flight && offId(state.flight)===offId(o);
+  var legs=''+
+    '<div class="fl-leg"><span class="lbl">ذهاب</span>'+
+      '<div class="fl-pt"><b>'+fmtTime(out.dep)+'</b><span>'+esc(out.origin)+'</span></div>'+
+      '<div class="fl-mid">'+stopTag(out.stops)+'<div class="fl-bar"></div></div>'+
+      '<div class="fl-pt"><b>'+fmtTime(out.arr)+'</b><span>'+esc(out.dest)+'</span></div>'+
+    '</div>';
+  if(back){ legs+=
+    '<div class="fl-leg"><span class="lbl">عودة</span>'+
+      '<div class="fl-pt"><b>'+fmtTime(back.dep)+'</b><span>'+esc(back.origin)+'</span></div>'+
+      '<div class="fl-mid">'+stopTag(back.stops)+'<div class="fl-bar"></div></div>'+
+      '<div class="fl-pt"><b>'+fmtTime(back.arr)+'</b><span>'+esc(back.dest)+'</span></div>'+
+    '</div>'; }
+  return '<div class="card'+(sel?' sel':'')+'" data-oid="'+esc(offId(o))+'">'+
+    '<div class="fl-top">'+
+      '<div class="fl-air"><span class="plane"><svg viewBox="0 0 24 24"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg></span>'+esc(offAirline(o))+'</div>'+
+      '<div class="fl-price">'+money(offPrice(o))+'</div>'+
+    '</div>'+ legs +
+    (isAlt?'<button class="pick" onclick="selectFlight(\''+esc(offId(o))+'\')">'+(sel?'✓ مُختارة':'اختيار هذه الرحلة')+'</button>':'')+
+  '</div>';
+}
+function renderFlights(){
+  var pick=document.getElementById('fltPick'), alts=document.getElementById('fltAlts');
+  if(!state.flight){ pick.innerHTML=''; return; }
+  pick.innerHTML = flightCard(state.flight,false);
+  var others = state.offers.filter(function(o){return offId(o)!==offId(state.flight);}).slice(0,8);
+  document.getElementById('fltToggle').style.display = others.length?'flex':'none';
+  alts.innerHTML = others.map(function(o){return flightCard(o,true);}).join('');
+}
+function selectFlight(id){
+  var o=state.offers.filter(function(x){return offId(x)===id;})[0]; if(!o) return;
+  state.flight=o; state.flightPrice=offPrice(o);
+  renderFlights(); recompute();
+}
+function toggleAlts(){
+  var a=document.getElementById('fltAlts'), t=document.getElementById('fltToggle');
+  a.classList.toggle('open'); t.textContent = a.classList.contains('open')?'إخفاء الرحلات ▴':'تغيير الرحلة ▾';
+}
+function loadFlights(){
+  var payload={ origin:params.from, destination:params.to, departure_date:params.dep,
+                adults:params.adults, cabin_class:params.cabin };
+  if(params.ret) payload.return_date=params.ret;
+  if(params.children) payload.children=params.children;
+  if(params.infants) payload.infants=params.infants;
+  Api.post('/api/flights/search', payload, Auth.isLoggedIn()).then(function(res){
+    document.getElementById('fltLoading').style.display='none';
+    var offers=res.offers||res.data||[];
+    if(!offers.length){ showFltError('لا توجد رحلات متاحة لهذه الوجهة والتواريخ.'); return; }
+    offers.sort(function(a,b){return offPrice(a)-offPrice(b);});
+    state.offers=offers; state.flight=offers[0]; state.flightPrice=offPrice(offers[0]);
+    renderFlights(); recompute();
+  }).catch(function(){ document.getElementById('fltLoading').style.display='none'; showFltError('تعذّر تحميل الرحلات. حاول مجدداً.'); });
+}
+function showFltError(m){ var e=document.getElementById('fltError'); e.style.display='block'; e.textContent=m; }
+
+/* ── hotels ── */
+function stars(n){ n=parseInt(n)||0; return '★★★★★'.slice(0,n)+'☆☆☆☆☆'.slice(0,Math.max(0,5-n)); }
+function hotelCard(h){
+  var id=h.id||h.provider_hotel_id||h.name;
+  var sel=state.hotel && (state.hotel.id||state.hotel.provider_hotel_id||state.hotel.name)===id;
+  var nightly=parseFloat(h.min_price||h.price||0);
+  var img=h.image_url||h.main_image_url||'';
+  var score=h.rating||h.review_score;
+  return '<div class="card'+(sel?' sel':'')+'" data-hid="'+esc(id)+'">'+
+    '<div class="ht">'+
+      (img?'<img class="ht-img" src="'+esc(img)+'" alt="" onerror="this.style.visibility=\'hidden\'">':'<div class="ht-img"></div>')+
+      '<div class="ht-body">'+
+        '<div class="ht-name">'+esc(h.name)+'</div>'+
+        '<div class="ht-stars">'+stars(h.stars||h.star_rating)+'</div>'+
+        '<div class="ht-city">📍 '+esc(h.city||'')+'</div>'+
+        (score?'<div class="ht-rev"><span class="ht-score">'+esc(score)+'</span><span>'+(h.review_count?arNum(h.review_count)+' تقييم':'')+'</span></div>':'')+
+        '<div class="ht-foot">'+
+          '<div class="ht-price"><b>'+money(nightly)+'</b> <span>/ الليلة</span></div>'+
+          '<button class="pick" style="width:auto;margin:0;padding:8px 18px" onclick="selectHotel(\''+esc(id)+'\')">'+(sel?'✓ مُختار':'اختيار')+'</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+function renderHotels(){
+  var list=document.getElementById('htList');
+  if(!state.hotels||!state.hotels.length){ list.innerHTML=''; return; }
+  list.innerHTML = state.hotels.map(hotelCard).join('');
+}
+function selectHotel(id){
+  var h=state.hotels.filter(function(x){return (x.id||x.provider_hotel_id||x.name)===id;})[0]; if(!h) return;
+  state.hotel=h; state.hotelNightly=parseFloat(h.min_price||h.price||0);
+  renderHotels(); recompute();
+}
+function loadHotels(){
+  var payload={ check_in:params.dep, check_out:params.ret, adults:params.adults,
+                rooms:params.rooms, children:params.children,
+                destination:params.to, query:params.to };
+  Api.post('/api/hotels/search', payload, Auth.isLoggedIn()).then(function(res){
+    document.getElementById('htLoading').style.display='none';
+    var hotels=res.hotels||res.data||[];
+    if(!hotels.length){ showHtError('لا تتوفر فنادق لهذه الوجهة حالياً.'); return; }
+    hotels.sort(function(a,b){return (parseFloat(a.min_price||a.price||0))-(parseFloat(b.min_price||b.price||0));});
+    state.hotels=hotels; state.hotel=hotels[0]; state.hotelNightly=parseFloat(hotels[0].min_price||hotels[0].price||0);
+    renderHotels(); recompute();
+  }).catch(function(){ document.getElementById('htLoading').style.display='none'; showHtError('تعذّر تحميل الفنادق. حاول مجدداً.'); });
+}
+function showHtError(m){ var e=document.getElementById('htError'); e.style.display='block'; e.textContent=m; }
+
+/* ── unified total (flight + hotel*nights*rooms − 5%) ── */
+function recompute(){
+  var go=document.getElementById('barGo');
+  if(!state.flight || !state.hotel){ go.disabled=true; return; }
+  var flight=state.flightPrice;
+  var hotel=state.hotelNightly*state.nights*params.rooms;
+  var subtotal=flight+hotel;
+  var saving=subtotal*PKG_DISCOUNT;
+  var total=subtotal-saving;
+  document.getElementById('barSave').style.display='inline-block';
+  document.getElementById('barSave').textContent='وفّرت '+money(saving)+' مع الباقة';
+  document.getElementById('barTotal').innerHTML=money(total)+' <s>'+money(subtotal)+'</s>';
+  document.getElementById('barSub').textContent='طيران '+money(flight)+' + فندق '+money(hotel)+' ('+arNum(state.nights)+' ليالٍ)';
+  go.disabled=false;
+}
+
+/* ── proceed to booking (flight checkout; hotel attached for combined stage) ── */
+function bookPackage(){
+  if(!state.flight||!state.hotel) return;
+  var hotel=state.hotelNightly*state.nights*params.rooms;
+  var subtotal=state.flightPrice+hotel;
+  var sel={
+    type:'package', params:params, discount:PKG_DISCOUNT,
+    flight:{ offer_id:offId(state.flight), price:state.flightPrice },
+    hotel:{ id:state.hotel.id||state.hotel.provider_hotel_id, name:state.hotel.name,
+            nightly:state.hotelNightly, nights:state.nights, rooms:params.rooms, total:hotel },
+    subtotal:subtotal, saving:subtotal*PKG_DISCOUNT, total:subtotal*(1-PKG_DISCOUNT)
+  };
+  try{
+    localStorage.setItem('fly_package_selection', JSON.stringify(sel));
+    localStorage.setItem('bk_adults', params.adults);
+    localStorage.setItem('bk_children', params.children);
+    localStorage.setItem('bk_infants', params.infants);
+  }catch(_){}
+  var q=new URLSearchParams({ offer_id:offId(state.flight), adults:params.adults, cabin:params.cabin, pkg:'1' });
+  window.location.href='booking.html?'+q.toString();
+}
+
+/* ── boot ── */
+if(typeof initCurrency==='function') initCurrency();
+if(!params.from || !params.to || !params.dep){
+  document.querySelector('.wrap').innerHTML='<div class="state" style="margin-top:24px">معطيات الباقة ناقصة. <a href="package.html" style="color:var(--v2);font-weight:700">ابدأ بحثاً جديداً</a></div>';
+  document.getElementById('barGo').disabled=true;
+} else {
+  renderSummary();
+  loadFlights();
+  loadHotels();
+}
+</script>
+<script src="js/site-chrome.js?v=2026070204"></script>
+</body>
+</html>
