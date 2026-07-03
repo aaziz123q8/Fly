@@ -981,6 +981,25 @@ async function shareWhatsApp() {
   btn.disabled = false; btn.textContent = '💬 مشاركة واتساب';
 }
 
+// Phase 2 hook: once the server records the package hotel booking (own ref +
+// provider ref), surface them here. Safe no-op until that endpoint exists.
+function fetchPackageHotelRefs() {
+  try {
+    const el = document.getElementById('pkgHotelRefs');
+    if (!el || !sessionKey) return;
+    Api.get('/api/hotels/package-booking?session_key=' + encodeURIComponent(sessionKey), true)
+      .then(function (r) {
+        const hb = (r && (r.hotel_booking || r.booking)) || null;
+        if (!hb) return;
+        let html = '';
+        if (hb.booking_reference)   html += 'رقم حجز الفندق: <b>' + hb.booking_reference + '</b><br>';
+        if (hb.provider_booking_id) html += 'مرجع المزود: <b>' + hb.provider_booking_id + '</b>';
+        if (html) el.innerHTML = html;
+      })
+      .catch(function () {});
+  } catch (e) {}
+}
+
 // ── Package hotel: when this booking is a flight + hotel package, show the hotel
 // summary (from the selection saved at checkout), then clear it so it never
 // leaks into a later flight-only booking. ──
@@ -996,18 +1015,32 @@ function renderPackageHotel() {
     const money = (gbp) => (typeof formatPrice === 'function') ? formatPrice(gbp) : ('£' + (gbp||0).toFixed(2));
     const nights = h.nights || 1, rooms = h.rooms || 1;
     const hotelTotal = (h.total != null) ? h.total : (h.nightly||0) * nights * rooms;
+    const room = h.room || {};
+    const ci = h.check_in || '', co = h.check_out || '';
+    const fmtD = (iso) => { if(!iso) return '—'; try { const d=new Date(iso); return d.toLocaleDateString('ar-EG',{day:'numeric',month:'long',year:'numeric'}); } catch(e){ return iso; } };
+    const rowCss = 'display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid #f0f2f5;font-size:.86rem';
+    const detail = (lbl, val) => val ? ('<div style="'+rowCss+'"><span style="color:#6B6880">'+lbl+'</span><span style="font-weight:700;text-align:left">'+val+'</span></div>') : '';
     const box = document.getElementById('pkgHotelBlock');
     box.innerHTML =
       '<div style="border:1.5px solid #ECE8F4;border-radius:16px;padding:16px;background:#fff">'
-      + '<div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#4C1D95;margin-bottom:10px">'
+      + '<div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#4C1D95;margin-bottom:12px">'
       +   '<span style="width:30px;height:30px;border-radius:9px;background:#F4EEFE;display:flex;align-items:center;justify-content:center">🏨</span> فندق الباقة</div>'
-      + '<div style="font-weight:700;font-size:1.02rem">' + (h.name || 'الفندق') + '</div>'
-      + '<div style="color:#6B6880;font-size:.86rem;margin-top:2px">' + nights + ' ليالٍ × ' + rooms + ' غرفة</div>'
-      + '<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px dashed #ECE8F4;font-weight:700">'
+      + '<div style="font-weight:800;font-size:1.05rem">' + (h.name || 'الفندق') + '</div>'
+      + (h.city ? '<div style="color:#6B6880;font-size:.82rem;margin:2px 0 10px">📍 ' + h.city + '</div>' : '<div style="height:8px"></div>')
+      + detail('الغرفة', room.name || '')
+      + detail('نظام الوجبات', room.board || '')
+      + detail('تسجيل الوصول', fmtD(ci) + (h.check_in_time ? ' — ' + h.check_in_time : ' — 15:00'))
+      + detail('تسجيل المغادرة', fmtD(co) + (h.check_out_time ? ' — ' + h.check_out_time : ' — 12:00'))
+      + detail('المدة', nights + ' ليالٍ × ' + rooms + ' غرفة')
+      + (room.free_cancellation ? '<div style="'+rowCss+'"><span style="color:#6B6880">الإلغاء</span><span style="font-weight:700;color:#16a34a">إلغاء مجاني</span></div>' : '')
+      + '<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px dashed #ECE8F4;font-weight:800">'
       +   '<span>إجمالي الفندق ضمن الباقة</span><span style="color:#7C3AED">' + money(hotelTotal) + '</span></div>'
-      + '<div style="font-size:.78rem;color:#6B6880;margin-top:8px">تم دفع الفندق ضمن باقتك. سيصلك تأكيد الإقامة مع تفاصيل الحجز.</div>'
+      + '<div id="pkgHotelRefs" style="font-size:.8rem;color:#6B6880;margin-top:10px;line-height:1.9"></div>'
+      + '<div style="font-size:.78rem;color:#92400e;background:#fef9c3;border-radius:8px;padding:8px 10px;margin-top:10px">تم دفع الفندق ضمن باقتك. رقم حجز الفندق ومرجع المزود سيظهران هنا فور إصدار تأكيد الإقامة.</div>'
       + '</div>';
     box.style.display = 'block';
+    // If the server has already recorded the package hotel booking, show its refs.
+    fetchPackageHotelRefs();
     localStorage.removeItem('fly_package_selection');
   } catch (e) {}
 }

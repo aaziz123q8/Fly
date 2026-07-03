@@ -1053,8 +1053,10 @@ function renderPriceRows() {
     const hName = (pkg.hotel && pkg.hotel.name) ? pkg.hotel.name : 'الفندق';
     const nn = (pkg.hotel && pkg.hotel.nights) || 1;
     const rr = (pkg.hotel && pkg.hotel.rooms)  || 1;
+    const rm = (pkg.hotel && pkg.hotel.room && pkg.hotel.room.name) ? ' · ' + pkg.hotel.room.name : '';
+    const bd = (pkg.hotel && pkg.hotel.room && pkg.hotel.room.board) ? pkg.hotel.room.board : '';
     html += `<div class="price-row">
-      <span class="price-row-lbl" style="color:#7C3AED"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg> ${hName} — ${nn} ليالٍ × ${rr} غرفة</span>
+      <span class="price-row-lbl" style="color:#7C3AED"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg> ${hName}${rm} — ${nn} ليالٍ × ${rr} غرفة${bd ? ' · ' + bd : ''}</span>
       <span style="color:#7C3AED">${fmt(_hotel)}</span>
     </div>`;
     const _subtotal = round2(amountGBP + extraSvcGBP + _hotel);

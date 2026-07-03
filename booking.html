@@ -874,9 +874,10 @@
     const hName = (pkg.hotel && pkg.hotel.name) ? pkg.hotel.name : 'الفندق';
     const nn = (pkg.hotel && pkg.hotel.nights) || 1;
     const rr = (pkg.hotel && pkg.hotel.rooms)  || 1;
+    const rm = (pkg.hotel && pkg.hotel.room && pkg.hotel.room.name) ? ' · ' + pkg.hotel.room.name : '';
     let hRow = document.getElementById('pkgHotelRow');
     if (!hRow) { hRow = document.createElement('div'); hRow.className = 'price-row'; hRow.id = 'pkgHotelRow'; hRow.style.color = '#7C3AED'; totalRow.parentNode.insertBefore(hRow, totalRow); }
-    hRow.innerHTML = `<span>🏨 ${hName} — ${nn} ليالٍ × ${rr} غرفة</span><span>${formatPrice(hotel)}</span>`;
+    hRow.innerHTML = `<span>🏨 ${hName}${rm} — ${nn} ليالٍ × ${rr} غرفة</span><span>${formatPrice(hotel)}</span>`;
     let sRow = document.getElementById('pkgSaveRow');
     if (!sRow) { sRow = document.createElement('div'); sRow.className = 'price-row'; sRow.id = 'pkgSaveRow'; sRow.style.color = '#16a34a'; totalRow.parentNode.insertBefore(sRow, totalRow); }
     sRow.innerHTML = `<span>وفر الباقة (${Math.round(PKG_RATE*100)}٪)</span><span>−${formatPrice(saving)}</span>`;

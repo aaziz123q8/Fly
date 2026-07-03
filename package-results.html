@@ -60,6 +60,21 @@ a{text-decoration:none;color:inherit}
 .ht-foot{display:flex;align-items:flex-end;justify-content:space-between;margin-top:8px;gap:8px;flex-wrap:wrap}
 .ht-price b{font-size:1.15rem;color:var(--v2)}
 .ht-price span{font-size:.72rem;color:var(--muted)}
+/* rooms */
+.rooms{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:8px}
+.rooms-h{font-size:.82rem;font-weight:800;color:var(--v3);margin-bottom:2px}
+.room{display:flex;justify-content:space-between;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px}
+.room.sel{border-color:var(--v1);background:var(--soft)}
+.room-info{min-width:0}
+.room-info b{font-size:.9rem}
+.room-info small{display:block;color:var(--muted);font-size:.75rem}
+.room-info .free-cxl{color:#16a34a;font-weight:700}
+.room-price{text-align:center;white-space:nowrap}
+.room-price b{color:var(--v2);font-size:.98rem}
+.room-price small{display:block;color:var(--muted);font-size:.68rem}
+.room-pick{border:1.5px solid var(--v1);background:#fff;color:var(--v1);border-radius:10px;padding:7px 13px;font:inherit;font-weight:700;cursor:pointer;font-size:.82rem;flex-shrink:0}
+.room.sel .room-pick{background:var(--grad);color:#fff;border-color:transparent}
+.room-loading{color:var(--muted);font-size:.84rem;padding:6px 0}
 /* states */
 .state{background:#fff;border:1.5px dashed var(--line);border-radius:16px;padding:28px 18px;text-align:center;color:var(--muted)}
 .spinner{width:32px;height:32px;border:3px solid var(--soft);border-top-color:var(--v1);border-radius:50%;animation:sp .8s linear infinite;margin:0 auto 12px}
@@ -152,7 +167,8 @@ var params = {
   rooms:    parseInt(P.get('rooms')||'1')
 };
 
-var state = { flight:null, flightPrice:0, hotel:null, hotelNightly:0, nights:1, offers:[] };
+var state = { flight:null, flightPrice:0, hotel:null, hotelNightly:0, nights:1, offers:[], hotels:[], room:null, roomsByHotel:{} };
+function hid(h){ return h ? (h.id||h.provider_hotel_id||h.name) : ''; }
 
 /* ── helpers ── */
 function arNum(n){ return String(n).replace(/[0-9]/g,function(d){return '٠١٢٣٤٥٦٧٨٩'[d];}); }
@@ -254,13 +270,12 @@ function showFltError(m){ var e=document.getElementById('fltError'); e.style.dis
 /* ── hotels ── */
 function stars(n){ n=parseInt(n)||0; return '★★★★★'.slice(0,n)+'☆☆☆☆☆'.slice(0,Math.max(0,5-n)); }
 function hotelCard(h){
-  var id=h.id||h.provider_hotel_id||h.name;
-  var sel=state.hotel && (state.hotel.id||state.hotel.provider_hotel_id||state.hotel.name)===id;
+  var id=hid(h);
+  var sel=hid(state.hotel)===id;
   var nightly=parseFloat(h.min_price||h.price||0);
   var img=h.image_url||h.main_image_url||'';
   var score=h.rating||h.review_score;
-  return '<div class="card'+(sel?' sel':'')+'" data-hid="'+esc(id)+'">'+
-    '<div class="ht">'+
+  var head='<div class="ht">'+
       (img?'<img class="ht-img" src="'+esc(img)+'" alt="" onerror="this.style.visibility=\'hidden\'">':'<div class="ht-img"></div>')+
       '<div class="ht-body">'+
         '<div class="ht-name">'+esc(h.name)+'</div>'+
@@ -268,12 +283,30 @@ function hotelCard(h){
         '<div class="ht-city">📍 '+esc(h.city||'')+'</div>'+
         (score?'<div class="ht-rev"><span class="ht-score">'+esc(score)+'</span><span>'+(h.review_count?arNum(h.review_count)+' تقييم':'')+'</span></div>':'')+
         '<div class="ht-foot">'+
-          '<div class="ht-price"><b>'+money(nightly)+'</b> <span>/ الليلة</span></div>'+
-          '<button class="pick" style="width:auto;margin:0;padding:8px 18px" onclick="selectHotel(\''+esc(id)+'\')">'+(sel?'✓ مُختار':'اختيار')+'</button>'+
+          '<div class="ht-price">من <b>'+money(nightly)+'</b> <span>/ الليلة</span></div>'+
+          '<button class="pick" style="width:auto;margin:0;padding:8px 18px" onclick="selectHotel(\''+esc(id)+'\')">'+(sel?'✓ مُختار — اختر الغرفة':'اختيار الفندق')+'</button>'+
         '</div>'+
       '</div>'+
-    '</div>'+
-  '</div>';
+    '</div>';
+  return '<div class="card'+(sel?' sel':'')+'" data-hid="'+esc(id)+'">'+ head + (sel?roomsBlock(id):'') +'</div>';
+}
+function roomsBlock(id){
+  var rs=state.roomsByHotel[id];
+  if(rs==='loading') return '<div class="rooms"><div class="room-loading">جاري تحميل الغرف…</div></div>';
+  if(rs==='error')   return '<div class="rooms"><div class="room-loading">تعذّر تحميل الغرف. <a href="javascript:loadRooms(\''+esc(id)+'\',true)" style="color:var(--v2)">إعادة المحاولة</a></div></div>';
+  if(!rs||!rs.length) return '';
+  return '<div class="rooms"><div class="rooms-h">اختر الغرفة</div>'+rs.map(function(r){
+    var rid=r.id||r.name;
+    var rsel=hid(state.hotel)===id && state.room && (state.room.id||state.room.name)===rid;
+    var price=parseFloat(r.price||0);
+    var meta=[r.bed_type, (r.meal_plan||r.board), (r.size_sqm?arNum(r.size_sqm)+' م²':''), (r.max_guests?'حتى '+arNum(r.max_guests)+' ضيوف':'')].filter(Boolean).join(' · ');
+    return '<div class="room'+(rsel?' sel':'')+'">'+
+      '<div class="room-info"><b>'+esc(r.name)+'</b><small>'+esc(meta)+'</small>'+
+        (r.free_cancellation?'<small class="free-cxl">✓ إلغاء مجاني</small>':'')+'</div>'+
+      '<div class="room-price"><b>'+money(price)+'</b><small>/ الليلة</small></div>'+
+      '<button class="room-pick" onclick="selectRoom(\''+esc(id)+'\',\''+esc(String(rid))+'\')">'+(rsel?'✓ مُختارة':'اختيار')+'</button>'+
+    '</div>';
+  }).join('')+'</div>';
 }
 function renderHotels(){
   var list=document.getElementById('htList');
@@ -281,8 +314,35 @@ function renderHotels(){
   list.innerHTML = state.hotels.map(hotelCard).join('');
 }
 function selectHotel(id){
-  var h=state.hotels.filter(function(x){return (x.id||x.provider_hotel_id||x.name)===id;})[0]; if(!h) return;
-  state.hotel=h; state.hotelNightly=parseFloat(h.min_price||h.price||0);
+  var h=state.hotels.filter(function(x){return hid(x)===id;})[0]; if(!h) return;
+  state.hotel=h; state.room=null; state.hotelNightly=0;
+  loadRooms(id);
+  renderHotels(); recompute();
+}
+function loadRooms(id, force){
+  if(!force && state.roomsByHotel[id] && state.roomsByHotel[id]!=='error' && state.roomsByHotel[id]!=='loading'){
+    autoPickRoom(id); return;
+  }
+  state.roomsByHotel[id]='loading'; renderHotels();
+  Api.get('/api/hotels/'+encodeURIComponent(id), Auth.isLoggedIn()).then(function(res){
+    var rooms=(res.rooms)||(res.hotel&&res.hotel.rooms)||[];
+    rooms.sort(function(a,b){return (parseFloat(a.price||0))-(parseFloat(b.price||0));});
+    state.roomsByHotel[id]=rooms;
+    autoPickRoom(id);
+    renderHotels(); recompute();
+  }).catch(function(){ state.roomsByHotel[id]='error'; renderHotels(); recompute(); });
+}
+function autoPickRoom(id){
+  var rooms=state.roomsByHotel[id];
+  if(hid(state.hotel)===id && !state.room && Array.isArray(rooms) && rooms.length){
+    state.room=rooms[0]; state.hotelNightly=parseFloat(rooms[0].price||0);
+  }
+}
+function selectRoom(hotelId, roomId){
+  if(hid(state.hotel)!==hotelId){ selectHotel(hotelId); }
+  var rs=state.roomsByHotel[hotelId]; if(!Array.isArray(rs)) return;
+  var r=rs.filter(function(x){return String(x.id||x.name)===String(roomId);})[0]; if(!r) return;
+  state.room=r; state.hotelNightly=parseFloat(r.price||0);
   renderHotels(); recompute();
 }
 function loadHotels(){
@@ -294,8 +354,8 @@ function loadHotels(){
     var hotels=res.hotels||res.data||[];
     if(!hotels.length){ showHtError('لا تتوفر فنادق لهذه الوجهة حالياً.'); return; }
     hotels.sort(function(a,b){return (parseFloat(a.min_price||a.price||0))-(parseFloat(b.min_price||b.price||0));});
-    state.hotels=hotels; state.hotel=hotels[0]; state.hotelNightly=parseFloat(hotels[0].min_price||hotels[0].price||0);
-    renderHotels(); recompute();
+    state.hotels=hotels; state.hotel=hotels[0]; state.room=null; state.hotelNightly=0;
+    renderHotels(); loadRooms(hid(hotels[0])); recompute();
   }).catch(function(){ document.getElementById('htLoading').style.display='none'; showHtError('تعذّر تحميل الفنادق. حاول مجدداً.'); });
 }
 function showHtError(m){ var e=document.getElementById('htError'); e.style.display='block'; e.textContent=m; }
@@ -303,29 +363,42 @@ function showHtError(m){ var e=document.getElementById('htError'); e.style.displ
 /* ── unified total (flight + hotel*nights*rooms − 5%) ── */
 function recompute(){
   var go=document.getElementById('barGo');
-  if(!state.flight || !state.hotel){ go.disabled=true; return; }
+  var save=document.getElementById('barSave'), tot=document.getElementById('barTotal'), sub=document.getElementById('barSub');
+  if(!state.flight || !state.hotel || !state.room || !(state.hotelNightly>0)){
+    go.disabled=true; save.style.display='none'; tot.textContent='—';
+    sub.textContent = !state.flight ? 'اختر رحلة وفندقاً وغرفة'
+                    : !state.hotel  ? 'اختر فندقاً وغرفة'
+                    : 'اختر غرفة لإتمام الباقة';
+    return;
+  }
   var flight=state.flightPrice;
   var hotel=state.hotelNightly*state.nights*params.rooms;
   var subtotal=flight+hotel;
   var saving=subtotal*PKG_DISCOUNT;
   var total=subtotal-saving;
-  document.getElementById('barSave').style.display='inline-block';
-  document.getElementById('barSave').textContent='وفّرت '+money(saving)+' مع الباقة';
-  document.getElementById('barTotal').innerHTML=money(total)+' <s>'+money(subtotal)+'</s>';
-  document.getElementById('barSub').textContent='طيران '+money(flight)+' + فندق '+money(hotel)+' ('+arNum(state.nights)+' ليالٍ)';
+  save.style.display='inline-block';
+  save.textContent='وفّرت '+money(saving)+' مع الباقة';
+  tot.innerHTML=money(total)+' <s>'+money(subtotal)+'</s>';
+  sub.textContent='طيران '+money(flight)+' + '+esc(state.room.name||'غرفة')+' '+money(hotel)+' ('+arNum(state.nights)+' ليالٍ × '+arNum(params.rooms)+' غرفة)';
   go.disabled=false;
 }
 
 /* ── proceed to booking (flight checkout; hotel attached for combined stage) ── */
 function bookPackage(){
-  if(!state.flight||!state.hotel) return;
+  if(!state.flight||!state.hotel||!state.room) return;
   var hotel=state.hotelNightly*state.nights*params.rooms;
   var subtotal=state.flightPrice+hotel;
+  var r=state.room;
   var sel={
     type:'package', params:params, discount:PKG_DISCOUNT,
     flight:{ offer_id:offId(state.flight), price:state.flightPrice },
-    hotel:{ id:state.hotel.id||state.hotel.provider_hotel_id, name:state.hotel.name,
-            nightly:state.hotelNightly, nights:state.nights, rooms:params.rooms, total:hotel },
+    hotel:{ id:hid(state.hotel), name:state.hotel.name, city:state.hotel.city||params.to,
+            stars:state.hotel.stars||state.hotel.star_rating||0,
+            nightly:state.hotelNightly, nights:state.nights, rooms:params.rooms, total:hotel,
+            check_in:params.dep, check_out:params.ret,
+            room:{ id:r.id||r.name, name:r.name||'', board:r.meal_plan||r.board||'',
+                   bed_type:r.bed_type||'', book_hash:r.book_hash||'',
+                   free_cancellation:!!r.free_cancellation, price:parseFloat(r.price||0) } },
     subtotal:subtotal, saving:subtotal*PKG_DISCOUNT, total:subtotal*(1-PKG_DISCOUNT)
   };
   try{
