@@ -4,9 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>باقة سفر — فلاي مسار</title>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet"></noscript>
 <style>
-:root{--v1:#7C3AED;--v2:#9333EA;--v3:#4C1D95;--deep:#2E1065;--coral:#FB7185;--amber:#F59E0B;--ink:#1B172B;--muted:#6B6880;--line:#ECE8F4;--bg:#FAF8FF;--grad:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);--shadow-sm:0 8px 24px -14px rgba(76,29,149,.4);--shadow:0 24px 60px -30px rgba(76,29,149,.45)}
+:root{--v1:#7C3AED;--v2:#9333EA;--v3:#4C1D95;--deep:#2E1065;--coral:#FB7185;--amber:#F59E0B;--ink:#1B172B;--muted:#6B6880;--line:#ECE8F4;--bg:#FAF8FF;--soft:#F4EEFE;--grad:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3);--shadow-sm:0 8px 24px -14px rgba(76,29,149,.4);--shadow:0 24px 60px -30px rgba(76,29,149,.45)}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'IBM Plex Sans Arabic',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7}
 a{text-decoration:none;color:inherit}
@@ -16,15 +17,48 @@ a{text-decoration:none;color:inherit}
 .phero h1{font-size:2rem;font-weight:800;margin-bottom:10px}
 .phero h1 em{font-style:normal;color:#FDE68A}
 .phero p{color:#e7ddff;max-width:520px;margin:0 auto}
-.card{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:20px;margin-top:-60px;position:relative;z-index:5}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
-.fg.full{grid-column:1/-1}
+.card{background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:22px;margin-top:-60px;position:relative;z-index:5}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;position:relative}
 .fg label{font-size:.78rem;font-weight:700;color:var(--muted)}
 .fg input,.fg select{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:14px;font:inherit;font-size:.95rem;background:#faf8ff;color:var(--ink);transition:.2s}
 .fg input:focus,.fg select:focus{outline:none;border-color:var(--v1);background:#fff;box-shadow:0 0 0 3px rgba(124,58,237,.12)}
+.fg input[readonly]{cursor:pointer}
+/* airports row with swap button */
+.row-air{display:grid;grid-template-columns:1fr 48px 1fr;gap:10px;align-items:end}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.swap-wrap{display:flex;align-items:flex-end;justify-content:center;padding-bottom:14px}
+.swap{width:46px;height:48px;border-radius:50%;border:1.5px solid var(--line);background:#fff;font-size:1.15rem;color:var(--v2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:.2s}
+.swap:hover{background:var(--grad);color:#fff;border-color:transparent}
+/* airport autocomplete dropdown (airport-ac.js renders .ac-item) */
+.ac-drop{display:none;position:absolute;top:calc(100% + 4px);right:0;left:0;background:#fff;border-radius:16px;box-shadow:var(--shadow);z-index:2000;max-height:300px;overflow-y:auto;border:1px solid var(--line)}
+.ac-item{display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;transition:background .1s;border-bottom:1px solid var(--line)}
+.ac-item:last-child{border-bottom:none}
+.ac-item:hover,.ac-item.ac-hover{background:var(--soft)}
+.ac-type{font-size:1rem;flex-shrink:0}
+.ac-info{flex:1;min-width:0}
+.ac-name{font-size:.86rem;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ac-city{font-weight:400;color:var(--muted)}
+.ac-meta{font-size:.72rem;color:#A79FBD;margin-top:1px}
+.ac-loading{padding:14px 16px;font-size:.82rem;color:#A79FBD;text-align:center}
+/* travelers popover */
+.pop-wrap{position:relative}
+.pop{display:none;position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:16px;z-index:200;min-width:280px}
+.pop.open{display:block}
+.prow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line)}
+.prow:last-of-type{border:none}
+.pinfo strong{display:block;font-size:.92rem}
+.pinfo small{color:var(--muted);font-size:.78rem}
+.pctr{display:flex;align-items:center;gap:12px}
+.pbtn{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);background:#fff;font-size:1.05rem;font-weight:700;color:var(--v2);display:flex;align-items:center;justify-content:center;line-height:1;cursor:pointer;transition:.2s}
+.pbtn:hover:not(:disabled){background:var(--grad);color:#fff;border-color:transparent}
+.pbtn:disabled{opacity:.3;cursor:not-allowed}
+.pval{min-width:22px;text-align:center;font-weight:700}
+.pop-done{width:100%;margin-top:12px;padding:10px;background:var(--grad);color:#fff;border:none;border-radius:12px;font-size:.9rem;font-weight:700;cursor:pointer}
 .pkg-btn{width:100%;margin-top:6px;background:var(--grad);color:#fff;border:0;border-radius:16px;padding:15px;font:inherit;font-size:1.06rem;font-weight:800;cursor:pointer;box-shadow:0 14px 28px -12px rgba(124,58,237,.8);display:flex;align-items:center;justify-content:center;gap:9px}
 .pkg-btn svg{width:20px;height:20px}
+.pkg-btn .spin{width:19px;height:19px;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:sp .7s linear infinite;display:none}
+.pkg-btn.loading .spin{display:inline-block}.pkg-btn.loading svg{display:none}
+@keyframes sp{to{transform:rotate(360deg)}}
 .note{margin-top:12px;font-size:.82rem;color:var(--muted);text-align:center}
 .why{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:40px 0 60px}
 .why div{background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;text-align:center}
@@ -33,7 +67,6 @@ a{text-decoration:none;color:inherit}
 .why h3{font-size:1.02rem;margin-bottom:5px}
 .why p{font-size:.85rem;color:var(--muted)}
 svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.fg input[readonly]{cursor:pointer}
 /* violet date picker */
 .dp-popup{display:none;position:fixed;background:#fff;border-radius:18px;box-shadow:0 24px 60px -24px rgba(76,29,149,.5);border:1px solid var(--line);z-index:2000;padding:16px;user-select:none}
 .dp-wrap{display:flex;gap:16px;flex-wrap:wrap}
@@ -53,7 +86,7 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 .dp-start{border-radius:9px 0 0 9px}
 .dp-end{border-radius:0 9px 9px 0}
 .dp-nights{text-align:center;margin-top:10px;font-weight:700;color:var(--v2)}
-@media(max-width:600px){.row{grid-template-columns:1fr}.why{grid-template-columns:1fr}.phero h1{font-size:1.6rem}}
+@media(max-width:600px){.row-air{grid-template-columns:1fr}.swap-wrap{display:none}.row{grid-template-columns:1fr}.why{grid-template-columns:1fr}.phero h1{font-size:1.6rem}.pop{min-width:0;left:0;right:0}}
 </style>
 </head>
 <body>
@@ -68,22 +101,83 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 
 <div class="wrap">
   <div class="card">
-    <form id="pkgForm" onsubmit="return goPackage(event)">
-      <div class="row">
-        <div class="fg"><label>مدينة المغادرة</label><input id="pFrom" placeholder="مثال: KWI الكويت" autocomplete="off" required></div>
-        <div class="fg"><label>الوجهة</label><input id="pTo" placeholder="مثال: DXB دبي" autocomplete="off" required></div>
+    <form id="pkgForm" onsubmit="return goPackage(event)" autocomplete="off">
+      <!-- Airports + swap -->
+      <div class="row-air">
+        <div class="fg">
+          <label>مدينة المغادرة</label>
+          <input id="pFrom" placeholder="مدينة أو رمز المطار" autocomplete="off" required>
+          <div class="ac-drop" id="pFrom_drop"></div>
+        </div>
+        <div class="swap-wrap">
+          <button type="button" class="swap" onclick="swapAirports()" aria-label="تبديل المطارين">⇄</button>
+        </div>
+        <div class="fg">
+          <label>الوجهة</label>
+          <input id="pTo" placeholder="مدينة أو رمز المطار" autocomplete="off" required>
+          <div class="ac-drop" id="pTo_drop"></div>
+        </div>
       </div>
+
+      <!-- Dates -->
       <div class="row">
         <div class="fg"><label>تاريخ الذهاب</label><input id="pDep" readonly placeholder="اختر التاريخ" autocomplete="off" dir="rtl"></div>
         <div class="fg"><label>تاريخ العودة</label><input id="pRet" readonly placeholder="اختر التاريخ" autocomplete="off" dir="rtl"></div>
       </div>
+
+      <!-- Travelers + cabin -->
       <div class="row">
-        <div class="fg"><label>المسافرون</label>
-          <select id="pPax"><option value="1">١ بالغ</option><option value="2">٢ بالغ</option><option value="3">٣ بالغ</option><option value="4">٤ بالغ</option></select></div>
-        <div class="fg"><label>عدد الغرف</label>
-          <select id="pRooms"><option value="1">١ غرفة</option><option value="2">٢ غرفة</option><option value="3">٣ غرف</option></select></div>
+        <div class="fg pop-wrap">
+          <label>المسافرون والغرف</label>
+          <input id="pPaxDisplay" readonly value="١ بالغ · ١ غرفة" onclick="togglePop()" autocomplete="off">
+          <div class="pop" id="paxPop">
+            <div class="prow">
+              <div class="pinfo"><strong>بالغ</strong><small>١٢ سنة فأكثر</small></div>
+              <div class="pctr">
+                <button type="button" class="pbtn" id="bAd" onclick="chPax('adult',-1)">−</button>
+                <span class="pval" id="vAd">1</span>
+                <button type="button" class="pbtn" onclick="chPax('adult',1)">+</button>
+              </div>
+            </div>
+            <div class="prow">
+              <div class="pinfo"><strong>طفل</strong><small>٢–١١ سنة</small></div>
+              <div class="pctr">
+                <button type="button" class="pbtn" id="bCh" onclick="chPax('child',-1)">−</button>
+                <span class="pval" id="vCh">0</span>
+                <button type="button" class="pbtn" onclick="chPax('child',1)">+</button>
+              </div>
+            </div>
+            <div class="prow">
+              <div class="pinfo"><strong>رضيع</strong><small>أقل من سنتين</small></div>
+              <div class="pctr">
+                <button type="button" class="pbtn" id="bIn" onclick="chPax('infant',-1)">−</button>
+                <span class="pval" id="vIn">0</span>
+                <button type="button" class="pbtn" onclick="chPax('infant',1)">+</button>
+              </div>
+            </div>
+            <div class="prow">
+              <div class="pinfo"><strong>الغرف</strong><small>غرف الفندق</small></div>
+              <div class="pctr">
+                <button type="button" class="pbtn" id="bRm" onclick="chPax('rooms',-1)">−</button>
+                <span class="pval" id="vRm">1</span>
+                <button type="button" class="pbtn" onclick="chPax('rooms',1)">+</button>
+              </div>
+            </div>
+            <button type="button" class="pop-done" onclick="closePop()">تم</button>
+          </div>
+        </div>
+        <div class="fg">
+          <label>درجة السفر</label>
+          <select id="pCabin">
+            <option value="economy">اقتصادية</option>
+            <option value="premium_economy">اقتصادية مميزة</option>
+            <option value="business">رجال أعمال</option>
+            <option value="first">الدرجة الأولى</option>
+          </select>
+        </div>
       </div>
-      <button class="pkg-btn" type="submit"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg> ابحث عن باقتي</button>
+
+      <button class="pkg-btn" id="pkgBtn" type="submit"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg><span class="spin"></span> ابحث عن باقتي</button>
       <p class="note">نعرض لك أفضل رحلة طيران لوجهتك، ثم نرشّح لك أفضل الفنادق لإكمال الباقة عند الحجز.</p>
     </form>
   </div>
@@ -100,17 +194,69 @@ svg.i{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-l
 <script src="js/currency.js?v=2026070106"></script>
 <script src="js/i18n.js?v=2026070106"></script>
 <script src="js/datepicker.js?v=2026070108"></script>
+<script src="js/airport-ac.js?v=2026070301"></script>
 <script>
 window.I18N = window.I18N || {};
 window.I18N.ar = window.I18N.ar || { months:['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'], days:['أح','إث','ثل','أر','خم','جم','سب'], nights:'ليلة' };
 window.currentLang = 'ar';
+
+/* ── Convert to Arabic-Indic digits for display ── */
+function arDigits(n){ return String(n).replace(/[0-9]/g, function(d){ return '٠١٢٣٤٥٦٧٨٩'[d]; }); }
+
+/* ── Airport autocomplete (Duffel) — stores IATA on input.dataset.code ── */
+if (typeof initAirportAC === 'function') {
+  initAirportAC('pFrom', 'pFrom_drop', {});
+  initAirportAC('pTo',   'pTo_drop',   {});
+}
+function swapAirports(){
+  var a = document.getElementById('pFrom'), b = document.getElementById('pTo');
+  var v = a.value; a.value = b.value; b.value = v;
+  var c = a.dataset.code||''; a.dataset.code = b.dataset.code||''; b.dataset.code = c;
+}
+
+/* ── Travelers + rooms stepper popover ── */
+var pax = {adult:1, child:0, infant:0, rooms:1};
+function togglePop(){ document.getElementById('paxPop').classList.toggle('open'); }
+function closePop(){ document.getElementById('paxPop').classList.remove('open'); }
+function chPax(type, d){
+  var min = (type==='adult'||type==='rooms') ? 1 : 0;
+  var next = pax[type] + d;
+  if (next < min) return;
+  // cap total passengers at 9 (Duffel/most carriers)
+  if (type!=='rooms' && (pax.adult+pax.child+pax.infant + d) > 9) return;
+  if (type==='rooms' && next > 5) return;
+  // infants cannot exceed adults (lap infants)
+  if (type==='infant' && next > pax.adult) return;
+  pax[type] = next;
+  renderPax();
+}
+function renderPax(){
+  document.getElementById('vAd').textContent = pax.adult;
+  document.getElementById('vCh').textContent = pax.child;
+  document.getElementById('vIn').textContent = pax.infant;
+  document.getElementById('vRm').textContent = pax.rooms;
+  document.getElementById('bAd').disabled = pax.adult<=1;
+  document.getElementById('bCh').disabled = pax.child<=0;
+  document.getElementById('bIn').disabled = pax.infant<=0;
+  document.getElementById('bRm').disabled = pax.rooms<=1;
+  var lbl = arDigits(pax.adult) + ' بالغ';
+  if (pax.child)  lbl += '، ' + arDigits(pax.child) + ' طفل';
+  if (pax.infant) lbl += '، ' + arDigits(pax.infant) + ' رضيع';
+  lbl += ' · ' + arDigits(pax.rooms) + ' غرفة';
+  document.getElementById('pPaxDisplay').value = lbl;
+}
+renderPax();
+// close popover when clicking outside
+document.addEventListener('click', function(e){
+  if (!e.target.closest('#paxPop') && !e.target.closest('#pPaxDisplay')) closePop();
+});
+
+/* ── Range date picker (dep → ret) ── */
 (function(){
   if (typeof DatePicker === 'undefined') return;
   var dep = document.getElementById('pDep'), ret = document.getElementById('pRet');
   var isoOf = function(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
   if (dep) {
-    // A package is flight + hotel → always a date range: pick تاريخ الذهاب then
-    // العودة, both highlight, nights are counted, and it closes automatically.
     var dp = new DatePicker(dep, {
       mode:'range', lang:'ar', showNights:true,
       onSelect:function(s, e, dpi){
@@ -122,24 +268,45 @@ window.currentLang = 'ar';
     if (ret) ret.addEventListener('click', function(ev){ ev.stopPropagation(); dp.show(); });
   }
 })();
+
+/* ── Submit → flights.html with full package params ── */
 function goPackage(e){
   e.preventDefault();
-  var from = (document.getElementById('pFrom').value||'').trim();
-  var to   = (document.getElementById('pTo').value||'').trim();
-  // pull an IATA-looking token if present, else send the raw text
-  function code(s){ var m=(s.match(/[A-Za-z]{3}/)||[])[0]; return (m||s).toUpperCase(); }
+  var fromEl = document.getElementById('pFrom'), toEl = document.getElementById('pTo');
+  // prefer the IATA code chosen from autocomplete; fall back to a 3-letter token
+  function code(el){
+    if (el.dataset.code) return el.dataset.code.toUpperCase();
+    var s = (el.value||'').trim();
+    var m = (s.match(/\b[A-Za-z]{3}\b/)||[])[0];
+    return (m||s).toUpperCase();
+  }
+  var from = code(fromEl), to = code(toEl);
   var depISO = document.getElementById('pDep').dataset.isoDate || '';
   var retISO = document.getElementById('pRet').dataset.isoDate || '';
+  if (!from || !fromEl.value.trim()) { alert('يرجى اختيار مدينة المغادرة'); return false; }
+  if (!to   || !toEl.value.trim())   { alert('يرجى اختيار الوجهة'); return false; }
+  if (from === to) { alert('مدينة المغادرة والوجهة متطابقتان'); return false; }
   if (!depISO) { alert('يرجى اختيار تاريخ الذهاب'); return false; }
+  if (!retISO) { alert('الباقة تشمل طيراناً وإقامة — يرجى اختيار تاريخ العودة أيضاً'); return false; }
+
+  var btn = document.getElementById('pkgBtn'); btn.classList.add('loading'); btn.disabled = true;
+
   var params = new URLSearchParams({
-    from: code(from), to: code(to),
-    dep: depISO,
-    ret: retISO,
-    pax: document.getElementById('pPax').value||'1',
-    cabin: 'economy', type: 'round',
-    pkg: '1', rooms: document.getElementById('pRooms').value||'1'
+    from: from, to: to,
+    dep: depISO, ret: retISO,
+    pax: String(pax.adult),
+    children: String(pax.child),
+    infants: String(pax.infant),
+    cabin: document.getElementById('pCabin').value || 'economy',
+    type: 'round',
+    pkg: '1', rooms: String(pax.rooms)
   });
-  try { localStorage.setItem('fly_package', JSON.stringify({from:code(from),to:code(to),rooms:document.getElementById('pRooms').value})); } catch(_){}
+  try {
+    localStorage.setItem('fly_package', JSON.stringify({from:from,to:to,dep:depISO,ret:retISO,rooms:pax.rooms,adults:pax.adult,children:pax.child,infants:pax.infant}));
+    localStorage.setItem('bk_adults', pax.adult);
+    localStorage.setItem('bk_children', pax.child);
+    localStorage.setItem('bk_infants', pax.infant);
+  } catch(_){}
   window.location.href = 'flights.html?' + params.toString();
   return false;
 }
