@@ -378,6 +378,9 @@
         </div>
       </div>
 
+      <!-- Package hotel (shown when this booking is a flight + hotel package) -->
+      <div id="pkgHotelBlock" style="display:none;margin-bottom:16px"></div>
+
       <!-- Sync btn -->
       <div style="text-align:center;margin-bottom:12px" class="print-hide">
         <button class="sync-btn" onclick="syncBooking()" id="syncBtn" style="display:none">🔄 تحديث من Duffel</button>
@@ -977,6 +980,38 @@ async function shareWhatsApp() {
 
   btn.disabled = false; btn.textContent = '💬 مشاركة واتساب';
 }
+
+// ── Package hotel: when this booking is a flight + hotel package, show the hotel
+// summary (from the selection saved at checkout), then clear it so it never
+// leaks into a later flight-only booking. ──
+function renderPackageHotel() {
+  try {
+    if (urlP.get('pkg') !== '1') return;
+    const raw = localStorage.getItem('fly_package_selection');
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    const h = p && p.hotel;
+    if (!h) return;
+    const cur = (typeof currentCurrency !== 'undefined') ? currentCurrency : 'GBP';
+    const money = (gbp) => (typeof formatPrice === 'function') ? formatPrice(gbp) : ('£' + (gbp||0).toFixed(2));
+    const nights = h.nights || 1, rooms = h.rooms || 1;
+    const hotelTotal = (h.total != null) ? h.total : (h.nightly||0) * nights * rooms;
+    const box = document.getElementById('pkgHotelBlock');
+    box.innerHTML =
+      '<div style="border:1.5px solid #ECE8F4;border-radius:16px;padding:16px;background:#fff">'
+      + '<div style="display:flex;align-items:center;gap:8px;font-weight:800;color:#4C1D95;margin-bottom:10px">'
+      +   '<span style="width:30px;height:30px;border-radius:9px;background:#F4EEFE;display:flex;align-items:center;justify-content:center">🏨</span> فندق الباقة</div>'
+      + '<div style="font-weight:700;font-size:1.02rem">' + (h.name || 'الفندق') + '</div>'
+      + '<div style="color:#6B6880;font-size:.86rem;margin-top:2px">' + nights + ' ليالٍ × ' + rooms + ' غرفة</div>'
+      + '<div style="display:flex;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:1px dashed #ECE8F4;font-weight:700">'
+      +   '<span>إجمالي الفندق ضمن الباقة</span><span style="color:#7C3AED">' + money(hotelTotal) + '</span></div>'
+      + '<div style="font-size:.78rem;color:#6B6880;margin-top:8px">تم دفع الفندق ضمن باقتك. سيصلك تأكيد الإقامة مع تفاصيل الحجز.</div>'
+      + '</div>';
+    box.style.display = 'block';
+    localStorage.removeItem('fly_package_selection');
+  } catch (e) {}
+}
+renderPackageHotel();
 
 loadBooking();
 </script>

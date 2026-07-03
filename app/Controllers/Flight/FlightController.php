@@ -298,11 +298,13 @@ class FlightController
         if ($user === null) Response::unauthorized();
         try {
             $walletAmount = (float) ($request->input('wallet_amount') ?? 0);
+            $pkgInput = $request->input('package');
             $result = $this->bookingService->createPaymentIntent(
                 (string) $request->input('session_key'),
                 (int)    $user['id'],
                 $request->input('coupon_code') ? (string) $request->input('coupon_code') : null,
-                $walletAmount
+                $walletAmount,
+                is_array($pkgInput) ? $pkgInput : null
             );
             Response::json($result);
         } catch (\RuntimeException $e) {

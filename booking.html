@@ -228,6 +228,17 @@
   let taxGBP = 0;
   let discountGBP = 0;
 
+  // Package add-on (flight + hotel): the hotel rides on this flight checkout.
+  const isPkg = params.get('pkg') === '1';
+  let pkg = null;
+  try { const raw = localStorage.getItem('fly_package_selection'); if (isPkg && raw) pkg = JSON.parse(raw); } catch(e) { pkg = null; }
+  const PKG_RATE = (pkg && pkg.discount) ? pkg.discount : 0.05;
+  function pkgHotelTotal() {
+    if (!pkg || !pkg.hotel) return 0;
+    const h = pkg.hotel;
+    return Math.max(0, Math.round(((h.total != null ? h.total : (h.nightly||0)*(h.nights||1)*(h.rooms||1)))*100)/100);
+  }
+
   // Passenger counts from search
   const paxCounts = {
     adult: parseInt(localStorage.getItem('bk_adults') || '1'),
@@ -842,25 +853,57 @@
   }
 
   function updateTotal() {
-    const total = priceGBP + taxGBP - discountGBP;
+    const hotel = pkgHotelTotal();
+    let total;
+    if (hotel > 0) {
+      const subtotal = priceGBP + taxGBP + hotel;
+      const saving = Math.round(subtotal * PKG_RATE * 100) / 100;
+      total = subtotal - saving - discountGBP;
+      renderPkgRows(hotel, saving);
+    } else {
+      total = priceGBP + taxGBP - discountGBP;
+    }
     document.getElementById('priceTotal').textContent = formatPrice(Math.max(0, total));
     syncPriceBar();
+  }
+
+  // Insert the hotel line + package-saving rows into the summary (once).
+  function renderPkgRows(hotel, saving) {
+    const totalRow = document.querySelector('#priceSummary .price-total');
+    if (!totalRow) return;
+    const hName = (pkg.hotel && pkg.hotel.name) ? pkg.hotel.name : 'الفندق';
+    const nn = (pkg.hotel && pkg.hotel.nights) || 1;
+    const rr = (pkg.hotel && pkg.hotel.rooms)  || 1;
+    let hRow = document.getElementById('pkgHotelRow');
+    if (!hRow) { hRow = document.createElement('div'); hRow.className = 'price-row'; hRow.id = 'pkgHotelRow'; hRow.style.color = '#7C3AED'; totalRow.parentNode.insertBefore(hRow, totalRow); }
+    hRow.innerHTML = `<span>🏨 ${hName} — ${nn} ليالٍ × ${rr} غرفة</span><span>${formatPrice(hotel)}</span>`;
+    let sRow = document.getElementById('pkgSaveRow');
+    if (!sRow) { sRow = document.createElement('div'); sRow.className = 'price-row'; sRow.id = 'pkgSaveRow'; sRow.style.color = '#16a34a'; totalRow.parentNode.insertBefore(sRow, totalRow); }
+    sRow.innerHTML = `<span>وفر الباقة (${Math.round(PKG_RATE*100)}٪)</span><span>−${formatPrice(saving)}</span>`;
   }
 
   // Mobile fixed price bar (phones): mirrors the summary, action = continue to payment.
   function syncPriceBar() {
     if (window.innerWidth > 768 || !window.PriceBar) return;
     if (!(priceGBP > 0 || taxGBP > 0)) return;
+    const hotel = pkgHotelTotal();
+    const items = [
+      { label: 'سعر الرحلة', amount: priceGBP },
+      { label: 'الضرائب والرسوم', amount: taxGBP }
+    ];
+    if (hotel > 0) items.push({ label: '🏨 الفندق', amount: hotel });
     const cfg = {
-      items: [
-        { label: 'سعر الرحلة', amount: priceGBP },
-        { label: 'الضرائب والرسوم', amount: taxGBP }
-      ],
+      items: items,
       actionText: 'المتابعة للدفع',
-      note: 'الأمتعة والمقاعد (إن وُجدت) تُضاف قبل الدفع',
+      note: hotel > 0 ? 'باقة طيران + فندق — وفر ' + Math.round(PKG_RATE*100) + '٪' : 'الأمتعة والمقاعد (إن وُجدت) تُضاف قبل الدفع',
       onAction: function () { submitBooking(); }
     };
-    if (discountGBP > 0) cfg.discount = { label: 'الخصم', amount: discountGBP };
+    if (hotel > 0) {
+      const saving = Math.round((priceGBP + taxGBP + hotel) * PKG_RATE * 100) / 100;
+      cfg.discount = { label: 'وفر الباقة', amount: saving + discountGBP };
+    } else if (discountGBP > 0) {
+      cfg.discount = { label: 'الخصم', amount: discountGBP };
+    }
     PriceBar.update(cfg);
   }
 
@@ -1026,7 +1069,8 @@
       // Step 2: redirect to services/ancillaries selection
       localStorage.removeItem('booking_flight_id');
       window.location.href = 'services.html?session=' + encodeURIComponent(sessionKey)
-        + '&offer_id=' + encodeURIComponent(flightId || '');
+        + '&offer_id=' + encodeURIComponent(flightId || '')
+        + (isPkg ? '&pkg=1' : '');
     } catch(err) {
       btn.disabled=false; sp.classList.add('hidden'); tx.classList.remove('hidden');
       alert('⚠️ ' + (err.message || 'حدث خطأ أثناء الحجز، يرجى المحاولة مجدداً'));

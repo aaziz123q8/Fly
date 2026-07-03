@@ -666,7 +666,9 @@ async function proceedToPayment() {
     }
 
     // Navigate to payment page — card details and pricing are collected there.
-    window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey);
+    // Carry the package flag so payment.html folds in the selected hotel.
+    window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey)
+      + (new URLSearchParams(location.search).get('pkg') === '1' ? '&pkg=1' : '');
   } catch(e) {
     btn.disabled=false; txt.classList.remove('hidden'); spin.classList.add('hidden');
     showErr('حدث خطأ: ' + (e.message || 'يرجى المحاولة مجدداً'));
@@ -678,7 +680,8 @@ async function skipServices() {
   btn.disabled=true;
   try {
     await Api.post('/api/flights/checkout/services', { session_key: sessionKey, services: [] }, true);
-    window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey);
+    window.location.href = 'payment.html?session=' + encodeURIComponent(sessionKey)
+      + (new URLSearchParams(location.search).get('pkg') === '1' ? '&pkg=1' : '');
   } catch(e) {
     btn.disabled=false;
     showErr('حدث خطأ: ' + (e.message || ''));

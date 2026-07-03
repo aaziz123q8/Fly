@@ -294,7 +294,8 @@ class FlightBookingService
         string  $sessionKey,
         int     $userId,
         ?string $couponCode   = null,
-        float   $walletAmount = 0.0
+        float   $walletAmount = 0.0,
+        ?array  $package      = null
     ): array {
         $session = $this->requireSession($sessionKey, $userId);
 
@@ -342,6 +343,42 @@ class FlightBookingService
                     $pricingSnapshot['total']         = $totalAmount;
                 }
             }
+        }
+
+        // ── Package add-on (Option 1: the hotel rides on the flight checkout) ──
+        // Persist the selected hotel on the snapshot and fold it into the charged
+        // total with the 5% package saving. Stored on the session so a retry or
+        // the webhook path recomputes the SAME amount (C-01 friendly).
+        if ($package !== null && (float) ($package['nightly'] ?? 0) > 0) {
+            $pkgNights = max(1, (int) ($package['nights'] ?? 1));
+            $pkgRooms  = max(1, (int) ($package['rooms']  ?? 1));
+            $pricingSnapshot['package'] = [
+                'hotel_id'      => (string) ($package['hotel_id']   ?? ''),
+                'hotel_name'    => (string) ($package['hotel_name'] ?? ''),
+                'city'          => (string) ($package['city']       ?? ''),
+                'nightly'       => round((float) $package['nightly'], 2),
+                'nights'        => $pkgNights,
+                'rooms'         => $pkgRooms,
+                'hotel_total'   => round((float) $package['nightly'] * $pkgNights * $pkgRooms, 2),
+                'discount_rate' => 0.05,
+            ];
+        }
+        $pkgSnap = $pricingSnapshot['package'] ?? null;
+        if (is_array($pkgSnap) && (float) ($pkgSnap['hotel_total'] ?? 0) > 0) {
+            // Capture the flight(+services) component ONCE so repeated calls never
+            // double-add the hotel (re-entrancy safe, same idea as the idem key).
+            $flightComponent = isset($pkgSnap['flight_component'])
+                ? (float) $pkgSnap['flight_component']
+                : $totalAmount;
+            $hotelTotal  = round((float) $pkgSnap['hotel_total'], 2);
+            $rate        = (float) ($pkgSnap['discount_rate'] ?? 0.05);
+            $subtotal    = round($flightComponent + $hotelTotal, 2);
+            $saving      = round($subtotal * $rate, 2);
+            $totalAmount = round($subtotal - $saving, 2);
+            $pricingSnapshot['package']['flight_component'] = $flightComponent;
+            $pricingSnapshot['package']['subtotal']         = $subtotal;
+            $pricingSnapshot['package']['saving']           = $saving;
+            $pricingSnapshot['total']                       = $totalAmount;
         }
 
         // Apply coupon if provided.
@@ -457,6 +494,7 @@ class FlightBookingService
             'tax'               => round($totalAmount - ($totalAmount / 1.1), 2),
             'discount'          => $discountAmount,
             'currency'          => strtoupper($currency),
+            'package'           => $pricingSnapshot['package'] ?? null,
         ];
     }
 

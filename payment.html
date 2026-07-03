@@ -679,6 +679,32 @@ let pricingFees   = []; // array of {name, type, amount} from server
 
 function round2(n) { return Math.round(n * 100) / 100; }
 
+// ── Package add-on (flight + hotel): the hotel rides on this flight checkout ──
+let pkg = null;
+try {
+  const raw = localStorage.getItem('fly_package_selection');
+  if (raw && params.get('pkg') === '1') pkg = JSON.parse(raw);
+} catch (e) { pkg = null; }
+const PKG_RATE = (pkg && pkg.discount) ? pkg.discount : 0.05;
+function pkgHotelTotal() {
+  if (!pkg || !pkg.hotel) return 0;
+  const h = pkg.hotel;
+  return round2((h.total != null) ? h.total : (h.nightly || 0) * (h.nights || 1) * (h.rooms || 1));
+}
+function pkgSaving(subtotal) { return round2(subtotal * PKG_RATE); }
+// package payload sent to the server so it charges (and persists) the hotel too
+function pkgPayload() {
+  if (!pkg || !pkg.hotel) return undefined;
+  return {
+    hotel_id:   pkg.hotel.id   || '',
+    hotel_name: pkg.hotel.name || '',
+    city:       (pkg.params && pkg.params.to) || '',
+    nightly:    pkg.hotel.nightly || 0,
+    nights:     pkg.hotel.nights  || 1,
+    rooms:      pkg.hotel.rooms   || 1,
+  };
+}
+
 // ── Wallet state ───────────────────────────────────────────
 let walletBalance   = 0;
 let payMethod       = 'card'; // 'card' | 'wallet' | 'mixed'
@@ -696,6 +722,11 @@ async function loadWalletBalance() {
 }
 
 function getNetTotal() {
+  const hotel = pkgHotelTotal();
+  if (hotel > 0) {
+    const subtotal = round2(amountGBP + extraSvcGBP + hotel);
+    return Math.max(0, round2(subtotal - pkgSaving(subtotal) - discountGBP));
+  }
   return Math.max(0, round2(amountGBP + extraSvcGBP - discountGBP));
 }
 
@@ -792,6 +823,7 @@ async function createFlightPaymentIntent() {
   const piRes = await Api.post('/api/flights/checkout/payment-intent', {
     session_key: sessionKey,
     coupon_code: couponCode || null,
+    package:     pkgPayload(),
   }, true);
   return { clientSecret: piRes.client_secret || '', paymentIntentId: piRes.payment_intent_id || '' };
 }
@@ -806,7 +838,8 @@ async function confirmFlightBooking(paymentIntentId) {
   window.location.href = 'confirmation.html'
     + '?session='    + encodeURIComponent(sessionKey)
     + '&confirmed=1'
-    + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '');
+    + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '')
+    + (pkg ? '&pkg=1' : '');
 }
 
 async function initGateway() {
@@ -975,7 +1008,7 @@ function buildMinimalCard() {
 // ── Price breakdown ────────────────────────────────────────
 function renderPriceRows() {
   const cur   = (typeof currentCurrency !== 'undefined') ? currentCurrency : 'GBP';
-  const net   = Math.max(0, round2(amountGBP + extraSvcGBP - discountGBP));
+  const net   = getNetTotal();
 
   let html = `
     <div class="price-row">
@@ -1012,6 +1045,26 @@ function renderPriceRows() {
       <span class="price-row-lbl" style="color:var(--pay-green)"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M20 12v10H4V12"/><path d="M2 7h20v5H2z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg> خصم الكوبون</span>
       <span style="color:var(--pay-green)">−${fmt(discountGBP)}</span>
     </div>`;
+  }
+
+  // ── Package: hotel line + package saving ──
+  const _hotel = pkgHotelTotal();
+  if (_hotel > 0) {
+    const hName = (pkg.hotel && pkg.hotel.name) ? pkg.hotel.name : 'الفندق';
+    const nn = (pkg.hotel && pkg.hotel.nights) || 1;
+    const rr = (pkg.hotel && pkg.hotel.rooms)  || 1;
+    html += `<div class="price-row">
+      <span class="price-row-lbl" style="color:#7C3AED"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M9 9h.01M9 13h.01M9 17h.01M15 9h.01M15 13h.01M15 17h.01"/></svg> ${hName} — ${nn} ليالٍ × ${rr} غرفة</span>
+      <span style="color:#7C3AED">${fmt(_hotel)}</span>
+    </div>`;
+    const _subtotal = round2(amountGBP + extraSvcGBP + _hotel);
+    const _saving = pkgSaving(_subtotal);
+    if (_saving > 0) {
+      html += `<div class="price-row">
+        <span class="price-row-lbl" style="color:var(--pay-green)"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M20 6 9 17l-5-5"/></svg> وفر الباقة (${Math.round(PKG_RATE*100)}٪)</span>
+        <span style="color:var(--pay-green)">−${fmt(_saving)}</span>
+      </div>`;
+    }
   }
 
   html += `<div class="price-row total-row">
@@ -1152,7 +1205,8 @@ async function submitPayment() {
       window.location.href = 'confirmation.html'
         + '?session='    + encodeURIComponent(sessionKey)
         + '&confirmed=1'
-        + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '');
+        + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '')
+        + (pkg ? '&pkg=1' : '');
     } catch(e) {
       showError('⚠️ ' + (e.message || 'فشل الدفع من المحفظة.'));
       setPayLoading(false);
@@ -1183,6 +1237,7 @@ async function submitPayment() {
         session_key:   sessionKey,
         coupon_code:   couponCode || null,
         wallet_amount: walletForServer > 0 ? walletForServer : undefined,
+        package:       pkgPayload(),
       }, true);
     } catch(e) {
       showError('⚠️ ' + (e.message || 'فشل إنشاء طلب الدفع. يرجى المحاولة مجدداً.'));
@@ -1243,7 +1298,8 @@ async function submitPayment() {
     window.location.href = 'confirmation.html'
       + '?session='    + encodeURIComponent(sessionKey)
       + '&confirmed=1'
-      + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '');
+      + (bookingRef ? '&ref=' + encodeURIComponent(bookingRef) : '')
+      + (pkg ? '&pkg=1' : '');
 
   } catch(err) {
     showError(err.message || 'حدث خطأ أثناء الدفع');
