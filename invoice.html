@@ -707,7 +707,7 @@ function buildHotelPrintInvoice(b) {
   };
 
   const L = {
-    ar: { agent:'وكيل سفر معتمد', issue:'تاريخ الإصدار', wa:'واتساب', voucher:'قسيمة', title:'قسيمة حجز فندق',
+    ar: { agent:'وكيل سفر معتمد', issue:'تاريخ الإصدار', wa:'واتساب', voucher:'فاتورة', title:'فاتورة حجز فندق',
       status:(statusMap[st]||['',st])[1], guest:'بيانات الضيف', name:'الاسم', phone:'رقم الهاتف', email:'البريد',
       refs:'مراجع الحجز', fm:'رقم حجز فلاي مسار', prov:'رقم حجز الفندق (المزوّد)', bookedAt:'تاريخ الحجز', pkg:'ضمن باقة — رقم الرحلة',
       hotel:'تفاصيل الفندق', checkin:'تسجيل الوصول', checkout:'تسجيل المغادرة', arrive:'الوصول', depart:'المغادرة',
@@ -716,8 +716,8 @@ function buildHotelPrintInvoice(b) {
       guests:'الضيوف', guestCols:['#','الاسم','الصفة'], leadTag:'الضيف الرئيسي', guestTag:'ضيف',
       cancel:'سياسة الإلغاء', pay:'ملخص الدفع', roomsTotal:'إجمالي الإقامة', total:'الإجمالي المدفوع',
       instrT:'تعليمات مهمة', instr:'• أحضر هذه القسيمة (مطبوعة أو على هاتفك) عند تسجيل الوصول.&nbsp;&nbsp; • قدّم بطاقة هوية/جواز الضيف الرئيسي.&nbsp;&nbsp; • تسجيل الوصول عادةً بعد الساعة 3 مساءً والمغادرة قبل 12 ظهراً.',
-      qr:'<b>امسح الرمز</b> بكاميرا هاتفك للوصول إلى قسيمتك في أي وقت.<br>قسيمة إلكترونية معتمدة صادرة من فلاي مسار — وكيل سفر.' },
-    en: { agent:'Licensed travel agent', issue:'Issue date', wa:'WhatsApp', voucher:'Voucher', title:'Hotel Booking Voucher',
+      qr:'<b>امسح الرمز</b> بكاميرا هاتفك للوصول إلى فاتورتك في أي وقت.<br>فاتورة إلكترونية معتمدة صادرة من فلاي مسار — وكيل سفر.' },
+    en: { agent:'Licensed travel agent', issue:'Issue date', wa:'WhatsApp', voucher:'Invoice', title:'Hotel Booking Invoice',
       status:invStatusEn(st), guest:'Guest details', name:'Name', phone:'Phone', email:'Email',
       refs:'Booking references', fm:'FlyMasar Booking Ref', prov:'Hotel Ref (provider)', bookedAt:'Booked on', pkg:'Part of package — flight ref',
       hotel:'Hotel details', checkin:'Check-in', checkout:'Check-out', arrive:'Arrival', depart:'Departure',
@@ -726,7 +726,7 @@ function buildHotelPrintInvoice(b) {
       guests:'Guests', guestCols:['#','Name','Role'], leadTag:'Lead guest', guestTag:'Guest',
       cancel:'Cancellation policy', pay:'Payment summary', roomsTotal:'Stay total', total:'Total paid',
       instrT:'Important instructions', instr:'• Bring this voucher (printed or on your phone) at check-in.&nbsp;&nbsp; • Present the lead guest\'s ID/passport.&nbsp;&nbsp; • Check-in is usually after 3 PM and check-out before 12 noon.',
-      qr:'<b>Scan the code</b> with your phone camera to open your voucher anytime.<br>A certified e-voucher issued by FlyMasar — travel agent.' }
+      qr:'<b>Scan the code</b> with your phone camera to open your invoice anytime.<br>A certified e-invoice issued by FlyMasar — travel agent.' }
   };
 
   const renderPage = (lang) => {

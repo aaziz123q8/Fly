@@ -7,36 +7,75 @@
   <link rel="stylesheet" href="css/app.css">
   <script src="js/dark-mode.js"></script>
   <style>
-    .confirm-page { background:#FAF8FF; min-height:100vh; padding:32px 0 80px; }
-    .voucher { background:#fff; border-radius:18px; box-shadow:var(--shadow); max-width:720px; margin:0 auto; overflow:hidden; }
-    .voucher-head { background:linear-gradient(135deg,#16a34a,#22c55e); color:#fff; padding:28px 32px; text-align:center; }
-    .voucher-head.cancelled { background:linear-gradient(135deg,#b91c1c,#ef4444); }
-    .voucher-head .icon { font-size:2.6rem; }
-    .voucher-body { padding:28px 32px; }
-    .ref-grid { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:22px; }
-    .ref-box { flex:1; min-width:160px; background:#F3EDFE; border:1.5px solid #D6C6F7; border-radius:12px; padding:14px 16px; text-align:center; }
-    .ref-box .lbl { font-size:0.72rem; color:var(--text-muted); margin-bottom:4px; }
-    .ref-box .val { font-size:1.15rem; font-weight:800; color:var(--primary); letter-spacing:1px; word-break:break-all; }
-    .sec { margin-top:22px; }
-    .sec-title { font-size:0.92rem; font-weight:800; color:var(--primary); margin-bottom:10px; display:flex; align-items:center; gap:7px; border-bottom:2px solid #eef2f7; padding-bottom:8px; }
-    .row { display:flex; justify-content:space-between; gap:12px; padding:8px 0; font-size:0.9rem; border-bottom:1px solid #f4f6f9; }
+    .confirm-page { background:#FAF8FF; min-height:100vh; padding:32px 0 90px; }
+    .confirm-wrap { max-width:720px; margin:0 auto; }
+
+    /* success hero (screen only, mirrors the flight ticket) */
+    .success-hero { text-align:center; margin-bottom:22px; }
+    .success-icon { width:76px; height:76px; background:linear-gradient(135deg,#16a34a,#22c55e); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2rem; color:#fff; margin:0 auto 12px; box-shadow:0 8px 24px rgba(22,163,74,.3); }
+    .success-hero h2 { font-size:1.4rem; margin:0 0 4px; color:#2E1065; }
+    .success-hero p { margin:0; color:#888; font-size:.9rem; }
+
+    /* voucher card — same shape as the flight ticket (.tk-*) */
+    .voucher { background:#fff; border-radius:20px; box-shadow:0 4px 24px rgba(0,0,0,.1); overflow:hidden; margin-bottom:20px; }
+    .voucher-head { background:linear-gradient(120deg,#7C3AED,#9333EA 55%,#C026D3); color:#fff; padding:22px 28px; display:flex; align-items:center; justify-content:space-between; gap:14px; }
+    .voucher-head.cancelled { background:linear-gradient(120deg,#b91c1c,#ef4444); }
+    .vh-brand { font-size:1.25rem; font-weight:800; letter-spacing:.3px; }
+    .vh-brand span { color:#F5A623; }
+    .vh-title { font-size:1.05rem; font-weight:800; margin:6px 0 2px; }
+    .vh-sub { font-size:.78rem; opacity:.85; margin:0; }
+    .voucher-head .icon { font-size:2.4rem; line-height:1; }
+
+    .voucher-body { padding:0; }
+
+    /* references */
+    .tk-refs { display:grid; grid-template-columns:1fr 1fr; border-bottom:1px solid #f0f0f0; }
+    .tk-ref { padding:16px 20px; text-align:center; }
+    .tk-ref:first-child { border-left:1px solid #f0f0f0; }
+    .tk-ref .lbl { font-size:.68rem; color:#888; font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .tk-ref .val { font-size:1.25rem; font-weight:900; letter-spacing:1.5px; word-break:break-all; }
+    .tk-ref.fm .val { color:#7C3AED; }
+    .tk-ref.prov .val { color:#92400e; font-size:1.05rem; }
+
+    /* stay band — mirrors the flight route band */
+    .tk-stay { padding:20px 28px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #f0f0f0; background:#fafbff; }
+    .stay-col { text-align:center; }
+    .stay-label { font-size:.72rem; color:#888; margin-bottom:6px; }
+    .stay-date { font-size:1.1rem; font-weight:800; color:#2E1065; line-height:1.25; }
+    .stay-mid { flex:1; text-align:center; padding:0 12px; }
+    .stay-line { display:flex; align-items:center; gap:5px; justify-content:center; }
+    .stay-line hr { flex:1; border:none; border-top:2px dashed #cbd5e1; }
+    .stay-icon { font-size:1.3rem; }
+    .stay-nights { font-size:.78rem; color:#7C3AED; font-weight:700; margin-top:6px; }
+
+    /* sections */
+    .sec { padding:16px 28px; border-bottom:1px solid #f0f0f0; }
+    .sec-title { font-size:.76rem; font-weight:800; color:#7C3AED; text-transform:uppercase; letter-spacing:.5px; margin-bottom:10px; display:flex; align-items:center; gap:7px; }
+    .hotel-name { font-size:1.1rem; font-weight:800; color:#2E1065; }
+    .row { display:flex; justify-content:space-between; gap:12px; padding:7px 0; font-size:0.9rem; border-bottom:1px solid #f6f6f9; }
     .row:last-child { border-bottom:none; }
-    .row .k { color:var(--text-muted); }
+    .row .k { color:#888; }
     .row .v { font-weight:600; text-align:left; }
-    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; }
-    .chip { background:#F3EDFE; color:var(--primary); border-radius:20px; padding:4px 12px; font-size:0.8rem; font-weight:600; }
-    .price-total { display:flex; justify-content:space-between; padding:14px 0 0; font-size:1.2rem; font-weight:800; color:var(--primary); border-top:2px solid var(--primary); margin-top:6px; }
-    .note { border-radius:12px; padding:14px 16px; margin-top:16px; font-size:0.85rem; }
+    .chips { display:flex; flex-wrap:wrap; gap:6px; margin-top:4px; }
+    .chip { background:#F3EDFE; color:#7C3AED; border-radius:20px; padding:4px 12px; font-size:0.8rem; font-weight:600; }
+    .price-total { display:flex; justify-content:space-between; padding:14px 0 0; font-size:1.2rem; font-weight:800; color:#7C3AED; border-top:2px solid #7C3AED; margin-top:8px; }
+    .note { border-radius:12px; padding:12px 15px; margin:16px 28px 0; font-size:0.84rem; }
     .note.amber { background:#fef3c7; color:#92400e; }
     .note.green { background:#f0fdf4; color:#166534; }
-    .actions { display:flex; gap:10px; margin-top:24px; flex-wrap:wrap; }
+    .actions { display:flex; gap:10px; flex-wrap:wrap; padding:20px 28px 4px; }
     .actions .btn { flex:1; min-width:130px; }
+    @media(max-width:520px) {
+      .tk-refs { grid-template-columns:1fr; }
+      .tk-ref:first-child { border-left:none; border-bottom:1px solid #f0f0f0; }
+      .voucher-head { flex-direction:column-reverse; text-align:center; }
+      .stay-date { font-size:1rem; }
+    }
     @media print {
       body * { visibility:hidden; }
       .voucher, .voucher * { visibility:visible; }
-      .voucher { position:absolute; left:0; top:0; width:100%; box-shadow:none; }
+      .voucher { position:absolute; left:0; top:0; width:100%; box-shadow:none; border-radius:0; }
       .no-print { display:none !important; }
-      .navbar, .actions { display:none !important; }
+      .navbar, .actions, .success-hero { display:none !important; }
     }
   </style>
 </head>
@@ -46,21 +85,33 @@
 
 <div class="confirm-page">
   <div class="container">
+    <div class="confirm-wrap">
+
+      <!-- Success hero (screen only) -->
+      <div class="success-hero no-print">
+        <div class="success-icon">✅</div>
+        <h2>تم تأكيد حجز الفندق</h2>
+        <p>قسيمة الحجز جاهزة — احتفظ بها وأبرزها عند تسجيل الوصول</p>
+      </div>
+
     <div class="voucher" id="voucher">
       <div class="voucher-head" id="voucherHead">
-        <div class="icon">✅</div>
-        <h1 style="font-size:1.5rem;margin:8px 0 4px">تم تأكيد حجز الفندق</h1>
-        <p style="margin:0;opacity:.9;font-size:0.9rem" id="headSub">قسيمة الحجز — احتفظ بها وأبرزها عند تسجيل الوصول</p>
+        <div>
+          <div class="vh-brand">✈️ <span>فلاي</span> مسار</div>
+          <h1 class="vh-title">قسيمة حجز الفندق</h1>
+          <p class="vh-sub" id="headSub">احتفظ بها وأبرزها عند تسجيل الوصول</p>
+        </div>
+        <div class="icon">🏨</div>
       </div>
       <div class="voucher-body">
 
-        <div class="ref-grid">
-          <div class="ref-box">
+        <div class="tk-refs">
+          <div class="tk-ref fm">
             <div class="lbl">رقم الحجز</div>
             <div class="val" id="bRef">—</div>
           </div>
-          <div class="ref-box" id="providerBox" style="display:none">
-            <div class="lbl">رقم حجز المزوّد (الفندق)</div>
+          <div class="tk-ref prov" id="providerBox" style="display:none">
+            <div class="lbl">رقم حجز الفندق</div>
             <div class="val" id="bProvider">—</div>
           </div>
         </div>
@@ -73,12 +124,16 @@
           <div id="hotelAddr" style="font-size:0.85rem;color:var(--text-muted)"></div>
         </div>
 
-        <!-- Stay -->
+        <!-- Stay band (mirrors the flight route band) -->
+        <div class="tk-stay">
+          <div class="stay-col"><div class="stay-label">تسجيل الوصول</div><div class="stay-date" id="vCheckin">—</div></div>
+          <div class="stay-mid"><div class="stay-line"><hr><span class="stay-icon">🌙</span><hr></div><div class="stay-nights" id="vNights">—</div></div>
+          <div class="stay-col"><div class="stay-label">تسجيل المغادرة</div><div class="stay-date" id="vCheckout">—</div></div>
+        </div>
+
+        <!-- Stay details -->
         <div class="sec">
-          <div class="sec-title"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> تفاصيل الإقامة</div>
-          <div class="row"><span class="k">تسجيل الوصول</span><span class="v" id="vCheckin">—</span></div>
-          <div class="row"><span class="k">تسجيل المغادرة</span><span class="v" id="vCheckout">—</span></div>
-          <div class="row"><span class="k">عدد الليالي</span><span class="v" id="vNights">—</span></div>
+          <div class="sec-title">🗓️ تفاصيل الإقامة</div>
           <div class="row"><span class="k">عدد الضيوف</span><span class="v" id="vGuests">—</span></div>
           <div class="row"><span class="k">عدد الغرف</span><span class="v" id="vRooms">—</span></div>
         </div>
@@ -129,6 +184,7 @@
           <a href="hotels.html" class="btn btn-ghost"><svg class="ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px;flex-shrink:0"><path d="M3 21h18M5 21V5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v16"/><path d="M9 8h.01M15 8h.01M9 12h.01M15 12h.01M10 21v-4h4v4"/></svg> المزيد من الفنادق</a>
         </div>
       </div>
+    </div>
     </div>
   </div>
 </div>
