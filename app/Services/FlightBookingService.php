@@ -1328,7 +1328,11 @@ class FlightBookingService
                 ':last_name'              => $passenger['last_name']  ?? ($passenger['family_name'] ?? ''),
                 ':gender'                 => $genderNorm,
                 ':dob'                    => $passenger['date_of_birth'],
-                ':nationality'            => $passenger['nationality'],
+                // Store ISO-3166-1 alpha-2 to fit the CHAR(2) column. Passenger
+                // data holds the validated alpha-3 code; convert it here (matches
+                // the Duffel payload). Writing alpha-3 into CHAR(2) aborts the
+                // whole booking under strict SQL mode (Data too long).
+                ':nationality'            => $this->toAlpha2($passenger['nationality']),
                 ':passport_number'        => $passenger['passport_number'] ?? null,
                 ':passport_expiry'        => $passenger['passport_expiry'] ?? null,
                 ':provider_passenger_id'  => $duffelPaxId,

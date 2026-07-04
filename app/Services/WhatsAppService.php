@@ -39,6 +39,15 @@ class WhatsAppService
             throw new RuntimeException('WhatsAppService: invalid payload');
         }
 
+        // WhatsApp is optional. When credentials are not configured, skip the
+        // job gracefully instead of throwing — otherwise every booking's job
+        // retries 3× and lands in `failed`, inflating the admin dashboard's
+        // failed-jobs count and spamming error_logs.
+        if ($this->phoneNumberId === '' || $this->accessToken === '') {
+            error_log('[WhatsApp] credentials not configured — skipping booking confirmation');
+            return;
+        }
+
         if ($bookingType === 'flight') {
             $this->sendFlightConfirmation($bookingId);
         } else {

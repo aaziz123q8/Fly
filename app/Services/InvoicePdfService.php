@@ -341,7 +341,7 @@ HTML;
     ): string {
         $year      = date('Y');
         $ref       = htmlspecialchars($booking['booking_reference'], ENT_QUOTES, 'UTF-8');
-        $hotel     = htmlspecialchars($booking['hotel_name'], ENT_QUOTES, 'UTF-8');
+        $hotel     = htmlspecialchars($booking['hotel_name'] ?? '', ENT_QUOTES, 'UTF-8');
         $checkIn   = htmlspecialchars($booking['check_in_date'], ENT_QUOTES, 'UTF-8');
         $checkOut  = htmlspecialchars($booking['check_out_date'], ENT_QUOTES, 'UTF-8');
         $amount    = number_format((float)$booking['total_amount'], 2);

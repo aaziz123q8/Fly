@@ -95,7 +95,12 @@ class WebhookController
         $signatureValid = $this->validateDuffelSignature($rawPayload, $sigHeader, $secret);
 
         $payload = json_decode($rawPayload, true);
-        $eventId = $payload['data']['id'] ?? ('duffel_' . uniqid());
+        // Dedup on the top-level EVENT id (matches the Stripe handler). Duffel
+        // sends the same data.id (order id) on every event for an order, so
+        // keying on data.id collided on webhook_logs.uq_source_event and
+        // silently dropped all but the first event per order (cancellations,
+        // schedule changes, payment-status updates).
+        $eventId = $payload['id'] ?? $payload['data']['id'] ?? ('duffel_' . uniqid());
 
         if (!$this->insertWebhookLog('duffel', $eventId, $payload['type'] ?? null, $signatureValid, $rawPayload)) {
             $this->respond(200, ['status' => 'already_processed']);

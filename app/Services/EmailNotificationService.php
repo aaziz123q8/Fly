@@ -199,14 +199,21 @@ class EmailNotificationService
     public function sendCancellationEmail(array $payload): void
     {
         $bookingId = (int)($payload['booking_id'] ?? 0);
-        $booking   = $this->fetchFlightBookingWithUser($bookingId);
+        // Honour booking_type so hotel cancellations read the hotel table.
+        // Previously this always queried flight_bookings, so a hotel booking id
+        // either matched an unrelated flight (wrong customer) or nothing at all.
+        $bookingType = $payload['booking_type'] ?? 'flight';
+        $booking     = $bookingType === 'hotel'
+            ? $this->fetchHotelBookingWithUser($bookingId)
+            : $this->fetchFlightBookingWithUser($bookingId);
         if (!$booking) return;
 
+        $kind = $bookingType === 'hotel' ? 'hotel' : 'flight';
         $subject = 'Your Booking Has Been Cancelled — ' . $booking['booking_reference'];
         $body    = $this->buildSimpleNotificationHtml(
             trim($booking['first_name'] . ' ' . $booking['last_name']),
             'Booking Cancellation Confirmed',
-            'Your flight booking ' . htmlspecialchars($booking['booking_reference'], ENT_QUOTES, 'UTF-8') .
+            'Your ' . $kind . ' booking ' . htmlspecialchars($booking['booking_reference'], ENT_QUOTES, 'UTF-8') .
             ' has been successfully cancelled. If a refund is applicable, it will be processed within 5–10 business days.',
             $this->appUrl . '/dashboard'
         );
@@ -295,7 +302,16 @@ class EmailNotificationService
 
         $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
 
-        $sent = mail($to, $encodedSubject, $htmlBody, $headers);
+        // Set the SMTP envelope sender (Return-Path) to our authenticated
+        // domain mailbox. Without -f, Hostinger's MTA uses the server default
+        // sender, which fails SPF/DKIM alignment for flymasar.com and lands
+        // mail in spam or gets it dropped after mail() already returned true.
+        $params = '';
+        if (filter_var($this->fromEmail, FILTER_VALIDATE_EMAIL)) {
+            $params = '-f' . $this->fromEmail;
+        }
+
+        $sent = mail($to, $encodedSubject, $htmlBody, $headers, $params);
 
         if (!$sent) {
             throw new RuntimeException("mail() failed to deliver to {$to}");
@@ -314,6 +330,20 @@ class EmailNotificationService
              FROM flight_bookings fb
              JOIN users u ON u.id = fb.user_id
              WHERE fb.id = :id LIMIT 1'
+        );
+        $stmt->execute([':id' => $bookingId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        return $row ?: null;
+    }
+
+    private function fetchHotelBookingWithUser(int $bookingId): ?array
+    {
+        if ($bookingId <= 0) return null;
+        $stmt = $this->db->prepare(
+            'SELECT hb.*, u.email, u.first_name, u.last_name
+             FROM hotel_bookings hb
+             JOIN users u ON u.id = hb.user_id
+             WHERE hb.id = :id LIMIT 1'
         );
         $stmt->execute([':id' => $bookingId]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -686,7 +716,7 @@ HTML;
         $year      = date('Y');
         $appName   = htmlspecialchars($this->fromName, ENT_QUOTES, 'UTF-8');
         $ref       = htmlspecialchars($booking['booking_reference'], ENT_QUOTES, 'UTF-8');
-        $hotel     = htmlspecialchars($booking['hotel_name'], ENT_QUOTES, 'UTF-8');
+        $hotel     = htmlspecialchars($booking['hotel_name'] ?? '', ENT_QUOTES, 'UTF-8');
         $checkIn   = htmlspecialchars($booking['check_in_date'], ENT_QUOTES, 'UTF-8');
         $checkOut  = htmlspecialchars($booking['check_out_date'], ENT_QUOTES, 'UTF-8');
         $amount    = number_format((float)$booking['total_amount'], 2);

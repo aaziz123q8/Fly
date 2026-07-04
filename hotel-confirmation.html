@@ -148,7 +148,15 @@
   const hotelQ = p.get('hotel')  || '';
   const nightsQ= p.get('nights') || '';
   const amountQ= parseFloat(p.get('amount') || '0');
+  const lastNameQ = p.get('last_name') || '';
   let   leadName = '';
+  let   leadLast = '';
+  // Carry the guest credential (last_name) into the invoice link so guests can
+  // open their invoice without being bounced to login.html.
+  function invoiceHref() {
+    const ln = lastNameQ || leadLast;
+    return 'invoice.html?ref=' + encodeURIComponent(ref) + (ln ? '&last_name=' + encodeURIComponent(ln) : '');
+  }
 
   function fmtDate(d) {
     if (!d) return '';
@@ -201,6 +209,7 @@
     if (lead) {
       document.getElementById('guestSec').style.display = 'block';
       leadName = ((lead.first_name||'') + ' ' + (lead.last_name||'')).trim();
+      leadLast = lead.last_name || '';
       setText('vLeadGuest', leadName);
     }
 
@@ -226,17 +235,24 @@
       document.getElementById('vCancel').innerHTML = html;
     }
 
-    if (ref) document.getElementById('invoiceBtn').href = 'invoice.html?ref=' + encodeURIComponent(ref);
+    if (ref) document.getElementById('invoiceBtn').href = invoiceHref();
   }
 
   async function loadBooking() {
-    if (!Auth.isLoggedIn()) return;
-    // If we don't have a ref yet, try to confirm the latest session.
+    if (!ref) return;
     try {
-      if (ref) {
-        const res = await Api.get('/api/hotels/bookings/' + encodeURIComponent(ref), true);
-        render(res.booking || res);
+      let res;
+      if (Auth.isLoggedIn()) {
+        res = await Api.get('/api/hotels/bookings/' + encodeURIComponent(ref), true);
+      } else if (lastNameQ) {
+        // Guest voucher: authenticate with ref + last_name (same endpoint the
+        // guest invoice uses). Without this branch the voucher stayed blank
+        // for anyone not logged in.
+        res = await Api.get('/api/bookings/guest-invoice?ref=' + encodeURIComponent(ref) + '&last_name=' + encodeURIComponent(lastNameQ));
+      } else {
+        return; // no credential to authorize this view
       }
+      render(res.booking || res);
     } catch(e) {
       // keep URL-based fallback values
     }
@@ -262,7 +278,7 @@
     window.open('https://wa.me/?text=' + encodeURIComponent(lines.join('\n')));
   }
 
-  if (ref) document.getElementById('invoiceBtn').href = 'invoice.html?ref=' + encodeURIComponent(ref);
+  if (ref) document.getElementById('invoiceBtn').href = invoiceHref();
   loadBooking();
 </script>
 <script src="js/bottom-nav.js?v=2026070202"></script>
